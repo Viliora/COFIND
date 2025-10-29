@@ -52,7 +52,6 @@ def search_coffeeshops():
 			'rating': place['rating'],
 			'user_ratings_total': place['user_ratings_total']
 		})
-	return jsonify({'status': 'success', 'data': coffee_shops})
 
 if __name__ == '__main__':
 	app.run(debug=True)

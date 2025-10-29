@@ -23,14 +23,16 @@ const SearchBar = ({ setSearchTerm }) => {
           
           {/* Input Text */}
           <input
+            id="search-input"
+            name="search"
             type="text"
             placeholder="Kriteria coffee shop yang ingin dituju..."
+            aria-label="Search coffee shops"
             className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-gray-700"
-            
-            // AKTIVASI FUNGSI PENCARIAN
+
             // Setiap kali nilai input berubah, setSearchTerm akan dipanggil,
             // memperbarui state searchTerm di komponen ShopList.
-            onChange={(e) => setSearchTerm(e.target.value)} 
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         
