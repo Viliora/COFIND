@@ -4,8 +4,8 @@ import { Link } from 'react-router-dom';
 import SearchBar from '../components/SearchBar'; 
 import CoffeeShopCard from '../components/CoffeeShopCard'; 
 
-// URL API Flask untuk mengambil semua data coffee shop
-const API_URL = 'http://127.0.0.1:5000/api/coffeeshops';
+// URL API Flask untuk mencari coffee shop
+const SEARCH_API_URL = 'http://localhost:5000/api/search/coffeeshops';
 
 function ShopList() {
   // State untuk menyimpan daftar toko
@@ -20,31 +20,39 @@ function ShopList() {
   useEffect(() => {
     const fetchShops = async () => {
       try {
-        const response = await fetch(API_URL);
+        setIsLoading(true);
+        setError(null);
         
-        // Periksa apakah respons HTTP berhasil (status 200)
+        // Tambahkan parameter location untuk mencari di Pontianak
+        const response = await fetch(`${SEARCH_API_URL}?location=Pontianak`);
+        const result = await response.json();
+        
+        console.log('API Response:', result); // Debugging
+        
         if (!response.ok) {
-             throw new Error(`Gagal mengambil data, status: ${response.status}`);
+          throw new Error(result.message || `Gagal mengambil data, status: ${response.status}`);
         }
         
-        const data = await response.json();
-        setCoffeeShops(data);
-        setError(null); // Hapus error sebelumnya jika berhasil
+        if (result.status === 'success' && Array.isArray(result.data)) {
+          setCoffeeShops(result.data);
+        } else {
+          throw new Error(result.message || 'Format data tidak sesuai');
+        }
       } catch (err) {
-        console.error("Gagal mengambil data dari API Flask:", err);
-        setError("Gagal terhubung ke server backend (Port 5000). Pastikan server Flask berjalan.");
+        console.error("Error fetching data:", err);
+        setError(err.message || "Gagal mengambil data coffee shop");
         setCoffeeShops([]);
       } finally {
         setIsLoading(false);
       }
     };
+    
     fetchShops();
-  }, []); // [] memastikan fungsi hanya dijalankan sekali
+  }, []);
 
-  // LOGIKA PENCARIAN (Filtering): NANTINYA akan disempurnakan untuk memfilter berdasarkan tags_llm
+  // Filter coffee shops berdasarkan nama
   const filteredShops = coffeeShops.filter(shop =>
-    shop.nama.toLowerCase().includes(searchTerm.toLowerCase())
-    // Di masa depan, filter bisa diperluas ke: || shop.tags_llm.some(tag => tag.includes(searchTerm.toLowerCase()))
+    shop.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
 
@@ -87,7 +95,7 @@ function ShopList() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> 
             {filteredShops.map((shop) => (
               // Link membungkus CoffeeShopCard untuk navigasi
-              <Link key={shop.id} to={`/shop/${shop.id}`} className="block hover:shadow-2xl transition duration-300"> 
+              <Link key={shop.place_id} to={`/shop/${shop.place_id}`} className="block hover:shadow-2xl transition duration-300"> 
                 <CoffeeShopCard shop={shop} />
               </Link>
             ))}

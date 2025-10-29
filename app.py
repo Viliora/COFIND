@@ -1,50 +1,146 @@
-# app.py (Kode Perbaikan)
+# app.py (canonicalized from app_v2.py)
+from flask import Flask, jsonify, request
+from flask_cors import CORS
+import requests
+import os
+from dotenv import load_dotenv
 
-from flask import Flask, jsonify
+# Load environment variables
+load_dotenv()
 
-# 1. DEFINISIKAN APLIKASI FLASK DULU!
-app = Flask(__name__) # <--- BARIS INI HARUS DI SINI
+# Initialize Flask app
+app = Flask(__name__)
+CORS(app)  # Enable CORS
 
-# Data Coffee Shop Fiktif (UGC = User-Generated Content)
-# app.py (Pastikan array ini diisi, minimal dua objek)
-COFFEE_SHOPS = [
-    {
-        "id": 1,
-        "nama": "Kopi Khatulistiwa",
-        "alamat": "Jl. Gajah Mada No. 10",
-        "rating": 4.5,
-        "reviews": ["Kopi robusta di sini kuat banget!", "Tempatnya cozy, cocok buat skripsi."],
-        "tags_llm": ["strong_coffee", "cozy_ambience", "study_friendly"]
-    },
-    {
-        "id": 2,
-        "nama": "Warung Kopi Aming",
-        "alamat": "Jl. Adisucipto No. 5",
-        "rating": 4.7,
-        "reviews": ["Pelayanannya cepat dan murah.", "Selalu ramai, kopinya legendaris."],
-        "tags_llm": ["legendary", "crowded", "fast_service"]
-    }
-]
-# ... (Simpan dan restart server Flask Anda!)
+# Configure Google Places API (prefer using .env for key)
+GOOGLE_PLACES_API_KEY = os.getenv('GOOGLE_PLACES_API_KEY') or 'YOUR_API_KEY'
+print(f"Using API Key: {GOOGLE_PLACES_API_KEY}")
 
-# 2. SEKARANG KITA BISA MENGGUNAKAN @app.route
+# Enable CORS for /api/*
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-# Endpoint API Pertama: Mendapatkan Semua Coffee Shops
+# Root endpoint
+@app.route('/')
+def home():
+    return jsonify({"message": "Welcome to COFIND API"})
+
+# Endpoint untuk mencari coffee shop menggunakan Google Places API
+@app.route('/api/search/coffeeshops', methods=['GET'])
+def search_coffeeshops():
+    try:
+        # Koordinat pusat Pontianak Kota
+        lat = 0.0263303
+        lng = 109.3425039
+        # Parameters untuk request
+        params = {
+            'location': f"{lat},{lng}",
+            'radius': '5000',  # 5km radius
+            'type': 'cafe',
+            'keyword': 'coffee',
+            'key': GOOGLE_PLACES_API_KEY
+        }
+
+        print("Making request to Google Places API")
+        response = requests.get(base_url, params=params)
+        data = response.json()
+
+        print(f"Response status: {data.get('status')}")
+
+        if data.get('status') == 'OK':
+            # Filter dan format hasil
+            coffee_shops = []
+            for place in data.get('results', [])[:10]:  # Ambil 10 coffee shop teratas
+                coffee_shop = {
+                    'place_id': place.get('place_id'),
+                    'name': place.get('name'),
+                    'address': place.get('vicinity'),
+                    'rating': place.get('rating'),
+                    'user_ratings_total': place.get('user_ratings_total'),
+                    'location': place.get('geometry', {}).get('location'),
+                    'business_status': place.get('business_status'),
+                    'price_level': place.get('price_level'),
+                    'photos': place.get('photos', [])
+                }
+                coffee_shops.append(coffee_shop)
+
+            return jsonify({
+                'status': 'success',
+                'data': coffee_shops
+            })
+        else:
+            error_message = f"Google Places API error: {data.get('status')} - {data.get('error_message', 'Unknown error')}"
+            print(error_message)
+            return jsonify({
+                'status': 'error',
+                'message': error_message
+            }), 400
+
+    except Exception as e:
+        error_message = f"Error: {str(e)}"
+        print(error_message)
+        return jsonify({
+            'status': 'error',
+            'message': error_message
+        }), 500
+
+# Endpoint untuk mendapatkan detail coffee shop
+# Endpoint untuk mendapatkan detail coffee shop
 @app.route('/api/coffeeshops', methods=['GET'])
-def get_coffeeshops():
-    return jsonify(COFFEE_SHOPS)
+def search_coffeeshops():
+    try:
+        # Ambil ID tempat dari database atau metode lain
+        place_ids = ['place_id_1', 'place_id_2', 'place_id_3']  # Ganti dengan ID tempat yang sesuai
+        
+        coffee_shops = []
+        for place_id in place_ids:
+            place_details = get_place_details(place_id)
+            if place_details.get('status') == 'success':
+                coffee_shop = place_details.get('data')
+                coffee_shops.append(coffee_shop)
+        
+        return jsonify({
+            'status': 'success',
+            'data': coffee_shops
+        })
+    except Exception as e:
+        error_message = f"Error: {str(e)}"
+        print(error_message)
+        return jsonify({
+            'status': 'error',
+            'message': error_message
+        }), 500
 
-# Endpoint API Kedua: Mendapatkan Detail Coffee Shop berdasarkan ID
-@app.route('/api/coffeeshops/<int:shop_id>', methods=['GET'])
-def get_coffeeshop_detail(shop_id):
-    shop = next((s for s in COFFEE_SHOPS if s["id"] == shop_id), None)
-    
-    if shop:
-        return jsonify(shop)
-    else:
-        return jsonify({"message": f"Coffee Shop dengan ID {shop_id} tidak ditemukan."}), 404
+# Fungsi untuk mendapatkan detail tempat dari Places Details API
+def get_place_details(place_id):
+    try:
+        base_url = "https://maps.googleapis.com/maps/api/place/details/json"
 
+        params = {
+            'place_id': place_id,
+            'fields': 'name,rating,formatted_phone_number,formatted_address,geometry,photos,reviews,opening_hours,price_level,website',
+            'key': GOOGLE_PLACES_API_KEY
+        }
 
-# 3. Jalankan server (Ini harus tetap di bagian paling bawah)
-if __name__ == '__main__':
-    app.run(debug=True)
+        print("Making request to Places Details API")
+        response = requests.get(base_url, params=params)
+        data = response.json()
+
+        if data.get('status') == 'OK':
+            return {
+                'status': 'success',
+                'data': data.get('result', {})
+            }
+        else:
+            error_message = f"Google Places API error: {data.get('status')} - {data.get('error_message', 'Unknown error')}"
+            print(error_message)
+            return {
+                'status': 'error',
+                'message': error_message
+            }
+    except Exception as e:
+        error_message = f"Error: {str(e)}"
+        print(error_message)
+        return {
+            'status': 'error',
+            'message': error_message
+        }

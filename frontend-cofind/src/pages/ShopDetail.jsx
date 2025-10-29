@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 
-// Ubah URL API untuk mengambil detail spesifik
-const API_BASE_URL = 'http://127.0.0.1:5000/api/coffeeshops/'; 
+// URL API untuk mengambil detail coffee shop
+const API_DETAIL_URL = 'http://127.0.0.1:5000/api/coffeeshops/detail/';
 
 function ShopDetail() {
   const { id } = useParams();
@@ -14,19 +14,19 @@ function ShopDetail() {
   useEffect(() => {
     const fetchShop = async () => {
       try {
-        // Menggunakan endpoint baru: /api/coffeeshops/1
-        const response = await fetch(`${API_BASE_URL}${id}`);
+        const response = await fetch(`${API_DETAIL_URL}${id}`);
         
-        if (response.status === 404) {
-             throw new Error("Toko tidak ditemukan.");
-        }
         if (!response.ok) {
-            throw new Error(`Gagal mengambil data, status: ${response.status}`);
+          throw new Error(`Gagal mengambil data, status: ${response.status}`);
         }
         
-        const data = await response.json();
-        setShop(data);
-        setError(null);
+        const result = await response.json();
+        if (result.status === 'success') {
+          setShop(result.data);
+          setError(null);
+        } else {
+          throw new Error(result.message || 'Gagal mengambil detail coffee shop');
+        }
       } catch (err) {
         console.error("Fetch Error:", err);
         setError(err.message);
@@ -47,38 +47,57 @@ function ShopDetail() {
       <Link to="/" className="text-indigo-600 hover:text-indigo-800 font-medium mb-4 inline-block">← Kembali ke Daftar</Link>
       
       <div className="bg-white p-8 rounded-xl shadow-2xl border border-gray-200">
-        <h1 className="text-4xl font-extrabold text-gray-900 mb-2">{shop.nama}</h1>
-        <p className="text-xl text-indigo-700 font-semibold mb-4">⭐ {shop.rating} / 5.0 | {shop.alamat}</p>
-
-        {/* Tampilan Tags/Fitur Utama hasil Analisis LLaMA */}
-        <h3 className="text-xl font-bold mt-6 mb-3">Fitur Utama (Hasil LLaMA):</h3>
-        <div className="flex flex-wrap gap-2 mb-6">
-            {shop.tags_llm.map(tag => (
-                <span 
-                    key={tag} 
-                    className="bg-green-100 text-green-700 text-sm font-semibold px-3 py-1 rounded-full"
-                >
-                    {tag.replace('_', ' ')}
-                </span>
-            ))}
+        <h1 className="text-4xl font-extrabold text-gray-900 mb-2">{shop.name}</h1>
+        <div className="flex items-center mb-4">
+          <p className="text-xl text-indigo-700 font-semibold mr-3">⭐ {shop.rating || 'N/A'}</p>
+          <p className="text-gray-600">|</p>
+          {shop.price_level && (
+            <p className="ml-3 text-green-600">{'💰'.repeat(shop.price_level)}</p>
+          )}
         </div>
+        
+        <p className="text-lg text-gray-700 mb-4">{shop.address}</p>
+        
+        {shop.phone && (
+          <p className="text-gray-600 mb-2">📞 {shop.phone}</p>
+        )}
+        
+        {shop.website && (
+          <a href={shop.website} target="_blank" rel="noopener noreferrer" 
+             className="text-indigo-600 hover:text-indigo-800 mb-4 block">
+            🌐 Website
+          </a>
+        )}
 
-        {/* Daftar Ulasan yang Ditarik dari Google Places API */}
-        <h3 className="text-2xl font-bold mt-8 mb-4 border-b pb-2">Ulasan Google (UGC)</h3>
+        {/* Jam Operasional */}
+        {shop.opening_hours && shop.opening_hours.length > 0 && (
+          <div className="mt-6">
+            <h3 className="text-xl font-bold mb-3">Jam Operasional</h3>
+            <div className="bg-gray-50 p-4 rounded-lg">
+              {shop.opening_hours.map((hours, index) => (
+                <p key={index} className="text-gray-700">{hours}</p>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Ulasan */}
+        <h3 className="text-2xl font-bold mt-8 mb-4 border-b pb-2">Ulasan Pengunjung</h3>
         <div className="space-y-4 mb-8">
-            {shop.reviews && shop.reviews.length > 0 ? (
-                shop.reviews.map((review, index) => (
-                    <div key={index} className="bg-gray-50 p-4 rounded border border-gray-200">
-                        <p className="italic text-gray-700 mb-2">"{review}"</p>
-                        {/* Status LLaMA akan ditampilkan di sini */}
-                        <span className="text-xs font-semibold text-blue-600">
-                            Status LLaMA: Sentimen Positif
-                        </span>
-                    </div>
-                ))
-            ) : (
-                <p className="text-gray-500">Belum ada ulasan yang diunduh untuk toko ini.</p>
-            )}
+          {shop.reviews && shop.reviews.length > 0 ? (
+            shop.reviews.map((review, index) => (
+              <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div className="flex items-center mb-2">
+                  <p className="text-yellow-500">{'⭐'.repeat(review.rating)}</p>
+                  <p className="ml-2 text-gray-500 text-sm">{review.relative_time_description}</p>
+                </div>
+                <p className="font-semibold text-gray-700">{review.author_name}</p>
+                <p className="text-gray-600 mt-2">{review.text}</p>
+              </div>
+            ))
+          ) : (
+            <p className="text-gray-500">Belum ada ulasan untuk coffee shop ini.</p>
+          )}
         </div>
         
       </div>
