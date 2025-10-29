@@ -24,7 +24,7 @@ const SearchBar = ({ setSearchTerm }) => {
           {/* Input Text */}
           <input
             type="text"
-            placeholder="Cari Coffee Shop, Fitur LLaMA (ex: 'cozy_ambience', 'fast_service')..."
+            placeholder="Kriteria coffee shop yang ingin dituju..."
             className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-gray-700"
             
             // AKTIVASI FUNGSI PENCARIAN

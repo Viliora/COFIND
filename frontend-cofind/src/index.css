@@ -29,7 +29,8 @@ a:hover {
 body {
   margin: 0;
   display: flex;
-  place-items: center;
+  justify-content: center;
+  align-items: flex-start;
   min-width: 320px;
   min-height: 100vh;
 }
@@ -56,6 +57,22 @@ button:hover {
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
+}
+
+/* Layout container: constrain width and center content on large screens */
+#root {
+  width: 100%;
+  max-width: 1300px; /* do not let content grow beyond this */
+  margin: 0 auto; /* center horizontally */
+  padding: 0 24px; /* horizontal breathing room */
+  box-sizing: border-box;
+}
+
+@media (max-width: 640px) {
+  /* smaller padding on very small screens */
+  #root {
+    padding: 0 12px;
+  }
 }
 
 @media (prefers-color-scheme: light) {
