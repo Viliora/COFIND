@@ -2,11 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 
-// URL API untuk mengambil detail coffee shop
 const API_DETAIL_URL = 'http://127.0.0.1:5000/api/coffeeshops/detail/';
 
 function ShopDetail() {
-  const { id } = useParams();
+  const { id } = useParams();  // id akan mengambil place_id
   const [shop, setShop] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -45,7 +44,6 @@ function ShopDetail() {
   return (
     <div className="max-w-3xl mx-auto py-8">
       <Link to="/" className="text-indigo-600 hover:text-indigo-800 font-medium mb-4 inline-block">← Kembali ke Daftar</Link>
-      
       <div className="bg-white p-8 rounded-xl shadow-2xl border border-gray-200">
         <h1 className="text-4xl font-extrabold text-gray-900 mb-2">{shop.name}</h1>
         <div className="flex items-center mb-4">
@@ -69,40 +67,21 @@ function ShopDetail() {
           </a>
         )}
 
-        {/* Jam Operasional */}
-        {shop.opening_hours && shop.opening_hours.length > 0 && (
+        {/* Foto Coffee Shop */}
+        {shop.photos && shop.photos.length > 0 && (
           <div className="mt-6">
-            <h3 className="text-xl font-bold mb-3">Jam Operasional</h3>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              {shop.opening_hours.map((hours, index) => (
-                <p key={index} className="text-gray-700">{hours}</p>
-              ))}
-            </div>
+            <img 
+              src={shop.photos[0]} 
+              alt={shop.name} 
+              className="w-full h-64 object-cover rounded-lg" 
+            />
           </div>
         )}
-
-        {/* Ulasan */}
-        <h3 className="text-2xl font-bold mt-8 mb-4 border-b pb-2">Ulasan Pengunjung</h3>
-        <div className="space-y-4 mb-8">
-          {shop.reviews && shop.reviews.length > 0 ? (
-            shop.reviews.map((review, index) => (
-              <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <div className="flex items-center mb-2">
-                  <p className="text-yellow-500">{'⭐'.repeat(review.rating)}</p>
-                  <p className="ml-2 text-gray-500 text-sm">{review.relative_time_description}</p>
-                </div>
-                <p className="font-semibold text-gray-700">{review.author_name}</p>
-                <p className="text-gray-600 mt-2">{review.text}</p>
-              </div>
-            ))
-          ) : (
-            <p className="text-gray-500">Belum ada ulasan untuk coffee shop ini.</p>
-          )}
-        </div>
-        
+        {/* ... */}
       </div>
     </div>
   );
 }
+
 
 export default ShopDetail;

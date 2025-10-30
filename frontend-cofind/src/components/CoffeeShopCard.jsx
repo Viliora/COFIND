@@ -3,7 +3,7 @@ import React from 'react';
 
 const CoffeeShopCard = ({ shop }) => {
     const defaultImage = 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80';
-    
+
     const formatStatus = (status) => {
         if (!status) return null;
         const statusMap = {
@@ -16,9 +16,10 @@ const CoffeeShopCard = ({ shop }) => {
     };
 
     const statusInfo = formatStatus(shop.business_status);
-    const photo = shop.photos ? shop.photos[0].photo_reference : null;
-    const photoUrl = photo 
-        ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${photo}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`
+    
+    // Mengambil foto dari shop.photos dan jika tidak ada, menggunakan gambar default
+    const photoUrl = shop.photos && shop.photos.length > 0 
+        ? shop.photos[0] 
         : defaultImage;
 
     return (
@@ -30,7 +31,7 @@ const CoffeeShopCard = ({ shop }) => {
                     className="w-full h-48 object-cover transform group-hover:scale-105 transition duration-300"
                     onError={(e) => {
                         e.target.onerror = null;
-                        e.target.src = defaultImage;
+                        e.target.src = defaultImage;  // Jika gambar gagal dimuat, tampilkan gambar default
                     }}
                 />
                 {shop.rating && (

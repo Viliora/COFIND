@@ -89,7 +89,7 @@ export default function ShopList() {
                     onClick={() => window.location.reload()}
                     className="mt-2 text-sm text-red-600 hover:text-red-500 font-medium"
                   >
-                    Try Again →
+                    Try Again → 
                   </button>
                 </div>
               </div>
