@@ -1,4 +1,3 @@
-// src/pages/ShopDetail.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 
@@ -77,11 +76,9 @@ function ShopDetail() {
             />
           </div>
         )}
-        {/* ... */}
       </div>
     </div>
   );
 }
-
 
 export default ShopDetail;

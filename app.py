@@ -25,6 +25,7 @@ def home():
     return jsonify({"message": "Welcome to COFIND API"})
 
 # Endpoint untuk mencari coffee shop menggunakan Google Places API
+# Endpoint untuk mencari coffee shop menggunakan Google Places API
 @app.route('/api/search/coffeeshops', methods=['GET'])
 def search_coffeeshops():
     try:
@@ -34,8 +35,7 @@ def search_coffeeshops():
         location_str = request.args.get('location')  # e.g. 'Pontianak' or an address
         radius = request.args.get('radius', default='5000')
         keyword = request.args.get('keyword', default='coffee')
-        limit = int(request.args.get('limit', 20))  # Menentukan jumlah data yang diinginkan (default 20)
-
+        
         # Pilih endpoint berdasarkan input
         if lat is not None and lng is not None:
             # Nearby Search (menggunakan koordinat)
@@ -67,8 +67,8 @@ def search_coffeeshops():
                 'key': GOOGLE_PLACES_API_KEY
             }
 
-        coffee_shops = []
-        while len(coffee_shops) < limit:
+        coffee_shops = []  # Data coffee shop yang akan dikirim ke frontend
+        while True:
             print(f"Making request to Google Places API: {base_url} with params {params}")
             response = requests.get(base_url, params=params)
             data = response.json()
@@ -101,8 +101,6 @@ def search_coffeeshops():
                                     coffee_shop['photos'].append(photo_url)
 
                     coffee_shops.append(coffee_shop)
-                    if len(coffee_shops) >= limit:
-                        break
 
                 # Cek apakah ada halaman berikutnya
                 next_page_token = data.get('next_page_token')
@@ -123,6 +121,7 @@ def search_coffeeshops():
         error_message = f"Error: {str(e)}"
         print(error_message)
         return jsonify({'status': 'error', 'message': error_message}), 500
+
 
 # Flask - Endpoint untuk mengambil detail tempat berdasarkan place_id
 @app.route('/api/coffeeshops/detail/<place_id>', methods=['GET'])
