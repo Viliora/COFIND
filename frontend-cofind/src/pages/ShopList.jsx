@@ -1,5 +1,5 @@
 // src/pages/ShopList.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import SearchBar from '../components/SearchBar';
 import CoffeeShopCard from '../components/CoffeeShopCard';
@@ -10,6 +10,14 @@ export default function ShopList() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState(null);
+  const scrollContainerRef = useRef(null);
+
+  const scrollRight = () => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const scrollAmount = container.clientWidth * 0.8;
+    container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+  };
 
   useEffect(() => {
     const fetchShops = async () => {
@@ -97,16 +105,30 @@ export default function ShopList() {
         )}
 
         {!error && filteredShops.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {filteredShops.map((shop) => (
-              <Link 
-                key={shop.place_id} 
-                to={`/shop/${shop.place_id}`} 
-                className="block hover:shadow-2xl transition duration-300"
-              > 
-                <CoffeeShopCard shop={shop} />
-              </Link>
-            ))}
+          <div className="relative">
+            <div
+              ref={scrollContainerRef}
+              className="flex gap-6 overflow-x-auto scroll-smooth pb-4 pr-16 snap-x snap-mandatory"
+            >
+              {filteredShops.map((shop) => (
+                <Link
+                  key={shop.place_id}
+                  to={`/shop/${shop.place_id}`}
+                  className="block hover:shadow-2xl transition duration-300 min-w-[260px] sm:min-w-[300px] shrink-0 snap-start"
+                >
+                  <CoffeeShopCard shop={shop} />
+                </Link>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={scrollRight}
+              className="absolute right-0 top-1/2 -translate-y-1/2 bg-indigo-600 text-white p-3 rounded-full shadow-lg hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              aria-label="Scroll ke kanan"
+            >
+              →
+            </button>
           </div>
         )}
         
