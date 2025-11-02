@@ -54,27 +54,27 @@ export default function ShopList() {
 
   if (isLoading) {
     return (
-      <div className="text-center p-16">
-        <h1 className="text-3xl text-indigo-600 font-semibold">Loading Coffee Shops in Pontianak...</h1>
+      <div className="text-center p-8 sm:p-12 md:p-16">
+        <h1 className="text-xl sm:text-2xl md:text-3xl text-indigo-600 font-semibold px-4">Loading Coffee Shops in Pontianak...</h1>
         <div className="mt-4 flex justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-indigo-600"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <div className="bg-indigo-700 h-40 flex items-center justify-center text-white mb-6 rounded-lg shadow-lg">
-        <h1 className="text-4xl font-extrabold tracking-tight">Temukan Coffee Shop Terbaik di Pontianak</h1>
+    <div className="px-3 sm:px-4 md:px-6 lg:px-8 pb-6 sm:pb-8">
+      <div className="bg-indigo-700 h-24 sm:h-32 md:h-40 flex items-center justify-center text-white mb-4 sm:mb-6 rounded-lg shadow-lg px-4">
+        <h1 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-extrabold tracking-tight text-center">Temukan Coffee Shop Terbaik di Pontianak</h1>
       </div>
 
       <SearchBar setSearchTerm={setSearchTerm} />
 
-      <main className="max-w-4xl mx-auto py-8">
-        <h2 className="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">
+      <main className="max-w-4xl mx-auto py-4 sm:py-6 md:py-8">
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 mb-4 sm:mb-6 border-b pb-2">
           Coffee Shop Catalog ({filteredShops.length} found)
-          {searchTerm && <span className="text-gray-500 text-lg"> - Search: "{searchTerm}"</span>}
+          {searchTerm && <span className="block sm:inline text-gray-500 dark:text-gray-400 text-sm sm:text-base md:text-lg mt-1 sm:mt-0"> - Search: "{searchTerm}"</span>}
         </h2>
 
         {error && (
@@ -100,16 +100,16 @@ export default function ShopList() {
         )}
 
         {!error && filteredShops.length > 0 && (
-          <div className="relative">
+          <div className="relative px-2 sm:px-0">
             <div
               ref={scrollContainerRef}
-              className="flex gap-6 overflow-x-auto scroll-smooth pb-4 pr-16 snap-x snap-mandatory"
+              className="flex gap-3 sm:gap-4 md:gap-6 overflow-x-auto scroll-smooth pb-4 pr-12 sm:pr-16 snap-x snap-mandatory scrollbar-hide"
             >
               {filteredShops.map((shop) => (
                 <Link
                   key={shop.place_id}
                   to={`/shop/${shop.place_id}`}
-                  className="block hover:shadow-2xl transition duration-300 min-w-[260px] sm:min-w-[300px] shrink-0 snap-start"
+                  className="block hover:shadow-2xl transition duration-300 min-w-[240px] sm:min-w-[280px] md:min-w-[300px] shrink-0 snap-start"
                 >
                   <CoffeeShopCard shop={shop} />
                 </Link>
@@ -119,10 +119,12 @@ export default function ShopList() {
             <button
               type="button"
               onClick={scrollRight}
-              className="absolute right-0 top-1/2 -translate-y-1/2 bg-indigo-600 text-white p-3 rounded-full shadow-lg hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="hidden sm:block absolute right-0 top-1/2 -translate-y-1/2 bg-indigo-600 text-white p-2 md:p-3 rounded-full shadow-lg hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-colors"
               aria-label="Scroll ke kanan"
             >
-              →
+              <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
             </button>
           </div>
         )}

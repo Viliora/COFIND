@@ -4,6 +4,10 @@ import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './index.css';
 import { BrowserRouter } from 'react-router-dom'; // IMPORT INI
+import { registerServiceWorker } from './utils/sw-register'; // Service Worker Registration
+
+// Daftarkan Service Worker
+registerServiceWorker();
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
