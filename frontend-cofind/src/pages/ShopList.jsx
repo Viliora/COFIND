@@ -2,13 +2,20 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import SearchBar from '../components/SearchBar';
 import CoffeeShopCard from '../components/CoffeeShopCard';
+import placesData from '../data/places.json';
+import { fetchWithCache, getAllCachedCoffeeShops, initAPICache } from '../utils/apiCache';
+
+// Konfigurasi API (optional - bisa di-set via environment variable)
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+const USE_API = import.meta.env.VITE_USE_API === 'true'; // Set VITE_USE_API=true untuk enable API
 
 export default function ShopList() {
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
   const [coffeeShops, setCoffeeShops] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState(null);
+  const [isFromCache, setIsFromCache] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const scrollContainerRef = useRef(null);
 
   const scrollRight = () => {
@@ -18,35 +25,83 @@ export default function ShopList() {
     container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
   };
 
+  // Listen untuk online/offline events
   useEffect(() => {
-    const fetchShops = async () => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    // Initialize API Cache
+    initAPICache();
+    
+    const loadShops = async () => {
       try {
         setIsLoading(true);
         setError(null);
-
-        const response = await fetch(`${API_BASE}/api/search/coffeeshops?lat=-0.026330&lng=109.342506`);
-        const result = await response.json();
-
-        if (!response.ok) {
-          throw new Error(result.message || `Error fetching data (${response.status})`);
+        
+        // Strategy: API First (jika enabled), lalu Cache, lalu places.json
+        if (USE_API && isOnline) {
+          try {
+            // Coba fetch dari API dengan caching
+            const apiUrl = `${API_BASE}/api/search/coffeeshops?lat=-0.026330&lng=109.342506`;
+            const result = await fetchWithCache(apiUrl);
+            
+            if (result.data && Array.isArray(result.data.data) && result.data.data.length > 0) {
+              console.log('[ShopList] Loading from API', result.fromCache ? '(cached)' : '(network)');
+              setCoffeeShops(result.data.data);
+              setIsFromCache(result.fromCache);
+              setIsLoading(false);
+              return;
+            }
+          } catch (apiError) {
+            console.warn('[ShopList] API fetch failed, trying cache:', apiError.message);
+          }
         }
-
-        if (result.status === 'success' && Array.isArray(result.data)) {
-          setCoffeeShops(result.data);
+        
+        // Fallback 1: Coba dari IndexedDB cache
+        const cachedData = await getAllCachedCoffeeShops();
+        if (cachedData && Array.isArray(cachedData.data) && cachedData.data.length > 0) {
+          console.log('[ShopList] Loading from IndexedDB cache');
+          setCoffeeShops(cachedData.data);
+          setIsFromCache(true);
+          setIsLoading(false);
+          return;
+        }
+        
+        // Fallback 2: Gunakan data dari places.json (static)
+        if (placesData && Array.isArray(placesData.data) && placesData.data.length > 0) {
+          console.log('[ShopList] Loading from places.json (fallback)');
+          setCoffeeShops(placesData.data);
+          setIsFromCache(false);
+          setIsLoading(false);
+          
+          // Pre-cache places.json data untuk offline access
+          if (USE_API) {
+            const { preCacheCoffeeShops } = await import('../utils/apiCache');
+            preCacheCoffeeShops(placesData);
+          }
         } else {
-          throw new Error(result.message || 'Invalid data format received');
+          throw new Error('Data tidak ditemukan');
         }
       } catch (err) {
-        console.error("Error fetching data:", err);
-        setError(err.message || "Failed to fetch coffee shop data");
+        console.error("Error loading data:", err);
+        setError(err.message || "Failed to load coffee shop data");
         setCoffeeShops([]);
-      } finally {
         setIsLoading(false);
       }
     };
 
-    fetchShops();
-  }, [API_BASE]);
+    loadShops();
+  }, [isOnline]); // Re-run saat online status berubah
 
   const filteredShops = coffeeShops.filter(shop =>
     shop.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -64,36 +119,61 @@ export default function ShopList() {
   }
 
   return (
-    <div className="px-3 sm:px-4 md:px-6 lg:px-8 pb-6 sm:pb-8">
-      <div className="bg-indigo-700 h-24 sm:h-32 md:h-40 flex items-center justify-center text-white mb-4 sm:mb-6 rounded-lg shadow-lg px-4">
+    <div className="w-full pb-6 sm:pb-8">
+      <div className="bg-indigo-700 h-24 sm:h-32 md:h-40 flex items-center justify-center text-white mb-4 sm:mb-6 shadow-lg px-4 w-full">
         <h1 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-extrabold tracking-tight text-center">Temukan Coffee Shop Terbaik di Pontianak</h1>
       </div>
 
       <SearchBar setSearchTerm={setSearchTerm} />
 
-      <main className="max-w-4xl mx-auto py-4 sm:py-6 md:py-8">
-        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 mb-4 sm:mb-6 border-b pb-2">
-          Coffee Shop Catalog ({filteredShops.length} found)
-          {searchTerm && <span className="block sm:inline text-gray-500 dark:text-gray-400 text-sm sm:text-base md:text-lg mt-1 sm:mt-0"> - Search: "{searchTerm}"</span>}
-        </h2>
+      <main className="w-full py-4 sm:py-6 md:py-8 px-4 sm:px-6">
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 border-b pb-2 flex-1">
+            Coffee Shop Catalog ({filteredShops.length} found)
+            {searchTerm && <span className="block sm:inline text-gray-500 dark:text-gray-400 text-sm sm:text-base md:text-lg mt-1 sm:mt-0"> - Search: "{searchTerm}"</span>}
+          </h2>
+          {isFromCache && !isLoading && (
+            <span className="ml-2 px-2 py-1 text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 rounded-full">
+              📦 Cached
+            </span>
+          )}
+          {!isOnline && !isLoading && (
+            <span className="ml-2 px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full">
+              📡 Offline
+            </span>
+          )}
+        </div>
 
         {error && (
-          <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
+          <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-400 p-4 mb-6">
             <div className="flex">
               <div className="flex-shrink-0">
                 <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                 </svg>
               </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">Error loading data</h3>
-                <p className="mt-1 text-sm text-red-700">{error}</p>
-                <button
-                  onClick={() => window.location.reload()}
-                  className="mt-2 text-sm text-red-600 hover:text-red-500 font-medium"
-                >
-                  Try Again → 
-                </button>
+              <div className="ml-3 flex-1">
+                <h3 className="text-sm font-medium text-red-800 dark:text-red-200">Error loading data</h3>
+                <p className="mt-1 text-sm text-red-700 dark:text-red-300">{error}</p>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="text-sm px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-md font-medium transition-colors"
+                  >
+                    Try Again →
+                  </button>
+                  <button
+                    onClick={async () => {
+                      // Clear cache dan reload
+                      const { clearCache } = await import('../utils/cacheManager');
+                      await clearCache('content');
+                      window.location.reload();
+                    }}
+                    className="text-sm px-3 py-1.5 bg-gray-600 hover:bg-gray-700 text-white rounded-md font-medium transition-colors"
+                  >
+                    Clear Cache & Reload
+                  </button>
+                </div>
               </div>
             </div>
           </div>

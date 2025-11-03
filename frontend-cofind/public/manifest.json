@@ -1,0 +1,39 @@
+{
+  "name": "Cofind - Coffee Shop Finder",
+  "short_name": "Cofind",
+  "description": "Temukan Coffee Shop Terbaik di Pontianak",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4F46E5",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["food", "lifestyle", "travel"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Home",
+      "short_name": "Home",
+      "description": "Lihat daftar coffee shop",
+      "url": "/",
+      "icons": [{ "src": "/vite.svg", "sizes": "96x96" }]
+    },
+    {
+      "name": "Favorites",
+      "short_name": "Favorites",
+      "description": "Lihat coffee shop favorit",
+      "url": "/favorite",
+      "icons": [{ "src": "/vite.svg", "sizes": "96x96" }]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}
+

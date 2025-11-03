@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import userImg from '../assets/user.png';
 import cofindImg from '../assets/cofind.svg?url';
@@ -7,7 +7,7 @@ const Navbar = () => {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
-  // theme state and system preference detection
+  // Theme state management
   const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
   const [dark, setDark] = useState(() => {
     try {
@@ -56,9 +56,10 @@ const Navbar = () => {
   }, []);
 
   return (
-    <nav className="bg-white dark:bg-zinc-900 shadow-sm border-b border-gray-100 dark:border-zinc-800 fixed w-full z-50 top-0">
-      <div className="w-full px-3 sm:px-4 md:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-14 sm:h-16">
+    <nav className="bg-white dark:bg-zinc-900 shadow-sm border-b border-gray-100 dark:border-zinc-800 fixed inset-x-0 top-0 z-50">
+  <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+    <div className="flex justify-between items-center h-14 sm:h-16">
+
           {/* Left: logo */}
           <div className="flex items-center flex-shrink-0">
             <Link to="/" className="flex items-center group">
@@ -72,7 +73,9 @@ const Navbar = () => {
 
           {/* Center: navigation buttons */}
           <div className="hidden md:flex flex-1 justify-center items-center">
-            <div className="flex items-center gap-0.5 bg-gray-50 dark:bg-zinc-800/50 rounded-lg p-1">
+  <div className="flex items-center gap-0.5 bg-gray-50 dark:bg-zinc-800/50 rounded-lg p-1">
+    {/* nav buttons… */} 
+
               {/* Home */}
               <Link
                 to="/"
@@ -144,13 +147,14 @@ const Navbar = () => {
             </div>
           </div>
 
-          {/* Right side: theme switch + profile image */}
-          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-            {/* Theme switch */}
+          {/* Right side: theme switch + profile + mobile menu */}
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 min-w-max">
+            {/* Theme toggle */}
             <button
               onClick={() => setDark((v) => !v)}
-              className="relative p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+              className="p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
               aria-label="Toggle theme"
+              title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               {dark ? (
                 <svg
@@ -179,6 +183,20 @@ const Navbar = () => {
               )}
             </button>
 
+            {/* Profile button */}
+            <button
+              type="button"
+              className="relative rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-transform hover:scale-105"
+              aria-label="User menu"
+              title="User profile"
+            >
+              <img 
+                src={userImg} 
+                alt="Profile" 
+                className="w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 rounded-full object-cover border-2 border-gray-200 dark:border-zinc-700" 
+              />
+            </button>
+
             {/* Mobile menu button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -195,25 +213,12 @@ const Navbar = () => {
                 </svg>
               )}
             </button>
-
-            {/* Profile image */}
-            <button
-              type="button"
-              className="relative rounded-full focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 transition-transform hover:scale-105"
-              aria-label="User menu"
-            >
-              <img 
-                src={userImg} 
-                alt="Profile" 
-                className="w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 rounded-full object-cover border-2 border-gray-200 dark:border-zinc-700" 
-              />
-            </button>
           </div>
         </div>
 
         {/* Mobile menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-gray-100 dark:border-zinc-800 py-3">
+          <div className="md:hidden border-t border-gray-100 dark:border-zinc-800 py-3 max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
             <div className="flex flex-col gap-1">
               <Link
                 to="/"

@@ -3,8 +3,8 @@ import React from 'react';
 
 const Footer = () => {
   return (
-    <footer className="bg-gray-800 text-white mt-8 sm:mt-12 pt-6 sm:pt-8 pb-4">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <footer className="bg-gray-800 text-white mt-8 sm:mt-12 pt-6 sm:pt-8 pb-4 w-full">
+      <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 border-b border-gray-700 pb-4 sm:pb-6">
           <div>
             <h4 className="text-base sm:text-lg font-bold mb-2 sm:mb-3 text-indigo-400">Cofind Project</h4>

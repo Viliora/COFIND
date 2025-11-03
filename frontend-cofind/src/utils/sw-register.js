@@ -2,9 +2,44 @@
 
 /**
  * Mendaftarkan Service Worker dengan penanganan lifecycle
+ * Di development mode, Service Worker di-disable untuk memungkinkan HMR bekerja dengan baik
  */
 export function registerServiceWorker() {
-  // Cek apakah browser mendukung Service Worker
+  // Cek apakah ini development mode (Vite development server)
+  const isDevelopment = import.meta.env.DEV || 
+                       window.location.hostname === 'localhost' || 
+                       window.location.hostname === '127.0.0.1' ||
+                       window.location.port !== '';
+
+  // Di development mode, unregister service worker yang ada dan tidak register yang baru
+  // Ini memungkinkan Hot Module Replacement (HMR) bekerja tanpa refresh
+  if (isDevelopment) {
+    console.log('[SW Register] Development mode detected - Service Worker disabled untuk HMR');
+    
+    // Unregister service worker yang mungkin sudah terdaftar
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        registrations.forEach((registration) => {
+          registration.unregister().then(() => {
+            console.log('[SW Register] Service Worker unregistered untuk development mode');
+          });
+        });
+      });
+
+      // Clear semua cache yang mungkin ada
+      if ('caches' in window) {
+        caches.keys().then((cacheNames) => {
+          cacheNames.forEach((cacheName) => {
+            caches.delete(cacheName);
+            console.log('[SW Register] Cache cleared:', cacheName);
+          });
+        });
+      }
+    }
+    return; // Exit early - tidak register service worker di development
+  }
+
+  // Production mode: Register Service Worker seperti biasa
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker
@@ -25,7 +60,8 @@ export function registerServiceWorker() {
     // Listen untuk service worker updates
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       console.log('[SW Register] Service Worker controller changed');
-      window.location.reload();
+      // Di production, bisa auto-reload atau tampilkan notification
+      // Untuk development, jangan auto-reload karena HMR sudah handle
     });
   } else {
     console.warn('[SW Register] Browser tidak mendukung Service Worker');
@@ -65,18 +101,37 @@ function trackServiceWorkerLifecycle(registration) {
     });
   });
 
-  // Periodic update check
-  setInterval(() => {
-    registration.update();
-  }, 60000); // Check setiap 1 menit
+  // Periodic update check (hanya di production)
+  const isDevelopment = import.meta.env.DEV || 
+                       window.location.hostname === 'localhost' || 
+                       window.location.hostname === '127.0.0.1' ||
+                       window.location.port !== '';
+
+  if (!isDevelopment) {
+    setInterval(() => {
+      registration.update();
+    }, 60000); // Check setiap 1 menit di production
+  }
 }
 
 /**
  * Menampilkan notifikasi ketika update tersedia
+ * Di development mode, tidak menampilkan notifikasi karena HMR sudah handle update
  */
 function showUpdateAvailableNotification() {
-  // Di sini Anda bisa menampilkan UI notification ke user
-  // untuk meminta mereka reload halaman
+  const isDevelopment = import.meta.env.DEV || 
+                       window.location.hostname === 'localhost' || 
+                       window.location.hostname === '127.0.0.1' ||
+                       window.location.port !== '';
+
+  // Skip notification di development mode
+  if (isDevelopment) {
+    console.log('[SW Register] Update available (development mode - HMR will handle)');
+    return;
+  }
+
+  // Di production, tampilkan notifikasi untuk reload
+  // Bisa diganti dengan UI notification yang lebih baik
   if (window.confirm('Versi baru aplikasi tersedia. Reload halaman?')) {
     window.location.reload();
   }

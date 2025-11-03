@@ -2,7 +2,31 @@
 import React from 'react';
 
 const CoffeeShopCard = ({ shop }) => {
-    const defaultImage = 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80';
+    // Fungsi untuk mendapatkan SVG placeholder inline (tidak perlu network request)
+    const getPlaceholderImage = (shopName) => {
+        // Generate SVG placeholder sebagai data URI - tidak perlu network request
+        const seed = shopName ? shopName.length % 10 : 0;
+        const colors = [
+            { bg: '4F46E5', text: 'FFFFFF' }, // indigo
+            { bg: '7C3AED', text: 'FFFFFF' }, // purple
+            { bg: 'EC4899', text: 'FFFFFF' }, // pink
+            { bg: 'F59E0B', text: 'FFFFFF' }, // amber
+            { bg: '10B981', text: 'FFFFFF' }, // green
+            { bg: '3B82F6', text: 'FFFFFF' }, // blue
+            { bg: '8B5CF6', text: 'FFFFFF' }, // violet
+            { bg: 'F97316', text: 'FFFFFF' }, // orange
+            { bg: '06B6D4', text: 'FFFFFF' }, // cyan
+            { bg: '6366F1', text: 'FFFFFF' }  // indigo
+        ];
+        const color = colors[seed % colors.length];
+        const svg = `
+            <svg width="800" height="400" xmlns="http://www.w3.org/2000/svg">
+                <rect width="800" height="400" fill="#${color.bg}"/>
+                <text x="50%" y="50%" font-family="Arial, sans-serif" font-size="48" fill="#${color.text}" text-anchor="middle" dy=".3em">☕ Coffee Shop</text>
+            </svg>
+        `.trim();
+        return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+    };
 
     const formatStatus = (status) => {
         if (!status) return null;
@@ -17,10 +41,11 @@ const CoffeeShopCard = ({ shop }) => {
 
     const statusInfo = formatStatus(shop.business_status);
     
-    // Mengambil foto dari shop.photos dan jika tidak ada, menggunakan gambar default
+    // Gunakan placeholder image (tidak perlu network request)
+    // Jika photos tidak di-comment, bisa tetap gunakan: shop.photos?.[0] || getPlaceholderImage(shop.name)
     const photoUrl = shop.photos && shop.photos.length > 0 
         ? shop.photos[0] 
-        : defaultImage;
+        : getPlaceholderImage(shop.name);
 
     return (
         <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group">
@@ -31,7 +56,9 @@ const CoffeeShopCard = ({ shop }) => {
                     className="w-full h-48 object-cover transform group-hover:scale-105 transition duration-300"
                     onError={(e) => {
                         e.target.onerror = null;
-                        e.target.src = defaultImage;  // Jika gambar gagal dimuat, tampilkan gambar default
+                        // Fallback ke SVG placeholder inline jika gagal
+                        const svg = '<svg width="800" height="400" xmlns="http://www.w3.org/2000/svg"><rect width="800" height="400" fill="#4F46E5"/><text x="50%" y="50%" font-family="Arial, sans-serif" font-size="48" fill="#FFFFFF" text-anchor="middle" dy=".3em">☕ Coffee Shop</text></svg>';
+                        e.target.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
                     }}
                 />
                 {shop.rating && (

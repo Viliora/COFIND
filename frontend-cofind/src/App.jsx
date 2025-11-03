@@ -5,18 +5,17 @@ import ShopList from './pages/ShopList';
 import ShopDetail from './pages/ShopDetail';
 import Favorite from './pages/Favorite';
 import About from './pages/About';
-import Navbar from './components/Navbar'; // IMPORT BARU
-import Footer from './components/Footer'; // IMPORT BARU
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 
 function App() {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-zinc-900">
-      
+    <div className="min-h-screen bg-gray-50 dark:bg-zinc-900 w-full">
       {/* 1. Navbar (fixed di atas) */}
       <Navbar /> 
       
       {/* 2. Main Content (padding untuk menghindari navbar) */}
-      <main className="pt-14 sm:pt-16"> 
+      <main className="pt-14 sm:pt-16 w-full"> 
         <Routes>
           <Route path="/" element={<ShopList />} /> 
           <Route path="/shop/:id" element={<ShopDetail />} />
