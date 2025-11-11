@@ -18,11 +18,86 @@ export default function ShopList() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const scrollContainerRef = useRef(null);
 
-  const scrollRight = () => {
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStateRef = useRef({ startX: 0, scrollLeft: 0 });
+
+  const addGrabbingCursor = () => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.classList.add('cursor-grabbing');
+    }
+  };
+
+  const removeGrabbingCursor = () => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.classList.remove('cursor-grabbing');
+    }
+  };
+
+  const handleMouseDown = (event) => {
     const container = scrollContainerRef.current;
     if (!container) return;
-    const scrollAmount = container.clientWidth * 0.8;
-    container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+
+    setIsDragging(true);
+    dragStateRef.current = {
+      startX: event.pageX - container.offsetLeft,
+      scrollLeft: container.scrollLeft,
+    };
+    addGrabbingCursor();
+  };
+
+  const handleMouseLeave = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    removeGrabbingCursor();
+  };
+
+  const handleMouseUp = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    removeGrabbingCursor();
+  };
+
+  const handleMouseMove = (event) => {
+    if (!isDragging) return;
+    event.preventDefault();
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const x = event.pageX - container.offsetLeft;
+    const walk = x - dragStateRef.current.startX;
+    container.scrollLeft = dragStateRef.current.scrollLeft - walk;
+  };
+
+  const handleTouchStart = (event) => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const touch = event.touches[0];
+    setIsDragging(true);
+    dragStateRef.current = {
+      startX: touch.pageX - container.offsetLeft,
+      scrollLeft: container.scrollLeft,
+    };
+    addGrabbingCursor();
+  };
+
+  const handleTouchMove = (event) => {
+    if (!isDragging) return;
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const touch = event.touches[0];
+    const x = touch.pageX - container.offsetLeft;
+    const walk = x - dragStateRef.current.startX;
+    container.scrollLeft = dragStateRef.current.scrollLeft - walk;
+  };
+
+  const handleTouchEnd = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    removeGrabbingCursor();
   };
 
   // Listen untuk online/offline events
@@ -129,7 +204,7 @@ export default function ShopList() {
       <main className="w-full py-4 sm:py-6 md:py-8 px-4 sm:px-6">
         <div className="flex items-center justify-between mb-4 sm:mb-6">
           <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 border-b pb-2 flex-1">
-            Coffee Shop Catalog ({filteredShops.length} found)
+            Coffee Shop Catalog ({filteredShops.length})
             {searchTerm && <span className="block sm:inline text-gray-500 dark:text-gray-400 text-sm sm:text-base md:text-lg mt-1 sm:mt-0"> - Search: "{searchTerm}"</span>}
           </h2>
           {isFromCache && !isLoading && (
@@ -183,7 +258,14 @@ export default function ShopList() {
           <div className="relative px-2 sm:px-0">
             <div
               ref={scrollContainerRef}
-              className="flex gap-3 sm:gap-4 md:gap-6 overflow-x-auto scroll-smooth pb-4 pr-12 sm:pr-16 snap-x snap-mandatory scrollbar-hide"
+              className="flex gap-3 sm:gap-4 md:gap-6 overflow-x-auto scroll-smooth pb-4 pr-12 sm:pr-16 snap-x snap-mandatory cursor-grab select-none"
+              onMouseDown={handleMouseDown}
+              onMouseLeave={handleMouseLeave}
+              onMouseUp={handleMouseUp}
+              onMouseMove={handleMouseMove}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
             >
               {filteredShops.map((shop) => (
                 <Link
@@ -195,17 +277,6 @@ export default function ShopList() {
                 </Link>
               ))}
             </div>
-
-            <button
-              type="button"
-              onClick={scrollRight}
-              className="hidden sm:block absolute right-0 top-1/2 -translate-y-1/2 bg-indigo-600 text-white p-2 md:p-3 rounded-full shadow-lg hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-colors"
-              aria-label="Scroll ke kanan"
-            >
-              <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
           </div>
         )}
 

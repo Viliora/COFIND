@@ -145,6 +145,8 @@ def get_place_details(place_id):
         params = {
             'place_id': place_id,
             'fields': 'name,rating,formatted_phone_number,formatted_address,geometry,photos,reviews,opening_hours,price_level,website',
+            'language': 'id',  # tampilkan data dalam Bahasa Indonesia jika tersedia
+            'reviews_sort': 'newest',  # urutkan ulasan dari yang terbaru (jika tersedia)
             'key': GOOGLE_PLACES_API_KEY
         }
 
