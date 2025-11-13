@@ -6,6 +6,7 @@ import { fetchWithCache } from '../utils/apiCache';
 // Konfigurasi API (mengikuti ShopList)
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 const USE_API = import.meta.env.VITE_USE_API === 'true';
+const MIN_REVIEWS = 10; // Maksimal jumlah reviews yang ditampilkan
 
 function ShopDetail() {
   const { id } = useParams();  // id akan mengambil place_id
@@ -45,9 +46,11 @@ function ShopDetail() {
                   : [],
               };
               setShop(normalized);
-              // Hanya tampilkan komentar yang punya teks
+              // Hanya tampilkan komentar yang punya teks, dan batasi maksimal 10 reviews
               const reviewsWithText = Array.isArray(detail.reviews)
-                ? detail.reviews.filter((r) => (r?.text || '').trim().length > 0)
+                ? detail.reviews
+                    .filter((r) => (r?.text || '').trim().length > 0)
+                    .slice(0, MIN_REVIEWS)
                 : [];
               setReviews(reviewsWithText);
               setIsLoading(false);
@@ -105,8 +108,8 @@ function ShopDetail() {
           <p className="text-lg sm:text-xl text-indigo-700 dark:text-indigo-400 font-semibold">⭐ {shop.rating || 'N/A'}</p>
           {shop.price_level && (
             <>
-              <p className="text-gray-400 dark:text-gray-500 hidden sm:inline">|</p>
-              <p className="text-base sm:text-lg text-green-600 dark:text-green-400">{'💰'.repeat(shop.price_level)}</p>
+              <p className="text-gray-400 dark:text-gray-500 hidden sm:inline"></p>
+              
             </>
           )}
         </div>
@@ -158,12 +161,80 @@ function ShopDetail() {
         </div>
       </div>
 
-      {/* Box Komentar / Reviews */}
+      {/* Static Map */}
       <div className="mt-6 sm:mt-8">
         <div className="bg-white dark:bg-zinc-800 p-4 sm:p-6 rounded-xl shadow border border-gray-200 dark:border-zinc-700">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4">
-            Komentar Pengunjung
+            📍 Lokasi
           </h2>
+          {shop.location ? (
+            <div className="rounded-lg overflow-hidden">
+              {(() => {
+                const lat = shop.location.lat;
+                const lng = shop.location.lng;
+                const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+                
+                // Build static map URL
+                const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=16&size=800x400&markers=color:red%7C${lat},${lng}&key=${apiKey}`;
+                
+                return (
+                  <>
+                    <img
+                      src={mapUrl}
+                      alt="Peta lokasi"
+                      className="w-full h-64 sm:h-80 object-cover rounded-lg"
+                      onError={(e) => {
+                        console.error('Static map failed to load:', e);
+                        const fallback = e.target.parentElement.querySelector('[data-fallback="true"]');
+                        if (fallback) fallback.style.display = 'flex';
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                    <div
+                      data-fallback="true"
+                      className="hidden w-full h-64 sm:h-80 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-zinc-700 dark:to-zinc-800 rounded-lg items-center justify-center flex-col gap-3"
+                    >
+                      <div className="text-center">
+                        <p className="text-2xl mb-2">📍</p>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Koordinat Lokasi:</p>
+                        <p className="text-lg font-mono font-semibold text-gray-900 dark:text-white">
+                          {lat.toFixed(6)}, {lng.toFixed(6)}
+                        </p>
+                        <a
+                          href={`https://www.google.com/maps/search/${lat},${lng}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block mt-3 px-3 py-1 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700 transition"
+                        >
+                          Buka di Google Maps
+                        </a>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          ) : (
+            <div className="w-full h-64 sm:h-80 bg-gray-200 dark:bg-zinc-700 rounded-lg flex items-center justify-center">
+              <p className="text-gray-600 dark:text-gray-400">Lokasi tidak tersedia</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Box Komentar / Reviews */}
+      <div className="mt-6 sm:mt-8">
+        <div className="bg-white dark:bg-zinc-800 p-4 sm:p-6 rounded-xl shadow border border-gray-200 dark:border-zinc-700">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+              Komentar Pengunjung
+            </h2>
+            {Array.isArray(reviews) && reviews.length > 0 && (
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                Menampilkan {reviews.length} dari {reviews.length} komentar
+              </span>
+            )}
+          </div>
 
           {/* Bila ada reviews dari Google Places */}
           {Array.isArray(reviews) && reviews.length > 0 ? (

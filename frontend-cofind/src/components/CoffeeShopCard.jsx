@@ -80,11 +80,6 @@ const CoffeeShopCard = ({ shop }) => {
                             {statusInfo.text}
                         </span>
                     )}
-                    {shop.price_level && (
-                        <span className="bg-blue-50 text-blue-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">
-                            {'$'.repeat(shop.price_level)}
-                        </span>
-                    )}
                     {shop.user_ratings_total > 0 && (
                         <span className="text-sm text-gray-500">
                             ({shop.user_ratings_total} reviews)
