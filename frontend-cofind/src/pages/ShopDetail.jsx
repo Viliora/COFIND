@@ -14,6 +14,8 @@ function ShopDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [reviews, setReviews] = useState([]);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [notification, setNotification] = useState(null);
 
   useEffect(() => {
     const loadShop = async () => {
@@ -83,6 +85,44 @@ function ShopDetail() {
     loadShop();
   }, [id]);
 
+  // Check if shop is favorited
+  useEffect(() => {
+    if (id) {
+      const favorites = JSON.parse(localStorage.getItem('favoriteShops') || '[]');
+      setIsFavorite(favorites.includes(id));
+    }
+  }, [id]);
+
+  const toggleFavorite = () => {
+    try {
+      const favorites = JSON.parse(localStorage.getItem('favoriteShops') || '[]');
+      if (isFavorite) {
+        // Remove from favorites
+        const updated = favorites.filter(fav => fav !== id);
+        localStorage.setItem('favoriteShops', JSON.stringify(updated));
+        setNotification({ type: 'removed', message: 'Dihapus dari favorit' });
+      } else {
+        // Add to favorites
+        if (!favorites.includes(id)) {
+          favorites.push(id);
+          localStorage.setItem('favoriteShops', JSON.stringify(favorites));
+        }
+        setNotification({ type: 'added', message: 'Ditambahkan ke favorit!' });
+      }
+      setIsFavorite(!isFavorite);
+    } catch (err) {
+      console.error('Error toggling favorite:', err);
+    }
+  };
+
+  // Auto-hide notification setelah 3 detik
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => setNotification(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
   if (isLoading) return (
     <div className="text-center mt-8 sm:mt-10 px-4">
       <p className="text-lg sm:text-xl text-indigo-600 dark:text-indigo-400">Memuat Detail Toko...</p>
@@ -100,8 +140,21 @@ function ShopDetail() {
   );
 
   return (
-    <div className="w-full py-4 sm:py-6 md:py-8 px-4 sm:px-6">
-      <Link to="/" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium mb-4 inline-block text-sm sm:text-base">← Kembali ke Daftar</Link>
+    <div className="w-full py-4 sm:py-6 md:py-8 px-4 sm:px-6 relative">
+      {/* Notification Toast */}
+      {notification && (
+        <div className={`fixed top-8 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg shadow-lg text-white font-medium z-50 transition-all duration-300 animate-fade-in ${
+          notification.type === 'added' 
+            ? 'bg-green-500 dark:bg-green-600' 
+            : 'bg-orange-500 dark:bg-orange-600'
+        }`}>
+          {notification.message}
+        </div>
+      )}
+      
+      <div className="flex items-center justify-between mb-4">
+        <Link to="/" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium inline-block text-sm sm:text-base">← Kembali ke Daftar</Link>
+      </div>
       <div className="bg-white dark:bg-zinc-800 p-4 sm:p-6 md:p-8 rounded-xl shadow-2xl border border-gray-200 dark:border-zinc-700">
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white mb-2 break-words">{shop.name}</h1>
         <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4">
@@ -277,6 +330,65 @@ function ShopDetail() {
           )}
         </div>
       </div>
+
+      {/* Floating Favorite Button - pojok kanan bawah */}
+      <button
+        onClick={toggleFavorite}
+        className="fixed bottom-8 right-8 transition-all duration-200 hover:scale-110 focus:outline-none bg-transparent border-0 p-0 group z-40"
+        title={isFavorite ? 'Hapus dari favorit' : 'Tambah ke favorit'}
+      >
+        <svg
+          width="48"
+          height="48"
+          viewBox="0 0 512 512"
+          xmlns="http://www.w3.org/2000/svg"
+          clipRule="evenodd"
+          fillRule="evenodd"
+        >
+          {isFavorite ? (
+            // After click: lingkaran putih + border pink + hati pink
+            <>
+              <circle 
+                cx="256" 
+                cy="256" 
+                r="256" 
+                fill="#ffffff"
+                className="group-hover:fill-pink-100 transition-colors duration-200"
+              />
+              <circle 
+                cx="256" 
+                cy="256" 
+                r="240" 
+                fill="none"
+                stroke="#ec4899"
+                strokeWidth="30"
+                className="group-hover:stroke-pink-600 transition-colors duration-200"
+              />
+              <path
+                d="m269.581 163.595c29.629-32.044 78.207-32.153 107.937 0 29.685 32.105 29.686 84.633.002 116.737-37.898 40.988-75.79 81.972-113.688 122.959-2.092 2.263-4.747 3.424-7.831 3.424s-5.738-1.161-7.831-3.424c-37.897-40.986-75.793-81.971-113.69-122.957-29.683-32.103-29.683-84.633 0-116.735 29.685-32.105 78.255-32.105 107.938-.002l13.581 14.688z"
+                fill="#ec4899"
+                className="group-hover:fill-pink-600 transition-colors duration-200"
+              />
+            </>
+          ) : (
+            // Default: lingkaran rose + hati putih
+            <>
+              <circle 
+                cx="256" 
+                cy="256" 
+                r="256" 
+                fill="#f43f5e"
+                className="group-hover:fill-rose-500 transition-colors duration-200"
+              />
+              <path
+                d="m269.581 163.595c29.629-32.044 78.207-32.153 107.937 0 29.685 32.105 29.686 84.633.002 116.737-37.898 40.988-75.79 81.972-113.688 122.959-2.092 2.263-4.747 3.424-7.831 3.424s-5.738-1.161-7.831-3.424c-37.897-40.986-75.793-81.971-113.69-122.957-29.683-32.103-29.683-84.633 0-116.735 29.685-32.105 78.255-32.105 107.938-.002l13.581 14.688z"
+                fill="#ffffff"
+                className="group-hover:fill-rose-200 transition-colors duration-200"
+              />
+            </>
+          )}
+        </svg>
+      </button>
     </div>
   );
 }
