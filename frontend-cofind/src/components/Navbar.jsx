@@ -144,6 +144,30 @@ const Navbar = () => {
                 </svg>
                 <span>About</span>
               </Link>
+
+              {/* AI Analyzer */}
+              <Link
+                to="/ai-analyzer"
+                className={`relative inline-flex items-center justify-center gap-1.5 rounded-md px-3 lg:px-4 py-1.5 lg:py-2 text-xs lg:text-sm font-medium transition-all duration-200 ${
+                  isActive('/ai-analyzer')
+                    ? 'bg-white dark:bg-zinc-700 text-gray-900 dark:text-white shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                <span>🤖 AI</span>
+              </Link>
+
+              {/* AI Chat */}
+              <Link
+                to="/ai-chat"
+                className={`relative inline-flex items-center justify-center gap-1.5 rounded-md px-3 lg:px-4 py-1.5 lg:py-2 text-xs lg:text-sm font-medium transition-all duration-200 ${
+                  isActive('/ai-chat')
+                    ? 'bg-white dark:bg-zinc-700 text-gray-900 dark:text-white shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                <span>💬 Chat</span>
+              </Link>
             </div>
           </div>
 
@@ -253,6 +277,28 @@ const Navbar = () => {
                   <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
                 About
+              </Link>
+              <Link
+                to="/ai-analyzer"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive('/ai-analyzer')
+                    ? 'bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800/50'
+                }`}
+              >
+                <span>🤖 AI Analyzer</span>
+              </Link>
+              <Link
+                to="/ai-chat"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive('/ai-chat')
+                    ? 'bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800/50'
+                }`}
+              >
+                <span>💬 AI Chat</span>
               </Link>
             </div>
           </div>

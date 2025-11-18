@@ -7,6 +7,8 @@ import Favorite from './pages/Favorite';
 import About from './pages/About';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import LLMAnalyzer from './components/LLMAnalyzer';
+import LLMChat from './components/LLMChat';
 
 function App() {
   return (
@@ -21,6 +23,8 @@ function App() {
           <Route path="/shop/:id" element={<ShopDetail />} />
           <Route path="/favorite" element={<Favorite />} />
           <Route path="/about" element={<About />} />
+          <Route path="/ai-analyzer" element={<LLMAnalyzer />} />
+          <Route path="/ai-chat" element={<LLMChat />} />
         </Routes>
       </main>
       
