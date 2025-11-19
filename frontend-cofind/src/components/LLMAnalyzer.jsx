@@ -2,16 +2,38 @@ import React, { useState } from 'react';
 
 const LLMAnalyzer = () => {
   const [input, setInput] = useState('');
-  const [task, setTask] = useState('analyze'); // analyze, summarize, recommend
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+  const FIXED_LOCATION = 'Pontianak'; // Lokasi fixed, tidak bisa diubah user
+  const FIXED_TASK = 'recommend'; // Task fixed: hanya rekomendasi
+
+  // Function untuk render text dengan markdown bold
+  const renderTextWithBold = (text) => {
+    if (!text) return null;
+    
+    // Split by **word** pattern untuk bold
+    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+    
+    return parts.map((part, index) => {
+      // Check jika part adalah bold (diapit **)
+      if (part.startsWith('**') && part.endsWith('**')) {
+        const boldText = part.slice(2, -2); // Remove ** dari kedua sisi
+        return (
+          <strong key={index} className="font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-1 rounded">
+            {boldText}
+          </strong>
+        );
+      }
+      return <span key={index}>{part}</span>;
+    });
+  };
 
   const handleAnalyze = async () => {
     if (!input.trim()) {
-      setError('Silakan masukkan teks untuk dianalisis');
+      setError('Silakan masukkan preferensi coffee shop Anda');
       return;
     }
 
@@ -27,7 +49,8 @@ const LLMAnalyzer = () => {
         },
         body: JSON.stringify({
           text: input,
-          task: task,
+          task: FIXED_TASK,
+          location: FIXED_LOCATION,
         }),
       });
 
@@ -52,70 +75,38 @@ const LLMAnalyzer = () => {
     setError(null);
   };
 
-  const getTaskLabel = () => {
-    switch (task) {
-      case 'summarize':
-        return 'Ringkasan';
-      case 'recommend':
-        return 'Rekomendasi';
-      default:
-        return 'Analisis';
-    }
-  };
-
   return (
     <div className="w-full max-w-2xl mx-auto p-4 sm:p-6">
       <div className="bg-white dark:bg-zinc-800 rounded-xl shadow-lg border border-gray-200 dark:border-zinc-700 p-6">
         {/* Header */}
         <div className="mb-6">
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            ☕ AI Coffee Assistant
+            ☕ Rekomendasi Coffee Shop AI
           </h2>
           <p className="text-gray-600 dark:text-gray-400 text-sm">
-            Jelaskan preferensi Anda, dan AI akan membantu menganalisis dan memberikan rekomendasi coffee shop terbaik
+            Jelaskan preferensi Anda, dan AI akan memberikan rekomendasi coffee shop terbaik di <span className="font-semibold text-indigo-600 dark:text-indigo-400">Pontianak</span> dengan <span className="font-semibold text-green-600 dark:text-green-400">bukti lengkap dari review pengunjung</span> (nama + komentar asli)
           </p>
         </div>
 
-        {/* Task Selector */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-900 dark:text-white mb-3">
-            Pilih Jenis Analisis:
-          </label>
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { value: 'analyze', label: '📊 Analisis', icon: '📊' },
-              { value: 'summarize', label: '📝 Ringkas', icon: '📝' },
-              { value: 'recommend', label: '🎯 Rekomendasikan', icon: '🎯' },
-            ].map((option) => (
-              <button
-                key={option.value}
-                onClick={() => setTask(option.value)}
-                className={`p-3 rounded-lg font-medium transition-all duration-200 text-sm ${
-                  task === option.value
-                    ? 'bg-indigo-600 text-white shadow-lg'
-                    : 'bg-gray-100 dark:bg-zinc-700 text-gray-900 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-zinc-600'
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Input Area */}
+        {/* Input Area - Keywords */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
-            Masukkan Teks:
+            🏷️ Kata Kunci Preferensi (pisahkan dengan koma):
           </label>
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Contoh: Saya suka coffee shop yang cozy, memiliki wifi, dan menu kopi specialty. Bagaimana saya mencari coffee shop yang tepat?"
-            className="w-full p-4 border border-gray-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none resize-none h-24 sm:h-32"
+            placeholder="wifi bagus, terminal banyak, cozy, tenang, harga murah, dll."
+            className="w-full p-4 border border-gray-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none resize-none h-24 sm:h-28"
           />
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Minimal 10 karakter
-          </p>
+          <div className="mt-2 flex items-start gap-2 text-xs text-gray-600 dark:text-gray-400">
+            <span className="flex-shrink-0">💡</span>
+            <div className="space-y-1">
+              <p className="font-medium">Masukkan kata kunci yang Anda cari, dipisah koma:</p>
+              <p className="text-gray-500 dark:text-gray-500">• <span className="italic">wifi bagus, terminal banyak, cozy</span></p>
+              <p className="text-gray-500 dark:text-gray-500">• Kata yang match akan ditampilkan dengan <strong className="font-bold text-gray-700 dark:text-gray-300">bold</strong> di hasil</p>
+            </div>
+          </div>
         </div>
 
         {/* Error Message */}
@@ -132,17 +123,17 @@ const LLMAnalyzer = () => {
           <button
             onClick={handleAnalyze}
             disabled={loading || !input.trim()}
-            className="flex-1 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+            className="flex-1 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
           >
             {loading ? (
               <>
                 <span className="animate-spin">⏳</span>
-                Menganalisis...
+                Mencari Rekomendasi...
               </>
             ) : (
               <>
-                <span>🤖</span>
-                Analisis dengan AI
+                <span>🎯</span>
+                Dapatkan Rekomendasi
               </>
             )}
           </button>
@@ -156,28 +147,42 @@ const LLMAnalyzer = () => {
 
         {/* Result Display */}
         {result && (
-          <div className="mt-6 p-6 bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg">
+          <div className="mt-6 p-6 bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border-2 border-green-200 dark:border-green-800 rounded-xl shadow-lg">
             <div className="mb-4">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-3">
-                <span>✨</span>
-                {getTaskLabel()} AI
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-3">
+                <span>🎯</span>
+                Rekomendasi Coffee Shop untuk Anda
               </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 pb-4 border-b border-gray-300 dark:border-gray-600">
-                Input: <span className="font-medium italic">{result.input}</span>
+              <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 mb-4 pb-3 border-b border-gray-300 dark:border-gray-600">
+                <span className="px-2 py-1 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-full font-medium">
+                  📍 Pontianak
+                </span>
+                <span className="px-2 py-1 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 rounded-full font-medium">
+                  ✓ Dengan Bukti Review
+                </span>
+              </div>
+              <p className="text-sm text-gray-700 dark:text-gray-300 italic bg-gray-50 dark:bg-zinc-800/50 p-3 rounded-lg">
+                <span className="font-semibold">Preferensi Anda:</span> {result.input}
               </p>
             </div>
 
-            {/* Analysis Result */}
-            <div className="bg-white dark:bg-zinc-800 p-4 rounded-lg border border-gray-200 dark:border-zinc-700">
-              <p className="text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-wrap">
-                {result.analysis || 'Tidak ada hasil analisis'}
-              </p>
+            {/* Analysis Result with Review Evidence & Bold Keywords */}
+            <div className="bg-white dark:bg-zinc-800 p-5 rounded-lg border border-gray-200 dark:border-zinc-700 shadow-sm">
+              <div className="text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-wrap text-base">
+                {result.analysis ? renderTextWithBold(result.analysis) : 'Tidak ada hasil rekomendasi'}
+              </div>
             </div>
 
-            {/* Timestamp */}
-            <p className="text-xs text-gray-500 dark:text-gray-500 mt-4 text-right">
-              {new Date(result.timestamp * 1000).toLocaleTimeString('id-ID')}
-            </p>
+            {/* Info Footer */}
+            <div className="mt-4 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                <span>🤖</span>
+                <span>Dianalisis oleh AI dengan data real-time dari Google Places</span>
+              </div>
+              <p className="text-gray-500 dark:text-gray-500">
+                {new Date(result.timestamp * 1000).toLocaleTimeString('id-ID')}
+              </p>
+            </div>
           </div>
         )}
 
@@ -189,12 +194,32 @@ const LLMAnalyzer = () => {
         )}
 
         {/* Tips */}
-        <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-          <h4 className="font-semibold text-blue-900 dark:text-blue-300 mb-2">💡 Tips:</h4>
-          <ul className="text-sm text-blue-800 dark:text-blue-400 space-y-1">
-            <li>• Jelaskan preferensi Anda dengan detail untuk hasil terbaik</li>
-            <li>• Gunakan "Rekomendasikan" untuk mendapat saran coffee shop spesifik</li>
-            <li>• Analisis AI berbasis teks dari Llama 2</li>
+        <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+          <h4 className="font-semibold text-amber-900 dark:text-amber-300 mb-2 flex items-center gap-2">
+            <span>💡</span>
+            Tips Kata Kunci yang Efektif:
+          </h4>
+          <ul className="text-sm text-amber-800 dark:text-amber-400 space-y-2">
+            <li className="flex items-start gap-2">
+              <span className="mt-0.5">✓</span>
+              <span><strong>Fasilitas:</strong> wifi bagus, terminal banyak, colokan, AC, kipas angin</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="mt-0.5">✓</span>
+              <span><strong>Suasana:</strong> cozy, tenang, ramai, aesthetic, instagramable</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="mt-0.5">✓</span>
+              <span><strong>Khusus:</strong> indoor smoking area, outdoor seating, live music, pet friendly</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="mt-0.5">✓</span>
+              <span><strong>Harga:</strong> harga terjangkau, murah, affordable, mahal</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="mt-0.5">✓</span>
+              <span>Kata kunci yang <strong className="text-indigo-600 dark:text-indigo-400">match</strong> akan ditampilkan <strong>bold</strong> di hasil! 🎯</span>
+            </li>
           </ul>
         </div>
       </div>

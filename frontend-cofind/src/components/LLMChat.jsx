@@ -10,6 +10,7 @@ const LLMChat = () => {
     },
   ]);
   const [input, setInput] = useState('');
+  const [location, setLocation] = useState('Pontianak'); // Lokasi default
   const [loading, setLoading] = useState(false);
   const [context, setContext] = useState('');
   const messagesEndRef = useRef(null);
@@ -49,6 +50,7 @@ const LLMChat = () => {
         body: JSON.stringify({
           message: input,
           context: context || undefined,
+          location: location,
         }),
       });
 
@@ -104,6 +106,7 @@ const LLMChat = () => {
     ]);
     setContext('');
     setError(null);
+    setLocation('Pontianak');
   };
 
   const getMessageStyle = (sender) => {
@@ -122,9 +125,20 @@ const LLMChat = () => {
         {/* Header */}
         <div className="bg-gradient-to-r from-indigo-600 to-blue-600 p-4 sm:p-6 text-white">
           <h2 className="text-2xl sm:text-3xl font-bold mb-1">☕ AI Coffee Chat</h2>
-          <p className="text-indigo-100 text-sm">
+          <p className="text-indigo-100 text-sm mb-3">
             Percakapan interaktif dengan AI untuk menemukan coffee shop impian Anda
           </p>
+          {/* Location selector di header */}
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-indigo-100">📍</label>
+            <input
+              type="text"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="Lokasi pencarian"
+              className="flex-1 px-3 py-1.5 rounded-md bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-indigo-200 text-sm focus:outline-none focus:ring-2 focus:ring-white/50"
+            />
+          </div>
         </div>
 
         {/* Messages Container */}
