@@ -313,7 +313,7 @@ def get_place_details(place_id):
         # Menggunakan place_id untuk mendapatkan detail tempat
         params = {
             'place_id': place_id,
-            'fields': 'name,rating,formatted_phone_number,formatted_address,geometry,photos,reviews,opening_hours,price_level,website',
+            'fields': 'place_id,name,rating,formatted_phone_number,formatted_address,geometry,photos,reviews,opening_hours,price_level,website,user_ratings_total',
             'language': 'id',  # tampilkan data dalam Bahasa Indonesia jika tersedia
             'reviews_sort': 'newest',  # urutkan ulasan dari yang terbaru (jika tersedia)
             'key': GOOGLE_PLACES_API_KEY
@@ -421,6 +421,10 @@ def _fetch_coffeeshops_with_reviews_context(location_str, use_cache=True, max_sh
                 price_level = detail.get('price_level', shop.get('price_level'))
                 reviews = detail.get('reviews', [])
                 
+                # Generate Google Maps URL - gunakan place_id dari detail atau dari shop
+                actual_place_id = detail.get('place_id', place_id)
+                maps_url = f"https://www.google.com/maps/place/?q=place_id:{actual_place_id}"
+                
                 # Format entry dengan reviews
                 context_lines.append(f"{i}. {name}")
                 context_lines.append(f"   • Rating: {rating}/5.0 ({total_ratings} reviews)")
@@ -430,6 +434,7 @@ def _fetch_coffeeshops_with_reviews_context(location_str, use_cache=True, max_sh
                     context_lines.append(f"   • Harga: {price_indicator} (Level {price_level}/4)")
                 
                 context_lines.append(f"   • Alamat: {address}")
+                context_lines.append(f"   • Google Maps: {maps_url}")
                 
                 # REVIEWS - Ambil 3-5 review terbaik sebagai bukti
                 if reviews:
@@ -651,7 +656,7 @@ def llm_analyze():
         print(f"[LLM] Total context length: {len(places_context)} characters")
         
         # Step 2: Build system prompt dengan context REVIEWS untuk bukti rekomendasi
-        system_prompt = f"""Anda adalah asisten rekomendasi coffee shop yang ahli dan profesional.
+        system_prompt = f"""Anda adalah asisten rekomendasi coffee shop yang ahli dan profesional. Memberikan jawaban menggunakan data dengan bukti nyata dari review yang ada di places api. Jika anda tidak yakin atau data tidak ada, jawab: "Saya tidak menemukan informasi yang sesuai. jangan menambahkan output jika tidak ada "
 
 DATA COFFEE SHOP DI {location.upper()} DENGAN REVIEW PENGUNJUNG LENGKAP DARI GOOGLE PLACES:
 {places_context}
@@ -702,6 +707,7 @@ Berikan 2-3 rekomendasi coffee shop terbaik yang MATCH dengan kata kunci di atas
 FORMAT WAJIB untuk setiap rekomendasi:
 🏆 [Nama Coffee Shop] - Rating X/5.0
 📍 Alamat: [alamat lengkap]
+🗺️ Google Maps: [URL dari data]
 💰 Harga: [level harga]
 
 ✅ Mengapa Cocok dengan Kata Kunci Anda:

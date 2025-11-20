@@ -10,12 +10,13 @@ const LLMAnalyzer = () => {
   const FIXED_LOCATION = 'Pontianak'; // Lokasi fixed, tidak bisa diubah user
   const FIXED_TASK = 'recommend'; // Task fixed: hanya rekomendasi
 
-  // Function untuk render text dengan markdown bold
+  // Function untuk render text dengan markdown bold dan clickable URL
   const renderTextWithBold = (text) => {
     if (!text) return null;
     
-    // Split by **word** pattern untuk bold
-    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+    // Split by **word** pattern untuk bold DAN URL pattern untuk links
+    // Regex: (\*\*[^*]+\*\*) untuk bold, (https?://[^\s]+) untuk URL
+    const parts = text.split(/(\*\*[^*]+\*\*|https?:\/\/[^\s]+)/g);
     
     return parts.map((part, index) => {
       // Check jika part adalah bold (diapit **)
@@ -25,6 +26,20 @@ const LLMAnalyzer = () => {
           <strong key={index} className="font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-1 rounded">
             {boldText}
           </strong>
+        );
+      }
+      // Check jika part adalah URL (http atau https)
+      if (part.match(/^https?:\/\/[^\s]+$/)) {
+        return (
+          <a 
+            key={index} 
+            href={part} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline font-medium transition-colors duration-200"
+          >
+            {part}
+          </a>
         );
       }
       return <span key={index}>{part}</span>;
