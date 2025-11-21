@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import SearchBar from '../components/SearchBar';
 import CoffeeShopCard from '../components/CoffeeShopCard';
-import placesData from '../data/places.json';
-import { fetchWithCache, getAllCachedCoffeeShops, initAPICache } from '../utils/apiCache';
+import { preloadFeaturedImages } from '../utils/imagePreloader';
 
 // Konfigurasi API (optional - bisa di-set via environment variable)
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
@@ -16,7 +15,9 @@ export default function ShopList() {
   const [error, setError] = useState(null);
   const [isFromCache, setIsFromCache] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [activeFilter, setActiveFilter] = useState('all'); // Filter state
   const scrollContainerRef = useRef(null);
+  const featuredScrollRef = useRef(null);
 
   const [isDragging, setIsDragging] = useState(false);
   const dragStateRef = useRef({ startX: 0, scrollLeft: 0 });
@@ -115,57 +116,38 @@ export default function ShopList() {
   }, []);
 
   useEffect(() => {
-    // Initialize API Cache
-    initAPICache();
-    
     const loadShops = async () => {
       try {
         setIsLoading(true);
         setError(null);
         
-        // Strategy: API First (jika enabled), lalu Cache, lalu places.json
+        // Direct API call without caching
         if (USE_API && isOnline) {
           try {
-            // Coba fetch dari API dengan caching
             const apiUrl = `${API_BASE}/api/search/coffeeshops?lat=-0.026330&lng=109.342506`;
-            const result = await fetchWithCache(apiUrl);
+            console.log('[ShopList] Fetching from API:', apiUrl);
             
-            if (result.data && Array.isArray(result.data.data) && result.data.data.length > 0) {
-              console.log('[ShopList] Loading from API', result.fromCache ? '(cached)' : '(network)');
-              setCoffeeShops(result.data.data);
-              setIsFromCache(result.fromCache);
+            const response = await fetch(apiUrl);
+            
+            if (!response.ok) {
+              throw new Error(`API returned status ${response.status}`);
+            }
+            
+            const result = await response.json();
+            
+            if (result.data && Array.isArray(result.data) && result.data.length > 0) {
+              console.log('[ShopList] Loaded from API:', result.data.length, 'shops');
+              setCoffeeShops(result.data);
+              setIsFromCache(false);
               setIsLoading(false);
               return;
             }
           } catch (apiError) {
-            console.warn('[ShopList] API fetch failed, trying cache:', apiError.message);
-          }
-        }
-        
-        // Fallback 1: Coba dari IndexedDB cache
-        const cachedData = await getAllCachedCoffeeShops();
-        if (cachedData && Array.isArray(cachedData.data) && cachedData.data.length > 0) {
-          console.log('[ShopList] Loading from IndexedDB cache');
-          setCoffeeShops(cachedData.data);
-          setIsFromCache(true);
-          setIsLoading(false);
-          return;
-        }
-        
-        // Fallback 2: Gunakan data dari places.json (static)
-        if (placesData && Array.isArray(placesData.data) && placesData.data.length > 0) {
-          console.log('[ShopList] Loading from places.json (fallback)');
-          setCoffeeShops(placesData.data);
-          setIsFromCache(false);
-          setIsLoading(false);
-          
-          // Pre-cache places.json data untuk offline access
-          if (USE_API) {
-            const { preCacheCoffeeShops } = await import('../utils/apiCache');
-            preCacheCoffeeShops(placesData);
+            console.error('[ShopList] API fetch failed:', apiError.message);
+            throw new Error('Unable to load coffee shops. Please check your internet connection and ensure the backend is running.');
           }
         } else {
-          throw new Error('Data tidak ditemukan');
+          throw new Error('API is disabled or you are offline. Please check your connection.');
         }
       } catch (err) {
         console.error("Error loading data:", err);
@@ -178,9 +160,80 @@ export default function ShopList() {
     loadShops();
   }, [isOnline]); // Re-run saat online status berubah
 
-  const filteredShops = coffeeShops.filter(shop =>
-    shop.name.toLowerCase().includes(searchTerm.toLowerCase())
+  // Dapatkan Featured Coffee Shops (Top 5 berdasarkan scoring) - menggunakan useMemo untuk optimasi
+  const featuredShops = useMemo(() => {
+    if (coffeeShops.length === 0) return [];
+    
+    const calculateFeaturedScore = (shop) => {
+      const rating = shop.rating || 0;
+      const reviews = shop.user_ratings_total || 0;
+      const maxReviews = Math.max(...coffeeShops.map(s => s.user_ratings_total || 0));
+      const normalizedReviews = maxReviews > 0 ? reviews / maxReviews : 0;
+      const hasCompleteData = shop.address && shop.rating && shop.user_ratings_total ? 1 : 0.5;
+      
+      // Scoring: rating (40%) + popularity (30%) + data completeness (30%)
+      return (rating * 0.4) + (normalizedReviews * 5 * 0.3) + (hasCompleteData * 5 * 0.3);
+    };
+
+    return coffeeShops
+      .filter(shop => shop.rating >= 4.0) // Minimal rating 4.0
+      .map(shop => ({ ...shop, featuredScore: calculateFeaturedScore(shop) }))
+      .sort((a, b) => b.featuredScore - a.featuredScore)
+      .slice(0, 5);
+  }, [coffeeShops]);
+
+  // Filter berdasarkan kategori
+  const getFilteredShopsByCategory = (shops) => {
+    switch (activeFilter) {
+      case 'top-rated':
+        return shops.filter(shop => shop.rating >= 4.5);
+      case 'popular':
+        return shops.sort((a, b) => (b.user_ratings_total || 0) - (a.user_ratings_total || 0));
+      case 'budget':
+        return shops.filter(shop => shop.price_level && shop.price_level <= 2);
+      case 'premium':
+        return shops.filter(shop => shop.price_level && shop.price_level >= 3);
+      case 'hidden-gems':
+        return shops.filter(shop => shop.rating >= 4.3 && (shop.user_ratings_total || 0) < 200);
+      default:
+        return shops;
+    }
+  };
+
+  // Filter berdasarkan search dan kategori
+  const filteredShops = getFilteredShopsByCategory(
+    coffeeShops.filter(shop =>
+      shop.name.toLowerCase().includes(searchTerm.toLowerCase())
+    )
   );
+
+  // Statistics
+  const stats = {
+    total: coffeeShops.length,
+    avgRating: coffeeShops.length > 0 
+      ? (coffeeShops.reduce((sum, shop) => sum + (shop.rating || 0), 0) / coffeeShops.length).toFixed(1)
+      : 0,
+    topRated: coffeeShops.filter(shop => shop.rating >= 4.5).length,
+    totalReviews: coffeeShops.reduce((sum, shop) => sum + (shop.user_ratings_total || 0), 0),
+  };
+
+  // Preload featured images setelah data dimuat
+  useEffect(() => {
+    if (featuredShops.length > 0 && !isLoading) {
+      // Preload featured images dengan delay kecil agar tidak mengganggu initial render
+      const timer = setTimeout(() => {
+        preloadFeaturedImages(featuredShops)
+          .then(() => {
+            console.log('[ShopList] Featured images preloaded successfully');
+          })
+          .catch((err) => {
+            console.warn('[ShopList] Some featured images failed to preload:', err);
+          });
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [featuredShops, isLoading]); // featuredShops sudah di-memoize, aman digunakan sebagai dependency
 
   if (isLoading) {
     return (
@@ -202,9 +255,164 @@ export default function ShopList() {
       <SearchBar setSearchTerm={setSearchTerm} />
 
       <main className="w-full py-4 sm:py-6 md:py-8 px-4 sm:px-6">
+        
+        {/* Statistics Cards */}
+        {!error && !isLoading && coffeeShops.length > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+            <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-4 sm:p-5 text-white shadow-lg hover:shadow-xl transition-shadow">
+              <div className="text-2xl sm:text-3xl font-bold mb-1">{stats.total}+</div>
+              <div className="text-xs sm:text-sm opacity-90">Coffee Shops</div>
+              <div className="text-xs mt-1 opacity-75">di Pontianak</div>
+            </div>
+            
+            <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-4 sm:p-5 text-white shadow-lg hover:shadow-xl transition-shadow">
+              <div className="text-2xl sm:text-3xl font-bold mb-1 flex items-center">
+                ⭐ {stats.avgRating}
+              </div>
+              <div className="text-xs sm:text-sm opacity-90">Rata-rata Rating</div>
+              <div className="text-xs mt-1 opacity-75">dari semua review</div>
+            </div>
+            
+            <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-4 sm:p-5 text-white shadow-lg hover:shadow-xl transition-shadow">
+              <div className="text-2xl sm:text-3xl font-bold mb-1">{stats.topRated}</div>
+              <div className="text-xs sm:text-sm opacity-90">Top Rated</div>
+              <div className="text-xs mt-1 opacity-75">rating ≥ 4.5</div>
+            </div>
+            
+            <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl p-4 sm:p-5 text-white shadow-lg hover:shadow-xl transition-shadow">
+              <div className="text-2xl sm:text-3xl font-bold mb-1">{stats.totalReviews.toLocaleString()}</div>
+              <div className="text-xs sm:text-sm opacity-90">Total Reviews</div>
+              <div className="text-xs mt-1 opacity-75">dari pengguna</div>
+            </div>
+          </div>
+        )}
+
+        {/* Featured Coffee Shops */}
+        {!error && !isLoading && featuredShops.length > 0 && !searchTerm && (
+          <div className="mb-8 sm:mb-10">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                <span className="text-2xl">🏆</span>
+                Featured Coffee Shops
+              </h2>
+              <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
+                Top {featuredShops.length}
+              </span>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Dipilih berdasarkan rating tinggi, popularitas, dan kelengkapan informasi
+            </p>
+            
+            <div className="relative">
+              <div
+                ref={featuredScrollRef}
+                className="flex gap-4 overflow-x-auto scroll-smooth pb-4 snap-x snap-mandatory"
+              >
+                {featuredShops.map((shop, index) => (
+                  <Link
+                    key={shop.place_id}
+                    to={`/shop/${shop.place_id}`}
+                    className="relative block hover:shadow-2xl transition duration-300 min-w-[280px] sm:min-w-[320px] md:min-w-[350px] shrink-0 snap-start group"
+                  >
+                    <div className="absolute -top-2 -left-2 z-10 bg-gradient-to-r from-yellow-400 to-orange-500 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shadow-lg">
+                      {index + 1}
+                    </div>
+                    <div className="relative">
+                      <CoffeeShopCard shop={shop} />
+                      <div className="absolute top-2 right-2 bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full text-xs font-bold shadow-md">
+                        ⭐ Featured
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Quick Filter Categories */}
+        {!error && !isLoading && coffeeShops.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-200 mb-3">
+              Filter Cepat
+            </h3>
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+              <button
+                onClick={() => setActiveFilter('all')}
+                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                  activeFilter === 'all'
+                    ? 'bg-indigo-600 text-white shadow-lg scale-105'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                🏠 Semua ({coffeeShops.length})
+              </button>
+              
+              <button
+                onClick={() => setActiveFilter('top-rated')}
+                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                  activeFilter === 'top-rated'
+                    ? 'bg-indigo-600 text-white shadow-lg scale-105'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                ⭐ Top Rated ({coffeeShops.filter(s => s.rating >= 4.5).length})
+              </button>
+              
+              <button
+                onClick={() => setActiveFilter('popular')}
+                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                  activeFilter === 'popular'
+                    ? 'bg-indigo-600 text-white shadow-lg scale-105'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                🔥 Populer
+              </button>
+              
+              <button
+                onClick={() => setActiveFilter('budget')}
+                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                  activeFilter === 'budget'
+                    ? 'bg-indigo-600 text-white shadow-lg scale-105'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                💵 Budget Friendly ({coffeeShops.filter(s => s.price_level && s.price_level <= 2).length})
+              </button>
+              
+              <button
+                onClick={() => setActiveFilter('premium')}
+                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                  activeFilter === 'premium'
+                    ? 'bg-indigo-600 text-white shadow-lg scale-105'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                💎 Premium ({coffeeShops.filter(s => s.price_level && s.price_level >= 3).length})
+              </button>
+              
+              <button
+                onClick={() => setActiveFilter('hidden-gems')}
+                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                  activeFilter === 'hidden-gems'
+                    ? 'bg-indigo-600 text-white shadow-lg scale-105'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                💎 Hidden Gems ({coffeeShops.filter(s => s.rating >= 4.3 && (s.user_ratings_total || 0) < 200).length})
+              </button>
+            </div>
+          </div>
+        )}
         <div className="flex items-center justify-between mb-4 sm:mb-6">
           <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 border-b pb-2 flex-1">
-            Coffee Shop Catalog ({filteredShops.length})
+            {activeFilter === 'all' ? 'Semua Coffee Shop' : 
+             activeFilter === 'top-rated' ? '⭐ Top Rated Coffee Shops' :
+             activeFilter === 'popular' ? '🔥 Coffee Shop Populer' :
+             activeFilter === 'budget' ? '💵 Budget Friendly' :
+             activeFilter === 'premium' ? '💎 Premium Coffee Shops' :
+             activeFilter === 'hidden-gems' ? '💎 Hidden Gems' : 'Coffee Shop Catalog'} ({filteredShops.length})
             {searchTerm && <span className="block sm:inline text-gray-500 dark:text-gray-400 text-sm sm:text-base md:text-lg mt-1 sm:mt-0"> - Search: "{searchTerm}"</span>}
           </h2>
           {isFromCache && !isLoading && (
@@ -238,15 +446,12 @@ export default function ShopList() {
                     Try Again →
                   </button>
                   <button
-                    onClick={async () => {
-                      // Clear cache dan reload
-                      const { clearCache } = await import('../utils/cacheManager');
-                      await clearCache('content');
+                    onClick={() => {
                       window.location.reload();
                     }}
                     className="text-sm px-3 py-1.5 bg-gray-600 hover:bg-gray-700 text-white rounded-md font-medium transition-colors"
                   >
-                    Clear Cache & Reload
+                    Reload Page
                   </button>
                 </div>
               </div>

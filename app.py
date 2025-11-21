@@ -31,59 +31,7 @@ else:
 print(f"Using API Key: {GOOGLE_PLACES_API_KEY}")
 
 # ============================================================================
-# CACHING SYSTEM untuk LLM Context Data
-# ============================================================================
-# In-memory cache untuk menghindari repeated API calls
-# Format: { 'location_name': { 'data': [...], 'timestamp': datetime, 'expires_at': datetime } }
-COFFEE_SHOPS_CACHE = {}
-CACHE_TTL_MINUTES = int(os.getenv('CACHE_TTL_MINUTES', 30))  # Default 30 menit
-
-def get_cache_key(location_str):
-    """Generate cache key dari location string (normalized)"""
-    return location_str.lower().strip()
-
-def is_cache_valid(cache_entry):
-    """Check apakah cache masih valid (belum expired)"""
-    if not cache_entry:
-        return False
-    return datetime.now() < cache_entry.get('expires_at', datetime.min)
-
-def get_cached_coffee_shops(location_str):
-    """Ambil data coffee shops dari cache jika masih valid"""
-    cache_key = get_cache_key(location_str)
-    cache_entry = COFFEE_SHOPS_CACHE.get(cache_key)
-    
-    if is_cache_valid(cache_entry):
-        age_seconds = (datetime.now() - cache_entry['timestamp']).total_seconds()
-        print(f"[CACHE HIT] Using cached data for '{location_str}' (age: {age_seconds:.0f}s)")
-        return cache_entry['data']
-    
-    print(f"[CACHE MISS] No valid cache for '{location_str}'")
-    return None
-
-def set_cached_coffee_shops(location_str, data):
-    """Simpan data coffee shops ke cache dengan TTL"""
-    cache_key = get_cache_key(location_str)
-    now = datetime.now()
-    expires_at = now + timedelta(minutes=CACHE_TTL_MINUTES)
-    
-    COFFEE_SHOPS_CACHE[cache_key] = {
-        'data': data,
-        'timestamp': now,
-        'expires_at': expires_at
-    }
-    print(f"[CACHE SET] Cached data for '{location_str}' (expires in {CACHE_TTL_MINUTES} min)")
-
-def clear_cache(location_str=None):
-    """Clear cache untuk lokasi tertentu atau semua cache"""
-    if location_str:
-        cache_key = get_cache_key(location_str)
-        if cache_key in COFFEE_SHOPS_CACHE:
-            del COFFEE_SHOPS_CACHE[cache_key]
-            print(f"[CACHE CLEAR] Cleared cache for '{location_str}'")
-    else:
-        COFFEE_SHOPS_CACHE.clear()
-        print("[CACHE CLEAR] Cleared all cache")
+# CACHING SYSTEM DISABLED - Using direct API calls
 # ============================================================================
 
 # Enable CORS for /api/*
@@ -101,69 +49,68 @@ def test_api():
         "status": "ok",
         "message": "Flask server is running",
         "timestamp": time.time(),
-        "hf_client_ready": hf_client is not None,
-        "cache_ttl_minutes": CACHE_TTL_MINUTES,
-        "cached_locations": len(COFFEE_SHOPS_CACHE)
+        "hf_client_ready": hf_client is not None
     })
 
-# Endpoint untuk melihat status cache
-@app.route('/api/cache/status', methods=['GET'])
-def cache_status():
-    """Endpoint untuk melihat status cache LLM context"""
-    try:
-        cache_info = []
-        now = datetime.now()
-        
-        for location, entry in COFFEE_SHOPS_CACHE.items():
-            age_seconds = (now - entry['timestamp']).total_seconds()
-            expires_in_seconds = (entry['expires_at'] - now).total_seconds()
-            
-            cache_info.append({
-                'location': location,
-                'cached_at': entry['timestamp'].isoformat(),
-                'expires_at': entry['expires_at'].isoformat(),
-                'age_seconds': int(age_seconds),
-                'expires_in_seconds': int(expires_in_seconds),
-                'is_valid': is_cache_valid(entry),
-                'data_size': len(entry['data'])
-            })
-        
-        return jsonify({
-            'status': 'success',
-            'cache_ttl_minutes': CACHE_TTL_MINUTES,
-            'total_cached_locations': len(COFFEE_SHOPS_CACHE),
-            'cache_entries': cache_info
-        })
-    except Exception as e:
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
+# Cache endpoints removed - caching disabled
 
-# Endpoint untuk clear cache
-@app.route('/api/cache/clear', methods=['POST'])
-def clear_cache_endpoint():
-    """Endpoint untuk manual clear cache"""
+# DEBUG Endpoint untuk melihat raw pagination response
+@app.route('/api/debug/pagination', methods=['GET'])
+def debug_pagination():
+    """Debug endpoint untuk melihat bagaimana pagination bekerja"""
     try:
-        data = request.get_json() or {}
-        location = data.get('location')
+        lat = request.args.get('lat', type=float, default=-0.026330)
+        lng = request.args.get('lng', type=float, default=109.342506)
         
-        if location:
-            clear_cache(location)
-            message = f"Cache cleared for location: {location}"
-        else:
-            clear_cache()
-            message = "All cache cleared"
+        base_url = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json'
+        params = {
+            'location': f"{lat},{lng}",
+            'radius': '5000',
+            'type': 'cafe',
+            'keyword': 'coffee',
+            'key': GOOGLE_PLACES_API_KEY
+        }
+        
+        all_pages = []
+        page_number = 1
+        
+        while page_number <= 3:  # Max 3 pages
+            print(f"[DEBUG PAGINATION] Fetching page {page_number}")
+            response = requests.get(base_url, params=params)
+            data = response.json()
+            
+            page_info = {
+                'page_number': page_number,
+                'status': data.get('status'),
+                'results_count': len(data.get('results', [])),
+                'has_next_page': 'next_page_token' in data,
+                'next_page_token': data.get('next_page_token', None),
+                'shop_names': [r.get('name') for r in data.get('results', [])]
+            }
+            
+            all_pages.append(page_info)
+            
+            # Check for next page
+            next_page_token = data.get('next_page_token')
+            if next_page_token and page_number < 3:
+                time.sleep(2)
+                params['pagetoken'] = next_page_token
+                page_number += 1
+            else:
+                break
         
         return jsonify({
             'status': 'success',
-            'message': message,
-            'remaining_cached_locations': len(COFFEE_SHOPS_CACHE)
+            'total_pages': len(all_pages),
+            'total_shops': sum(p['results_count'] for p in all_pages),
+            'pages': all_pages
         })
     except Exception as e:
+        import traceback
         return jsonify({
             'status': 'error',
-            'message': str(e)
+            'message': str(e),
+            'traceback': traceback.format_exc()
         }), 500
 
 # DEBUG Endpoint untuk melihat raw review context
@@ -175,7 +122,7 @@ def debug_reviews_context():
         max_shops = int(request.args.get('max_shops', 5))
         
         print(f"[DEBUG] Fetching reviews context for: {location}")
-        context = _fetch_coffeeshops_with_reviews_context(location, use_cache=False, max_shops=max_shops)
+        context = _fetch_coffeeshops_with_reviews_context(location, max_shops=max_shops)
         
         return jsonify({
             'status': 'success',
@@ -237,15 +184,18 @@ def search_coffeeshops():
             }
 
         coffee_shops = []  # Data coffee shop yang akan dikirim ke frontend
+        page_number = 1
         while True:
-            print(f"Making request to Google Places API: {base_url} with params {params}")
+            print(f"\n[PAGE {page_number}] Making request to Google Places API: {base_url}")
+            print(f"[PAGE {page_number}] Params: {params}")
             response = requests.get(base_url, params=params)
             data = response.json()
 
-            print(f"Response status: {data.get('status')}, error_message: {data.get('error_message')}")
+            print(f"[PAGE {page_number}] Response status: {data.get('status')}, error_message: {data.get('error_message')}")
 
             if data.get('status') == 'OK':
                 results = data.get('results', [])
+                print(f"[PAGE {page_number}] Found {len(results)} coffee shops")
                 for place in results:
                     coffee_shop = {
                         'place_id': place.get('place_id'),
@@ -259,25 +209,35 @@ def search_coffeeshops():
                         'photos': []  # Start with empty list for photos
                     }
 
-                    # Cek apakah ada foto dan ambil foto URL
-                    if 'photos' in place:
-                        for photo in place['photos']:
-                            photo_reference = photo.get('photo_reference')
-                            if photo_reference:
+                    # Cek apakah ada foto dan ambil foto URL (HANYA 1 FOTO untuk optimasi)
+                    if 'photos' in place and len(place['photos']) > 0:
+                        # Ambil hanya foto pertama untuk menghindari socket exhaustion
+                        photo = place['photos'][0]
+                        photo_reference = photo.get('photo_reference')
+                        if photo_reference:
+                            try:
                                 # Ambil URL foto menggunakan fungsi get_place_photo
                                 photo_url = get_place_photo(photo_reference)
                                 if photo_url:
                                     coffee_shop['photos'].append(photo_url)
+                            except Exception as photo_error:
+                                # Jika gagal ambil foto, skip saja (tidak critical)
+                                print(f"[WARNING] Failed to fetch photo for {coffee_shop['name']}: {photo_error}")
+                                pass
 
                     coffee_shops.append(coffee_shop)
 
                 # Cek apakah ada halaman berikutnya
                 next_page_token = data.get('next_page_token')
                 if next_page_token:
+                    print(f"[PAGE {page_number}] Next page token found: {next_page_token[:20]}...")
+                    print(f"[PAGE {page_number}] Total coffee shops so far: {len(coffee_shops)}")
                     # Menambahkan penundaan sebelum mengambil halaman berikutnya
                     time.sleep(2)  # Delay untuk memastikan next_page_token valid
                     params['pagetoken'] = next_page_token  # Gunakan token untuk halaman berikutnya
+                    page_number += 1
                 else:
+                    print(f"[PAGE {page_number}] No more pages. Total coffee shops: {len(coffee_shops)}")
                     break  # Jika tidak ada halaman berikutnya, hentikan pengulangan
             else:
                 error_message = f"Google Places API error: {data.get('status')} - {data.get('error_message', 'Unknown error')}"
@@ -341,6 +301,9 @@ def get_place_details(place_id):
             'message': error_message
         }
 
+# Session untuk reuse connections (menghindari socket exhaustion)
+photo_session = requests.Session()
+
 # Fungsi untuk mendapatkan foto tempat dari Google Places API
 def get_place_photo(photo_reference):
     base_url = "https://maps.googleapis.com/maps/api/place/photo"
@@ -349,34 +312,31 @@ def get_place_photo(photo_reference):
         'photo_reference': photo_reference,  # Gunakan photo_reference dari respons API
         'key': GOOGLE_PLACES_API_KEY  # Gunakan API Key yang valid
     }
-    response = requests.get(base_url, params=params)
-    if response.status_code == 200:
-        return response.url  # Kembalikan URL foto
-    else:
-        return None  # Jika gagal, kembalikan None
+    try:
+        # Gunakan session untuk reuse connection
+        response = photo_session.get(base_url, params=params, timeout=5)
+        if response.status_code == 200:
+            return response.url  # Kembalikan URL foto
+        else:
+            return None  # Jika gagal, kembalikan None
+    except Exception as e:
+        print(f"[WARNING] Photo fetch error: {e}")
+        return None
 
 # Helper function untuk fetch coffee shops dengan REVIEWS untuk LLM context
-def _fetch_coffeeshops_with_reviews_context(location_str, use_cache=True, max_shops=10):
+def _fetch_coffeeshops_with_reviews_context(location_str, max_shops=10):
     """
     Fetch coffee shops DENGAN REVIEWS dari Google Places API untuk LLM context.
     Reviews digunakan sebagai bukti/evidence dalam rekomendasi.
     
     Args:
         location_str: Nama lokasi untuk search (e.g., "Pontianak")
-        use_cache: Gunakan cache jika tersedia (default: True)
         max_shops: Maksimal jumlah coffee shops yang di-fetch detail (default: 10)
     
     Returns:
         String berisi daftar coffee shops dengan reviews untuk LLM context
     """
     try:
-        # Step 1: Check cache terlebih dahulu (jika enabled)
-        cache_key_with_reviews = f"{location_str}_with_reviews"
-        if use_cache:
-            cached_context = get_cached_coffee_shops(cache_key_with_reviews)
-            if cached_context:
-                return cached_context
-        
         print(f"[PLACES+REVIEWS] Fetching coffee shops with reviews for: {location_str}")
         
         # Step 2: Text Search untuk mendapat coffee shops di lokasi
@@ -473,9 +433,6 @@ def _fetch_coffeeshops_with_reviews_context(location_str, use_cache=True, max_sh
         
         context = "\n".join(context_lines)
         
-        # Step 4: Simpan ke cache
-        set_cached_coffee_shops(cache_key_with_reviews, context)
-        
         print(f"[PLACES+REVIEWS] Context prepared: {len(all_shops)} shops with reviews, {len(context)} characters")
         return context
         
@@ -487,25 +444,18 @@ def _fetch_coffeeshops_with_reviews_context(location_str, use_cache=True, max_sh
         return f"Error mengambil data coffee shop dengan review: {str(e)}"
 
 # Helper function untuk fetch coffee shops dari Google Places API sebagai context untuk LLM
-def _fetch_coffeeshops_context(location_str, use_cache=True):
+def _fetch_coffeeshops_context(location_str):
     """
     Fetch coffee shops dari Google Places API dan format sebagai context untuk LLM.
     Ini memastikan LLM memberikan rekomendasi berdasarkan data REAL, bukan hallucination.
     
     Args:
         location_str: Nama lokasi untuk search (e.g., "Pontianak")
-        use_cache: Gunakan cache jika tersedia (default: True)
     
     Returns:
         String berisi daftar coffee shops yang diformat untuk LLM context
     """
     try:
-        # Step 1: Check cache terlebih dahulu (jika enabled)
-        if use_cache:
-            cached_context = get_cached_coffee_shops(location_str)
-            if cached_context:
-                return cached_context
-        
         print(f"[PLACES] Fetching coffee shops for location: {location_str}")
         
         # Step 2: Text Search untuk mendapat coffee shops di lokasi
@@ -597,9 +547,6 @@ def _fetch_coffeeshops_context(location_str, use_cache=True):
         
         context = "\n".join(context_lines)
         
-        # Step 6: Simpan ke cache untuk request berikutnya
-        set_cached_coffee_shops(location_str, context)
-        
         print(f"[PLACES] Context prepared: {len(all_shops)} shops, {len(context)} characters")
         return context
         
@@ -648,7 +595,7 @@ def llm_analyze():
         
         # Step 1: Fetch coffee shops DENGAN REVIEWS dari Google Places API
         print(f"[LLM] Fetching coffee shops WITH REVIEWS from Places API for location: {location}")
-        places_context = _fetch_coffeeshops_with_reviews_context(location, use_cache=True, max_shops=10)
+        places_context = _fetch_coffeeshops_with_reviews_context(location, max_shops=10)
         
         # Debug: Print sample reviews untuk verify data
         print(f"[LLM] Context preview (first 500 chars):")

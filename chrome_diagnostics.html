@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chrome Cache & CORS Diagnostics - COFIND</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .test-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+        
+        .test-card h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .test-card h3 {
+            color: #333;
+            margin: 15px 0 10px;
+            font-size: 1.1em;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .status.loading {
+            background: #ffc107;
+            color: #333;
+        }
+        
+        .status.success {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .status.error {
+            background: #f44336;
+            color: white;
+        }
+        
+        .status.warning {
+            background: #ff9800;
+            color: white;
+        }
+        
+        .info-box {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #667eea;
+        }
+        
+        .info-box pre {
+            margin: 10px 0 0;
+            overflow-x: auto;
+            background: #fff;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .detail-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+        
+        .detail-label {
+            font-weight: bold;
+            color: #667eea;
+            display: inline-block;
+            min-width: 150px;
+        }
+        
+        .detail-value {
+            color: #333;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        th {
+            background: #f5f5f5;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .recommendation {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #2196f3;
+        }
+        
+        .recommendation h4 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+        
+        .recommendation ul {
+            margin-left: 20px;
+        }
+        
+        .recommendation li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Chrome Cache & CORS Diagnostics</h1>
+        
+        <!-- Browser Info -->
+        <div class="test-card">
+            <h2>🌐 Browser Information</h2>
+            <div id="browser-info"></div>
+        </div>
+        
+        <!-- Cache Status -->
+        <div class="test-card">
+            <h2>💾 Cache Status</h2>
+            <div id="cache-status"></div>
+            <div class="action-buttons">
+                <button onclick="checkCacheAPI()">🔄 Check Cache API</button>
+                <button onclick="checkServiceWorker()">⚙️ Check Service Worker</button>
+                <button onclick="checkIndexedDB()">🗄️ Check IndexedDB</button>
+                <button onclick="clearAllCache()">🗑️ Clear All Cache</button>
+            </div>
+        </div>
+        
+        <!-- CORS Test -->
+        <div class="test-card">
+            <h2>🔐 CORS Configuration Test</h2>
+            <span id="cors-status" class="status loading">Testing...</span>
+            <div id="cors-results"></div>
+            <div class="action-buttons">
+                <button onclick="testCORS()">🧪 Test CORS</button>
+                <button onclick="testPreflight()">✈️ Test Preflight</button>
+            </div>
+        </div>
+        
+        <!-- API Connection -->
+        <div class="test-card">
+            <h2>📡 API Connection Test</h2>
+            <span id="api-status" class="status loading">Testing...</span>
+            <div id="api-results"></div>
+            <div class="action-buttons">
+                <button onclick="testBackendHealth()">❤️ Test Backend Health</button>
+                <button onclick="testCoffeeShopsAPI()">☕ Test Coffee Shops API</button>
+            </div>
+        </div>
+        
+        <!-- Network Performance -->
+        <div class="test-card">
+            <h2>⚡ Network Performance</h2>
+            <div id="network-results"></div>
+        </div>
+        
+        <!-- Recommendations -->
+        <div class="test-card">
+            <h2>💡 Recommendations</h2>
+            <div id="recommendations"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000';
+        const FRONTEND_URL = 'http://localhost:5173';
+
+        // Browser Information
+        function displayBrowserInfo() {
+            const info = {
+                'Browser': navigator.userAgent,
+                'Platform': navigator.platform,
+                'Language': navigator.language,
+                'Online': navigator.onLine ? '✅ Online' : '❌ Offline',
+                'Cookies Enabled': navigator.cookieEnabled ? '✅ Yes' : '❌ No',
+                'Do Not Track': navigator.doNotTrack || 'Not set'
+            };
+            
+            let html = '<div class="info-box">';
+            for (const [key, value] of Object.entries(info)) {
+                html += `<div class="detail-item"><span class="detail-label">${key}:</span> <span class="detail-value">${value}</span></div>`;
+            }
+            html += '</div>';
+            
+            document.getElementById('browser-info').innerHTML = html;
+        }
+
+        // Check Cache API
+        async function checkCacheAPI() {
+            const resultDiv = document.getElementById('cache-status');
+            resultDiv.innerHTML = '<p class="status loading">Checking Cache API...</p>';
+            
+            try {
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    let html = '<div class="info-box">';
+                    html += '<h3>✅ Cache API Available</h3>';
+                    html += `<p><strong>Total Caches:</strong> ${cacheNames.length}</p>`;
+                    
+                    if (cacheNames.length > 0) {
+                        html += '<table><thead><tr><th>Cache Name</th><th>Action</th></tr></thead><tbody>';
+                        for (const name of cacheNames) {
+                            const cache = await caches.open(name);
+                            const keys = await cache.keys();
+                            html += `<tr><td>${name} (${keys.length} items)</td><td><button onclick="deleteCache('${name}')">Delete</button></td></tr>`;
+                        }
+                        html += '</tbody></table>';
+                    } else {
+                        html += '<p class="status success">No caches found (Clean!)</p>';
+                    }
+                    html += '</div>';
+                    resultDiv.innerHTML = html;
+                } else {
+                    resultDiv.innerHTML = '<p class="status error">❌ Cache API not supported</p>';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="status error">❌ Error: ${error.message}</p>`;
+            }
+        }
+
+        // Check Service Worker
+        async function checkServiceWorker() {
+            const resultDiv = document.getElementById('cache-status');
+            
+            try {
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    let html = '<div class="info-box">';
+                    html += '<h3>⚙️ Service Worker Status</h3>';
+                    html += `<p><strong>Registered Workers:</strong> ${registrations.length}</p>`;
+                    
+                    if (registrations.length > 0) {
+                        html += '<table><thead><tr><th>Scope</th><th>State</th><th>Action</th></tr></thead><tbody>';
+                        registrations.forEach((reg, i) => {
+                            const state = reg.active ? reg.active.state : 'No active worker';
+                            html += `<tr><td>${reg.scope}</td><td>${state}</td><td><button onclick="unregisterSW(${i})">Unregister</button></td></tr>`;
+                        });
+                        html += '</tbody></table>';
+                    } else {
+                        html += '<p class="status success">No service workers (Good for testing!)</p>';
+                    }
+                    html += '</div>';
+                    resultDiv.innerHTML += html;
+                } else {
+                    resultDiv.innerHTML += '<p class="status warning">⚠️ Service Worker not supported</p>';
+                }
+            } catch (error) {
+                resultDiv.innerHTML += `<p class="status error">❌ Error: ${error.message}</p>`;
+            }
+        }
+
+        // Check IndexedDB
+        async function checkIndexedDB() {
+            const resultDiv = document.getElementById('cache-status');
+            
+            try {
+                const databases = await indexedDB.databases();
+                let html = '<div class="info-box">';
+                html += '<h3>🗄️ IndexedDB Status</h3>';
+                html += `<p><strong>Databases:</strong> ${databases.length}</p>`;
+                
+                if (databases.length > 0) {
+                    html += '<table><thead><tr><th>Database Name</th><th>Version</th></tr></thead><tbody>';
+                    databases.forEach(db => {
+                        html += `<tr><td>${db.name}</td><td>${db.version}</td></tr>`;
+                    });
+                    html += '</tbody></table>';
+                } else {
+                    html += '<p class="status success">No IndexedDB databases</p>';
+                }
+                html += '</div>';
+                resultDiv.innerHTML += html;
+            } catch (error) {
+                resultDiv.innerHTML += `<p class="status error">❌ Error: ${error.message}</p>`;
+            }
+        }
+
+        // Clear All Cache
+        async function clearAllCache() {
+            if (!confirm('Clear ALL cache? This will remove all cached data.')) return;
+            
+            const resultDiv = document.getElementById('cache-status');
+            resultDiv.innerHTML = '<p class="status loading">Clearing all cache...</p>';
+            
+            try {
+                // Clear Cache API
+                const cacheNames = await caches.keys();
+                await Promise.all(cacheNames.map(name => caches.delete(name)));
+                
+                // Unregister Service Workers
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                await Promise.all(registrations.map(reg => reg.unregister()));
+                
+                // Clear localStorage
+                localStorage.clear();
+                
+                // Clear sessionStorage
+                sessionStorage.clear();
+                
+                resultDiv.innerHTML = '<p class="status success">✅ All cache cleared! Reload page to test.</p>';
+                
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="status error">❌ Error: ${error.message}</p>`;
+            }
+        }
+
+        // Test CORS
+        async function testCORS() {
+            const statusDiv = document.getElementById('cors-status');
+            const resultDiv = document.getElementById('cors-results');
+            
+            statusDiv.className = 'status loading';
+            statusDiv.textContent = 'Testing CORS...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/`, {
+                    method: 'GET',
+                    headers: {
+                        'Origin': window.location.origin
+                    }
+                });
+                
+                const corsHeaders = {
+                    'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
+                    'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
+                    'Access-Control-Allow-Headers': response.headers.get('Access-Control-Allow-Headers'),
+                    'Access-Control-Allow-Credentials': response.headers.get('Access-Control-Allow-Credentials')
+                };
+                
+                let html = '<div class="info-box"><h3>CORS Headers:</h3><table>';
+                for (const [key, value] of Object.entries(corsHeaders)) {
+                    const status = value ? '✅' : '❌';
+                    html += `<tr><td>${status} ${key}</td><td>${value || 'Not set'}</td></tr>`;
+                }
+                html += '</table></div>';
+                
+                if (corsHeaders['Access-Control-Allow-Origin']) {
+                    statusDiv.className = 'status success';
+                    statusDiv.textContent = '✅ CORS OK';
+                } else {
+                    statusDiv.className = 'status error';
+                    statusDiv.textContent = '❌ CORS Issue';
+                }
+                
+                resultDiv.innerHTML = html;
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = '❌ CORS Failed';
+                resultDiv.innerHTML = `<p class="status error">Error: ${error.message}</p>`;
+            }
+        }
+
+        // Test Preflight
+        async function testPreflight() {
+            const resultDiv = document.getElementById('cors-results');
+            resultDiv.innerHTML = '<p class="status loading">Testing preflight...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': window.location.origin,
+                        'Access-Control-Request-Method': 'GET',
+                        'Access-Control-Request-Headers': 'Content-Type'
+                    }
+                });
+                
+                resultDiv.innerHTML = `<div class="info-box"><h3>✅ Preflight Response: ${response.status}</h3></div>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="status error">❌ Preflight Error: ${error.message}</p>`;
+            }
+        }
+
+        // Test Backend Health
+        async function testBackendHealth() {
+            const statusDiv = document.getElementById('api-status');
+            const resultDiv = document.getElementById('api-results');
+            
+            statusDiv.className = 'status loading';
+            statusDiv.textContent = 'Testing...';
+            
+            const startTime = performance.now();
+            
+            try {
+                const response = await fetch(`${API_BASE}/`);
+                const data = await response.json();
+                const endTime = performance.now();
+                const duration = (endTime - startTime).toFixed(2);
+                
+                statusDiv.className = 'status success';
+                statusDiv.textContent = '✅ Backend OK';
+                
+                resultDiv.innerHTML = `
+                    <div class="info-box">
+                        <h3>✅ Backend Health Check</h3>
+                        <div class="detail-item"><span class="detail-label">Status:</span> ${response.status} ${response.statusText}</div>
+                        <div class="detail-item"><span class="detail-label">Response Time:</span> ${duration} ms</div>
+                        <div class="detail-item"><span class="detail-label">Message:</span> ${data.message}</div>
+                    </div>
+                `;
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = '❌ Backend Error';
+                resultDiv.innerHTML = `<p class="status error">❌ Error: ${error.message}</p>`;
+            }
+        }
+
+        // Test Coffee Shops API
+        async function testCoffeeShopsAPI() {
+            const statusDiv = document.getElementById('api-status');
+            const resultDiv = document.getElementById('api-results');
+            
+            statusDiv.className = 'status loading';
+            statusDiv.textContent = 'Fetching coffee shops...';
+            
+            const startTime = performance.now();
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/search/coffeeshops?lat=-0.026330&lng=109.342506`);
+                const data = await response.json();
+                const endTime = performance.now();
+                const duration = (endTime - startTime).toFixed(2);
+                
+                if (data.status === 'success' && data.data) {
+                    statusDiv.className = 'status success';
+                    statusDiv.textContent = '✅ API Working';
+                    
+                    const shopsWithPhotos = data.data.filter(s => s.photos && s.photos.length > 0).length;
+                    
+                    resultDiv.innerHTML = `
+                        <div class="info-box">
+                            <h3>✅ Coffee Shops API Test</h3>
+                            <div class="detail-item"><span class="detail-label">Status:</span> ${response.status} ${response.statusText}</div>
+                            <div class="detail-item"><span class="detail-label">Response Time:</span> ${duration} ms ${duration < 5000 ? '✅' : '⚠️ Slow!'}</div>
+                            <div class="detail-item"><span class="detail-label">Total Shops:</span> ${data.data.length}</div>
+                            <div class="detail-item"><span class="detail-label">Shops with Photos:</span> ${shopsWithPhotos}</div>
+                            <div class="detail-item"><span class="detail-label">First Shop:</span> ${data.data[0].name}</div>
+                        </div>
+                    `;
+                } else {
+                    throw new Error('Invalid data format');
+                }
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = '❌ API Error';
+                resultDiv.innerHTML = `<p class="status error">❌ Error: ${error.message}</p>`;
+            }
+        }
+
+        // Auto-run tests on load
+        window.onload = () => {
+            displayBrowserInfo();
+            checkCacheAPI();
+            checkServiceWorker();
+            checkIndexedDB();
+            testCORS();
+            testBackendHealth();
+            
+            // Show recommendations
+            setTimeout(showRecommendations, 2000);
+        };
+
+        // Show Recommendations
+        function showRecommendations() {
+            const recDiv = document.getElementById('recommendations');
+            recDiv.innerHTML = `
+                <div class="recommendation">
+                    <h4>🎯 Untuk Development (Menghindari Cache Issue):</h4>
+                    <ul>
+                        <li>Buka Chrome DevTools (F12) saat development</li>
+                        <li>Di tab Network, centang "Disable cache"</li>
+                        <li>Keep DevTools open saat testing</li>
+                    </ul>
+                </div>
+                <div class="recommendation">
+                    <h4>🧹 Jika Data Tidak Muncul:</h4>
+                    <ul>
+                        <li><strong>Hard Reload:</strong> Ctrl + Shift + R</li>
+                        <li><strong>Clear Cache:</strong> Klik tombol "Clear All Cache" di atas</li>
+                        <li><strong>Incognito Mode:</strong> Ctrl + Shift + N untuk test fresh</li>
+                    </ul>
+                </div>
+                <div class="recommendation">
+                    <h4>⚠️ Common Issues:</h4>
+                    <ul>
+                        <li>Backend belum restart setelah code change</li>
+                        <li>Browser cache old error response</li>
+                        <li>Service Worker interfere dengan requests</li>
+                        <li>Extensions (ad blocker) blocking API calls</li>
+                    </ul>
+                </div>
+            `;
+        }
+
+        // Helper functions
+        async function deleteCache(cacheName) {
+            await caches.delete(cacheName);
+            checkCacheAPI();
+        }
+
+        async function unregisterSW(index) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            await registrations[index].unregister();
+            checkServiceWorker();
+        }
+    </script>
+</body>
+</html>
+

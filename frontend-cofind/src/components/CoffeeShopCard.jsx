@@ -1,31 +1,24 @@
 // src/components/CoffeeShopCard.jsx
 import React from 'react';
+import OptimizedImage from './OptimizedImage';
 
 const CoffeeShopCard = ({ shop }) => {
-    // Fungsi untuk mendapatkan SVG placeholder inline (tidak perlu network request)
-    const getPlaceholderImage = (shopName) => {
-        // Generate SVG placeholder sebagai data URI - tidak perlu network request
+    // Fungsi untuk mendapatkan warna placeholder berdasarkan nama shop
+    const getPlaceholderColor = (shopName) => {
         const seed = shopName ? shopName.length % 10 : 0;
         const colors = [
-            { bg: '4F46E5', text: 'FFFFFF' }, // indigo
-            { bg: '7C3AED', text: 'FFFFFF' }, // purple
-            { bg: 'EC4899', text: 'FFFFFF' }, // pink
-            { bg: 'F59E0B', text: 'FFFFFF' }, // amber
-            { bg: '10B981', text: 'FFFFFF' }, // green
-            { bg: '3B82F6', text: 'FFFFFF' }, // blue
-            { bg: '8B5CF6', text: 'FFFFFF' }, // violet
-            { bg: 'F97316', text: 'FFFFFF' }, // orange
-            { bg: '06B6D4', text: 'FFFFFF' }, // cyan
-            { bg: '6366F1', text: 'FFFFFF' }  // indigo
+            '#4F46E5', // indigo
+            '#7C3AED', // purple
+            '#EC4899', // pink
+            '#F59E0B', // amber
+            '#10B981', // green
+            '#3B82F6', // blue
+            '#8B5CF6', // violet
+            '#F97316', // orange
+            '#06B6D4', // cyan
+            '#6366F1'  // indigo
         ];
-        const color = colors[seed % colors.length];
-        const svg = `
-            <svg width="800" height="400" xmlns="http://www.w3.org/2000/svg">
-                <rect width="800" height="400" fill="#${color.bg}"/>
-                <text x="50%" y="50%" font-family="Arial, sans-serif" font-size="48" fill="#${color.text}" text-anchor="middle" dy=".3em">☕ Coffee Shop</text>
-            </svg>
-        `.trim();
-        return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+        return colors[seed % colors.length];
     };
 
     const formatStatus = (status) => {
@@ -41,28 +34,23 @@ const CoffeeShopCard = ({ shop }) => {
 
     const statusInfo = formatStatus(shop.business_status);
     
-    // Gunakan placeholder image (tidak perlu network request)
-    // Jika photos tidak di-comment, bisa tetap gunakan: shop.photos?.[0] || getPlaceholderImage(shop.name)
+    // Gunakan foto dari API jika tersedia
     const photoUrl = shop.photos && shop.photos.length > 0 
         ? shop.photos[0] 
-        : getPlaceholderImage(shop.name);
+        : null;
 
     return (
-        <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group">
-            <div className="aspect-w-16 aspect-h-9 relative overflow-hidden">
-                <img 
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 overflow-hidden group">
+            <div className="aspect-w-16 aspect-h-9 relative overflow-hidden h-48">
+                <OptimizedImage
                     src={photoUrl}
                     alt={shop.name}
-                    className="w-full h-48 object-cover transform group-hover:scale-105 transition duration-300"
-                    onError={(e) => {
-                        e.target.onerror = null;
-                        // Fallback ke SVG placeholder inline jika gagal
-                        const svg = '<svg width="800" height="400" xmlns="http://www.w3.org/2000/svg"><rect width="800" height="400" fill="#4F46E5"/><text x="50%" y="50%" font-family="Arial, sans-serif" font-size="48" fill="#FFFFFF" text-anchor="middle" dy=".3em">☕ Coffee Shop</text></svg>';
-                        e.target.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
-                    }}
+                    className="w-full h-full object-cover transform group-hover:scale-105 transition duration-300"
+                    fallbackColor={getPlaceholderColor(shop.name)}
+                    shopName={shop.name}
                 />
                 {shop.rating && (
-                    <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full flex items-center shadow-lg">
+                    <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full flex items-center shadow-lg z-10">
                         <span className="text-yellow-500 mr-1">⭐</span>
                         <span className="font-semibold">{shop.rating}</span>
                     </div>
@@ -70,7 +58,7 @@ const CoffeeShopCard = ({ shop }) => {
             </div>
             
             <div className="p-4">
-                <h2 className="text-xl font-bold text-gray-800 mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors">
+                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors">
                     {shop.name}
                 </h2>
                 

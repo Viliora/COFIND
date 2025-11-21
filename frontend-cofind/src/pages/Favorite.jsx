@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import CoffeeShopCard from '../components/CoffeeShopCard';
-import placesData from '../data/places.json';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 const USE_API = import.meta.env.VITE_USE_API === 'true';
@@ -57,11 +56,6 @@ const Favorite = () => {
             console.error(`Error loading favorite ${placeId}:`, err);
           }
         }
-      }
-
-      // Fallback to places.json if not loaded from API
-      if (shops.length === 0 && placesData?.data) {
-        shops = placesData.data.filter(shop => favorites.includes(shop.place_id));
       }
 
       setFavoriteShops(shops);

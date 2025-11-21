@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import placesData from '../data/places.json';
-import { fetchWithCache } from '../utils/apiCache';
+import OptimizedImage from '../components/OptimizedImage';
 
 // Konfigurasi API (mengikuti ShopList)
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
@@ -23,12 +22,20 @@ function ShopDetail() {
         setIsLoading(true);
         setError(null);
 
-        // 1) Jika API aktif, coba ambil detail dari backend (mengandung reviews)
+        // Direct API call without caching
         if (USE_API) {
           try {
             const detailUrl = `${API_BASE}/api/coffeeshops/detail/${id}`;
-            const result = await fetchWithCache(detailUrl);
-            const payload = result?.data;
+            console.log('[ShopDetail] Fetching from API:', detailUrl);
+            
+            const response = await fetch(detailUrl);
+            
+            if (!response.ok) {
+              throw new Error(`API returned status ${response.status}`);
+            }
+            
+            const payload = await response.json();
+            
             if (payload?.status === 'success' && payload?.data) {
               const detail = payload.data;
               // Normalisasi sebagian field agar konsisten dengan list
@@ -59,20 +66,13 @@ function ShopDetail() {
               return;
             }
           } catch (apiErr) {
-            console.warn('[ShopDetail] Gagal memuat detail dari API, fallback ke local:', apiErr?.message);
+            console.error('[ShopDetail] Failed to load from API:', apiErr?.message);
+            throw new Error(`Unable to load coffee shop details. Please ensure the backend is running and you have internet connection.`);
           }
         }
 
-        // 2) Fallback ke places.json (tanpa reviews)
-        const foundShop = placesData?.data?.find(s => s.place_id === id);
-        if (foundShop) {
-          setShop(foundShop);
-          setReviews([]);
-          setIsLoading(false);
-          return;
-        }
-
-        throw new Error(`Coffee shop dengan ID "${id}" tidak ditemukan`);
+        // If API is disabled, show error
+        throw new Error(`API is disabled. Please enable it to view shop details.`);
       } catch (err) {
         console.error("Load Error:", err);
         setError(err.message || 'Gagal memuat detail toko');
@@ -180,37 +180,21 @@ function ShopDetail() {
           </a>
         )}
 
-        {/* Foto Coffee Shop - menggunakan SVG placeholder inline (tidak perlu network request) */}
-        <div className="mt-4 sm:mt-6">
-          {(() => {
-            // Generate SVG placeholder inline - tidak perlu network request
-            const shopName = shop.name || 'Coffee Shop';
-            let imageSrc;
-            
-            if (shop.photos && shop.photos.length > 0) {
-              imageSrc = shop.photos[0];
-            } else {
-              const seed = shopName.length % 10;
-              const colors = ['4F46E5', '7C3AED', 'EC4899', 'F59E0B', '10B981', '3B82F6', '8B5CF6', 'F97316', '06B6D4', '6366F1'];
-              const color = colors[seed % colors.length];
-              const svg = `<svg width="1200" height="600" xmlns="http://www.w3.org/2000/svg"><rect width="1200" height="600" fill="#${color}"/><text x="50%" y="50%" font-family="Arial, sans-serif" font-size="64" fill="#FFFFFF" text-anchor="middle" dy=".3em">☕ ${shopName.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</text></svg>`;
-              imageSrc = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
-            }
-            
-            return (
-              <img 
-                src={imageSrc}
-                alt={shop.name} 
-                className="w-full h-48 sm:h-56 md:h-64 object-cover rounded-lg" 
-                onError={(e) => {
-                  // Fallback ke SVG placeholder jika gagal
-                  e.target.onerror = null;
-                  const svg = '<svg width="1200" height="600" xmlns="http://www.w3.org/2000/svg"><rect width="1200" height="600" fill="#4F46E5"/><text x="50%" y="50%" font-family="Arial, sans-serif" font-size="64" fill="#FFFFFF" text-anchor="middle" dy=".3em">☕ Coffee Shop</text></svg>';
-                  e.target.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
-                }}
-              />
-            );
-          })()}
+        {/* Foto Coffee Shop - dengan optimasi loading */}
+        <div className="mt-4 sm:mt-6 rounded-lg overflow-hidden">
+          <div className="w-full h-48 sm:h-56 md:h-64">
+            <OptimizedImage
+              src={shop.photos && shop.photos.length > 0 ? shop.photos[0] : null}
+              alt={shop.name}
+              className="w-full h-full object-cover"
+              fallbackColor={(() => {
+                const seed = (shop.name || 'Coffee Shop').length % 10;
+                const colors = ['#4F46E5', '#7C3AED', '#EC4899', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#F97316', '#06B6D4', '#6366F1'];
+                return colors[seed % colors.length];
+              })()}
+              shopName={shop.name}
+            />
+          </div>
         </div>
       </div>
 

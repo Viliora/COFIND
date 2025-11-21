@@ -37,7 +37,9 @@ function isCacheValid(cachedData) {
  */
 export async function fetchWithCache(apiUrl, options = {}) {
   try {
-    // 1. Coba fetch dari network dulu
+    console.log('[API Cache] Fetching from network:', apiUrl);
+    
+    // 1. Coba fetch dari network dulu (timeout 10 detik untuk data besar)
     const networkResponse = await Promise.race([
       fetch(apiUrl, {
         ...options,
@@ -47,9 +49,11 @@ export async function fetchWithCache(apiUrl, options = {}) {
         },
       }),
       new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Network timeout')), 5000)
+        setTimeout(() => reject(new Error('Network timeout after 10s')), 10000)
       ),
     ]);
+    
+    console.log('[API Cache] Network response status:', networkResponse.status);
 
     if (networkResponse && networkResponse.ok) {
       const data = await networkResponse.json();
@@ -69,9 +73,14 @@ export async function fetchWithCache(apiUrl, options = {}) {
       return { data, fromCache: false };
     }
 
-    throw new Error('Network response not OK');
+    throw new Error(`Network response not OK: ${networkResponse.status} ${networkResponse.statusText}`);
   } catch (networkError) {
-    console.log('[API Cache] Network failed, trying cache:', networkError.message);
+    console.error('[API Cache] Network failed:', {
+      message: networkError.message,
+      url: apiUrl,
+      type: networkError.name
+    });
+    console.log('[API Cache] Trying cache fallback...');
     
     // 3. Fallback ke cache jika network gagal
     const cachedData = await getCachedData(apiUrl);

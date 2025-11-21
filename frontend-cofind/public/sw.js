@@ -266,8 +266,8 @@ self.addEventListener('fetch', (event) => {
     // CACHE FIRST untuk static assets (images, fonts)
     event.respondWith(cacheFirstStrategy(request, CACHE_STATIC));
   } else if (isAPIRequest(request)) {
-    // NETWORK FIRST dengan FALLBACK untuk API requests
-    event.respondWith(networkFirstStrategy(request, CACHE_CONTENT));
+    // NETWORK ONLY untuk API requests - NO CACHING
+    event.respondWith(networkOnlyStrategy(request));
   } else if (isHTMLRequest(request)) {
     // NETWORK FIRST untuk HTML pages
     event.respondWith(networkFirstStrategy(request, CACHE_PAGES));
@@ -312,6 +312,43 @@ async function cacheFirstStrategy(request, cacheName) {
       status: 408,
       headers: { 'Content-Type': 'text/plain' }
     });
+  }
+}
+
+// NETWORK ONLY: Always fetch from network, no caching (for API requests)
+async function networkOnlyStrategy(request) {
+  try {
+    console.log('[Service Worker] Network Only - Fetching from network:', request.url);
+    const networkResponse = await fetch(request);
+    
+    if (networkResponse && networkResponse.ok) {
+      return networkResponse;
+    }
+    
+    throw new Error('Network response not OK');
+  } catch (error) {
+    console.error('[Service Worker] Network Only - Failed:', request.url, error);
+    
+    // Return error response without cache fallback
+    return new Response(
+      JSON.stringify({ 
+        error: 'Network Error', 
+        message: 'Unable to fetch data from server. Please check your connection and ensure the backend is running.',
+        details: {
+          url: request.url,
+          timestamp: new Date().toISOString(),
+          suggestion: 'Check if the backend server is running at ' + new URL(request.url).origin
+        }
+      }),
+      {
+        status: 503,
+        statusText: 'Service Unavailable',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache'
+        }
+      }
+    );
   }
 }
 
