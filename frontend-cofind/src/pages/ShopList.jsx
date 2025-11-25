@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import SearchBar from '../components/SearchBar';
+import { Link, useSearchParams } from 'react-router-dom';
 import CoffeeShopCard from '../components/CoffeeShopCard';
 import { preloadFeaturedImages } from '../utils/imagePreloader';
 
@@ -9,6 +8,7 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 const USE_API = import.meta.env.VITE_USE_API === 'true'; // Set VITE_USE_API=true untuk enable API
 
 export default function ShopList() {
+  const [searchParams] = useSearchParams();
   const [coffeeShops, setCoffeeShops] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -18,6 +18,24 @@ export default function ShopList() {
   const [activeFilter, setActiveFilter] = useState('all'); // Filter state
   const scrollContainerRef = useRef(null);
   const featuredScrollRef = useRef(null);
+
+  // Update search term from URL params
+  useEffect(() => {
+    const query = searchParams.get('search') || '';
+    setSearchTerm(query);
+  }, [searchParams]);
+
+  // Listen for URL changes (from Navbar search)
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const query = params.get('search') || '';
+      setSearchTerm(query);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   const [isDragging, setIsDragging] = useState(false);
   const dragStateRef = useRef({ startX: 0, scrollLeft: 0 });
@@ -252,15 +270,13 @@ export default function ShopList() {
         <h1 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-extrabold tracking-tight text-center">Temukan Coffee Shop Terbaik di Pontianak</h1>
       </div>
 
-      <SearchBar setSearchTerm={setSearchTerm} />
-
       <main className="w-full py-4 sm:py-6 md:py-8 px-4 sm:px-6">
         
         {/* Statistics Cards */}
         {!error && !isLoading && coffeeShops.length > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
             <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-4 sm:p-5 text-white shadow-lg hover:shadow-xl transition-shadow">
-              <div className="text-2xl sm:text-3xl font-bold mb-1">{stats.total}+</div>
+              <div className="text-2xl sm:text-3xl font-bold mb-1">{stats.total}</div>
               <div className="text-xs sm:text-sm opacity-90">Coffee Shops</div>
               <div className="text-xs mt-1 opacity-75">di Pontianak</div>
             </div>

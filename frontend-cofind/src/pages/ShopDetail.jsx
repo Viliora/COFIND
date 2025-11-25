@@ -49,9 +49,7 @@ function ShopDetail() {
                 website: detail.website,
                 location: detail.geometry?.location,
                 photos: Array.isArray(detail.photos)
-                  ? detail.photos
-                      .slice(0, 5)
-                      .map(p => p.photo_reference) // akan dipakai oleh backend jika dibutuhkan
+                  ? detail.photos.slice(0, 5) // Foto sudah dalam format URL string langsung
                   : [],
               };
               setShop(normalized);
@@ -153,36 +151,20 @@ function ShopDetail() {
       )}
       
       <div className="flex items-center justify-between mb-4">
-        <Link to="/" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium inline-block text-sm sm:text-base">← Kembali ke Daftar</Link>
+        <Link 
+          to="/" 
+          className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-zinc-700 hover:bg-gray-200 dark:hover:bg-zinc-600 text-gray-700 dark:text-gray-200 font-medium rounded-lg shadow-sm hover:shadow-md transition-all duration-200"
+        >
+          <svg className="w-5 h-5" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+          </svg>
+          <span>Kembali ke Daftar</span>
+        </Link>
       </div>
       <div className="bg-white dark:bg-zinc-800 p-4 sm:p-6 md:p-8 rounded-xl shadow-2xl border border-gray-200 dark:border-zinc-700">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white mb-2 break-words">{shop.name}</h1>
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4">
-          <p className="text-lg sm:text-xl text-indigo-700 dark:text-indigo-400 font-semibold">⭐ {shop.rating || 'N/A'}</p>
-          {shop.price_level && (
-            <>
-              <p className="text-gray-400 dark:text-gray-500 hidden sm:inline"></p>
-              
-            </>
-          )}
-        </div>
-        
-        <p className="text-base sm:text-lg text-gray-700 dark:text-gray-300 mb-4 break-words">{shop.address}</p>
-        
-        {shop.phone && (
-          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-2 break-all">📞 {shop.phone}</p>
-        )}
-        
-        {shop.website && (
-          <a href={shop.website} target="_blank" rel="noopener noreferrer" 
-             className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 mb-4 block text-sm sm:text-base break-all">
-            🌐 Website
-          </a>
-        )}
-
         {/* Foto Coffee Shop - dengan optimasi loading */}
-        <div className="mt-4 sm:mt-6 rounded-lg overflow-hidden">
-          <div className="w-full h-48 sm:h-56 md:h-64">
+        <div className="mb-6 rounded-xl overflow-hidden shadow-lg">
+          <div className="w-full h-56 sm:h-64 md:h-80">
             <OptimizedImage
               src={shop.photos && shop.photos.length > 0 ? shop.photos[0] : null}
               alt={shop.name}
@@ -194,6 +176,72 @@ function ShopDetail() {
               })()}
               shopName={shop.name}
             />
+          </div>
+        </div>
+
+        {/* Informasi Utama */}
+        <div className="space-y-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3 break-words">
+              {shop.name}
+            </h1>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center bg-amber-50 dark:bg-amber-900/20 px-3 py-1.5 rounded-lg">
+                <span className="text-amber-500 text-lg">⭐</span>
+                <span className="ml-1.5 text-lg font-semibold text-gray-900 dark:text-white">
+                  {shop.rating || 'N/A'}
+                </span>
+              </div>
+              {shop.price_level && (
+                <div className="flex items-center bg-green-50 dark:bg-green-900/20 px-3 py-1.5 rounded-lg">
+                  <span className="text-green-600 dark:text-green-400 font-semibold">
+                    {'$'.repeat(shop.price_level)}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Alamat */}
+          <div className="flex items-start gap-3 p-4 bg-gray-50 dark:bg-zinc-700/50 rounded-lg">
+            <svg className="w-5 h-5 text-gray-600 dark:text-gray-400 mt-0.5 flex-shrink-0" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+              <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+            <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300 break-words flex-1">
+              {shop.address}
+            </p>
+          </div>
+
+          {/* Kontak & Website */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            {shop.phone && (
+              <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex-1">
+                <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                </svg>
+                <a href={`tel:${shop.phone}`} className="text-sm sm:text-base text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors break-all">
+                  {shop.phone}
+                </a>
+              </div>
+            )}
+            
+            {shop.website && (
+              <a 
+                href={shop.website} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex-1"
+              >
+                <svg className="w-5 h-5" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path>
+                </svg>
+                <span>Kunjungi Website</span>
+                <svg className="w-4 h-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                </svg>
+              </a>
+            )}
           </div>
         </div>
       </div>
@@ -210,23 +258,43 @@ function ShopDetail() {
                 const lat = shop.location.lat;
                 const lng = shop.location.lng;
                 const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+                const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
                 
                 // Build static map URL
                 const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=16&size=800x400&markers=color:red%7C${lat},${lng}&key=${apiKey}`;
                 
                 return (
                   <>
-                    <img
-                      src={mapUrl}
-                      alt="Peta lokasi"
-                      className="w-full h-64 sm:h-80 object-cover rounded-lg"
-                      onError={(e) => {
-                        console.error('Static map failed to load:', e);
-                        const fallback = e.target.parentElement.querySelector('[data-fallback="true"]');
-                        if (fallback) fallback.style.display = 'flex';
-                        e.target.style.display = 'none';
-                      }}
-                    />
+                    <a 
+                      href={googleMapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block relative group cursor-pointer"
+                    >
+                      <img
+                        src={mapUrl}
+                        alt="Peta lokasi"
+                        className="w-full h-64 sm:h-80 object-cover rounded-lg transition-all duration-300 group-hover:brightness-90"
+                        onError={(e) => {
+                          console.error('Static map failed to load:', e);
+                          const fallback = e.target.parentElement.parentElement.querySelector('[data-fallback="true"]');
+                          if (fallback) fallback.style.display = 'flex';
+                          e.target.parentElement.style.display = 'none';
+                        }}
+                      />
+                      {/* Overlay hover effect */}
+                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 rounded-lg flex items-center justify-center">
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white dark:bg-zinc-800 px-4 py-2 rounded-lg shadow-lg">
+                          <div className="flex items-center gap-2 text-gray-900 dark:text-white font-medium">
+                            <svg className="w-5 h-5" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" stroke="currentColor" viewBox="0 0 24 24">
+                              <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                              <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                            <span>Buka di Google Maps</span>
+                          </div>
+                        </div>
+                      </div>
+                    </a>
                     <div
                       data-fallback="true"
                       className="hidden w-full h-64 sm:h-80 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-zinc-700 dark:to-zinc-800 rounded-lg items-center justify-center flex-col gap-3"
@@ -238,10 +306,10 @@ function ShopDetail() {
                           {lat.toFixed(6)}, {lng.toFixed(6)}
                         </p>
                         <a
-                          href={`https://www.google.com/maps/search/${lat},${lng}`}
+                          href={googleMapsUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-block mt-3 px-3 py-1 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700 transition"
+                          className="inline-block mt-3 px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition shadow-md"
                         >
                           Buka di Google Maps
                         </a>

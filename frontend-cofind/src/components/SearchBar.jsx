@@ -26,7 +26,7 @@ const SearchBar = ({ setSearchTerm }) => {
             id="search-input"
             name="search"
             type="text"
-            placeholder="Kriteria coffee shop yang ingin dituju..."
+            placeholder="Coffee shop yang ingin dituju.."
             aria-label="Search coffee shops"
             className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-zinc-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-700 dark:text-gray-200 bg-white dark:bg-zinc-700 placeholder-gray-400 dark:placeholder-gray-500"
 

@@ -47,7 +47,7 @@ const Favorite = () => {
                 business_status: detail.business_status,
                 price_level: detail.price_level,
                 photos: Array.isArray(detail.photos)
-                  ? detail.photos.slice(0, 1).map(p => p.photo_reference)
+                  ? detail.photos.slice(0, 1) // Foto sudah dalam format URL string langsung
                   : [],
               };
               shops.push(shop);
