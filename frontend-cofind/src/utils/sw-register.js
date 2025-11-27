@@ -6,10 +6,12 @@
  */
 export function registerServiceWorker() {
   // Cek apakah ini development mode (Vite development server)
+  // Gunakan import.meta.env.DEV sebagai sumber utama kebenaran
+  // Fallback ke hostname check hanya jika env tidak tersedia
   const isDevelopment = import.meta.env.DEV || 
                        window.location.hostname === 'localhost' || 
                        window.location.hostname === '127.0.0.1' ||
-                       window.location.port !== '';
+                       window.location.hostname === '[::1]';
 
   // Di development mode, unregister service worker yang ada dan tidak register yang baru
   // Ini memungkinkan Hot Module Replacement (HMR) bekerja tanpa refresh
@@ -105,7 +107,7 @@ function trackServiceWorkerLifecycle(registration) {
   const isDevelopment = import.meta.env.DEV || 
                        window.location.hostname === 'localhost' || 
                        window.location.hostname === '127.0.0.1' ||
-                       window.location.port !== '';
+                       window.location.hostname === '[::1]';
 
   if (!isDevelopment) {
     setInterval(() => {
@@ -122,7 +124,7 @@ function showUpdateAvailableNotification() {
   const isDevelopment = import.meta.env.DEV || 
                        window.location.hostname === 'localhost' || 
                        window.location.hostname === '127.0.0.1' ||
-                       window.location.port !== '';
+                       window.location.hostname === '[::1]';
 
   // Skip notification di development mode
   if (isDevelopment) {

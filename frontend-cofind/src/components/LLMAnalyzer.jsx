@@ -14,9 +14,9 @@ const LLMAnalyzer = () => {
   const renderTextWithBold = (text) => {
     if (!text) return null;
     
-    // Split by **word** pattern untuk bold DAN URL pattern untuk links
-    // Regex: (\*\*[^*]+\*\*) untuk bold, (https?://[^\s]+) untuk URL
-    const parts = text.split(/(\*\*[^*]+\*\*|https?:\/\/[^\s]+)/g);
+    // Split by **word** pattern untuk bold, URL pattern untuk links, dan [Verifikasi: URL] pattern
+    // Regex: (\*\*[^*]+\*\*) untuk bold, (\[Verifikasi: https?://[^\]]+\]) untuk verifikasi link, (https?://[^\s\]]+) untuk URL biasa
+    const parts = text.split(/(\*\*[^*]+\*\*|\[Verifikasi: https?:\/\/[^\]]+\]|https?:\/\/[^\s\]]+)/g);
     
     return parts.map((part, index) => {
       // Check jika part adalah bold (diapit **)
@@ -28,8 +28,29 @@ const LLMAnalyzer = () => {
           </strong>
         );
       }
-      // Check jika part adalah URL (http atau https)
-      if (part.match(/^https?:\/\/[^\s]+$/)) {
+      // Check jika part adalah [Verifikasi: URL]
+      if (part.startsWith('[Verifikasi:') && part.endsWith(']')) {
+        const url = part.match(/https?:\/\/[^\]]+/)?.[0];
+        if (url) {
+          return (
+            <a 
+              key={index} 
+              href={url} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors duration-200 ml-1"
+              title="Klik untuk verifikasi review asli di Google Maps"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              Verifikasi
+            </a>
+          );
+        }
+      }
+      // Check jika part adalah URL biasa (http atau https)
+      if (part.match(/^https?:\/\/[^\s\]]+$/)) {
         return (
           <a 
             key={index} 
@@ -90,6 +111,39 @@ const LLMAnalyzer = () => {
     setError(null);
   };
 
+  // Quick recommendation fields
+  const recommendationFields = [
+    { label: '🛋️ Cozy', value: 'cozy' },
+    { label: '📚 Ruang Belajar', value: 'ruang belajar, tenang, fokus' },
+    { label: '📶 WiFi', value: 'wifi bagus, internet cepat' },
+    { label: '🔌 Stopkontak', value: 'terminal banyak, colokan' },
+    { label: '🕌 Musholla', value: 'musholla, tempat ibadah' },
+    { label: '🛋️ Sofa', value: 'kursi sofa, nyaman' },
+    { label: '❄️ AC Dingin', value: 'AC dingin, sejuk' },
+    { label: '📸 Aesthetic', value: 'aesthetic, instagramable, bagus untuk foto' },
+    { label: '🤫 Tenang', value: 'tenang, sepi, tidak ramai' },
+    { label: '🎵 Live Music', value: 'live music, musik' },
+    { label: '🌳 Outdoor', value: 'outdoor seating, taman' },
+    { label: '💰 Harga Terjangkau', value: 'harga terjangkau, murah, affordable' },
+    { label: '🚬 Smoking Area', value: 'indoor smoking area, boleh merokok' },
+    { label: '🐕 Pet Friendly', value: 'pet friendly, boleh bawa hewan' },
+    { label: '🍰 Menu Lengkap', value: 'makan dan minum, makanan berat' },
+    { label: '☕ Kopi Enak', value: 'kopi enak, kualitas kopi bagus' },
+    { label: '🅿️ Parkir Luas', value: 'parkir luas, mudah parkir' },
+    { label: '🌙 24 jam', value: 'buka malam, 24 jam' },
+  ];
+
+  // Handle field click - append to input
+  const handleFieldClick = (fieldValue) => {
+    if (input.trim()) {
+      // Jika sudah ada input, tambahkan dengan koma
+      setInput(prev => prev + ', ' + fieldValue);
+    } else {
+      // Jika kosong, langsung set
+      setInput(fieldValue);
+    }
+  };
+
   return (
     <div className="w-full max-w-2xl mx-auto p-4 sm:p-6">
       <div className="bg-white dark:bg-zinc-800 rounded-xl shadow-lg border border-gray-200 dark:border-zinc-700 p-6">
@@ -99,8 +153,26 @@ const LLMAnalyzer = () => {
             ☕ Rekomendasi Coffee Shop AI
           </h2>
           <p className="text-gray-600 dark:text-gray-400 text-sm">
-            Jelaskan preferensi Anda, dan AI akan memberikan rekomendasi coffee shop terbaik di <span className="font-semibold text-indigo-600 dark:text-indigo-400">Pontianak</span> dengan <span className="font-semibold text-green-600 dark:text-green-400">bukti lengkap dari review pengunjung</span> (nama + komentar asli)
+            Jelaskan preferensi Anda, dan AI akan memberikan rekomendasi coffee shop terbaik di <span className="font-semibold text-indigo-600 dark:text-indigo-400">Pontianak</span> <span className="font-semibold text-green-600 dark:text-green-400">berdasarkan ulasan pengunjung yang relevan</span> (nama + komentar asli)
           </p>
+        </div>
+
+        {/* Quick Recommendation Fields */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-900 dark:text-white mb-3">
+            ⚡ Rekomendasi Cepat - Klik untuk menambahkan:
+          </label>
+          <div className="flex flex-wrap gap-2 mb-4 p-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
+            {recommendationFields.map((field, index) => (
+              <button
+                key={index}
+                onClick={() => handleFieldClick(field.value)}
+                className="px-3 py-1.5 bg-white dark:bg-zinc-700 hover:bg-indigo-100 dark:hover:bg-indigo-800 text-gray-700 dark:text-gray-200 text-xs sm:text-sm font-medium rounded-full border border-gray-300 dark:border-zinc-600 hover:border-indigo-400 dark:hover:border-indigo-500 transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-105"
+              >
+                {field.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Input Area - Keywords */}
@@ -111,15 +183,15 @@ const LLMAnalyzer = () => {
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="wifi bagus, terminal banyak, cozy, tenang, harga murah, dll."
+            placeholder="Klik tombol di atas atau ketik manual: wifi bagus, terminal banyak, cozy, tenang, harga murah, dll."
             className="w-full p-4 border border-gray-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none resize-none h-24 sm:h-28"
           />
           <div className="mt-2 flex items-start gap-2 text-xs text-gray-600 dark:text-gray-400">
             <span className="flex-shrink-0">💡</span>
             <div className="space-y-1">
-              <p className="font-medium">Masukkan kata kunci yang Anda cari, dipisah koma:</p>
-              <p className="text-gray-500 dark:text-gray-500">• <span className="italic">wifi bagus, terminal banyak, cozy</span></p>
+              <p className="font-medium">Tips: Klik tombol rekomendasi di atas atau ketik manual</p>
               <p className="text-gray-500 dark:text-gray-500">• Kata yang match akan ditampilkan dengan <strong className="font-bold text-gray-700 dark:text-gray-300">bold</strong> di hasil</p>
+              <p className="text-gray-500 dark:text-gray-500">• Anda bisa klik beberapa tombol sekaligus untuk kombinasi preferensi</p>
             </div>
           </div>
         </div>
@@ -173,7 +245,7 @@ const LLMAnalyzer = () => {
                   📍 Pontianak
                 </span>
                 <span className="px-2 py-1 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 rounded-full font-medium">
-                  ✓ Dengan Bukti Review
+                  ✓ Berdasarkan Ulasan Pengunjung
                 </span>
               </div>
               <p className="text-sm text-gray-700 dark:text-gray-300 italic bg-gray-50 dark:bg-zinc-800/50 p-3 rounded-lg">

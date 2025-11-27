@@ -4,6 +4,7 @@ import { Routes, Route } from 'react-router-dom';
 import ShopList from './pages/ShopList';
 import ShopDetail from './pages/ShopDetail';
 import Favorite from './pages/Favorite';
+import WantToVisit from './pages/WantToVisit';
 import About from './pages/About';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -21,6 +22,7 @@ function App() {
           <Route path="/" element={<ShopList />} /> 
           <Route path="/shop/:id" element={<ShopDetail />} />
           <Route path="/favorite" element={<Favorite />} />
+          <Route path="/want-to-visit" element={<WantToVisit />} />
           <Route path="/about" element={<About />} />
           <Route path="/ai-analyzer" element={<LLMAnalyzer />} />
         </Routes>

@@ -216,8 +216,8 @@ def search_coffeeshops():
                         photo_reference = photo.get('photo_reference')
                         if photo_reference:
                             try:
-                                # Ambil URL foto menggunakan fungsi get_place_photo
-                                photo_url = get_place_photo(photo_reference)
+                                # Ambil URL foto dengan HD quality (1200px) untuk hero swiper
+                                photo_url = get_place_photo(photo_reference, maxwidth=1200)
                                 if photo_url:
                                     coffee_shop['photos'].append(photo_url)
                             except Exception as photo_error:
@@ -273,20 +273,44 @@ def get_place_details(place_id):
         # Menggunakan place_id untuk mendapatkan detail tempat
         params = {
             'place_id': place_id,
-            'fields': 'place_id,name,rating,formatted_phone_number,formatted_address,geometry,photos,reviews,opening_hours,price_level,website,user_ratings_total',
+            'fields': 'place_id,name,rating,formatted_phone_number,formatted_address,geometry,photos,reviews,opening_hours,price_level,website,user_ratings_total,business_status',
             'language': 'id',  # tampilkan data dalam Bahasa Indonesia jika tersedia
             'reviews_sort': 'newest',  # urutkan ulasan dari yang terbaru (jika tersedia)
             'key': GOOGLE_PLACES_API_KEY
         }
 
-        print("Making request to Places Details API")
+        print(f"[DETAIL] Making request to Places Details API for place_id: {place_id}")
         response = requests.get(base_url, params=params)
         data = response.json()
 
         if data.get('status') == 'OK':
+            result = data.get('result', {})
+            
+            # PENTING: Konversi photo_reference menjadi URL foto
+            photo_urls = []
+            if 'photos' in result and len(result['photos']) > 0:
+                print(f"[DETAIL] Found {len(result['photos'])} photos, converting to URLs...")
+                # Ambil hingga 5 foto pertama dengan HD quality
+                for photo in result['photos'][:5]:
+                    photo_reference = photo.get('photo_reference')
+                    if photo_reference:
+                        try:
+                            # HD quality (1200px) untuk detail page
+                            photo_url = get_place_photo(photo_reference, maxwidth=1200)
+                            if photo_url:
+                                photo_urls.append(photo_url)
+                                print(f"[DETAIL] Photo URL added (HD): {photo_url[:50]}...")
+                        except Exception as photo_error:
+                            print(f"[WARNING] Failed to fetch photo: {photo_error}")
+                            pass
+            
+            # Replace photos dengan URL yang sudah dikonversi
+            result['photos'] = photo_urls
+            print(f"[DETAIL] Total photos converted: {len(photo_urls)}")
+            
             return {
                 'status': 'success',
-                'data': data.get('result', {})
+                'data': result
             }
         else:
             return {
@@ -305,16 +329,27 @@ def get_place_details(place_id):
 photo_session = requests.Session()
 
 # Fungsi untuk mendapatkan foto tempat dari Google Places API
-def get_place_photo(photo_reference):
+def get_place_photo(photo_reference, maxwidth=1200):
+    """
+    Get photo URL from Google Places API
+    
+    Args:
+        photo_reference: Photo reference dari Places API
+        maxwidth: Maximum width untuk foto (default 1200 untuk HD quality)
+                  Options: 400 (low), 800 (medium), 1200 (high), 1600 (very high)
+    
+    Returns:
+        URL foto atau None jika gagal
+    """
     base_url = "https://maps.googleapis.com/maps/api/place/photo"
     params = {
-        'maxwidth': 400,  # Menentukan lebar foto
-        'photo_reference': photo_reference,  # Gunakan photo_reference dari respons API
-        'key': GOOGLE_PLACES_API_KEY  # Gunakan API Key yang valid
+        'maxwidth': maxwidth,  # HD quality untuk hero images
+        'photo_reference': photo_reference,
+        'key': GOOGLE_PLACES_API_KEY
     }
     try:
         # Gunakan session untuk reuse connection
-        response = photo_session.get(base_url, params=params, timeout=5)
+        response = photo_session.get(base_url, params=params, timeout=10)
         if response.status_code == 200:
             return response.url  # Kembalikan URL foto
         else:
@@ -324,14 +359,14 @@ def get_place_photo(photo_reference):
         return None
 
 # Helper function untuk fetch coffee shops dengan REVIEWS untuk LLM context
-def _fetch_coffeeshops_with_reviews_context(location_str, max_shops=10):
+def _fetch_coffeeshops_with_reviews_context(location_str, max_shops=30):
     """
     Fetch coffee shops DENGAN REVIEWS dari Google Places API untuk LLM context.
     Reviews digunakan sebagai bukti/evidence dalam rekomendasi.
     
     Args:
         location_str: Nama lokasi untuk search (e.g., "Pontianak")
-        max_shops: Maksimal jumlah coffee shops yang di-fetch detail (default: 10)
+        max_shops: Maksimal jumlah coffee shops yang di-fetch detail (default: 30)
     
     Returns:
         String berisi daftar coffee shops dengan reviews untuk LLM context
@@ -339,7 +374,7 @@ def _fetch_coffeeshops_with_reviews_context(location_str, max_shops=10):
     try:
         print(f"[PLACES+REVIEWS] Fetching coffee shops with reviews for: {location_str}")
         
-        # Step 2: Text Search untuk mendapat coffee shops di lokasi
+        # Step 2: Text Search untuk mendapat coffee shops di lokasi (dengan pagination)
         base_url = "https://maps.googleapis.com/maps/api/place/textsearch/json"
         params = {
             'query': f'coffee shop {location_str}',
@@ -347,14 +382,44 @@ def _fetch_coffeeshops_with_reviews_context(location_str, max_shops=10):
             'key': GOOGLE_PLACES_API_KEY
         }
         
-        response = requests.get(base_url, params=params)
-        data = response.json()
+        all_shops = []
+        page_count = 0
+        max_pages = 3  # Google Places API max 3 pages (20 results per page = 60 total)
         
-        if data.get('status') != 'OK' or not data.get('results'):
+        while page_count < max_pages and len(all_shops) < max_shops:
+            response = requests.get(base_url, params=params)
+            data = response.json()
+            
+            if data.get('status') != 'OK':
+                print(f"[PLACES+REVIEWS] API status: {data.get('status')}")
+                break
+            
+            results = data.get('results', [])
+            if not results:
+                break
+            
+            all_shops.extend(results)
+            page_count += 1
+            print(f"[PLACES+REVIEWS] Page {page_count}: Got {len(results)} shops, total: {len(all_shops)}")
+            
+            # Check if there's a next page
+            next_page_token = data.get('next_page_token')
+            if not next_page_token or len(all_shops) >= max_shops:
+                break
+            
+            # Google requires a short delay before using next_page_token
+            time.sleep(2)
+            params = {
+                'pagetoken': next_page_token,
+                'key': GOOGLE_PLACES_API_KEY
+            }
+        
+        if not all_shops:
             print(f"[PLACES+REVIEWS] No results found for location: {location_str}")
             return "Tidak ada data coffee shop yang ditemukan untuk lokasi ini."
         
-        all_shops = data.get('results', [])[:max_shops]  # Ambil max_shops pertama
+        # Limit to max_shops
+        all_shops = all_shops[:max_shops]
         print(f"[PLACES+REVIEWS] Found {len(all_shops)} coffee shops, fetching details...")
         
         # Step 3: Fetch details dengan reviews untuk setiap coffee shop
@@ -385,32 +450,32 @@ def _fetch_coffeeshops_with_reviews_context(location_str, max_shops=10):
                 actual_place_id = detail.get('place_id', place_id)
                 maps_url = f"https://www.google.com/maps/place/?q=place_id:{actual_place_id}"
                 
-                # Format entry dengan reviews
+                # Format entry dengan reviews (TANPA price level)
                 context_lines.append(f"{i}. {name}")
                 context_lines.append(f"   • Rating: {rating}/5.0 ({total_ratings} reviews)")
-                
-                if price_level:
-                    price_indicator = '💰' * price_level
-                    context_lines.append(f"   • Harga: {price_indicator} (Level {price_level}/4)")
-                
                 context_lines.append(f"   • Alamat: {address}")
                 context_lines.append(f"   • Google Maps: {maps_url}")
                 
-                # REVIEWS - Ambil 3-5 review terbaik sebagai bukti
+                # REVIEWS - Ambil 3 review terbaik sebagai bukti (dikurangi untuk efisiensi)
                 if reviews:
                     context_lines.append(f"   • Review dari Pengunjung:")
                     review_count = 0
-                    for review in reviews[:5]:  # Max 5 reviews per coffee shop
+                    for review in reviews[:3]:  # Max 3 reviews per coffee shop (dikurangi dari 5)
                         review_text = review.get('text', '').strip()
                         if review_text and len(review_text) > 20:  # Min 20 karakter
                             review_rating = review.get('rating', 0)
                             author_name = review.get('author_name', 'Anonim')
+                            author_url = review.get('author_url', '')  # Link ke profil Google Maps reviewer
                             
-                            # Truncate review yang terlalu panjang
-                            if len(review_text) > 200:
-                                review_text = review_text[:197] + "..."
+                            # Truncate review yang terlalu panjang (dikurangi dari 200 ke 150)
+                            if len(review_text) > 150:
+                                review_text = review_text[:147] + "..."
                             
-                            context_lines.append(f"     - {author_name} ({review_rating}⭐): \"{review_text}\"")
+                            # Tambahkan author_url untuk verifikasi
+                            if author_url:
+                                context_lines.append(f"     - {author_name} ({review_rating}⭐): \"{review_text}\" [Verifikasi: {author_url}]")
+                            else:
+                                context_lines.append(f"     - {author_name} ({review_rating}⭐): \"{review_text}\"")
                             review_count += 1
                     
                     if review_count == 0:
@@ -595,7 +660,7 @@ def llm_analyze():
         
         # Step 1: Fetch coffee shops DENGAN REVIEWS dari Google Places API
         print(f"[LLM] Fetching coffee shops WITH REVIEWS from Places API for location: {location}")
-        places_context = _fetch_coffeeshops_with_reviews_context(location, max_shops=10)
+        places_context = _fetch_coffeeshops_with_reviews_context(location, max_shops=30)  # Optimal: 30 coffee shops (balance antara akurasi dan performa)
         
         # Debug: Print sample reviews untuk verify data
         print(f"[LLM] Context preview (first 500 chars):")
@@ -603,37 +668,42 @@ def llm_analyze():
         print(f"[LLM] Total context length: {len(places_context)} characters")
         
         # Step 2: Build system prompt dengan context REVIEWS untuk bukti rekomendasi
-        system_prompt = f"""Anda adalah asisten rekomendasi coffee shop yang ahli dan profesional. Memberikan jawaban menggunakan data dengan bukti nyata dari review yang ada di places api. Jika anda tidak yakin atau data tidak ada, jawab: "Saya tidak menemukan informasi yang sesuai. jangan menambahkan output jika tidak ada "
+        system_prompt = f"""Anda adalah asisten rekomendasi coffee shop yang AKURAT dan JUJUR. Anda menggunakan data NYATA dari Google Places API.
 
-DATA COFFEE SHOP DI {location.upper()} DENGAN REVIEW PENGUNJUNG LENGKAP DARI GOOGLE PLACES:
+DATA COFFEE SHOP DI {location.upper()} DENGAN INFORMASI LENGKAP:
 {places_context}
 
-INSTRUKSI WAJIB (HARUS DIIKUTI):
-1. Berikan HANYA rekomendasi coffee shop yang ADA dalam data di atas
-2. WAJIB KUTIP REVIEW PERSIS dari data di atas - COPY PASTE review asli
-3. Format kutipan: "Teks review ASLI dari data" - Nama User ASLI (Rating⭐)
-4. MINIMAL 2 review per coffee shop yang direkomendasikan
-5. DILARANG mengubah, meringkas, atau membuat review sendiri
-6. DILARANG membuat nama user palsu (gunakan nama ASLI dari data)
-7. Review harus WORD-FOR-WORD dari data yang diberikan
-8. Berikan 2-3 rekomendasi terbaik
-9. Gunakan bahasa Indonesia yang ramah
+🎯 ATURAN UTAMA:
+1. HANYA rekomendasikan jika ADA review yang relevan dengan kata kunci user
+2. Review harus BENAR-BENAR menyebutkan atau berhubungan erat dengan kata kunci
+3. Jika tidak ada review yang relevan, JANGAN rekomendasikan - langsung jawab: "🙏 Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini."
+4. JANGAN memberikan rekomendasi yang dipaksakan atau diada-adakan
 
-CARA MENGUTIP REVIEW YANG BENAR:
-- Lihat data di atas, cari bagian "Review dari Pengunjung:"
-- COPY PASTE teks review PERSIS seperti di data
-- Gunakan nama user PERSIS seperti di data
-- Sertakan rating PERSIS seperti di data
+⚠️ ATURAN ANTI-HALUSINASI:
+1. COPY PASTE review PERSIS dari data - DILARANG mengubah
+2. DILARANG membuat nama user palsu - gunakan nama ASLI dari data
+3. DILARANG menambah-nambah informasi yang tidak ada di data
+4. DILARANG memberikan penjelasan "Logika Rekomendasi" atau "Mengapa Cocok"
 
-CONTOH CARA KUTIP (jika di data tertulis):
-Data: "- John Doe (5⭐): "Tempatnya sangat nyaman untuk bekerja""
-Kutip: • "Tempatnya sangat nyaman untuk bekerja" - John Doe (5⭐)
+📋 CARA MENGUTIP REVIEW:
+- COPY PASTE teks review PERSIS kata per kata dari data
+- Gunakan nama user ASLI dan rating ASLI
+- Jika ada link [Verifikasi: URL], sertakan juga untuk bukti
+- Format: • "Teks review asli" - Nama User (Rating⭐) [Verifikasi: URL]
+
+🔍 KRITERIA RELEVANSI KETAT:
+- Review HARUS menyebutkan kata kunci atau sinonim/makna yang sangat dekat
+- Contoh RELEVAN: 
+  * User cari "wifi bagus" → Review: "wifinya kencang" ✅
+  * User cari "musholla" → Review: "ada musholla" atau "tempat sholat tersedia" ✅
+- Contoh TIDAK RELEVAN:
+  * User cari "musholla" → Review: "tempatnya nyaman" ❌
+  * User cari "buka malam" → Review: "kopinya enak" ❌
 
 PENTING: 
-- Review adalah kutipan LANGSUNG dari Google Places API
-- JANGAN ubah atau ringkas review
-- JANGAN buat nama user sendiri
-- Kutip PERSIS seperti di data!"""
+- Prioritas: KEJUJURAN > Memberikan rekomendasi
+- Jika tidak ada yang sesuai, JUJUR katakan tidak ada
+- JANGAN paksa rekomendasi yang tidak relevan"""
 
         # Step 3: Extract keywords dari user input untuk highlighting
         keywords = [kw.strip().lower() for kw in user_text.split(',') if kw.strip()]
@@ -644,49 +714,74 @@ PENTING:
             user_content = f"""Kata kunci preferensi user:
 {user_text}
 
-Ringkaskan preferensi ini dalam 2-3 kalimat, lalu berikan rekomendasi coffee shop dengan BUKTI REVIEW LENGKAP (nama user + isi komentar)."""
+Cari coffee shop yang reviewnya BENAR-BENAR menyebutkan kata kunci di atas. Jika tidak ada yang sesuai, jawab: "🙏 Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini." Jangan tambahkan penjelasan pembuka atau logika rekomendasi."""
         elif task == 'recommend':
-            user_content = f"""KATA KUNCI PREFERENSI saya (keyword-based):
+            user_content = f"""KATA KUNCI PREFERENSI saya:
 {user_text}
 
-Berikan 2-3 rekomendasi coffee shop terbaik yang MATCH dengan kata kunci di atas.
+Tugas Anda: Cari coffee shop yang reviewnya BENAR-BENAR menyebutkan kata kunci di atas.
 
-FORMAT WAJIB untuk setiap rekomendasi:
+⚠️ ATURAN KETAT:
+1. HANYA rekomendasikan jika ada review yang menyebutkan kata kunci ({keywords_display})
+2. Review harus RELEVAN - bukan sekedar review positif biasa
+3. Jika tidak ada review yang relevan, LANGSUNG jawab: "🙏 Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini."
+4. JANGAN memberikan rekomendasi yang dipaksakan
+5. JANGAN tambahkan penjelasan pembuka seperti "Berdasarkan kata kunci..."
+6. JANGAN tambahkan section "🎯 LOGIKA REKOMENDASI"
+
+FORMAT OUTPUT:
+
+JIKA ADA YANG SESUAI:
 🏆 [Nama Coffee Shop] - Rating X/5.0
 📍 Alamat: [alamat lengkap]
 🗺️ Google Maps: [URL dari data]
-💰 Harga: [level harga]
 
-✅ Mengapa Cocok dengan Kata Kunci Anda:
-[Jelaskan detail kenapa coffee shop ini cocok. WAJIB gunakan **bold** untuk kata kunci yang match.]
-Contoh: "Coffee shop ini memiliki **wifi bagus** dan **terminal banyak** di setiap meja."
+📝 Berdasarkan Ulasan Pengunjung:
+• "Review yang menyebutkan **kata kunci**" - Nama User (Rating⭐) [Verifikasi: URL jika ada]
 
-📝 Bukti dari Review Pengunjung:
-WAJIB kutip MINIMAL 2 review lengkap. Jika review menyebutkan kata kunci, gunakan **bold** untuk highlight:
-• "Review dengan **kata kunci yang match**" - Nama Customer (X⭐)
+(Ulangi untuk coffee shop lain yang sesuai)
+
+JIKA TIDAK ADA YANG SESUAI:
+🙏 Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini.
 
 INSTRUKSI BOLD/HIGHLIGHT:
-1. Jika review atau penjelasan menyebutkan kata kunci user ({keywords_display}), gunakan **bold**
-2. Format: **kata kunci** (diapit dua asterisk)
-3. Match bisa partial (contoh: "wifi" match dengan "wifi bagus", "wifi kencang")
-4. Case insensitive (wifi = Wifi = WIFI)
+- Gunakan **bold** untuk kata dalam review yang MATCH dengan kata kunci
+- Format: **kata kunci** (diapit dua asterisk)
+- Match bisa partial (contoh: "wifi" match dengan "wifinya kencang")
+- Case insensitive
 
-CONTOH CORRECT (dengan keyword highlighting):
-✅ Mengapa Cocok:
-"Coffee shop ini sangat sesuai karena memiliki **wifi cepat** dan **terminal banyak** di setiap meja..."
+CONTOH BENAR:
+Kata kunci: "wifi bagus, cozy"
+Review di data: "Wifinya kencang, tempatnya cozy banget" - Budi (5⭐) [Verifikasi: https://...]
+Output:
+🏆 Kopi Kenangan - Rating 4.5/5.0
+📍 Alamat: Jl. Ahmad Yani No. 123
+🗺️ Google Maps: https://...
 
-📝 Bukti dari Review:
-• "Tempatnya nyaman, **wifi kencang** dan **colokan di setiap meja**!" - Sarah (5⭐)
-• "**Smoking area** tersedia dan **AC dingin**" - Budi (4⭐)
+📝 Berdasarkan Ulasan Pengunjung:
+• "**Wifinya kencang**, tempatnya **cozy** banget" - Budi (5⭐) [Verifikasi: https://...]
 
-PENTING:
-- Kutip review PERSIS dari data
-- Bold HANYA untuk kata yang MATCH dengan keyword user
-- Minimal 2 review per rekomendasi"""
+CONTOH SALAH - JANGAN LAKUKAN:
+Kata kunci: "musholla"
+Review di data: "Tempatnya nyaman" - Sarah (5⭐)
+Output: ❌ JANGAN rekomendasikan ini karena review tidak menyebut "musholla"
+
+PENTING: Jika tidak ada yang sesuai, JUJUR katakan tidak ada. Jangan dipaksakan!"""
         else:  # analyze (default)
             user_content = f"""Kata kunci preferensi: {user_text}
 
-Berikan rekomendasi coffee shop dengan BUKTI REVIEW. Gunakan **bold** untuk highlight kata kunci yang match."""
+Cari coffee shop yang reviewnya BENAR-BENAR menyebutkan kata kunci di atas. Jika tidak ada review yang relevan, jawab: "🙏 Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini." Gunakan **bold** untuk highlight kata yang match. Jangan tambahkan penjelasan pembuka atau logika rekomendasi."""
+        
+        # Estimate token count (rough: 1 token ≈ 4 characters)
+        estimated_context_tokens = len(places_context) // 4
+        estimated_system_tokens = len(system_prompt) // 4
+        estimated_user_tokens = len(str(user_content)) // 4
+        estimated_total_input_tokens = estimated_context_tokens + estimated_system_tokens + estimated_user_tokens
+        print(f"[LLM] Estimated input tokens - Context: {estimated_context_tokens}, System: {estimated_system_tokens}, User: {estimated_user_tokens}, Total: {estimated_total_input_tokens}")
+        
+        # Warning jika context terlalu besar
+        if estimated_total_input_tokens > 6000:
+            print(f"[WARNING] Input tokens sangat besar ({estimated_total_input_tokens} tokens). Mungkin exceed model limit!")
         
         # Step 4: Call Hugging Face Inference API dengan context
         print(f"[LLM] Calling HF API with task: {task}")
@@ -698,9 +793,9 @@ Berikan rekomendasi coffee shop dengan BUKTI REVIEW. Gunakan **bold** untuk high
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_content}
             ],
-            max_tokens=1024,  # Increased untuk review lengkap (dari 256)
-            temperature=0.5,  # Lower untuk lebih factual (dari 0.6)
-            top_p=0.9
+            max_tokens=1536,  # Optimal untuk 30 coffee shops dengan review
+            temperature=0.2,  # Very low untuk strict, tidak bertele-tele, dan akurat
+            top_p=0.85  # Fokus pada token dengan probabilitas tinggi
         )
         
         print(f"[LLM] Response received successfully")

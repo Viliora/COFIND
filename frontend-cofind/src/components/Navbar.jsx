@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import userImg from '../assets/user.png';
 import cofindImg from '../assets/cofind.svg?url';
 
 const Navbar = () => {
@@ -9,6 +8,7 @@ const Navbar = () => {
   const [searchParams] = useSearchParams();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [collectionDropdownOpen, setCollectionDropdownOpen] = useState(false);
 
   // Sync search query with URL params
   useEffect(() => {
@@ -169,28 +169,67 @@ const Navbar = () => {
                 <span>Beranda</span>
               </Link>
 
-              {/* Favorite */}
-              <Link
-                to="/favorite"
-                className={`relative inline-flex items-center justify-center gap-1.5 rounded-md px-3 lg:px-4 py-1.5 lg:py-2 text-xs lg:text-sm font-medium transition-all duration-200 ${
-                  isActive('/favorite')
-                    ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-700/50'
-                }`}
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              {/* Koleksi (Dropdown) */}
+              <div className="relative">
+                <button
+                  onClick={() => setCollectionDropdownOpen(!collectionDropdownOpen)}
+                  className={`relative inline-flex items-center justify-center gap-1.5 rounded-md px-3 lg:px-4 py-1.5 lg:py-2 text-xs lg:text-sm font-medium transition-all duration-200 ${
+                    isActive('/favorite') || isActive('/want-to-visit')
+                      ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-700/50'
+                  }`}
                 >
-                  <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
-                </svg>
-                <span>Favorite</span>
-              </Link>
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
+                  </svg>
+                  <span>Koleksi</span>
+                  <svg
+                    className={`w-3 h-3 transition-transform ${collectionDropdownOpen ? 'rotate-180' : ''}`}
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </button>
+
+                {/* Dropdown Menu */}
+                {collectionDropdownOpen && (
+                  <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-zinc-800 rounded-lg shadow-lg border border-gray-200 dark:border-zinc-700 py-2 z-50">
+                    <Link
+                      to="/favorite"
+                      onClick={() => setCollectionDropdownOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" stroke="currentColor" viewBox="0 0 24 24">
+                        <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                      </svg>
+                      <span>Favorit</span>
+                    </Link>
+                    <Link
+                      to="/want-to-visit"
+                      onClick={() => setCollectionDropdownOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" stroke="currentColor" viewBox="0 0 24 24">
+                        <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
+                      </svg>
+                      <span>Want to Visit</span>
+                    </Link>
+                  </div>
+                )}
+              </div>
 
               {/* Rekomendasi (AI Analyzer) */}
               <Link
@@ -240,7 +279,7 @@ const Navbar = () => {
             </div>
           </div>
 
-          {/* Right side: theme switch + profile + mobile menu */}
+          {/* Right side: theme switch + mobile menu */}
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 min-w-max">
             {/* Theme toggle */}
             <button
@@ -266,20 +305,6 @@ const Navbar = () => {
                   <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
                 </svg>
               )}
-            </button>
-
-            {/* Profile button */}
-            <button
-              type="button"
-              className="relative rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 transition-all duration-200 hover:scale-105 p-1 bg-white dark:bg-gray-100 border-2 border-gray-900 dark:border-gray-900 shadow-lg hover:shadow-xl focus:ring-gray-900"
-              aria-label="User menu"
-              title="User profile"
-            >
-              <img 
-                src={userImg} 
-                alt="Profile" 
-                className="w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 rounded-full object-cover shadow-sm" 
-              />
             </button>
 
             {/* Mobile menu button */}
@@ -340,20 +365,40 @@ const Navbar = () => {
                 </svg>
                 Beranda
               </Link>
-              <Link
-                to="/favorite"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  isActive('/favorite')
-                    ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800/50'
-                }`}
-              >
-                <svg className="w-4 h-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" stroke="currentColor" viewBox="0 0 24 24">
-                  <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
-                </svg>
-                Favorite
-              </Link>
+              {/* Koleksi Section */}
+              <div className="space-y-1">
+                <div className="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Koleksi
+                </div>
+                <Link
+                  to="/favorite"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isActive('/favorite')
+                      ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800/50'
+                  }`}
+                >
+                  <svg className="w-4 h-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" stroke="currentColor" viewBox="0 0 24 24">
+                    <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                  </svg>
+                  Favorit
+                </Link>
+                <Link
+                  to="/want-to-visit"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isActive('/want-to-visit')
+                      ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800/50'
+                  }`}
+                >
+                  <svg className="w-4 h-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" stroke="currentColor" viewBox="0 0 24 24">
+                    <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
+                  </svg>
+                  Want to Visit
+                </Link>
+              </div>
               <Link
                 to="/ai-analyzer"
                 onClick={() => setMobileMenuOpen(false)}

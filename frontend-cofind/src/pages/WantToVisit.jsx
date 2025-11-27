@@ -5,38 +5,38 @@ import CoffeeShopCard from '../components/CoffeeShopCard';
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 const USE_API = import.meta.env.VITE_USE_API === 'true';
 
-const Favorite = () => {
-  const [favoriteShops, setFavoriteShops] = useState([]);
+const WantToVisit = () => {
+  const [wantToVisitShops, setWantToVisitShops] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadFavorites();
+    loadWantToVisit();
   }, []);
 
-  const loadFavorites = async () => {
+  const loadWantToVisit = async () => {
     try {
       setIsLoading(true);
-      // Get list of favorite place_ids from localStorage
-      const favorites = JSON.parse(localStorage.getItem('favoriteShops') || '[]');
+      // Get list of want-to-visit place_ids from localStorage
+      const wantToVisit = JSON.parse(localStorage.getItem('wantToVisitShops') || '[]');
       
-      if (favorites.length === 0) {
-        setFavoriteShops([]);
+      if (wantToVisit.length === 0) {
+        setWantToVisitShops([]);
         setIsLoading(false);
         return;
       }
 
-      // Load full shop data for each favorite
+      // Load full shop data for each want-to-visit
       let shops = [];
 
       if (USE_API) {
-        // Try to get details from backend for each favorite
-        for (const placeId of favorites) {
+        // Try to get details from backend for each want-to-visit
+        for (const placeId of wantToVisit) {
           try {
-            console.log(`[Favorite] Fetching details for place_id: ${placeId}`);
+            console.log(`[WantToVisit] Fetching details for place_id: ${placeId}`);
             const response = await fetch(`${API_BASE}/api/coffeeshops/detail/${placeId}`);
             const data = await response.json();
             
-            console.log(`[Favorite] Response for ${placeId}:`, data);
+            console.log(`[WantToVisit] Response for ${placeId}:`, data);
             
             if (data.status === 'success' && data.data) {
               const detail = data.data;
@@ -46,7 +46,7 @@ const Favorite = () => {
               if (Array.isArray(detail.photos)) {
                 // Photos sudah dalam format URL string dari backend
                 photoUrls = detail.photos.slice(0, 1); // Ambil 1 foto pertama
-                console.log(`[Favorite] Photos for ${detail.name}:`, photoUrls);
+                console.log(`[WantToVisit] Photos for ${detail.name}:`, photoUrls);
               }
               
               const shop = {
@@ -62,21 +62,20 @@ const Favorite = () => {
                 photos: photoUrls,
               };
               
-              console.log(`[Favorite] Shop data prepared:`, shop);
+              console.log(`[WantToVisit] Shop data prepared:`, shop);
               shops.push(shop);
             }
           } catch (err) {
-            console.error(`[Favorite] Error loading favorite ${placeId}:`, err);
+            console.error(`[WantToVisit] Error loading want-to-visit ${placeId}:`, err);
           }
         }
       }
       
-      console.log(`[Favorite] Total shops loaded: ${shops.length}`);
-
-      setFavoriteShops(shops);
+      console.log(`[WantToVisit] Total shops loaded: ${shops.length}`);
+      setWantToVisitShops(shops);
       setIsLoading(false);
     } catch (err) {
-      console.error('Error loading favorites:', err);
+      console.error('[WantToVisit] Error loading want-to-visit:', err);
       setIsLoading(false);
     }
   };
@@ -85,19 +84,19 @@ const Favorite = () => {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-zinc-900 py-6 sm:py-8 px-3 sm:px-4 md:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <p className="text-center text-lg text-gray-600 dark:text-gray-400">Memuat favorit...</p>
+          <p className="text-center text-lg text-gray-600 dark:text-gray-400">Memuat want to visit...</p>
         </div>
       </div>
     );
   }
 
-  if (favoriteShops.length === 0) {
+  if (wantToVisitShops.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-zinc-900 py-6 sm:py-8 px-3 sm:px-4 md:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center py-8 sm:py-12 md:py-16">
             <svg
-              className="mx-auto h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 text-rose-400 dark:text-rose-500"
+              className="mx-auto h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 text-blue-400 dark:text-blue-500"
               fill="none"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -105,13 +104,13 @@ const Favorite = () => {
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+              <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
             </svg>
             <h1 className="mt-4 sm:mt-6 text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 dark:text-white px-4">
-              Belum Ada Favorit
+              Belum Ada Coffee Shop
             </h1>
             <p className="mt-3 sm:mt-4 text-base sm:text-lg text-gray-600 dark:text-gray-400 px-4">
-              Mulai tambahkan coffee shop favorit Anda!
+              Tandai coffee shop yang ingin Anda kunjungi!
             </p>
             <Link
               to="/"
@@ -129,15 +128,18 @@ const Favorite = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-900 py-6 sm:py-8 px-3 sm:px-4 md:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
-            ❤️ Favorit Saya
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-3">
+            <svg className="w-8 h-8 sm:w-10 sm:h-10 text-blue-500" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
+            </svg>
+            Want to Visit
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            {favoriteShops.length} coffee shop yang Anda sukai
+            {wantToVisitShops.length} coffee shop yang ingin Anda kunjungi
           </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-          {favoriteShops.map((shop) => (
+          {wantToVisitShops.map((shop) => (
             <Link key={shop.place_id} to={`/shop/${shop.place_id}`}>
               <CoffeeShopCard shop={shop} />
             </Link>
@@ -148,5 +150,5 @@ const Favorite = () => {
   );
 };
 
-export default Favorite;
+export default WantToVisit;
 

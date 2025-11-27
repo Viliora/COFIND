@@ -14,6 +14,7 @@ function ShopDetail() {
   const [error, setError] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [isWantToVisit, setIsWantToVisit] = useState(false);
   const [notification, setNotification] = useState(null);
 
   useEffect(() => {
@@ -83,11 +84,14 @@ function ShopDetail() {
     loadShop();
   }, [id]);
 
-  // Check if shop is favorited
+  // Check if shop is favorited or in want-to-visit
   useEffect(() => {
     if (id) {
       const favorites = JSON.parse(localStorage.getItem('favoriteShops') || '[]');
       setIsFavorite(favorites.includes(id));
+      
+      const wantToVisit = JSON.parse(localStorage.getItem('wantToVisitShops') || '[]');
+      setIsWantToVisit(wantToVisit.includes(id));
     }
   }, [id]);
 
@@ -110,6 +114,28 @@ function ShopDetail() {
       setIsFavorite(!isFavorite);
     } catch (err) {
       console.error('Error toggling favorite:', err);
+    }
+  };
+
+  const toggleWantToVisit = () => {
+    try {
+      const wantToVisit = JSON.parse(localStorage.getItem('wantToVisitShops') || '[]');
+      if (isWantToVisit) {
+        // Remove from want-to-visit
+        const updated = wantToVisit.filter(item => item !== id);
+        localStorage.setItem('wantToVisitShops', JSON.stringify(updated));
+        setNotification({ type: 'removed', message: 'Dihapus dari want to visit' });
+      } else {
+        // Add to want-to-visit
+        if (!wantToVisit.includes(id)) {
+          wantToVisit.push(id);
+          localStorage.setItem('wantToVisitShops', JSON.stringify(wantToVisit));
+        }
+        setNotification({ type: 'added', message: 'Ditambahkan ke want to visit!' });
+      }
+      setIsWantToVisit(!isWantToVisit);
+    } catch (err) {
+      console.error('Error toggling want to visit:', err);
     }
   };
 
@@ -192,13 +218,6 @@ function ShopDetail() {
                   {shop.rating || 'N/A'}
                 </span>
               </div>
-              {shop.price_level && (
-                <div className="flex items-center bg-green-50 dark:bg-green-900/20 px-3 py-1.5 rounded-lg">
-                  <span className="text-green-600 dark:text-green-400 font-semibold">
-                    {'$'.repeat(shop.price_level)}
-                  </span>
-                </div>
-              )}
             </div>
           </div>
 
@@ -383,64 +402,126 @@ function ShopDetail() {
         </div>
       </div>
 
-      {/* Floating Favorite Button - pojok kanan bawah */}
-      <button
-        onClick={toggleFavorite}
-        className="fixed bottom-8 right-8 transition-all duration-200 hover:scale-110 focus:outline-none bg-transparent border-0 p-0 group z-40"
-        title={isFavorite ? 'Hapus dari favorit' : 'Tambah ke favorit'}
-      >
-        <svg
-          width="48"
-          height="48"
-          viewBox="0 0 512 512"
-          xmlns="http://www.w3.org/2000/svg"
-          clipRule="evenodd"
-          fillRule="evenodd"
+      {/* Floating Action Buttons - pojok kanan bawah */}
+      <div className="fixed bottom-8 right-8 flex flex-col gap-4 z-40">
+        {/* Want to Visit Button */}
+        <button
+          onClick={toggleWantToVisit}
+          className="transition-all duration-200 hover:scale-110 focus:outline-none bg-transparent border-0 p-0 group"
+          title={isWantToVisit ? 'Hapus dari want to visit' : 'Tambah ke want to visit'}
         >
-          {isFavorite ? (
-            // After click: lingkaran putih + border pink + hati pink
-            <>
-              <circle 
-                cx="256" 
-                cy="256" 
-                r="256" 
-                fill="#ffffff"
-                className="group-hover:fill-pink-100 transition-colors duration-200"
-              />
-              <circle 
-                cx="256" 
-                cy="256" 
-                r="240" 
-                fill="none"
-                stroke="#ec4899"
-                strokeWidth="30"
-                className="group-hover:stroke-pink-600 transition-colors duration-200"
-              />
-              <path
-                d="m269.581 163.595c29.629-32.044 78.207-32.153 107.937 0 29.685 32.105 29.686 84.633.002 116.737-37.898 40.988-75.79 81.972-113.688 122.959-2.092 2.263-4.747 3.424-7.831 3.424s-5.738-1.161-7.831-3.424c-37.897-40.986-75.793-81.971-113.69-122.957-29.683-32.103-29.683-84.633 0-116.735 29.685-32.105 78.255-32.105 107.938-.002l13.581 14.688z"
-                fill="#ec4899"
-                className="group-hover:fill-pink-600 transition-colors duration-200"
-              />
-            </>
-          ) : (
-            // Default: lingkaran rose + hati putih
-            <>
-              <circle 
-                cx="256" 
-                cy="256" 
-                r="256" 
-                fill="#f43f5e"
-                className="group-hover:fill-rose-500 transition-colors duration-200"
-              />
-              <path
-                d="m269.581 163.595c29.629-32.044 78.207-32.153 107.937 0 29.685 32.105 29.686 84.633.002 116.737-37.898 40.988-75.79 81.972-113.688 122.959-2.092 2.263-4.747 3.424-7.831 3.424s-5.738-1.161-7.831-3.424c-37.897-40.986-75.793-81.971-113.69-122.957-29.683-32.103-29.683-84.633 0-116.735 29.685-32.105 78.255-32.105 107.938-.002l13.581 14.688z"
-                fill="#ffffff"
-                className="group-hover:fill-rose-200 transition-colors duration-200"
-              />
-            </>
-          )}
-        </svg>
-      </button>
+          <svg
+            width="48"
+            height="48"
+            viewBox="0 0 512 512"
+            xmlns="http://www.w3.org/2000/svg"
+            clipRule="evenodd"
+            fillRule="evenodd"
+          >
+            {isWantToVisit ? (
+              // After click: lingkaran putih + border blue + bookmark blue (filled)
+              <>
+                <circle 
+                  cx="256" 
+                  cy="256" 
+                  r="256" 
+                  fill="#ffffff"
+                  className="group-hover:fill-blue-100 transition-colors duration-200"
+                />
+                <circle 
+                  cx="256" 
+                  cy="256" 
+                  r="240" 
+                  fill="none"
+                  stroke="#3b82f6"
+                  strokeWidth="30"
+                  className="group-hover:stroke-blue-600 transition-colors duration-200"
+                />
+                <path
+                  d="M170 140c0-11.046 8.954-20 20-20h132c11.046 0 20 8.954 20 20v232l-86-43-86 43V140z"
+                  fill="#3b82f6"
+                  className="group-hover:fill-blue-600 transition-colors duration-200"
+                />
+              </>
+            ) : (
+              // Default: lingkaran blue + bookmark putih
+              <>
+                <circle 
+                  cx="256" 
+                  cy="256" 
+                  r="256" 
+                  fill="#3b82f6"
+                  className="group-hover:fill-blue-500 transition-colors duration-200"
+                />
+                <path
+                  d="M170 140c0-11.046 8.954-20 20-20h132c11.046 0 20 8.954 20 20v232l-86-43-86 43V140z"
+                  fill="#ffffff"
+                  className="group-hover:fill-blue-200 transition-colors duration-200"
+                />
+              </>
+            )}
+          </svg>
+        </button>
+
+        {/* Favorite Button */}
+        <button
+          onClick={toggleFavorite}
+          className="transition-all duration-200 hover:scale-110 focus:outline-none bg-transparent border-0 p-0 group"
+          title={isFavorite ? 'Hapus dari favorit' : 'Tambah ke favorit'}
+        >
+          <svg
+            width="48"
+            height="48"
+            viewBox="0 0 512 512"
+            xmlns="http://www.w3.org/2000/svg"
+            clipRule="evenodd"
+            fillRule="evenodd"
+          >
+            {isFavorite ? (
+              // After click: lingkaran putih + border pink + hati pink
+              <>
+                <circle 
+                  cx="256" 
+                  cy="256" 
+                  r="256" 
+                  fill="#ffffff"
+                  className="group-hover:fill-pink-100 transition-colors duration-200"
+                />
+                <circle 
+                  cx="256" 
+                  cy="256" 
+                  r="240" 
+                  fill="none"
+                  stroke="#ec4899"
+                  strokeWidth="30"
+                  className="group-hover:stroke-pink-600 transition-colors duration-200"
+                />
+                <path
+                  d="m269.581 163.595c29.629-32.044 78.207-32.153 107.937 0 29.685 32.105 29.686 84.633.002 116.737-37.898 40.988-75.79 81.972-113.688 122.959-2.092 2.263-4.747 3.424-7.831 3.424s-5.738-1.161-7.831-3.424c-37.897-40.986-75.793-81.971-113.69-122.957-29.683-32.103-29.683-84.633 0-116.735 29.685-32.105 78.255-32.105 107.938-.002l13.581 14.688z"
+                  fill="#ec4899"
+                  className="group-hover:fill-pink-600 transition-colors duration-200"
+                />
+              </>
+            ) : (
+              // Default: lingkaran rose + hati putih
+              <>
+                <circle 
+                  cx="256" 
+                  cy="256" 
+                  r="256" 
+                  fill="#f43f5e"
+                  className="group-hover:fill-rose-500 transition-colors duration-200"
+                />
+                <path
+                  d="m269.581 163.595c29.629-32.044 78.207-32.153 107.937 0 29.685 32.105 29.686 84.633.002 116.737-37.898 40.988-75.79 81.972-113.688 122.959-2.092 2.263-4.747 3.424-7.831 3.424s-5.738-1.161-7.831-3.424c-37.897-40.986-75.793-81.971-113.69-122.957-29.683-32.103-29.683-84.633 0-116.735 29.685-32.105 78.255-32.105 107.938-.002l13.581 14.688z"
+                  fill="#ffffff"
+                  className="group-hover:fill-rose-200 transition-colors duration-200"
+                />
+              </>
+            )}
+          </svg>
+        </button>
+      </div>
     </div>
   );
 }

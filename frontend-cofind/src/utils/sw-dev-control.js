@@ -1,5 +1,11 @@
 // Development Control untuk Service Worker
 // Gunakan ini untuk enable/disable service worker di development untuk testing cache
+//
+// CARA MENGGUNAKAN:
+// 1. Import di main.jsx: import { forceEnableServiceWorkerInDev } from './utils/sw-dev-control';
+// 2. Panggil sebelum registerServiceWorker(): forceEnableServiceWorkerInDev();
+// 3. INGAT: HMR akan terganggu, reload manual diperlukan untuk melihat perubahan
+// 4. Setelah selesai testing, hapus/comment kembali
 
 /**
  * Force enable service worker di development mode (untuk testing cache)

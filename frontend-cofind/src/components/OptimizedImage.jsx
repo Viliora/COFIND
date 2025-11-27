@@ -108,6 +108,8 @@ const OptimizedImage = ({
           onError={handleError}
           loading="lazy" // Native lazy loading sebagai fallback
           decoding="async" // Async decoding untuk performa
+          fetchpriority="high" // High priority untuk hero images
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 1200px"
         />
       )}
 

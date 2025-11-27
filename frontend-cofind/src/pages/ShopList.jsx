@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import CoffeeShopCard from '../components/CoffeeShopCard';
+import HeroSwiper from '../components/HeroSwiper';
 import { preloadFeaturedImages } from '../utils/imagePreloader';
+import { fetchWithCache, preCacheCoffeeShops } from '../utils/apiCache';
+import { fetchWithDevCache, isDevelopmentMode, clearDevCache } from '../utils/devCache';
 
 // Konfigurasi API (optional - bisa di-set via environment variable)
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
@@ -136,29 +139,57 @@ export default function ShopList() {
   useEffect(() => {
     const loadShops = async () => {
       try {
-        setIsLoading(true);
         setError(null);
         
-        // Direct API call without caching
         if (USE_API && isOnline) {
           try {
             const apiUrl = `${API_BASE}/api/search/coffeeshops?lat=-0.026330&lng=109.342506`;
-            console.log('[ShopList] Fetching from API:', apiUrl);
+            console.log('[ShopList] Loading coffee shops...');
             
-            const response = await fetch(apiUrl);
-            
-            if (!response.ok) {
-              throw new Error(`API returned status ${response.status}`);
-            }
-            
-            const result = await response.json();
-            
-            if (result.data && Array.isArray(result.data) && result.data.length > 0) {
-              console.log('[ShopList] Loaded from API:', result.data.length, 'shops');
-              setCoffeeShops(result.data);
-              setIsFromCache(false);
-              setIsLoading(false);
-              return;
+            // Use dev cache in development mode for instant loading
+            if (isDevelopmentMode()) {
+              console.log('[ShopList] Development mode - using optimized cache');
+              
+              const result = await fetchWithDevCache(apiUrl);
+              
+              if (result.data && result.data.data && Array.isArray(result.data.data)) {
+                console.log('[ShopList] Loaded:', result.data.data.length, 'shops', 
+                           result.fromCache ? '(from cache)' : '(fresh)');
+                
+                setCoffeeShops(result.data.data);
+                setIsFromCache(result.fromCache);
+                
+                // If data is from cache (stale), keep loading indicator briefly
+                // Fresh data will update in background
+                if (result.stale) {
+                  console.log('[ShopList] Showing cached data, fetching fresh in background...');
+                  // Set loading to false immediately to show cached data
+                  setIsLoading(false);
+                } else {
+                  setIsLoading(false);
+                }
+                return;
+              }
+            } else {
+              // Production mode - direct fetch without dev cache
+              console.log('[ShopList] Production mode - direct API call');
+              setIsLoading(true);
+              
+              const response = await fetch(apiUrl);
+              
+              if (!response.ok) {
+                throw new Error(`API returned status ${response.status}`);
+              }
+              
+              const result = await response.json();
+              
+              if (result.data && Array.isArray(result.data) && result.data.length > 0) {
+                console.log('[ShopList] Loaded from API:', result.data.length, 'shops');
+                setCoffeeShops(result.data);
+                setIsFromCache(false);
+                setIsLoading(false);
+                return;
+              }
             }
           } catch (apiError) {
             console.error('[ShopList] API fetch failed:', apiError.message);
@@ -253,19 +284,29 @@ export default function ShopList() {
     }
   }, [featuredShops, isLoading]); // featuredShops sudah di-memoize, aman digunakan sebagai dependency
 
-  if (isLoading) {
+  if (isLoading && coffeeShops.length === 0) {
     return (
       <div className="text-center p-8 sm:p-12 md:p-16">
         <h1 className="text-xl sm:text-2xl md:text-3xl text-indigo-600 font-semibold px-4">Loading Coffee Shops in Pontianak...</h1>
         <div className="mt-4 flex justify-center">
           <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-indigo-600"></div>
         </div>
+        {isDevelopmentMode() && (
+          <p className="mt-4 text-sm text-gray-500">
+            💡 Development mode: Data akan di-cache untuk 5 menit
+          </p>
+        )}
       </div>
     );
   }
 
   return (
     <div className="w-full pb-6 sm:pb-8">
+      {/* Hero Swiper - Auto-playing carousel */}
+      {!error && !isLoading && coffeeShops.length > 0 && !searchTerm && (
+        <HeroSwiper coffeeShops={coffeeShops} />
+      )}
+
       <div className="bg-indigo-700 h-24 sm:h-32 md:h-40 flex items-center justify-center text-white mb-4 sm:mb-6 shadow-lg px-4 w-full">
         <h1 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-extrabold tracking-tight text-center">Temukan Coffee Shop Terbaik di Pontianak</h1>
       </div>
@@ -421,7 +462,7 @@ export default function ShopList() {
             </div>
           </div>
         )}
-        <div className="flex items-center justify-between mb-4 sm:mb-6">
+        <div className="flex items-center justify-between mb-4 sm:mb-6 flex-wrap gap-2">
           <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 border-b pb-2 flex-1">
             {activeFilter === 'all' ? 'Semua Coffee Shop' : 
              activeFilter === 'top-rated' ? '⭐ Top Rated Coffee Shops' :
@@ -431,16 +472,30 @@ export default function ShopList() {
              activeFilter === 'hidden-gems' ? '💎 Hidden Gems' : 'Coffee Shop Catalog'} ({filteredShops.length})
             {searchTerm && <span className="block sm:inline text-gray-500 dark:text-gray-400 text-sm sm:text-base md:text-lg mt-1 sm:mt-0"> - Search: "{searchTerm}"</span>}
           </h2>
-          {isFromCache && !isLoading && (
-            <span className="ml-2 px-2 py-1 text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 rounded-full">
-              📦 Cached
-            </span>
-          )}
-          {!isOnline && !isLoading && (
-            <span className="ml-2 px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full">
-              📡 Offline
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {isFromCache && !isLoading && (
+              <span className="px-2 py-1 text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 rounded-full">
+                📦 Cached
+              </span>
+            )}
+            {!isOnline && !isLoading && (
+              <span className="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full">
+                📡 Offline
+              </span>
+            )}
+            {isDevelopmentMode() && coffeeShops.length > 0 && (
+              <button
+                onClick={() => {
+                  clearDevCache();
+                  window.location.reload();
+                }}
+                className="px-3 py-1 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                title="Clear development cache and reload"
+              >
+                🔄 Clear Cache
+              </button>
+            )}
+          </div>
         </div>
 
         {error && (
