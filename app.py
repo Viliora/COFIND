@@ -676,7 +676,7 @@ DATA COFFEE SHOP DI {location.upper()} DENGAN INFORMASI LENGKAP:
 🎯 ATURAN UTAMA:
 1. HANYA rekomendasikan jika ADA review yang relevan dengan kata kunci user
 2. Review harus BENAR-BENAR menyebutkan atau berhubungan erat dengan kata kunci
-3. Jika tidak ada review yang relevan, JANGAN rekomendasikan - langsung jawab: "🙏 Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini."
+3. Jika tidak ada review yang relevan, JANGAN rekomendasikan - langsung jawab: "Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini."
 4. JANGAN memberikan rekomendasi yang dipaksakan atau diada-adakan
 
 ⚠️ ATURAN ANTI-HALUSINASI:
@@ -685,11 +685,22 @@ DATA COFFEE SHOP DI {location.upper()} DENGAN INFORMASI LENGKAP:
 3. DILARANG menambah-nambah informasi yang tidak ada di data
 4. DILARANG memberikan penjelasan "Logika Rekomendasi" atau "Mengapa Cocok"
 
+🚫 FORMAT OUTPUT - DILARANG:
+- JANGAN gunakan emoji apapun (🏆📍📝🗺️🎯☕💡 dll)
+- JANGAN gunakan format "Nama - Rating X/5.0"
+
+✅ FORMAT OUTPUT - WAJIB:
+Nomor. **Nama Coffee Shop**
+Rating: X.X
+Alamat: [alamat lengkap dari data - WAJIB ada]
+Google Maps: [URL dari data - WAJIB ada]
+Berdasarkan Ulasan Pengunjung: "review text dengan **kata kunci** bold" - Nama User (Rating⭐) [Verifikasi: URL]
+
 📋 CARA MENGUTIP REVIEW:
 - COPY PASTE teks review PERSIS kata per kata dari data
 - Gunakan nama user ASLI dan rating ASLI
 - Jika ada link [Verifikasi: URL], sertakan juga untuk bukti
-- Format: • "Teks review asli" - Nama User (Rating⭐) [Verifikasi: URL]
+- Format: "Teks review asli" - Nama User (Rating⭐) [Verifikasi: URL]
 
 🔍 KRITERIA RELEVANSI KETAT:
 - Review HARUS menyebutkan kata kunci atau sinonim/makna yang sangat dekat
@@ -703,7 +714,9 @@ DATA COFFEE SHOP DI {location.upper()} DENGAN INFORMASI LENGKAP:
 PENTING: 
 - Prioritas: KEJUJURAN > Memberikan rekomendasi
 - Jika tidak ada yang sesuai, JUJUR katakan tidak ada
-- JANGAN paksa rekomendasi yang tidak relevan"""
+- JANGAN paksa rekomendasi yang tidak relevan
+- OUTPUT HANYA 5 BARIS per coffee shop: nama (bold), rating, alamat, Google Maps URL, review
+- Alamat dan Google Maps URL WAJIB diambil dari data yang tersedia"""
 
         # Step 3: Extract keywords dari user input untuk highlighting
         keywords = [kw.strip().lower() for kw in user_text.split(',') if kw.strip()]
@@ -724,49 +737,68 @@ Tugas Anda: Cari coffee shop yang reviewnya BENAR-BENAR menyebutkan kata kunci d
 ⚠️ ATURAN KETAT:
 1. HANYA rekomendasikan jika ada review yang menyebutkan kata kunci ({keywords_display})
 2. Review harus RELEVAN - bukan sekedar review positif biasa
-3. Jika tidak ada review yang relevan, LANGSUNG jawab: "🙏 Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini."
+3. Jika tidak ada review yang relevan, LANGSUNG jawab: "Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini."
 4. JANGAN memberikan rekomendasi yang dipaksakan
 5. JANGAN tambahkan penjelasan pembuka seperti "Berdasarkan kata kunci..."
-6. JANGAN tambahkan section "🎯 LOGIKA REKOMENDASI"
+6. JANGAN tambahkan section "LOGIKA REKOMENDASI"
 
-FORMAT OUTPUT:
+🚫 DILARANG KERAS:
+- JANGAN gunakan emoji apapun (🏆📍📝🗺️🎯☕💡 dll)
+- JANGAN tulis "Alamat:" atau alamat lengkap
+- JANGAN tulis "Google Maps:" atau link maps
+- JANGAN tulis format "Toko Kami - Rating X/5.0"
 
-JIKA ADA YANG SESUAI:
-🏆 [Nama Coffee Shop] - Rating X/5.0
-📍 Alamat: [alamat lengkap]
-🗺️ Google Maps: [URL dari data]
+✅ FORMAT OUTPUT WAJIB (COPY PERSIS):
 
-📝 Berdasarkan Ulasan Pengunjung:
-• "Review yang menyebutkan **kata kunci**" - Nama User (Rating⭐) [Verifikasi: URL jika ada]
+1. **Nama Coffee Shop**
+Rating: X.X
+Alamat: [alamat lengkap dari data]
+Google Maps: [URL dari data]
+Berdasarkan Ulasan Pengunjung: "Review yang menyebutkan **kata kunci**" - Nama User (Rating⭐) [Verifikasi: URL jika ada]
 
-(Ulangi untuk coffee shop lain yang sesuai)
+2. **Nama Coffee Shop Kedua**
+Rating: X.X
+Alamat: [alamat lengkap dari data]
+Google Maps: [URL dari data]
+Berdasarkan Ulasan Pengunjung: "Review yang menyebutkan **kata kunci**" - Nama User (Rating⭐) [Verifikasi: URL jika ada]
 
-JIKA TIDAK ADA YANG SESUAI:
-🙏 Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini.
+ATURAN FORMAT KETAT (WAJIB IKUTI):
+1. Mulai dengan nomor urut + titik + spasi + **Nama** (WAJIB diapit dua asterisk)
+2. Baris kedua: "Rating: " + angka (contoh: "Rating: 4.5")
+3. Baris ketiga: "Alamat: " + alamat lengkap dari data (WAJIB ada)
+4. Baris keempat: "Google Maps: " + URL dari data (WAJIB ada)
+5. Baris kelima: "Berdasarkan Ulasan Pengunjung: " + review lengkap
+6. Gunakan **bold** untuk kata dalam review yang MATCH dengan kata kunci
+7. HANYA 5 baris per coffee shop: nama, rating, alamat, maps URL, review
+8. TIDAK ADA informasi tambahan lain
 
-INSTRUKSI BOLD/HIGHLIGHT:
-- Gunakan **bold** untuk kata dalam review yang MATCH dengan kata kunci
-- Format: **kata kunci** (diapit dua asterisk)
-- Match bisa partial (contoh: "wifi" match dengan "wifinya kencang")
-- Case insensitive
+CONTOH OUTPUT YANG BENAR (COPY FORMAT INI):
+1. **Toko Kami**
+Rating: 4.8
+Alamat: Jl. Kh.A.Dahlan Gg. Margosari No.3, Sungai Bangkong, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78121, Indonesia
+Google Maps: https://www.google.com/maps/place/?q=place_id:ChJM5X-4vIZHS4Rqyyj2I6Xh4U
+Berdasarkan Ulasan Pengunjung: "**cozy**, enak bgt kopi sederhana favy" - Dzaky Farhan (5⭐)
 
-CONTOH BENAR:
-Kata kunci: "wifi bagus, cozy"
-Review di data: "Wifinya kencang, tempatnya cozy banget" - Budi (5⭐) [Verifikasi: https://...]
-Output:
-🏆 Kopi Kenangan - Rating 4.5/5.0
+2. **Kopi Santai**
+Rating: 4.5
+Alamat: Jl. Ahmad Yani No. 123, Pontianak, Kalimantan Barat, Indonesia
+Google Maps: https://www.google.com/maps/place/?q=place_id:ChABCDEF123456
+Berdasarkan Ulasan Pengunjung: "Tempatnya **cozy** banget, **wifi** kencang" - Budi (5⭐) [Verifikasi: https://...]
+
+CONTOH SALAH (JANGAN IKUTI):
+❌ 🏆 Toko Kami - Rating 4.8/5.0
 📍 Alamat: Jl. Ahmad Yani No. 123
-🗺️ Google Maps: https://...
+📝 Berdasarkan Ulasan Pengunjung: ...
 
-📝 Berdasarkan Ulasan Pengunjung:
-• "**Wifinya kencang**, tempatnya **cozy** banget" - Budi (5⭐) [Verifikasi: https://...]
+❌ Toko Kami (tanpa nomor dan **)
 
-CONTOH SALAH - JANGAN LAKUKAN:
-Kata kunci: "musholla"
-Review di data: "Tempatnya nyaman" - Sarah (5⭐)
-Output: ❌ JANGAN rekomendasikan ini karena review tidak menyebut "musholla"
+❌ 1. Toko Kami (tanpa **)
 
-PENTING: Jika tidak ada yang sesuai, JUJUR katakan tidak ada. Jangan dipaksakan!"""
+❌ 1. **Toko Kami**
+Rating: 4.8
+Berdasarkan Ulasan Pengunjung: ... (SALAH - tidak ada Alamat dan Google Maps URL)
+
+MULAI OUTPUT SEKARANG (langsung tulis tanpa penjelasan):"""
         else:  # analyze (default)
             user_content = f"""Kata kunci preferensi: {user_text}
 
@@ -794,8 +826,8 @@ Cari coffee shop yang reviewnya BENAR-BENAR menyebutkan kata kunci di atas. Jika
                 {"role": "user", "content": user_content}
             ],
             max_tokens=1536,  # Optimal untuk 30 coffee shops dengan review
-            temperature=0.2,  # Very low untuk strict, tidak bertele-tele, dan akurat
-            top_p=0.85  # Fokus pada token dengan probabilitas tinggi
+            temperature=0.1,  # Extremely low untuk strict format adherence
+            top_p=0.8  # Fokus pada token dengan probabilitas tinggi
         )
         
         print(f"[LLM] Response received successfully")

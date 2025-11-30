@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 const LLMAnalyzer = () => {
   const [input, setInput] = useState('');
@@ -9,6 +10,114 @@ const LLMAnalyzer = () => {
   const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
   const FIXED_LOCATION = 'Pontianak'; // Lokasi fixed, tidak bisa diubah user
   const FIXED_TASK = 'recommend'; // Task fixed: hanya rekomendasi
+
+  // Function untuk capitalize each word
+  const capitalizeWords = (str) => {
+    if (!str) return '';
+    return str.replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
+  // Function untuk parse coffee shops dari response LLM
+  const parseCoffeeShops = (text) => {
+    if (!text) return [];
+
+    // Split berdasarkan pattern nomor (1., 2., 3., dst) diikuti dengan **Nama**
+    const shopPattern = /(\d+)\.\s*\*\*([^*]+)\*\*/g;
+    const matches = [...text.matchAll(shopPattern)];
+    
+    if (matches.length === 0) return [];
+
+    const shops = [];
+    
+    matches.forEach((match, index) => {
+      const number = match[1];
+      const name = match[2].trim();
+      const startIndex = match.index;
+      const endIndex = index < matches.length - 1 ? matches[index + 1].index : text.length;
+      const content = text.substring(startIndex, endIndex).trim();
+      
+      // Extract rating (format: Rating: X.X atau Rating X.X)
+      const ratingMatch = content.match(/Rating[:\s]+(\d+\.?\d*)/i);
+      const rating = ratingMatch ? ratingMatch[1] : null;
+      
+      // Extract review text (cari "Berdasarkan Ulasan Pengunjung:" atau ambil semua setelah rating)
+      let reviewText = '';
+      const reviewMatch = content.match(/Berdasarkan Ulasan Pengunjung:\s*(.+?)(?=\n\n|\[Verifikasi:|$)/is);
+      if (reviewMatch) {
+        reviewText = reviewMatch[1].trim();
+      } else {
+        // Fallback: ambil semua teks setelah rating
+        const afterRating = content.split(/Rating[:\s]+\d+\.?\d*/i)[1];
+        if (afterRating) {
+          reviewText = afterRating
+            .replace(/Alamat[:\s]+[^\n]+/gi, '') // Remove alamat
+            .replace(/\[Verifikasi:[^\]]+\]/g, '') // Remove verifikasi
+            .replace(/Berdasarkan Ulasan Pengunjung:/gi, '') // Remove label
+            .trim();
+        }
+      }
+      
+      // Clean emoji dari review text
+      // eslint-disable-next-line no-misleading-character-class
+      reviewText = reviewText.replace(/[🏆📍📝🗺️⭐]/gu, '').trim();
+      
+      // Extract verification link
+      const verifyMatch = content.match(/\[Verifikasi:\s*(https?:\/\/[^\]]+)\]/);
+      const verifyLink = verifyMatch ? verifyMatch[1] : null;
+      
+      // Extract alamat jika ada
+      const addressMatch = content.match(/Alamat:\s*([^\n]+)/i);
+      let address = addressMatch ? addressMatch[1].trim() : null;
+      
+      // Extract Google Maps URL jika ada
+      const mapsMatch = content.match(/Google Maps:\s*(https?:\/\/[^\s\n]+)/i);
+      const mapsUrl = mapsMatch ? mapsMatch[1] : null;
+      
+      // Try to get place_id dari Google Maps URL atau dari localStorage
+      let placeId = null;
+      if (mapsUrl && mapsUrl.includes('place_id:')) {
+        const placeIdMatch = mapsUrl.match(/place_id:([A-Za-z0-9_-]+)/);
+        if (placeIdMatch) {
+          placeId = placeIdMatch[1];
+        }
+      }
+      
+      // Fallback: cari di localStorage berdasarkan nama
+      if (!placeId) {
+        try {
+          const cachedShops = localStorage.getItem('coffeeShops');
+          if (cachedShops) {
+            const shops = JSON.parse(cachedShops);
+            const foundShop = shops.find(s => 
+              s.name && name && s.name.toLowerCase().includes(name.toLowerCase())
+            );
+            if (foundShop) {
+              placeId = foundShop.place_id;
+              // Jika address belum ada, ambil dari localStorage
+              if (!address && foundShop.address) {
+                address = foundShop.address;
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Error finding place_id from localStorage:', e);
+        }
+      }
+      
+      shops.push({
+        number,
+        name,
+        rating,
+        reviewText,
+        verifyLink,
+        placeId,
+        mapsUrl,
+        address
+      });
+    });
+    
+    return shops;
+  };
 
   // Function untuk render text dengan markdown bold dan clickable URL
   const renderTextWithBold = (text) => {
@@ -234,41 +343,176 @@ const LLMAnalyzer = () => {
 
         {/* Result Display */}
         {result && (
-          <div className="mt-6 p-6 bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border-2 border-green-200 dark:border-green-800 rounded-xl shadow-lg">
-            <div className="mb-4">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-3">
-                <span>🎯</span>
+          <div className="mt-6 space-y-4">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 p-5 rounded-xl border border-indigo-200 dark:border-indigo-800 shadow-md">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
                 Rekomendasi Coffee Shop untuk Anda
               </h3>
-              <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 mb-4 pb-3 border-b border-gray-300 dark:border-gray-600">
-                <span className="px-2 py-1 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-full font-medium">
-                  📍 Pontianak
+              <div className="flex flex-wrap items-center gap-2 text-xs mb-3">
+                <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-full font-medium">
+                  Pontianak
                 </span>
-                <span className="px-2 py-1 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 rounded-full font-medium">
-                  ✓ Berdasarkan Ulasan Pengunjung
+                <span className="px-3 py-1 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 rounded-full font-semibold">
+                  Berdasarkan Ulasan Pengunjung
                 </span>
               </div>
-              <p className="text-sm text-gray-700 dark:text-gray-300 italic bg-gray-50 dark:bg-zinc-800/50 p-3 rounded-lg">
-                <span className="font-semibold">Preferensi Anda:</span> {result.input}
+              <p className="text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-zinc-800/50 p-3 rounded-lg">
+                <span className="font-semibold">Preferensi Anda:</span> <span className="italic">{result.input}</span>
               </p>
             </div>
 
-            {/* Analysis Result with Review Evidence & Bold Keywords */}
-            <div className="bg-white dark:bg-zinc-800 p-5 rounded-lg border border-gray-200 dark:border-zinc-700 shadow-sm">
-              <div className="text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-wrap text-base">
-                {result.analysis ? renderTextWithBold(result.analysis) : 'Tidak ada hasil rekomendasi'}
-              </div>
-            </div>
+            {/* Coffee Shop Cards */}
+            {(() => {
+              const shops = parseCoffeeShops(result.analysis);
+              
+              if (shops.length > 0) {
+                return (
+                  <div className="space-y-4">
+                    {shops.map((shop, index) => (
+                      <div 
+                        key={index}
+                        className="bg-white dark:bg-zinc-800 p-6 rounded-xl border-2 border-gray-200 dark:border-zinc-700 shadow-lg hover:shadow-xl transition-shadow duration-300"
+                      >
+                        {/* Shop Name - Capitalize, Bold, Link */}
+                        <div className="mb-4">
+                          {shop.placeId ? (
+                            <Link 
+                              to={`/shop/${shop.placeId}`}
+                              className="text-2xl font-bold text-gray-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                            >
+                              {capitalizeWords(shop.name)}
+                            </Link>
+                          ) : (
+                            <h4 className="text-2xl font-bold text-gray-900 dark:text-white">
+                              {capitalizeWords(shop.name)}
+                            </h4>
+                          )}
+                        </div>
+
+                        {/* Rating Badge */}
+                        {shop.rating && (
+                          <div className="mb-4">
+                            <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-800 rounded-lg">
+                              <svg className="w-6 h-6 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                              </svg>
+                              <span className="font-bold text-gray-900 dark:text-white text-xl">{shop.rating}</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Alamat */}
+                        {shop.address && (
+                          <div className="mb-4 flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
+                            <svg className="w-5 h-5 text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                            <span className="leading-relaxed">{shop.address}</span>
+                          </div>
+                        )}
+
+                        {/* Review Text */}
+                        {shop.reviewText && (
+                          <div className="space-y-2 mb-4">
+                            <p className="text-sm font-bold text-gray-700 dark:text-gray-300">
+                              Berdasarkan Ulasan Pengunjung:
+                            </p>
+                            <div className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                              {(() => {
+                                // Parse review text untuk extract verification link
+                                const reviewParts = shop.reviewText.split(/(\[Verifikasi:[^\]]+\])/g);
+                                
+                                return reviewParts.map((part, idx) => {
+                                  // Check if this is a verification link
+                                  if (part.startsWith('[Verifikasi:')) {
+                                    const urlMatch = part.match(/https?:\/\/[^\]]+/);
+                                    if (urlMatch) {
+                                      return (
+                                        <a
+                                          key={idx}
+                                          href={urlMatch[0]}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center gap-1 ml-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+                                          title="Verifikasi komentar asli di Google Maps"
+                                        >
+                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                          </svg>
+                                          Verified
+                                        </a>
+                                      );
+                                    }
+                                  }
+                                  // Regular text - render with bold support
+                                  return <span key={idx}>{renderTextWithBold(part)}</span>;
+                                });
+                              })()}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Action Buttons */}
+                        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-zinc-700">
+                          {/* Button ke Profile Coffee Shop */}
+                          {shop.placeId && (
+                            <a
+                              href={`/shop/${shop.placeId}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors duration-200 font-medium text-sm shadow-sm hover:shadow-md"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                              </svg>
+                              <span>Lihat Detail</span>
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                              </svg>
+                            </a>
+                          )}
+                          
+                          {/* Button ke Google Maps */}
+                          {shop.mapsUrl && (
+                            <a
+                              href={shop.mapsUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 font-medium text-sm shadow-sm hover:shadow-md"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                              </svg>
+                              <span>Buka di Maps</span>
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                              </svg>
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              }
+              
+              // Fallback: tampilkan teks biasa jika parsing gagal
+              return (
+                <div className="bg-white dark:bg-zinc-800 p-5 rounded-xl border border-gray-200 dark:border-zinc-700 shadow-sm">
+                  <div className="text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-wrap text-base">
+                    {result.analysis ? renderTextWithBold(result.analysis) : 'Tidak ada hasil rekomendasi'}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Info Footer */}
-            <div className="mt-4 flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                <span>🤖</span>
-                <span>Dianalisis oleh AI dengan data real-time dari Google Places</span>
-              </div>
-              <p className="text-gray-500 dark:text-gray-500">
-                {new Date(result.timestamp * 1000).toLocaleTimeString('id-ID')}
-              </p>
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 px-2">
+              <span>Dianalisis oleh AI dengan data real-time dari Google Places</span>
+              <span>{new Date(result.timestamp * 1000).toLocaleTimeString('id-ID')}</span>
             </div>
           </div>
         )}
