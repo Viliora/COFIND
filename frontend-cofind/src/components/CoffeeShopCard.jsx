@@ -50,7 +50,7 @@ const CoffeeShopCard = ({ shop }) => {
                     shopName={shop.name}
                 />
                 {shop.rating && (
-                    <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full flex items-center shadow-lg z-10">
+                    <div className="absolute top-12 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full flex items-center shadow-lg z-10">
                         <span className="text-yellow-500 mr-1">⭐</span>
                         <span className="font-semibold">{shop.rating}</span>
                     </div>

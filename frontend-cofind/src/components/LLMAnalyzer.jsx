@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 
 const LLMAnalyzer = () => {
@@ -6,10 +6,13 @@ const LLMAnalyzer = () => {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [progress, setProgress] = useState(0);
 
   const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
   const FIXED_LOCATION = 'Pontianak'; // Lokasi fixed, tidak bisa diubah user
   const FIXED_TASK = 'recommend'; // Task fixed: hanya rekomendasi
+  
+  const progressIntervalRef = useRef(null);
 
   // Function untuk capitalize each word
   const capitalizeWords = (str) => {
@@ -185,6 +188,20 @@ const LLMAnalyzer = () => {
     setLoading(true);
     setError(null);
     setResult(null);
+    setProgress(0);
+
+    // Simulasi progress bar (estimasi 20 detik untuk LLM response)
+    const totalDuration = 20000; // 20 detik
+    const intervalTime = 100; // Update setiap 100ms
+    const incrementPerInterval = (100 / (totalDuration / intervalTime));
+    
+    progressIntervalRef.current = setInterval(() => {
+      setProgress(prev => {
+        const newProgress = prev + incrementPerInterval;
+        // Cap at 95% sampai response benar-benar selesai
+        return newProgress >= 95 ? 95 : newProgress;
+      });
+    }, intervalTime);
 
     try {
       const response = await fetch(`${API_BASE}/api/llm/analyze`, {
@@ -205,14 +222,38 @@ const LLMAnalyzer = () => {
         throw new Error(data.message || 'Terjadi kesalahan');
       }
 
-      setResult(data);
+      // Set progress ke 100% saat selesai
+      setProgress(100);
+      
+      // Delay sedikit untuk menampilkan 100% sebelum menghilangkan loading
+      setTimeout(() => {
+        setResult(data);
+        setLoading(false);
+        setProgress(0);
+      }, 300);
+      
     } catch (err) {
       setError(err.message || 'Gagal menganalisis teks');
       console.error('LLM Error:', err);
-    } finally {
       setLoading(false);
+      setProgress(0);
+    } finally {
+      // Clear interval
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
     }
   };
+  
+  // Cleanup interval on unmount
+  useEffect(() => {
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+    };
+  }, []);
 
   const handleClear = () => {
     setInput('');
@@ -319,19 +360,53 @@ const LLMAnalyzer = () => {
           <button
             onClick={handleAnalyze}
             disabled={loading || !input.trim()}
-            className="flex-1 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+            className="relative flex-1 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 shadow-md hover:shadow-lg overflow-hidden"
           >
-            {loading ? (
-              <>
-                <span className="animate-spin">⏳</span>
-                Mencari Rekomendasi...
-              </>
-            ) : (
-              <>
-                <span>🎯</span>
-                Dapatkan Rekomendasi
-              </>
+            {/* Progress Bar Background */}
+            {loading && (
+              <div 
+                className="absolute inset-0 bg-indigo-800 transition-all duration-300 ease-out"
+                style={{ width: `${progress}%` }}
+              ></div>
             )}
+            
+            {/* Button Content */}
+            <div className="relative z-10 flex items-center gap-2">
+              {loading ? (
+                <>
+                  {/* Spinner SVG Animation */}
+                  <svg 
+                    className="animate-spin h-5 w-5 text-white" 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    fill="none" 
+                    viewBox="0 0 24 24"
+                  >
+                    <circle 
+                      className="opacity-25" 
+                      cx="12" 
+                      cy="12" 
+                      r="10" 
+                      stroke="currentColor" 
+                      strokeWidth="4"
+                    ></circle>
+                    <path 
+                      className="opacity-75" 
+                      fill="currentColor" 
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  <span className="font-bold">{Math.round(progress)}%</span>
+                  <span className="hidden sm:inline">- Menganalisis...</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                  </svg>
+                  <span>Dapatkan Rekomendasi</span>
+                </>
+              )}
+            </div>
           </button>
           <button
             onClick={handleClear}

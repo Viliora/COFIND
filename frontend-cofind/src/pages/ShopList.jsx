@@ -5,10 +5,12 @@ import HeroSwiper from '../components/HeroSwiper';
 import { preloadFeaturedImages } from '../utils/imagePreloader';
 import { fetchWithDevCache, isDevelopmentMode, clearDevCache } from '../utils/devCache';
 import heroBgImage from '../assets/1R modern cafe 1.5.jpg';
+import localPlacesData from '../data/places.json';
 
 // Konfigurasi API (optional - bisa di-set via environment variable)
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 const USE_API = import.meta.env.VITE_USE_API === 'true'; // Set VITE_USE_API=true untuk enable API
+const USE_LOCAL_DATA = true; // Set true untuk menggunakan data lokal JSON
 
 export default function ShopList() {
   const [searchParams] = useSearchParams();
@@ -140,6 +142,20 @@ export default function ShopList() {
     const loadShops = async () => {
       try {
         setError(null);
+        
+        // Prioritaskan data lokal jika USE_LOCAL_DATA aktif
+        if (USE_LOCAL_DATA) {
+          console.log('[ShopList] Using local JSON data...');
+          if (localPlacesData && localPlacesData.data && Array.isArray(localPlacesData.data)) {
+            console.log('[ShopList] Loaded from local JSON:', localPlacesData.data.length, 'shops');
+            setCoffeeShops(localPlacesData.data);
+            setIsFromCache(true); // Tandai sebagai cached data
+            setIsLoading(false);
+            return;
+          } else {
+            throw new Error('Local data format is invalid');
+          }
+        }
         
         if (USE_API && isOnline) {
           try {

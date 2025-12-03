@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import OptimizedImage from '../components/OptimizedImage';
+import localPlacesData from '../data/places.json';
+import localReviewsData from '../data/reviews.json';
 
 // Konfigurasi API (mengikuti ShopList)
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 const USE_API = import.meta.env.VITE_USE_API === 'true';
-const MIN_REVIEWS = 10; // Maksimal jumlah reviews yang ditampilkan
+const USE_LOCAL_DATA = true; // Set true untuk menggunakan data lokal JSON
+const MIN_REVIEWS = 15; // Maksimal jumlah reviews yang ditampilkan
 
 function ShopDetail() {
   const { id } = useParams();  // id akan mengambil place_id
@@ -22,6 +25,46 @@ function ShopDetail() {
       try {
         setIsLoading(true);
         setError(null);
+
+        // Prioritaskan data lokal jika USE_LOCAL_DATA aktif
+        if (USE_LOCAL_DATA) {
+          console.log('[ShopDetail] Using local JSON data for place_id:', id);
+          
+          if (localPlacesData && localPlacesData.data && Array.isArray(localPlacesData.data)) {
+            const foundShop = localPlacesData.data.find(shop => shop.place_id === id);
+            
+            if (foundShop) {
+              console.log('[ShopDetail] Found shop in local data:', foundShop.name);
+              const normalized = {
+                place_id: foundShop.place_id,
+                name: foundShop.name,
+                address: foundShop.address,
+                rating: foundShop.rating,
+                price_level: foundShop.price_level,
+                user_ratings_total: foundShop.user_ratings_total,
+                location: foundShop.location,
+                photos: Array.isArray(foundShop.photos) ? foundShop.photos : [],
+                business_status: foundShop.business_status,
+                map_embed_url: foundShop.map_embed_url || null,
+              };
+              setShop(normalized);
+              
+              // Ambil reviews dari file reviews.json terpisah berdasarkan place_id
+              const reviewsForShop = localReviewsData?.reviews_by_place_id?.[id] || [];
+              const localReviews = Array.isArray(reviewsForShop) 
+                ? reviewsForShop.slice(0, MIN_REVIEWS)
+                : [];
+              console.log('[ShopDetail] Loaded reviews from reviews.json:', localReviews.length);
+              setReviews(localReviews);
+              setIsLoading(false);
+              return;
+            } else {
+              throw new Error('Coffee shop tidak ditemukan dalam data lokal.');
+            }
+          } else {
+            throw new Error('Format data lokal tidak valid.');
+          }
+        }
 
         // Direct API call without caching
         if (USE_API) {
@@ -271,70 +314,66 @@ function ShopDetail() {
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4">
             📍 Lokasi
           </h2>
-          {shop.location ? (
+          {/* Prioritaskan iframe embed jika tersedia */}
+          {shop.map_embed_url ? (
+            <div className="rounded-lg overflow-hidden">
+              <iframe
+                src={shop.map_embed_url}
+                width="100%"
+                height="320"
+                style={{ border: 0 }}
+                allowFullScreen=""
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                className="w-full h-64 sm:h-80 rounded-lg"
+                title={`Peta lokasi ${shop.name}`}
+              />
+              {shop.location && (
+                <div className="mt-3 flex justify-center">
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${shop.location.lat},${shop.location.lng}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition shadow-md"
+                  >
+                    <svg className="w-4 h-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" stroke="currentColor" viewBox="0 0 24 24">
+                      <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                      <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    Buka di Google Maps
+                  </a>
+                </div>
+              )}
+            </div>
+          ) : shop.location ? (
             <div className="rounded-lg overflow-hidden">
               {(() => {
                 const lat = shop.location.lat;
                 const lng = shop.location.lng;
-                const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
                 const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
                 
-                // Build static map URL
-                const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=16&size=800x400&markers=color:red%7C${lat},${lng}&key=${apiKey}`;
-                
                 return (
-                  <>
-                    <a 
-                      href={googleMapsUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block relative group cursor-pointer"
-                    >
-                      <img
-                        src={mapUrl}
-                        alt="Peta lokasi"
-                        className="w-full h-64 sm:h-80 object-cover rounded-lg transition-all duration-300 group-hover:brightness-90"
-                        onError={(e) => {
-                          console.error('Static map failed to load:', e);
-                          const fallback = e.target.parentElement.parentElement.querySelector('[data-fallback="true"]');
-                          if (fallback) fallback.style.display = 'flex';
-                          e.target.parentElement.style.display = 'none';
-                        }}
-                      />
-                      {/* Overlay hover effect */}
-                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 rounded-lg flex items-center justify-center">
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white dark:bg-zinc-800 px-4 py-2 rounded-lg shadow-lg">
-                          <div className="flex items-center gap-2 text-gray-900 dark:text-white font-medium">
-                            <svg className="w-5 h-5" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" stroke="currentColor" viewBox="0 0 24 24">
-                              <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                              <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                            </svg>
-                            <span>Buka di Google Maps</span>
-                          </div>
-                        </div>
-                      </div>
-                    </a>
-                    <div
-                      data-fallback="true"
-                      className="hidden w-full h-64 sm:h-80 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-zinc-700 dark:to-zinc-800 rounded-lg items-center justify-center flex-col gap-3"
-                    >
-                      <div className="text-center">
-                        <p className="text-2xl mb-2">📍</p>
-                        <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Koordinat Lokasi:</p>
-                        <p className="text-lg font-mono font-semibold text-gray-900 dark:text-white">
-                          {lat.toFixed(6)}, {lng.toFixed(6)}
-                        </p>
-                        <a
-                          href={googleMapsUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-block mt-3 px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition shadow-md"
-                        >
-                          Buka di Google Maps
-                        </a>
-                      </div>
+                  <div className="w-full h-64 sm:h-80 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-zinc-700 dark:to-zinc-800 rounded-lg flex items-center justify-center flex-col gap-3">
+                    <div className="text-center">
+                      <p className="text-4xl mb-3">📍</p>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Koordinat Lokasi:</p>
+                      <p className="text-lg font-mono font-semibold text-gray-900 dark:text-white">
+                        {lat.toFixed(6)}, {lng.toFixed(6)}
+                      </p>
+                      <a
+                        href={googleMapsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition shadow-md"
+                      >
+                        <svg className="w-4 h-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" stroke="currentColor" viewBox="0 0 24 24">
+                          <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                          <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        Buka di Google Maps
+                      </a>
                     </div>
-                  </>
+                  </div>
                 );
               })()}
             </div>

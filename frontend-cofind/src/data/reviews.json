@@ -1,0 +1,3803 @@
+{
+  "reviews_by_place_id": {
+    "ChIJyRLXBlJYHS4RWNj0yvAvSAQ": [
+      {
+        "author_name": "Rizky Pratama",
+        "rating": 5,
+        "text": "Tempat favorit buat ngerjain deadline! WiFi-nya kenceng banget, stabil pula. Udah gitu buka 24 jam, jadi bisa nongkrong sampe subuh kalo lagi dikejar kerjaan. Kopi susunya juga enak, harga mahasiswa banget.",
+        "relative_time_description": "2 minggu lalu"
+      },
+      {
+        "author_name": "Siti Nurhaliza",
+        "rating": 5,
+        "text": "Aming Coffee emang juara sih buat WFC (Work From Cafe). WiFi-nya ga pernah ngadat, speed-nya konsisten. Colokan juga banyak, jadi ga perlu rebutan. Pelayanannya ramah, tempatnya juga nyaman.",
+        "relative_time_description": "1 bulan lalu"
+      },
+      {
+        "author_name": "Nadim Fadhilah",
+        "rating": 5,
+        "text": "parkir luas, parkir mobil nyaman, motor apalagi. Wifi stabil, kadang ada promo, harga standarlah.",
+        "relative_time_description": "1 bulan lalu"
+      },
+      {
+        "author_name": "Budi Santoso",
+        "rating": 4,
+        "text": "Sering kesini malem-malem karena buka 24 jam. Enak buat nongkrong sama temen abis main futsal. Kopi hitamnya mantap, harganya juga terjangkau. Minusnya kadang rame banget weekend.",
+        "relative_time_description": "3 minggu lalu"
+      },
+      {
+        "author_name": "Dewi Lestari",
+        "rating": 5,
+        "text": "Tempat ngopi legendaris di Pontianak! Udah langganan dari jaman kuliah. Kopi tubruknya authentic banget, berasa kopi asli Kalimantan. Staff-nya juga udah kenal semua hehe.",
+        "relative_time_description": "1 minggu lalu"
+      },
+      {
+        "author_name": "Ahmad Fauzi",
+        "rating": 4,
+        "text": "WiFi-nya emang juara, cocok buat yang kerja remote kayak saya. Cuma kadang AC-nya kurang dingin kalo siang, agak gerah. Tapi overall oke lah, recommended!",
+        "relative_time_description": "2 bulan lalu"
+      },
+      {
+        "author_name": "Linda Wijaya",
+        "rating": 5,
+        "text": "Bawa laptop kesini buat kerja, WiFi lancar jaya! Download file gede juga cepet. Kopi susunya creamy, roti bakarnya juga enak. Harga ramah di kantong.",
+        "relative_time_description": "1 bulan lalu"
+      },
+      {
+        "author_name": "Hendri Kusuma",
+        "rating": 3,
+        "text": "Tempatnya oke, tapi kemarin pas kesana agak kotor mejanya. Mungkin lagi rame kali ya jadi kewalahan. Kopi-nya sih tetep enak, WiFi juga bagus.",
+        "relative_time_description": "3 minggu lalu"
+      },
+      {
+        "author_name": "Putri Amelia",
+        "rating": 5,
+        "text": "Suka banget sama suasananya! Buka 24 jam jadi bisa kesini kapan aja. Kemarin kesini jam 2 malem masih rame, aman buat cewek juga. Kopinya nagih!",
+        "relative_time_description": "2 minggu lalu"
+      },
+      {
+        "author_name": "Yoga Permana",
+        "rating": 4,
+        "text": "Langganan buat meeting sama client. WiFi stabil, tempat cukup private kalo mau diskusi. Es kopi susunya favorit! Parkiran juga luas.",
+        "relative_time_description": "1 bulan lalu"
+      },
+      {
+        "author_name": "Rina Susanti",
+        "rating": 5,
+        "text": "Best coffee shop di Pontianak! Harga murah, kopi enak, WiFi kenceng, buka 24 jam. Apalagi yang dicari? Udah complete banget. Highly recommended!",
+        "relative_time_description": "1 minggu lalu"
+      },
+      {
+        "author_name": "Dimas Arya",
+        "rating": 4,
+        "text": "Tempat nongkrong andalan anak Untan. WiFi-nya bisa buat zoom meeting lancar. Kopi item-nya strong, pas buat begadang ngerjain skripsi wkwk.",
+        "relative_time_description": "3 minggu lalu"
+      },
+      {
+        "author_name": "Nadia Safitri",
+        "rating": 2,
+        "text": "Kemarin pelayanannya agak lama, nunggu 30 menit baru dapet pesanan. Mungkin karena weekend kali ya. WiFi-nya sih bagus, tapi pengalaman kali ini kurang memuaskan.",
+        "relative_time_description": "1 bulan lalu"
+      }
+    ],
+    "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4": [
+        {
+          "author_name": "Rama Putra",
+          "rating": 5,
+          "text": "Aming Coffee Podomoro emang juara, wifi-nya kenceng, buka sampe larut, enak banget buat ngerjain kerjaan kantor.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Dina Safira",
+          "rating": 5,
+          "text": "Dateng pagi sampe siang, wifi stabil, colokan banyak, baristanya juga ramah. Kopi susunya cocok di lidah.",
+          "relative_time_description": "3 hari lalu"
+        },
+        {
+          "author_name": "Andi Kurnia",
+          "rating": 4,
+          "text": "Tempatnya sering rame, tapi wajar sih karena enak buat nongkrong sama temen. Cappuccino-nya mantap.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Nabila Putri",
+          "rating": 5,
+          "text": "Suka ngerjain skripsi di sini, wifi aman buat Zoom, suasananya ga terlalu bising kalau di area dalam.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Fajar Hidayat",
+          "rating": 4,
+          "text": "Parkiran cukup luas, kopi tubruknya kuat, pas buat begadang. Cuma kadang AC-nya kurang dingin kalau lagi penuh.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Melati Ayu",
+          "rating": 5,
+          "text": "Kalau cari tempat ngopi tengah malam, ini andalan. Jam 1–2 subuh masih ada orang, dan wifi tetap ngebut.",
+          "relative_time_description": "2 bulan lalu"
+        },
+        {
+          "author_name": "Yusuf Rahman",
+          "rating": 3,
+          "text": "Kopinya enak, tapi waktu weekend kemarin pesanan agak lama keluarnya. Semoga ke depan bisa lebih cepat.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Clara Febri",
+          "rating": 5,
+          "text": "Harga ramah di kantong, cocok buat mahasiswa. Roti bakar sama kopi susu udah cukup bikin betah lama-lama.",
+          "relative_time_description": "4 hari lalu"
+        },
+        {
+          "author_name": "Galih Permadi",
+          "rating": 4,
+          "text": "Musiknya santai, ga terlalu berisik. Enak buat kerja pakai laptop, wifi stabil dan ga putus-putus.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Sari Wulandari",
+          "rating": 5,
+          "text": "Andalan kalau ada deadline dadakan, bisa nongkrong sampe subuh. Staff-nya sigap dan kopinya ga pernah gagal.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJ-ZufmAFZHS4RCM9xUBjpYYY": [
+        {
+          "author_name": "Kevin Aditya",
+          "rating": 5,
+          "text": "Detik Coffee & Space vibes-nya kekinian banget, enak buat WFC. Kursi nyaman, meja luas, wifi aman.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Putri Nirmala",
+          "rating": 4,
+          "text": "Latte-nya smooth, desserts-nya juga enak. Paling suka duduk di dekat jendela, cahaya natural masuk banyak.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Rio Mahendra",
+          "rating": 5,
+          "text": "Sering dipakai meeting kecil sama tim, tempatnya cukup tenang dan barista ga keberatan kalau lama nongkrong.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Sarah Aulia",
+          "rating": 4,
+          "text": "Interiornya estetik, cocok banget buat foto-foto. Harga minuman masih oke untuk kantong mahasiswa.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Fikri Alamsyah",
+          "rating": 3,
+          "text": "Rasa kopi standar, tempatnya tidak terlalu besar, okelah untuk yang mau ngga terlalu ramai",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Lina Kartika",
+          "rating": 5,
+          "text": "Suka nongkrong sore di sini, musiknya santai dan baristanya ramah banget ngajak ngobrol soal kopi.",
+          "relative_time_description": "6 hari lalu"
+        },
+        {
+          "author_name": "Dodi Prasetyo",
+          "rating": 4,
+          "text": "Tempat ga terlalu besar tapi cozy. Cold brew-nya enak, ga terlalu asam, pas buat lidah saya.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Maya Salsabila",
+          "rating": 5,
+          "text": "Wifi-nya kencang, upload file kerjaan ke cloud lancar tanpa drama. Pasti balik lagi.",
+          "relative_time_description": "3 hari lalu"
+        },
+        {
+          "author_name": "Hendra Jaya",
+          "rating": 4,
+          "text": "Lokasi strategis, gampang dicari. Parkir motor lumayan cukup, cuma kalau jam rame agak padat.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Vina Oktaviani",
+          "rating": 5,
+          "text": "Suka sama vibes malam di sini, lampunya hangat dan ga silau. Cocok buat ngetik tugas sambil ngopi pelan-pelan.",
+          "relative_time_description": "2 minggu lalu"
+        }
+      ],
+
+      "ChIJ6fOdOEBZHS4RcV3VfZzhYx0": [
+        {
+          "author_name": "Roni Saputra",
+          "rating": 5,
+          "text": "Aming Coffee Ilham ini versi lebih tenang dari Aming lainnya, enak buat nongkrong santai sambil ngopi tubruk.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Dewi Kurnia",
+          "rating": 4,
+          "text": "Tempatnya klasik dan sederhana, berasa warung kopi lama tapi lebih rapi. Harga tetap kantong mahasiswa.",
+          "relative_time_description": "4 hari lalu"
+        },
+        {
+          "author_name": "Irwan",
+          "rating": 5,
+          "text": "Dateng pagi-pagi, kopi hitam panasnya nendang banget. Cocok buat buka hari sebelum kerja.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Siska Amelia",
+          "rating": 4,
+          "text": "Sering mampir habis belanja, pelayanannya cepat dan gak ribet. Karakternya tetap Aming banget.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Made Arya",
+          "rating": 3,
+          "text": "Rasa kopi oke, cuma pas datang agak penuh jadi harus gabung meja sama orang lain.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Nanda Putri",
+          "rating": 5,
+          "text": "Kalau mau ngerasain kopi Pontianak yang ‘asli’, Aming Ilham ini salah satu pilihan aman.",
+          "relative_time_description": "6 hari lalu"
+        },
+        {
+          "author_name": "Bahrul Ulum",
+          "rating": 2,
+          "text": "Saya pernah solat di musholla Aming Ilham, tapi diomongin nsama pelayannya kuat-kuat saat sedang solat karna tidak tahu bahwa sendal harus diluar mushola. bad experience dan bad attitude!",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Feni Marlina",
+          "rating": 5,
+          "text": "Lokasi gampang dicari, cocok buat ketemuan singkat. Pesanan gak pake drama.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Johan",
+          "rating": 4,
+          "text": "Kadang agak bising kalau jam ramai, tapi buat suasana warkop sih masih wajar.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Putra Mahendra",
+          "rating": 5,
+          "text": "Andalan kalau lagi pengen kopi cepat dan pasti enak, tanpa banyak mikir.",
+          "relative_time_description": "2 minggu lalu"
+        }
+      ],
+  
+      "ChIJC3_RpddZHS4RMiDp7-6TemY": [
+        {
+          "author_name": "Hana Lestari",
+          "rating": 5,
+          "text": "Rumah Kita Coffee & Eatery vibe-nya beneran kerasa kayak di rumah, nyaman buat nongkrong lama.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Dodi Firmansyah",
+          "rating": 4,
+          "text": "Makanannya variatif, dari snack sampai nasi. Cocok kalau nongkrong sekalian isi perut.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Yuliana",
+          "rating": 5,
+          "text": "Anak-anak juga betah di sini, tempatnya family friendly banget.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Rizky Maulana",
+          "rating": 4,
+          "text": "Kopi susunya enak, gak terlalu manis. Staff juga ramah dan sopan.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Reni",
+          "rating": 3,
+          "text": "Pas datang lagi rame acara keluarga, jadi agak berisik. Tapi makanan tetap enak.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Fajar",
+          "rating": 5,
+          "text": "Tempat yang pas kalau mau nongkrong bareng keluarga besar, kursi dan meja cukup banyak.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Lina",
+          "rating": 4,
+          "text": "Dekorasinya homey, bikin betah duduk lama. Harga makanan juga masih masuk akal.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Bayu",
+          "rating": 5,
+          "text": "Porsi makanan lumayan besar, cocok buat yang doyan makan. Kopinya jadi bonus.",
+          "relative_time_description": "6 hari lalu"
+        },
+        {
+          "author_name": "Samuel",
+          "rating": 4,
+          "text": "Parkiran agak terbatas kalau datang pakai mobil, tapi masih bisa diakalin.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Nadira",
+          "rating": 5,
+          "text": "Sering jadi tempat arisan keluarga, staff kooperatif banget bantu atur meja.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJpVctpWBZHS4RdUbSlT-pSl8": [
+        {
+          "author_name": "Fahrul",
+          "rating": 5,
+          "text": "CW Coffee Tanjung Raya cocok buat nongkrong bareng geng, tempatnya luas dan hidup.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Sarah",
+          "rating": 4,
+          "text": "Menu kopi kekinian banyak banget, bingung milihnya tapi sejauh ini belum ada yang gagal.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Deni",
+          "rating": 5,
+          "text": "Kalau malam suasananya rame tapi asik, cocok buat capek-capek habis kerja.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Mira",
+          "rating": 3,
+          "text": "Musiknya kadang terlalu kencang, kalau mau kerja pakai laptop agak susah fokus.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Aldy",
+          "rating": 4,
+          "text": "Kopi susunya pas, gak kemanisan. Pelayanan lumayan cepat walau ramai.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Citra",
+          "rating": 5,
+          "text": "Tempat favorit buat nonton bola bareng, suasana teriak-teriak tapi seru.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Rico",
+          "rating": 4,
+          "text": "Parkiran lumayan lega, ga terlalu was-was kalau bawa motor banyak.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Novi",
+          "rating": 5,
+          "text": "Staff ramah, meski ramai masih sempat senyum ke pelanggan.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Hendra",
+          "rating": 4,
+          "text": "Cocok buat nongkrong lama, kursi cukup nyaman. Kalau bisa tambah colokan bakal makin mantap.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Rara",
+          "rating": 5,
+          "text": "Tempatnya instagramable, foto-foto pakai HP aja sudah bagus.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJBVWfsoFZHS4Rakb44yanMjs": [
+        {
+          "author_name": "Kevin",
+          "rating": 5,
+          "text": "Osamu Coffee ini surganya pecinta manual brew, pilihannya banyak dan baristanya paham banget kopi.",
+          "relative_time_description": "4 hari lalu"
+        },
+        {
+          "author_name": "Liana",
+          "rating": 5,
+          "text": "Suka ambience tenangnya, cocok buat fokus kerja atau baca buku sendiri.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Fikri",
+          "rating": 4,
+          "text": "Single origin-nya kerasa jelas profil rasanya. Harganya sebanding sama kualitas.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Novi",
+          "rating": 3,
+          "text": "Tempatnya gak terlalu besar, jadi cepat penuh. Kalau telat dikit kadang kehabisan kursi.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Albert",
+          "rating": 5,
+          "text": "Barista-nya enak diajak ngobrol soal roasting dan grind size, berasa short course kopi gratis.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Maya",
+          "rating": 4,
+          "text": "Cocok buat yang beneran cari rasa kopi, bukan sekadar nongkrong foto-foto.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Rendi",
+          "rating": 5,
+          "text": "Espresso-nya clean dan bold, aftertaste-nya enak banget.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Silvi",
+          "rating": 4,
+          "text": "Dekor sederhana tapi rapi, fokus ke kopi. Saya suka konsep kayak gini.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Yoga",
+          "rating": 5,
+          "text": "Tempat andalan kalau mau ‘me time’ sambil ngopi serius.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Jihan",
+          "rating": 4,
+          "text": "WiFi cukup oke buat kerja ringan, cuma colokan terbatas jadi harus datang cepat.",
+          "relative_time_description": "2 minggu lalu"
+        }
+      ],
+  
+      "ChIJ71m2hZZZHS4RrOgKJYP_7zw": [
+        {
+          "author_name": "Aulia",
+          "rating": 5,
+          "text": "NUTRICULA COFFEE cocok buat yang cari kopi tapi tetap peduli ‘healthy lifestyle’, banyak pilihan minuman ringan.",
+          "relative_time_description": "6 hari lalu"
+        },
+        {
+          "author_name": "Rama",
+          "rating": 4,
+          "text": "Suka sama minuman non-dairy-nya, cocok buat saya yang agak sensitif susu.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Nana",
+          "rating": 5,
+          "text": "Snack-nya gak terlalu berat, pas buat temen ngopi tanpa bikin terlalu kenyang.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Dedi",
+          "rating": 3,
+          "text": "Rasa kopi oke, cuma menurut saya porsinya agak kecil untuk harga segitu.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Cindy",
+          "rating": 5,
+          "text": "Tempatnya bersih dan terang, berasa fresh begitu masuk.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Agus",
+          "rating": 4,
+          "text": "Barista ramah dan sabar jelasin perbedaan menu satu-satu.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Lydia",
+          "rating": 5,
+          "text": "Cocok buat nongkrong sehat, ga melulu kopi manis dan gorengan.",
+          "relative_time_description": "3 hari lalu"
+        },
+        {
+          "author_name": "Gilbert",
+          "rating": 4,
+          "text": "Musiknya tenang, ga terlalu bising. Enak buat ngobrol pelan-pelan.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Rizki",
+          "rating": 4,
+          "text": "Pilihan minuman dinginnya cukup banyak, cocok buat cuaca Pontianak.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Tari",
+          "rating": 5,
+          "text": "Suka banget sama infused water gratis di pojokan, detail kecil tapi berkesan.",
+          "relative_time_description": "2 minggu lalu"
+        }
+      ],
+  
+      "ChIJE8-LfABZHS4R_MsSOwiHNL8": [
+        {
+          "author_name": "Fajar",
+          "rating": 5,
+          "text": "Seremoni Coffee suasananya cozy, lighting warm dan kursinya empuk. Enak buat ngobrol lama.",
+          "relative_time_description": "4 hari lalu"
+        },
+        {
+          "author_name": "Putri",
+          "rating": 5,
+          "text": "Tempatnya kecil tapi estetik, tiap sudut kayak sengaja didesain buat foto.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Rian",
+          "rating": 4,
+          "text": "Cocok buat date santai, gak terlalu ramai dan musiknya lembut.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Sarah",
+          "rating": 3,
+          "text": "Kalau sudah penuh agak sesak, jarak antar meja lumayan dekat.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Hendri",
+          "rating": 5,
+          "text": "Cappuccino-nya enak, latte art-nya rapi. Detail kayak gini bikin mau balik lagi.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Mila",
+          "rating": 4,
+          "text": "Kue-kue pendamping kopinya enak dan fresh, bukan yang asal titip.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Wisnu",
+          "rating": 5,
+          "text": "Suka banget duduk di pojok dekat jendela, berasa punya spot sendiri.",
+          "relative_time_description": "6 hari lalu"
+        },
+        {
+          "author_name": "Nindy",
+          "rating": 4,
+          "text": "Barista-nya ramah dan gak pelit senyum, bikin suasana makin enak.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Bagas",
+          "rating": 4,
+          "text": "Musik agak pelan, buat saya itu plus karena bisa ngobrol tanpa teriak.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Laras",
+          "rating": 5,
+          "text": "Kalau lagi pengen tempat ngopi yang ‘kalem’, Seremoni ini pas banget.",
+          "relative_time_description": "2 minggu lalu"
+        }
+      ],
+  
+      "ChIJ4U6K9hdZHS4RKE7QPIKbn4Y": [
+        {
+          "author_name": "Andre",
+          "rating": 5,
+          "text": "Heim Coffee kecil tapi homey banget, berasa nongkrong di ruang tamu temen sendiri.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Dina",
+          "rating": 4,
+          "text": "Cocok buat nongkrong berdua atau bertiga saja, kalau banyak orang jadi kerasa penuh.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Imam",
+          "rating": 5,
+          "text": "Kopi susunya lembut, ga terlalu strong tapi tetap kerasa kopinya.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Nana",
+          "rating": 3,
+          "text": "Karena tempat kecil, kalau ada yang ngerokok di luar agak kecium ke dalam.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Rafi",
+          "rating": 5,
+          "text": "Staff ramah, ngobrol santai sama pelanggan. Bikin betah balik lagi.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Selvi",
+          "rating": 4,
+          "text": "WiFi cukup oke buat kerja ringan dan scrolling sosmed.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Gilang",
+          "rating": 5,
+          "text": "Hidden gem buat yang suka tempat tenang, ga terlalu banyak keramaian.",
+          "relative_time_description": "3 hari lalu"
+        },
+        {
+          "author_name": "Melly",
+          "rating": 4,
+          "text": "Dekor simpel tapi hangat. Bukan tipe cafe heboh, dan itu positif buat saya.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Yudha",
+          "rating": 4,
+          "text": "Pas banget buat numpang ngetik tugas sebentar sambil minum kopi.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Anya",
+          "rating": 5,
+          "text": "Suka sama konsep kecil tapi niat, rasa kopi tetap serius.",
+          "relative_time_description": "2 minggu lalu"
+        }
+      ],
+  
+      "ChIJG-xwV2ZZHS4R0WyGi5bbvoM": [
+        {
+          "author_name": "Agung",
+          "rating": 5,
+          "text": "Disela Coffee & Roastery aromanya udah bikin senang begitu buka pintu, wangi roastingan kopi.",
+          "relative_time_description": "4 hari lalu"
+        },
+        {
+          "author_name": "Mona",
+          "rating": 5,
+          "text": "Barista jelasin proses roasting dan origin dengan santai, serasa ikut kelas singkat.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Dendy",
+          "rating": 4,
+          "text": "Pilihan bijinya banyak, bisa pilih sesuai selera profil rasa.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Rara",
+          "rating": 3,
+          "text": "Kalau lagi roasting, kadang agak panas di dalam. Tapi wajar sih namanya juga roastery.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Heri",
+          "rating": 5,
+          "text": "Espresso-nya clean banget, berasa dikerjain serius dari hilir ke hulu.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Nia",
+          "rating": 4,
+          "text": "Tempatnya gak terlalu besar tapi cukup buat penikmat kopi beneran, gak berisik.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Surya",
+          "rating": 5,
+          "text": "Beli biji kopi buat dibawa pulang, rasanya di rumah tetap konsisten enak.",
+          "relative_time_description": "6 hari lalu"
+        },
+        {
+          "author_name": "Gio",
+          "rating": 4,
+          "text": "Harga sebanding sama kualitas bijinya, ini bukan kopi yang asal-asalan.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Karin",
+          "rating": 4,
+          "text": "Cocok buat duduk sebentar sambil nikmatin satu dua cangkir, bukan tipe cafe yang heboh.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Riko",
+          "rating": 5,
+          "text": "Kalau mau kenalan sama kopi yang beneran ‘serius’, Disela ini salah satu tempatnya.",
+          "relative_time_description": "2 minggu lalu"
+        }
+      ],
+  
+      "ChIJkeLtuqlZHS4RAjrhq_-O94s": [
+        {
+          "author_name": "Bayu",
+          "rating": 5,
+          "text": "Cafe Tyga Per Ampat cocok buat nobar dan nongkrong ramean, suasananya hidup banget.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Sinta",
+          "rating": 4,
+          "text": "Makanannya banyak pilihan, bukan cuma snack. Aman kalau nongkrong lama.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Rio",
+          "rating": 5,
+          "text": "Kalau ada live music suasananya makin seru, tapi masih enak dinikmatin.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Meli",
+          "rating": 3,
+          "text": "Kalau pas full house, suara jadi campur aduk dan agak bising banget.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Arman",
+          "rating": 4,
+          "text": "Pelayanannya cukup sigap meski rame, itu yang saya apresiasi.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Cici",
+          "rating": 5,
+          "text": "Tempatnya luas, enak buat kumpul komunitas atau reuni kecil.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Reza",
+          "rating": 4,
+          "text": "Harga menu standar cafe Pontianak, porsi makanan lumayan.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Novi",
+          "rating": 4,
+          "text": "Kopi lumayan, yang standout justru makanan beratnya menurut saya.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Tito",
+          "rating": 5,
+          "text": "Tempat singgah favorit abis futsal, bisa makan dan ngopi santai.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Dina",
+          "rating": 4,
+          "text": "Cocok buat yang suka suasana ramai dan gak terlalu formal.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJ98FvZm1ZHS4RQy-ELBGFEsA": [
+        {
+          "author_name": "Yogi",
+          "rating": 5,
+          "text": "Cooper Coffee cocok banget buat WFC, kursi nyaman dan meja luas.",
+          "relative_time_description": "4 hari lalu"
+        },
+        {
+          "author_name": "Anita",
+          "rating": 5,
+          "text": "Wifi di sini kencang dan stabil, upload file kerjaan gak ada drama.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Hendra",
+          "rating": 4,
+          "text": "Suasana semi-kantoran tapi tetap santai, enak buat meeting kecil.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Melisa",
+          "rating": 3,
+          "text": "Kalau pas jam makan siang agak berisik, banyak yang meeting dan telpon.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Fikri",
+          "rating": 5,
+          "text": "Kopi susunya enak, gak kemanisan. Pas buat nemenin kerja lama.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Nadia",
+          "rating": 4,
+          "text": "Colokan banyak, enak buat kerja kalau bawa laptop dan HP sekaligus.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Arif",
+          "rating": 5,
+          "text": "Sering dipakai kerja remote seharian, staffnya santai tapi tetap profesional.",
+          "relative_time_description": "6 hari lalu"
+        },
+        {
+          "author_name": "Tiara",
+          "rating": 4,
+          "text": "Kalau bisa tambah sedikit tanaman hijau di dalam mungkin lebih seger suasananya.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Gilang",
+          "rating": 5,
+          "text": "Lokasinya strategis, gampang dicari dan dekat banyak tempat lain.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Seno",
+          "rating": 4,
+          "text": "Cocok buat yang cari tempat kerja beneran, bukan cuma nongkrong.",
+          "relative_time_description": "2 minggu lalu"
+        }
+      ],
+  
+      "ChIJKX36yixZHS4ROQfX-hNWhj0": [
+        {
+          "author_name": "Rizal",
+          "rating": 5,
+          "text": "Aming Coffee Siantan andalan warga sekitar, kopinya konsisten enak dan ramai tiap malam.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Lisa",
+          "rating": 4,
+          "text": "Suasananya khas Aming, rame tapi seru. Cocok buat nongkrong sambil ngobrol panjang.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Andri",
+          "rating": 5,
+          "text": "Kopi hitamnya mantap, harga tetap bersahabat kayak cabang lain.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Sari",
+          "rating": 3,
+          "text": "Kalau weekend susah banget cari tempat duduk, full terus.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Fauzan",
+          "rating": 4,
+          "text": "Pelayanan cukup cepat mengingat pengunjungnya banyak.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Dewi",
+          "rating": 5,
+          "text": "Tempatnya luas dan terang, enak buat kumpul keluarga juga.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Hendra",
+          "rating": 4,
+          "text": "Kopi susu khas Aming tetap jadi favorit, gak pernah mengecewakan.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Nina",
+          "rating": 4,
+          "text": "Karena ramai, kadang sedikit bising, tapi itu bagian dari charm-nya.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Bayu",
+          "rating": 5,
+          "text": "Andalan kalau lagi main ke area Siantan dan pengen kopi cepat.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Rama",
+          "rating": 4,
+          "text": "Kopi Pontianaknya berasa banget, cocok buat yang suka rasa strong.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJKw9wJpxZHS4RZefJ0o8VSA0": [
+        {
+          "author_name": "Felix",
+          "rating": 5,
+          "text": "Franco’s Cafe suasananya mirip cafe Eropa kecil, cozy dan gak berisik.",
+          "relative_time_description": "4 hari lalu"
+        },
+        {
+          "author_name": "Sari",
+          "rating": 4,
+          "text": "Makanannya enak, plating rapi. Bukan cuma jual ambience.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Ardi",
+          "rating": 5,
+          "text": "Tempatnya enak buat ngobrol santai atau ngerjain tugas pelan-pelan.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Diana",
+          "rating": 3,
+          "text": "Pilihan menu ga terlalu banyak, tapi yang ada dieksekusi dengan baik.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Hugo",
+          "rating": 5,
+          "text": "Cappuccino-nya enak banget, foam-nya halus. Boleh lah dibanding sama cafe luar kota.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Nia",
+          "rating": 4,
+          "text": "Dekor simple tapi cantik, cocok buat foto-foto santai.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Rio",
+          "rating": 5,
+          "text": "Staff ramah dan helpful, suasana hangat dari awal masuk.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Martha",
+          "rating": 4,
+          "text": "Tempatnya gak terlalu besar, jadi kalau rame agak sulit dapat kursi.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Gilang",
+          "rating": 4,
+          "text": "Enak buat ketemuan berdua atau bertiga, gak cocok kalau rombongan besar.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Linda",
+          "rating": 5,
+          "text": "Cafe kecil tapi berkarakter, lebih ke tempat nikmatin waktu tenang.",
+          "relative_time_description": "2 minggu lalu"
+        }
+      ],
+  
+      "ChIJj6Rlt2RZHS4R8dtMO6pBEqY": [
+        {
+          "author_name": "Beni",
+          "rating": 5,
+          "text": "Cafe Sikribo & coffee break ini definisi warung kopi upgrade, santai tapi tetap nyaman.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Lila",
+          "rating": 4,
+          "text": "Sering jadi tempat nongkrong anak kampus, suasananya hidup.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Randy",
+          "rating": 5,
+          "text": "Harga ramah kantong, cocok buat mahasiswa yang doyan nongkrong.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Novi",
+          "rating": 3,
+          "text": "Kalau pas jam pulang kuliah, rame dan agak susah cari kursi.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Hana",
+          "rating": 4,
+          "text": "Kopinya oke, snack gorengannya juga enak dan fresh.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Taufik",
+          "rating": 5,
+          "text": "Tempat paling aman kalau mau nongkrong lama sambil nunggu dosen atau temen.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Yani",
+          "rating": 4,
+          "text": "Musik kadang random, tapi justru jadi bikin suasana jadi khas.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Andika",
+          "rating": 4,
+          "text": "Pelayanan cukup cepat, walau ramai tetap ke-handle.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Nanda",
+          "rating": 5,
+          "text": "Andalan anak kampus sekitar kalau lagi senggang dan pengen ngopi.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Riko",
+          "rating": 4,
+          "text": "Bukan cafe fancy, tapi pas buat nongkrong apa adanya.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJew-cPYFZHS4RuQsI4D8LScQ": [
+        {
+          "author_name": "Adi",
+          "rating": 5,
+          "text": "Paskamasala punya konsep unik, kopi dipaduin sama makanan bergaya rempah-rempah.",
+          "relative_time_description": "4 hari lalu"
+        },
+        {
+          "author_name": "Sinta",
+          "rating": 4,
+          "text": "Makanannya berani bumbu, beda dari cafe lain. Cocok buat yang suka coba hal baru.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Fauzi",
+          "rating": 5,
+          "text": "Kopinya enak, dan pas masuk ada aroma masala yang khas banget.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Nia",
+          "rating": 3,
+          "text": "Buat yang ga terlalu suka rempah mungkin berasa kuat, tapi saya pribadi suka.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Rehan",
+          "rating": 4,
+          "text": "Tempatnya sederhana tapi bersih, fokus ke rasa makanan dan kopi.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Maria",
+          "rating": 5,
+          "text": "Menu unik bikin pengen balik lagi, jarang ada cafe seperti ini di Pontianak.",
+          "relative_time_description": "6 hari lalu"
+        },
+        {
+          "author_name": "Gilang",
+          "rating": 4,
+          "text": "Harga masih masuk akal untuk menu yang beda dari yang lain.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Vivi",
+          "rating": 4,
+          "text": "Cocok buat nongkrong sambil eksplor rasa baru, bukan tipikal cafe mainstream.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Rama",
+          "rating": 5,
+          "text": "Masalanya berasa tapi tetap balance, ga nutup rasa kopi.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Lulu",
+          "rating": 4,
+          "text": "Pengalaman ngopi yang beda, recommended buat yang bosan sama menu itu-itu saja.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJXZmdnRpZHS4Rfdjw-EPEJUg": [
+        {
+          "author_name": "Dany",
+          "rating": 5,
+          "text": "Naoto Coffee vibes-nya tenang, cocok buat kerja sendiri dengan laptop.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Ria",
+          "rating": 4,
+          "text": "Dekor minimalis, bersih, dan gak banyak gangguan visual.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Ilham",
+          "rating": 5,
+          "text": "Wifi di sini kencang banget, upload-download file kerja lancar.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Monica",
+          "rating": 3,
+          "text": "Pilihan makanan gak terlalu banyak, lebih fokus ke kopi.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Fahri",
+          "rating": 5,
+          "text": "Espresso base-nya rapi, rasa konsisten tiap datang.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Novi",
+          "rating": 4,
+          "text": "Enak buat WFC, colokan juga cukup banyak.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Arif",
+          "rating": 5,
+          "text": "Suasana tenang, jarang ada suara berisik. Enak buat fokus.",
+          "relative_time_description": "6 hari lalu"
+        },
+        {
+          "author_name": "Feby",
+          "rating": 4,
+          "text": "Barista-nya friendly dan tau cara jelasin menu ke orang awam.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Hani",
+          "rating": 4,
+          "text": "Kalau bisa ditambah opsi snack ringan bakal lebih lengkap.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Romi",
+          "rating": 5,
+          "text": "Andalan kalau butuh tempat kerja beneran, bukan cuma nongkrong.",
+          "relative_time_description": "2 minggu lalu"
+        }
+      ],
+  
+      "ChIJh_2PLTxZHS4RMPzh8QqZFvw": [
+        {
+          "author_name": "Kevin",
+          "rating": 5,
+          "text": "Kafei Coffee & Brews punya racikan kopi yang halus, rasa seimbang.",
+          "relative_time_description": "4 hari lalu"
+        },
+        {
+          "author_name": "Tari",
+          "rating": 4,
+          "text": "Tempatnya kecil tapi estetik, cocok buat nongkrong sore-sore.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Rizky",
+          "rating": 5,
+          "text": "Manual brew V60-nya enak, barista nampak paham teknik seduh.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Dian",
+          "rating": 3,
+          "text": "Kalau penuh agak sesak, jarak kursi cukup dekat.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Adrian",
+          "rating": 5,
+          "text": "Cocok buat ngobrol berdua, suasananya hangat dan gak berisik.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Nina",
+          "rating": 4,
+          "text": "Cemilannya enak, terutama pastry-nya, cocok temen kopi.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Gerry",
+          "rating": 5,
+          "text": "Kalau lagi pengen kopi serius, saya sering arahin temen ke sini.",
+          "relative_time_description": "6 hari lalu"
+        },
+        {
+          "author_name": "Wulan",
+          "rating": 4,
+          "text": "Musik pelan dan menenangkan, bikin betah berlama-lama.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Rina",
+          "rating": 4,
+          "text": "Harga masih masuk akal untuk kualitas kopi kayak gini.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Ferry",
+          "rating": 5,
+          "text": "Salah satu tempat kopi yang rasanya konsisten dari awal buka.",
+          "relative_time_description": "2 minggu lalu"
+        }
+      ],
+  
+      "ChIJh1RyCgBZHS4RNzldDa4Op-k": [
+        {
+          "author_name": "Darma",
+          "rating": 5,
+          "text": "KamiNuansa Coffee sesuai namanya, nuansa dalamnya hangat dan nyaman.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Lidya",
+          "rating": 4,
+          "text": "Dekorasinya manis, banyak elemen kayu dan lampu warm.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Arman",
+          "rating": 5,
+          "text": "Cocok buat nongkrong tenang sambil ngobrol pelan atau baca buku.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Risa",
+          "rating": 3,
+          "text": "Tempatnya gak terlalu besar, kalau rombongan besar agak susah.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Joko",
+          "rating": 5,
+          "text": "Kopi susu gula arennya enak, gak kebanyakan gula.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Nita",
+          "rating": 4,
+          "text": "Staff ramah, cepat beresin meja kotor.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Gilang",
+          "rating": 5,
+          "text": "Suka banget sama ambience kalemnya, jarang ada cafe seadem ini.",
+          "relative_time_description": "6 hari lalu"
+        },
+        {
+          "author_name": "Meli",
+          "rating": 4,
+          "text": "Musiknya pelan, cocok buat fokus kerja ringan.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Feri",
+          "rating": 4,
+          "text": "Menu gak terlalu banyak tapi cukup buat nemenin ngopi.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Caca",
+          "rating": 5,
+          "text": "Kalau lagi pengen suasana tenang, saya pilih ke sini.",
+          "relative_time_description": "2 minggu lalu"
+        }
+      ],
+  
+      "ChIJ93EZtAhZHS4Rfp-46LEApdo": [
+        {
+          "author_name": "Steven",
+          "rating": 5,
+          "text": "Oriental Coffee and Space desain interiornya unik, ada sentuhan oriental di beberapa sudut.",
+          "relative_time_description": "4 hari lalu"
+        },
+        {
+          "author_name": "Dina",
+          "rating": 4,
+          "text": "Suasana cozy dan beda dari cafe lain, banyak detail kecil yang menarik.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Fajar",
+          "rating": 5,
+          "text": "Kopi susunya mantap, cocok diminum pelan-pelan sambil ngobrol.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Novi",
+          "rating": 3,
+          "text": "Tempatnya gak terlalu besar, jadi kalau ada rombongan kayak langsung penuh.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Rico",
+          "rating": 5,
+          "text": "Lighting-nya bagus banget buat foto, terutama dekat ornamen oriental.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Alia",
+          "rating": 4,
+          "text": "Camilannya enak dan porsinya pas, gak bikin terlalu kenyang.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Jordi",
+          "rating": 5,
+          "text": "Staff-nya ramah, bantuin cariin spot duduk yang nyaman.",
+          "relative_time_description": "6 hari lalu"
+        },
+        {
+          "author_name": "Lani",
+          "rating": 4,
+          "text": "Kalau bisa tambah sedikit tanaman hijau mungkin lebih seger lagi suasananya.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Bagus",
+          "rating": 4,
+          "text": "Harga masih oke untuk cafe dengan konsep unik seperti ini.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Anya",
+          "rating": 5,
+          "text": "Enak buat nongkrong sore sambil lepas penat abis kerja.",
+          "relative_time_description": "2 minggu lalu"
+        }
+      ],
+  
+      "ChIJpXpEsPNZHS4Rciespc96M5o": [
+        {
+          "author_name": "Tyo",
+          "rating": 5,
+          "text": "Silang Coffee punya layout unik, meja kursi diatur gak kaku bikin betah.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Nana",
+          "rating": 4,
+          "text": "Tempatnya simple tapi nyaman, cocok buat nongkrong bertiga-berempat.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Rio",
+          "rating": 5,
+          "text": "Kopi susunya pas, gak terlalu manis dan gak terlalu pahit.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Maya",
+          "rating": 3,
+          "text": "Parkiran agak susah kalau bawa mobil, tapi motor masih aman.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Feri",
+          "rating": 4,
+          "text": "Musik santai, gak ganggu kalau mau ngobrol pelan.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Lia",
+          "rating": 5,
+          "text": "Cocok buat ketemuan santai, staff juga ramah dan gak jutek.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Gani",
+          "rating": 4,
+          "text": "Harga pas, porsi minuman lumayan. Worth it buat sering-sering datang.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Rita",
+          "rating": 4,
+          "text": "Bukan cafe fancy, tapi pas buat nongkrong harian.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Andra",
+          "rating": 5,
+          "text": "Suka duduk di sisi dekat jendela, dapat view jalan yang lumayan rame.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Cahyadi",
+          "rating": 4,
+          "text": "Tempatnya kecil tapi suasananya hangat, berasa kenal lama.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJESuCXjdZHS4RDlYrLPontkg": [
+        {
+          "author_name": "Roni",
+          "rating": 5,
+          "text": "5cm Coffee & Eatery cabang Reformasi tempatnya luas, enak buat nongkrong ramean.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Susan",
+          "rating": 4,
+          "text": "Makanannya banyak pilihan, dari snack sampai nasi, cocok buat nongkrong lama.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Fikri",
+          "rating": 5,
+          "text": "Suasana ramai tapi gak chaos, enak buat kumpul komunitas.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Nadia",
+          "rating": 3,
+          "text": "Kalau weekend penuh banget, suara campur-campur jadi agak bising.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Hadi",
+          "rating": 4,
+          "text": "Kopi standarnya enak, ga aneh-aneh dan konsisten.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Celine",
+          "rating": 5,
+          "text": "Sering dipakai kumpul bareng teman kantor habis kerja, lokasi juga gampang.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Bayu",
+          "rating": 4,
+          "text": "Pelayanan cukup gesit untuk ukuran tempat sebesar itu.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Rara",
+          "rating": 4,
+          "text": "Cocok buat nongkrong santai tanpa terlalu mikir budget.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Dandi",
+          "rating": 5,
+          "text": "Spot favorit kalau lagi perlu tempat buat kumpul ramai.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Meli",
+          "rating": 4,
+          "text": "Parkiran cukup luas, jadi gak terlalu pusing cari tempat.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJCYkSEylZHS4Rgj-KzSUHdHQ": [
+        {
+          "author_name": "Andi",
+          "rating": 5,
+          "text": "Point Coffee Panglima Aim cocok buat coffee to go, cepat dan rasanya stabil.",
+          "relative_time_description": "4 hari lalu"
+        },
+        {
+          "author_name": "Rina",
+          "rating": 4,
+          "text": "Pas banget kalau lagi isi bensin sekalian beli kopi di sini.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Fahrul",
+          "rating": 5,
+          "text": "Kopi susu siap saji-nya enak, standar Point Coffee yang familiar.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Novi",
+          "rating": 3,
+          "text": "Tempat duduknya terbatas, lebih cocok buat beli dan lanjut jalan.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Gilang",
+          "rating": 4,
+          "text": "Pelayanan cepat, cocok kalau lagi buru-buru.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Lala",
+          "rating": 5,
+          "text": "Kopi ready to drink-nya seger, pas buat perjalanan jauh.",
+          "relative_time_description": "6 hari lalu"
+        },
+        {
+          "author_name": "Rafi",
+          "rating": 4,
+          "text": "Rasa konsisten, tiap beli di cabang manapun hampir sama.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Cici",
+          "rating": 4,
+          "text": "Lokasinya strategis, gampang kelihatan dari jalan.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Bayu",
+          "rating": 5,
+          "text": "Andalan kalau butuh kafein cepat dan ga mau ribet.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Dina",
+          "rating": 4,
+          "text": "Bukan tempat nongkrong lama, tapi untuk kopi cepat ini pilihan aman.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJJYT322JZHS4Rpu02ZMGunCw": [
+        {
+          "author_name": "Rudi",
+          "rating": 5,
+          "text": "ELIO COFFEE & EATERY di Rumah Jepin suasananya unik, ada vibe rumah budaya dan cafe jadi satu.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Santi",
+          "rating": 4,
+          "text": "Cocok buat nongkrong sambil liat aktivitas di Rumah Jepin, berasa ada hiburan tambahan.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Fikri",
+          "rating": 5,
+          "text": "Kopinya enak, makanan juga lumayan lengkap untuk ukuran cafe kecil.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Nadia",
+          "rating": 3,
+          "text": "Kalau ada acara di Rumah Jepin, bisa agak ramai dan berisik.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Hana",
+          "rating": 4,
+          "text": "Pelayanannya cukup ramah, walaupun tempatnya ga terlalu besar.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Rangga",
+          "rating": 5,
+          "text": "Tempatnya instagramable, banyak spot foto yang lucu.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Lia",
+          "rating": 4,
+          "text": "Cocok buat nongkrong sebentar sebelum atau sesudah nonton pertunjukan.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Dodi",
+          "rating": 4,
+          "text": "Harga standar, rasa kopi juga gak mengecewakan.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Meli",
+          "rating": 5,
+          "text": "Konsep cafe di dalam area Rumah Jepin ini menarik dan beda.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Agnes",
+          "rating": 4,
+          "text": "Pengalaman ngopi sambil menikmati suasana budaya, jarang ada.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJ446QPRRZHS4RAcWkHjohGFs": [
+        {
+          "author_name": "Ivan",
+          "rating": 5,
+          "text": "Coffee Toean punya nuansa old school, berasa ngopi di rumah tua yang dirawat baik.",
+          "relative_time_description": "4 hari lalu"
+        },
+        {
+          "author_name": "Ria",
+          "rating": 4,
+          "text": "Dekornya klasik tapi rapi, cocok buat foto-foto tema vintage.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Dony",
+          "rating": 5,
+          "text": "Kopinya strong dan wangi, pas buat saya yang suka kopi pekat.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Maya",
+          "rating": 3,
+          "text": "Tempatnya tidak terlalu besar, kalau ramai jadi agak sempit.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Rudi",
+          "rating": 5,
+          "text": "Suka nongkrong sore di sini, suasananya adem dan tenang.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Linda",
+          "rating": 4,
+          "text": "Pelayanannya sopan, kopinya disajikan rapi dan cepat.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Bayu",
+          "rating": 5,
+          "text": "Pas diajak orang tua, mereka langsung suka sama konsepnya.",
+          "relative_time_description": "6 hari lalu"
+        },
+        {
+          "author_name": "Cici",
+          "rating": 4,
+          "text": "Camilannya lumayan, walau bukan yang paling spesial.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Ferry",
+          "rating": 4,
+          "text": "Tempat yang pas kalau mau suasana tenang tanpa musik keras.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Rere",
+          "rating": 5,
+          "text": "Senang bisa nemu tempat ngopi yang punya karakter kuat kayak gini.",
+          "relative_time_description": "2 minggu lalu"
+        }
+      ],
+  
+      "ChIJv52soIZZHS4RIpP04VD5R8g": [
+        {
+          "author_name": "Rama",
+          "rating": 5,
+          "text": "ASPECT COFFEE cocok buat nongkrong sekaligus kerja, ambience-nya modern minimalis.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Sita",
+          "rating": 4,
+          "text": "Lighting di dalam enak banget buat foto maupun kerja pakai laptop.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Fikri",
+          "rating": 5,
+          "text": "Kopi susunya enak, gak terlalu penuh susu, kopinya masih berasa.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Novi",
+          "rating": 3,
+          "text": "Kalau duduk dekat pintu kadang suka keciprat asap rokok dari luar.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Alex",
+          "rating": 5,
+          "text": "Tempatnya bersih dan rapi, kursi juga nyaman untuk duduk lama.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Lina",
+          "rating": 4,
+          "text": "Musik santai, ga ganggu kalau lagi fokus ngetik.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Yusuf",
+          "rating": 5,
+          "text": "Wifi lumayan kencang, cocok buat WFC.",
+          "relative_time_description": "6 hari lalu"
+        },
+        {
+          "author_name": "Meli",
+          "rating": 4,
+          "text": "Harga standar coffee shop, rasa sesuai ekspektasi.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Hendra",
+          "rating": 4,
+          "text": "Parkiran motor masih cukup, mobil agak tricky.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Rani",
+          "rating": 5,
+          "text": "Tempat favorit kalau mau kerja di luar rumah tanpa distraksi.",
+          "relative_time_description": "2 minggu lalu"
+        }
+      ],
+  
+      "ChIJhU6w_i9ZHS4RVkMRHhGyAOg": [
+        {
+          "author_name": "Dedi",
+          "rating": 5,
+          "text": "Barabiru Coffee punya nuansa biru yang kuat, interiornya fresh banget.",
+          "relative_time_description": "4 hari lalu"
+        },
+        {
+          "author_name": "Rara",
+          "rating": 4,
+          "text": "Enak buat nongkrong sore, warna interior bikin mata adem.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Riko",
+          "rating": 5,
+          "text": "Kopinya enak, terutama menu es kopi susunya.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Nana",
+          "rating": 3,
+          "text": "Kalau ramai, suara cukup mantul di dalam, jadi agak berisik.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Feri",
+          "rating": 4,
+          "text": "Pelayanannya lumayan cepat dan ramah.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Dina",
+          "rating": 5,
+          "text": "Cocok buat nongkrong cantik, foto-foto juga bagus hasilnya.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Gilang",
+          "rating": 4,
+          "text": "Snack dan kopi seimbang, bukan cafe yang cuma jual tampilan.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Cici",
+          "rating": 4,
+          "text": "Harga masuk akal, porsi minuman juga gak pelit.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Hana",
+          "rating": 5,
+          "text": "Jadi tempat favorit kalau lagi pengen cari suasana baru.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Andra",
+          "rating": 4,
+          "text": "Parkir motor ok, mobil mungkin harus sedikit muter.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJKfRKnx1ZHS4RNGR9M2f-b_Y": [
+        {
+          "author_name": "Dimas",
+          "rating": 5,
+          "text": "Bermuda Coffee Irian tempatnya kecil tapi rasa kopinya besar.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Lulu",
+          "rating": 4,
+          "text": "Cocok buat nongkrong singkat sambil istirahat dari aktivitas.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Ari",
+          "rating": 5,
+          "text": "Kopi hitamnya enak, pahitnya pas di lidah.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Maya",
+          "rating": 3,
+          "text": "Tempat terbatas, kalau untuk belajar atau laptopan kurang cocok, karna kalau ramai wifinya lelet.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Fajar",
+          "rating": 5,
+          "text": "Pelayanan cepat, pesanan gak lama-lama nunggu.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Nia",
+          "rating": 4,
+          "text": "Suasana santai, gak terlalu banyak dekor berlebihan.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Riko",
+          "rating": 5,
+          "text": "Cocok jadi tempat quick coffee stop sebelum lanjut kerja.",
+          "relative_time_description": "6 hari lalu"
+        },
+        {
+          "author_name": "Yani",
+          "rating": 4,
+          "text": "Harga sesuai, rasa kopi di atas ekspektasi saya.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Hendra",
+          "rating": 4,
+          "text": "Pilihan menu gak banyak, tapi yang ada dieksekusi dengan baik.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Caca",
+          "rating": 5,
+          "text": "Andalan kalau lagi lewat daerah sini dan butuh kafein.",
+          "relative_time_description": "2 minggu lalu"
+        }
+      ],
+  
+      "ChIJN85HBqJZHS4R7h6R0jSP2QE": [
+        {
+          "author_name": "Rangga",
+          "rating": 5,
+          "text": "Segitiga Coffee punya suasana nyaman, meja kursinya rapi dan cukup lega.",
+          "relative_time_description": "4 hari lalu"
+        },
+        {
+          "author_name": "Sinta",
+          "rating": 4,
+          "text": "Menu kopi kekinian cukup banyak, cocok buat nongkrong lama.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Fikri",
+          "rating": 5,
+          "text": "Cocok buat kerja dengan laptop, wifi cukup kencang dan colokan ada.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Novi",
+          "rating": 3,
+          "text": "Kalau ramai, suara cukup menggema di dalam ruangan.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Aris",
+          "rating": 4,
+          "text": "Pelayanan cukup baik, pesanan datang dalam waktu wajar.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Lia",
+          "rating": 5,
+          "text": "Tempat duduknya nyaman, betah berjam-jam di sini.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Budi",
+          "rating": 4,
+          "text": "Cemilan juga lumayan, ada beberapa opsi yang enak.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Cindy",
+          "rating": 4,
+          "text": "Harga standar, rasa kopi gak mengecewakan.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Gilang",
+          "rating": 5,
+          "text": "Andalan kalau mau kerja di luar rumah tapi tetap nyaman.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Meli",
+          "rating": 4,
+          "text": "Parkiran lumayan, walau kalau jam ramai agak padat.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJl68KXstZHS4RM5ldvDjAHM8": [
+        {
+          "author_name": "Danu",
+          "rating": 5,
+          "text": "Sediakala Coffe punya vibe jadul tapi dibikin modern, enak buat nongkrong santai.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Rini",
+          "rating": 4,
+          "text": "Suasana tenang, cocok buat ngobrol pelan atau ngerjain tugas.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Fahri",
+          "rating": 5,
+          "text": "Kopinya enak, gak terlalu berat di perut.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Nana",
+          "rating": 3,
+          "text": "Pilihan makanan tidak terlalu banyak, lebih fokus ke kopi.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Rama",
+          "rating": 4,
+          "text": "Dekornya simple tapi ada sentuhan klasiknya.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Cici",
+          "rating": 5,
+          "text": "Tempatnya nyaman, staff ramah, bikin pengen balik lagi.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Fajar",
+          "rating": 4,
+          "text": "Musik pelan, ga ganggu kalau lagi fokus sama laptop.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Dina",
+          "rating": 4,
+          "text": "Harga masih oke, porsinya pas untuk sekali nongkrong.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Wawan",
+          "rating": 5,
+          "text": "Tempat yang pas kalau lagi pengen suasana adem dan tenang.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Lala",
+          "rating": 4,
+          "text": "Parkir motor cukup, mobil mungkin agak susah.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJ5ZqQxv5ZHS4R6Cp5kFFlFes": [
+        {
+          "author_name": "Yudi",
+          "rating": 5,
+          "text": "RHYTHM COFFEE punya musik yang dipilih dengan enak, sesuai namanya, ritmenya pas buat nongkrong.",
+          "relative_time_description": "4 hari lalu"
+        },
+        {
+          "author_name": "Salsa",
+          "rating": 4,
+          "text": "Kadang musiknya jadi highlight, bikin suasana makin asik.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Riko",
+          "rating": 5,
+          "text": "Kopinya enak, terutama yang pakai susu, halus dan gak bikin eneg.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Mira",
+          "rating": 3,
+          "text": "Kalau duduk dekat speaker, suara agak keras, tapi masih bisa dinikmati.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Fahmi",
+          "rating": 4,
+          "text": "Pelayanannya cukup cepat, staff juga ramah.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Lani",
+          "rating": 5,
+          "text": "Cocok buat nongkrong malam sambil dengerin lagu-lagu santai.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Arif",
+          "rating": 4,
+          "text": "Dekorasi simple, tapi atmosfernya dapet banget.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Gina",
+          "rating": 4,
+          "text": "Harga sesuai dengan rasa dan suasana yang didapet.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Benny",
+          "rating": 5,
+          "text": "Jadi tempat wajib kalau pengen nongkrong sambil denger musik enak.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Caca",
+          "rating": 4,
+          "text": "Snack lumayan, tapi yang juara tetap kopinya.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJN6t4cQBZHS4RuQOZYSndWSE": [
+        {
+          "author_name": "Rio",
+          "rating": 5,
+          "text": "5CM Coffee & Eatery cabang Pancasila luas dan terang, enak buat kumpul ramai.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Ninda",
+          "rating": 4,
+          "text": "Makanannya banyak pilihan, aman kalau nongkrong lama di sini.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Fajar",
+          "rating": 5,
+          "text": "Sering dipakai nobar dan kumpul komunitas, tempatnya mendukung.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Nia",
+          "rating": 3,
+          "text": "Kalau lagi penuh, suara cukup keras dan agak sulit ngobrol pelan.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Heri",
+          "rating": 4,
+          "text": "Kopi standarnya enak, gak terlalu manis dan gak hambar.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Cici",
+          "rating": 5,
+          "text": "Tempat favorit kalau mau kumpul ramai tanpa ribet.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Arman",
+          "rating": 4,
+          "text": "Pelayanannya cukup sigap meski rame.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Lala",
+          "rating": 4,
+          "text": "Harga standar, porsi makanan cukup mengenyangkan.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Rudi",
+          "rating": 5,
+          "text": "Parkiran masih bisa nampung banyak motor, lumayan lega.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Sari",
+          "rating": 4,
+          "text": "Cocok buat tempat ketemuan bareng teman lama.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJP464wpdZHS4RCIOBcClLxUQ": [
+        {
+          "author_name": "Bambang",
+          "rating": 5,
+          "text": "Sahabi Coffee and Eatery suasananya adem, banyak tanaman hijau di beberapa sudut.",
+          "relative_time_description": "4 hari lalu"
+        },
+        {
+          "author_name": "Mira",
+          "rating": 4,
+          "text": "Enak buat nongkrong santai, tempatnya homey.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Ari",
+          "rating": 5,
+          "text": "Makanannya enak, pilihan menunya cukup beragam.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Sinta",
+          "rating": 3,
+          "text": "Pelayanan sempat agak lama waktu ramai, tapi masih bisa dimaklumi.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Fajar",
+          "rating": 4,
+          "text": "Kopinya enak, porsi minuman pas.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Nadia",
+          "rating": 5,
+          "text": "Cocok buat ketemuan keluarga kecil, suasananya tenang.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Rizky",
+          "rating": 4,
+          "text": "Dekorasi dan penataan kursi cukup nyaman.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Cici",
+          "rating": 4,
+          "text": "Harga sebanding dengan rasa dan suasana yang didapat.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Yusuf",
+          "rating": 5,
+          "text": "Tempatnya bersih dan wangi, bikin betah lama-lama.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Dina",
+          "rating": 4,
+          "text": "Andalan kalau lagi pengen nongkrong tenang tanpa musik keras.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJd2gAkFRZHS4R7UbymPDLLU0": [
+        {
+          "author_name": "Rama",
+          "rating": 5,
+          "text": "Bandaria Coffee House punya nuansa sedikit klasik, kopinya kuat dan harum.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Sita",
+          "rating": 4,
+          "text": "Tempatnya gak terlalu besar tapi nyaman buat nongkrong kecil-kecilan.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Fikri",
+          "rating": 5,
+          "text": "Kopi tubruknya enak, terasa banget karakter bijinya.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Novi",
+          "rating": 3,
+          "text": "Pilihan makanan gak terlalu banyak, jadi lebih cocok fokus ngopi.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Hendra",
+          "rating": 5,
+          "text": "Suka suasana kalemnya, jarang ada cafe sesepi ini di jam tertentu.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Rina",
+          "rating": 4,
+          "text": "Pelayanannya sopan dan gak terburu-buru.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Bayu",
+          "rating": 5,
+          "text": "Tempat yang pas kalau mau ‘serius’ minum kopi, bukan sekadar nongkrong foto-foto.",
+          "relative_time_description": "6 hari lalu"
+        },
+        {
+          "author_name": "Meli",
+          "rating": 4,
+          "text": "Dekor klasiknya bikin suasana beda dari cafe lain.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Aris",
+          "rating": 4,
+          "text": "Harga cukup bersahabat, rasa kopinya di atas rata-rata.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Lala",
+          "rating": 5,
+          "text": "Suka banget nongkrong sendiri di sini, tenang dan damai.",
+          "relative_time_description": "2 minggu lalu"
+        }
+      ],
+  
+      "ChIJ4cMQNwVZHS4R4t_ZFdW0vOE": [
+        {
+          "author_name": "Denny",
+          "rating": 5,
+          "text": "Awal Temu Coffee namanya pas, tempat enak buat first meet atau ketemuan santai.",
+          "relative_time_description": "4 hari lalu"
+        },
+        {
+          "author_name": "Rani",
+          "rating": 4,
+          "text": "Tempat kecil tapi manis, cocok buat ngobrol berdua.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Fauzi",
+          "rating": 5,
+          "text": "Kopinya enak, disajikan dengan rapi dan gak lama nunggu.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Nina",
+          "rating": 3,
+          "text": "Karena kecil, kalau ada satu meja yang rame langsung kerasa bising.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Heri",
+          "rating": 4,
+          "text": "Pelayanannya ramah, barista komunikatif.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Lulu",
+          "rating": 5,
+          "text": "Nama dan suasananya cocok, enak buat pertemuan pertama dan ngobrol ringan.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Riko",
+          "rating": 4,
+          "text": "Dekor sederhana tapi gak murahan.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Cici",
+          "rating": 4,
+          "text": "Harga sesuai, rasa kopi di atas ekspektasi.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Gilang",
+          "rating": 5,
+          "text": "Enak buat duduk sebentar sebelum lanjut aktivitas lain.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Meli",
+          "rating": 4,
+          "text": "Kalem dan gak ramai, cocok buat orang yang gak suka keramaian.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJGbUmRbFZHS4RMGw-UANfiR0": [
+        {
+          "author_name": "Roni",
+          "rating": 5,
+          "text": "Matoea Coffee suasananya adem, tempatnya agak masuk gang jadi gak terlalu bising.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Dina",
+          "rating": 4,
+          "text": "Cocok buat nongkrong santai, gak banyak lalu lalang orang.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Fikri",
+          "rating": 5,
+          "text": "Kopinya enak, terutama es kopi susunya, manisnya pas.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Naya",
+          "rating": 3,
+          "text": "Aksesnya sedikit masuk, tapi begitu sampai tempatnya nyaman.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Hendra",
+          "rating": 4,
+          "text": "Pelayanannya santai tapi tetap sigap.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Cici",
+          "rating": 5,
+          "text": "Tempatnya bukan di pinggir jalan besar, jadi berasa private.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Rafi",
+          "rating": 4,
+          "text": "Dekor simple tapi rapi, bikin betah.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Lina",
+          "rating": 4,
+          "text": "Harga standar, porsi minuman cukup.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Bayu",
+          "rating": 5,
+          "text": "Suka banget sama suasana tenangnya, cocok buat ngetik tugas.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Meli",
+          "rating": 4,
+          "text": "Andalan kalau lagi pengen tempat nongkrong yang gak terlalu kelihatan orang.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJB0eOMJtZHS4Rhzu98Dx0To0": [
+        {
+          "author_name": "Fahri",
+          "rating": 5,
+          "text": "First Things First namanya keren, kopinya juga jadi hal pertama yang harus dicoba.",
+          "relative_time_description": "4 hari lalu"
+        },
+        {
+          "author_name": "Rina",
+          "rating": 4,
+          "text": "Tempatnya modern dan rapi, enak buat nongkrong atau kerja.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Dody",
+          "rating": 5,
+          "text": "Cocok buat buka hari dengan kopi di sini, rasanya konsisten.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Sisi",
+          "rating": 3,
+          "text": "Jam tertentu cukup rame, jadi sedikit berisik.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Arman",
+          "rating": 4,
+          "text": "Pelayanan cukup cepat, barista ramah.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Nala",
+          "rating": 5,
+          "text": "Es kopi susunya enak, jadi pengen repeat order.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Riko",
+          "rating": 4,
+          "text": "Dekor simple tapi kekinian, gak berlebihan.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Cici",
+          "rating": 4,
+          "text": "Harga masih masuk akal, tempat nyaman.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Bayu",
+          "rating": 5,
+          "text": "Jadi tempat wajib kalau lewat area sini dan pengen kopi.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Dina",
+          "rating": 4,
+          "text": "Nama dan konsepnya nyambung, ‘first thing’ memang ngopi di sini.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJ3Sw0BVdZHS4RZzSW7_hVkdg": [
+        {
+          "author_name": "Rama",
+          "rating": 5,
+          "text": "Kong Coffee berasa warung kopi modern, rame tapi akrab.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Rini",
+          "rating": 4,
+          "text": "Tempatnya ramai, tapi asik buat nongkrong bareng teman-teman.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Fikri",
+          "rating": 5,
+          "text": "Kopi hitamnya enak, rasanya konsisten tiap datang.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Nina",
+          "rating": 3,
+          "text": "Karena ramai, agak susah cari spot yang benar-benar tenang.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Heri",
+          "rating": 4,
+          "text": "Snack lumayan, cocok buat temen nongkrong.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Lulu",
+          "rating": 5,
+          "text": "Suasana hidup, cocok buat yang suka keramaian.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Riko",
+          "rating": 4,
+          "text": "Pelayanan cukup cepat, walau rame tetap keurus.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Cici",
+          "rating": 4,
+          "text": "Harga standar, rasa kopi sesuai ekspektasi.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Bayu",
+          "rating": 5,
+          "text": "Tempat yang pas kalau mau nongkrong sampai agak larut.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Dina",
+          "rating": 4,
+          "text": "Bukan yang paling tenang, tapi asik buat kumpul ramean.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJvQFMp7hZHS4RQFQZWjHyToY": [
+        {
+          "author_name": "Deni",
+          "rating": 5,
+          "text": "PARA Coffee & Eatery punya ambience modern, enak buat nongkrong keluarga atau teman.",
+          "relative_time_description": "4 hari lalu"
+        },
+        {
+          "author_name": "Sari",
+          "rating": 4,
+          "text": "Makanannya enak dan porsinya lumayan besar.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Fikri",
+          "rating": 5,
+          "text": "Kopi susunya enak, bisa jadi menu aman kalau bingung pilih.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Nia",
+          "rating": 3,
+          "text": "Kalau ramai, suara cukup lantang karena ruangannya besar.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Hendra",
+          "rating": 4,
+          "text": "Pelayanannya baik, staff sopan dan helpful.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Lulu",
+          "rating": 5,
+          "text": "Cocok buat tempat makan sekalian nongkrong lama.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Rian",
+          "rating": 4,
+          "text": "Dekor cukup cantik, banyak spot foto.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Cici",
+          "rating": 4,
+          "text": "Harga sebanding dengan porsi dan rasa.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Bayu",
+          "rating": 5,
+          "text": "Tempat favorit keluarga kalau mau makan santai di cafe.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Dina",
+          "rating": 4,
+          "text": "Cocok buat kumpul keluarga kecil atau arisan santai.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJwWsbbkVZHS4RDUndPC0OSh4": [
+        {
+          "author_name": "Rama",
+          "rating": 5,
+          "text": "Askara Coffee suasananya kalem, banyak yang datang buat kerja atau baca.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Rina",
+          "rating": 4,
+          "text": "Dekor minimalis, bikin fokus ke kopi dan obrolan.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Fikri",
+          "rating": 5,
+          "text": "Kopi single origin-nya enak, aftertaste clean.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Novi",
+          "rating": 3,
+          "text": "Tidak terlalu luas, jadi kalau ramai agak sempit.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Heri",
+          "rating": 4,
+          "text": "Wifi cukup oke buat kerja ringan.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Lulu",
+          "rating": 5,
+          "text": "Cocok buat yang cari tempat serius ngerjain tugas.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Bayu",
+          "rating": 4,
+          "text": "Pelayanannya ramah, barista enak diajak ngobrol.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Cici",
+          "rating": 4,
+          "text": "Harga standar coffee shop, rasa cukup memuaskan.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Rian",
+          "rating": 5,
+          "text": "Tempat nyaman, cocok untuk me time sambil ngopi.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Dina",
+          "rating": 4,
+          "text": "Bukan tempat rame-rame, lebih cocok buat yang cari ketenangan.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJgb-eqIZZHS4Rx2P_8Bwpwgk": [
+        {
+          "author_name": "Arif",
+          "rating": 5,
+          "text": "KOPILOJIK PONTIANAK tempatnya modern dan cukup luas, enak buat nongkrong rame.",
+          "relative_time_description": "4 hari lalu"
+        },
+        {
+          "author_name": "Rani",
+          "rating": 4,
+          "text": "Dekornya kekinian, banyak spot yang bagus buat foto.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Fikri",
+          "rating": 5,
+          "text": "Kopi susunya enak, manisnya pas dan gak bikin eneg.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Novi",
+          "rating": 3,
+          "text": "Pelayanan agak sedikit lambat pas jam rame.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Heri",
+          "rating": 4,
+          "text": "Menu makanan cukup beragam, cocok buat nongkrong lama.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Lulu",
+          "rating": 5,
+          "text": "Suasana hidup tapi masih nyaman buat ngobrol.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Bima",
+          "rating": 4,
+          "text": "Parkiran lumayan, walau kalau weekend agak penuh.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Cici",
+          "rating": 4,
+          "text": "Harga sebanding dengan suasana dan rasa.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Rama",
+          "rating": 5,
+          "text": "Tempat andalan kalau mau ketemuan bareng banyak teman.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Dina",
+          "rating": 4,
+          "text": "Cocok buat cafe hopping di area kota.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJl6BBAwBZHS4ROFT_xuXuINE": [
+        {
+          "author_name": "Deni",
+          "rating": 5,
+          "text": "1918 Coffee & Space konsepnya simple dan modern, cocok buat WFC.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Ria",
+          "rating": 4,
+          "text": "Tempatnya lumayan luas, banyak meja buat kerja.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Fajar",
+          "rating": 4,
+          "text": "Wifi kadang naik turun, tapi sebagian besar waktu masih oke.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Novi",
+          "rating": 3,
+          "text": "Kalau rame, sedikit berisik karena banyak yang meeting dan telpon.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Hendra",
+          "rating": 5,
+          "text": "Kopi lumayan enak, cocok buat nemenin kerja lama.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Lulu",
+          "rating": 4,
+          "text": "Dekor simple, gak banyak distraksi, enak buat fokus.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Budi",
+          "rating": 4,
+          "text": "Colokan cukup banyak, tiap meja hampir ada.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Cici",
+          "rating": 4,
+          "text": "Harga standar, tempat nyaman.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Rama",
+          "rating": 5,
+          "text": "Pas kalau mau kerja di luar rumah seharian.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Dina",
+          "rating": 4,
+          "text": "Cocok buat kerja, tapi jangan lupa bawa headset kalau sensitif sama suara.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJHdYrWU1ZHS4RuU_qB_QKTdI": [
+        {
+          "author_name": "Rangga",
+          "rating": 5,
+          "text": "CW COFFEE TANJUNG SARI rame tapi enak, tempatnya luas dan banyak meja.",
+          "relative_time_description": "4 hari lalu"
+        },
+        {
+          "author_name": "Rini",
+          "rating": 4,
+          "text": "Makanannya lumayan variatif, bisa nongkrong sambil makan berat.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Fikri",
+          "rating": 5,
+          "text": "Kopi susunya enak, salah satu favorit di area sini.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Novi",
+          "rating": 3,
+          "text": "Kalau weekend benar-benar penuh, suara cukup bikin pusing.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Heri",
+          "rating": 4,
+          "text": "Pelayanannya cukup cepat meski rame.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Lulu",
+          "rating": 5,
+          "text": "Tempat andalan kalau butuh cafe luas buat kumpul rame.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Rudi",
+          "rating": 4,
+          "text": "Parkiran lumayan lega untuk motor.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Cici",
+          "rating": 4,
+          "text": "Harga standar, porsi minuman dan makanan oke.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Bayu",
+          "rating": 5,
+          "text": "Sering ada nobar dan acara kecil, suasananya jadi hidup.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Dina",
+          "rating": 4,
+          "text": "Bukan tempat tenang, tapi pas banget buat kumpul rame.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJkU_6a0lZHS4R9E1r4usKuO4": [
+        {
+          "author_name": "Andi",
+          "rating": 5,
+          "text": "Saca Coffee hidden gem, suasananya tenang dan homy.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Rina",
+          "rating": 4,
+          "text": "Tempat agak masuk, tapi begitu sampai nyaman banget.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Fikri",
+          "rating": 5,
+          "text": "Kopinya enak, terutama menu manual brew-nya.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Novi",
+          "rating": 3,
+          "text": "Akses sedikit jauh dari jalan besar, tapi sepadan sama suasananya.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Heri",
+          "rating": 4,
+          "text": "Pelayanannya ramah, gak kaku.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Lulu",
+          "rating": 5,
+          "text": "Cocok buat yang cari tempat sepi buat kerja atau baca.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Rama",
+          "rating": 4,
+          "text": "Dekor sederhana tapi bikin betah.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Cici",
+          "rating": 4,
+          "text": "Harga masih bersahabat untuk suasana seadem ini.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Bayu",
+          "rating": 5,
+          "text": "Suka banget sama vibe tenangnya, jarang ada cafe kayak gini.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Dina",
+          "rating": 4,
+          "text": "Pas banget buat pelarian sebentar dari hiruk pikuk kota.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJg01iw3FZHS4Rk7gdffuEjFU": [
+        {
+          "author_name": "Rendy",
+          "rating": 5,
+          "text": "Saujana Coffee & Eatery enak buat makan sekaligus nongkrong, pilihan menunya banyak.",
+          "relative_time_description": "4 hari lalu"
+        },
+        {
+          "author_name": "Ria",
+          "rating": 4,
+          "text": "Dekor cukup cozy, cocok buat kumpul keluarga kecil.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Fikri",
+          "rating": 5,
+          "text": "Kopi dan makanannya seimbang, dua-duanya enak.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Novi",
+          "rating": 3,
+          "text": "Kalau ramai, pesanan makan agak lama keluarnya.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Heri",
+          "rating": 4,
+          "text": "Pelayanan masih oke meski penuh.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Lulu",
+          "rating": 5,
+          "text": "Cocok buat dinner santai sambil ngopi.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Bayu",
+          "rating": 4,
+          "text": "Tempatnya nyaman, kursi lumayan empuk.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Cici",
+          "rating": 4,
+          "text": "Harga wajar, porsi makanan cukup banyak.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Rama",
+          "rating": 5,
+          "text": "Jadi alternatif cafe buat makan beneran, bukan snack doang.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Dina",
+          "rating": 4,
+          "text": "Cocok buat acara kecil-kecilan bareng teman.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJuR55IcdZHS4RqYXSO3jvKWo": [
+        {
+          "author_name": "Fajar",
+          "rating": 5,
+          "text": "EKOFFIE CAFE & EATRY tempatnya rapi, enak buat nongkrong sore.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Rini",
+          "rating": 4,
+          "text": "Kopi lumayan enak, snack juga oke.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Dimas",
+          "rating": 5,
+          "text": "Pelayanannya ramah, pesanan gak terlalu lama.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Novi",
+          "rating": 3,
+          "text": "Tempat tidak terlalu luas, jadi cepat penuh.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Heri",
+          "rating": 4,
+          "text": "Dekor simple tapi enak dilihat.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Lulu",
+          "rating": 5,
+          "text": "Enak buat ngobrol pelan sambil ngopi.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Rama",
+          "rating": 4,
+          "text": "Harga standar cafe, rasa sesuai.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Cici",
+          "rating": 4,
+          "text": "Cocok buat nongkrong singkat setelah aktivitas.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Bayu",
+          "rating": 5,
+          "text": "Tempatnya bersih, meja cepat dibersihkan setelah dipakai.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Dina",
+          "rating": 4,
+          "text": "Andalan kalau lagi di sekitar komplek dan pengen ngopi sebentar.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJMefSfNhZHS4RaK4WfXoe2E4": [
+        {
+          "author_name": "Rama",
+          "rating": 5,
+          "text": "Saturaga Coffee & Eatery suasananya adem, banyak tempat duduk nyaman.",
+          "relative_time_description": "4 hari lalu"
+        },
+        {
+          "author_name": "Rini",
+          "rating": 4,
+          "text": "Makanannya enak, cocok buat nongkrong lama.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Fajar",
+          "rating": 5,
+          "text": "Kopi susunya manis pas, bukan tipe yang bikin eneg.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Novi",
+          "rating": 3,
+          "text": "Waktu ramai sedikit ribet cari colokan listrik.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Heri",
+          "rating": 4,
+          "text": "Pelayanannya lumayan cepat dan sopan.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Lulu",
+          "rating": 5,
+          "text": "Cocok buat nongkrong bareng teman kampus.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Bayu",
+          "rating": 4,
+          "text": "Dekor cukup nyaman, ga terlalu ramai elemen.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Cici",
+          "rating": 4,
+          "text": "Harga sesuai dengan rasa dan porsi.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Rama",
+          "rating": 5,
+          "text": "Tempat andalan kalau mau nongkrong lama dan makan sekalian.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Dina",
+          "rating": 4,
+          "text": "Cocok buat kumpul santai sebelum atau sesudah kegiatan kampus.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJb1WNEopZHS4RRwC8vbKpp1E": [
+        {
+          "author_name": "Dedi",
+          "rating": 5,
+          "text": "Coffee Street Pontianak enak buat orang yang suka liat lalu lintas, view-nya ke jalan besar.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Rini",
+          "rating": 4,
+          "text": "Suasana semi outdoor bikin gak sumpek, cocok nongkrong sore.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Fajar",
+          "rating": 5,
+          "text": "Kopinya enak, beberapa menu signature cukup unik.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Novi",
+          "rating": 3,
+          "text": "Kalau jalan lagi ramai kendaraan, sedikit berisik.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Heri",
+          "rating": 4,
+          "text": "Pelayanannya cukup cepat, gak terlalu lama nunggu.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Lulu",
+          "rating": 5,
+          "text": "Enak buat nongkrong sambil people watching.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Bayu",
+          "rating": 4,
+          "text": "Dekor cukup oke, lampu-lampunya bikin suasana hangat.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Cici",
+          "rating": 4,
+          "text": "Harga standar, porsi cukup.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Rama",
+          "rating": 5,
+          "text": "Tempat favorit kalau pengen nongkrong sambil lihat jalan.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Dina",
+          "rating": 4,
+          "text": "Cocok buat nongkrong malam, lampunya cantik.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJwy2ZYOZZHS4R0I1J3JwEIcc": [
+        {
+          "author_name": "Arif",
+          "rating": 5,
+          "text": "Cétho tempatnya kecil tapi estetik, suasananya berasa hidden gem.",
+          "relative_time_description": "4 hari lalu"
+        },
+        {
+          "author_name": "Rina",
+          "rating": 4,
+          "text": "Dekornya manis, cocok buat foto-foto.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Fajar",
+          "rating": 5,
+          "text": "Kopinya enak, terutama menu manual brew.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Novi",
+          "rating": 3,
+          "text": "Tempat duduk terbatas, jadi kalau datang telat bisa gak kebagian.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Heri",
+          "rating": 4,
+          "text": "Pelayanannya ramah, barista komunikatif.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Lulu",
+          "rating": 5,
+          "text": "Suka suasana tenangnya, cocok buat ngobrol pelan.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Bayu",
+          "rating": 4,
+          "text": "Harga wajar, rasa kopi di atas rata-rata.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Cici",
+          "rating": 4,
+          "text": "Cocok buat nongkrong sebentar sambil ngopi.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Rama",
+          "rating": 5,
+          "text": "Salah satu tempat kopi yang paling berkesan buat saya di Pontianak.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Dina",
+          "rating": 4,
+          "text": "Andalan kalau lagi pengen tempat kecil yang tenang.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJ0XDyOixZHS4R_7NfKDJ3tBs": [
+        {
+          "author_name": "Deni",
+          "rating": 5,
+          "text": "Bright Coffee namanya sesuai, tempatnya terang dan bersih.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Rina",
+          "rating": 4,
+          "text": "Lighting bagus buat kerja maupun foto, gak remang-remang.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Fajar",
+          "rating": 5,
+          "text": "Kopinya enak, rasanya cukup bold.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Novi",
+          "rating": 3,
+          "text": "Kalau siang hari, kadang terasa sedikit panas kalau duduk dekat jendela.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Heri",
+          "rating": 4,
+          "text": "Pelayanannya lumayan baik dan cepat.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Lulu",
+          "rating": 5,
+          "text": "Enak buat kerja, suasananya bersih dan rapi.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Bayu",
+          "rating": 4,
+          "text": "Dekor minimalis, gak banyak gangguan visual.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Cici",
+          "rating": 4,
+          "text": "Harga sesuai dengan tempat dan rasa.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Rama",
+          "rating": 5,
+          "text": "Tempat favorit kalau mau kerja terang-terangan, literally bright.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Dina",
+          "rating": 4,
+          "text": "Cocok buat orang yang gak suka cafe gelap, di sini terang dan segar.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+  
+      "ChIJDcJgropZHS4RKuh8s52jy9U": [
+        {
+          "author_name": "Bayu Ramadhan",
+          "rating": 5,
+          "text": "2818 Coffee Roasters kopinya berasa fresh banget, aromanya beda. Kerasa kalau mereka roasting sendiri.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Nina Agustina",
+          "rating": 5,
+          "text": "Manual brew-nya enak, baristanya jelasin origin kopinya dengan detail tapi santai. Serasa ikut kelas kopi mini.",
+          "relative_time_description": "4 hari lalu"
+        },
+        {
+          "author_name": "Deny Kusuma",
+          "rating": 4,
+          "text": "Tempatnya ga terlalu besar, tapi nyaman. Cocok buat ngopi serius, bukan cuma nongkrong ramean.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Rika Amelia",
+          "rating": 5,
+          "text": "Kalau mau coba single origin lokal, ini salah satu tempat terbaik. Rasanya clean dan ga bikin perut perih.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Taufik Hidayat",
+          "rating": 4,
+          "text": "Harga agak di atas rata-rata, tapi sebanding sama kualitas kopi. Recommended buat pecinta kopi serius.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Jihan Farah",
+          "rating": 5,
+          "text": "Latte art-nya rapi dan kopinya seimbang, ga kepahitan. Tempatnya juga wangi aroma kopi freshly roasted.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Ardiansyah",
+          "rating": 3,
+          "text": "Kopinya enak, tapi kursi kayunya agak keras kalau duduk kelamaan. Mungkin bisa tambah bantal duduk.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Selvi Natalia",
+          "rating": 5,
+          "text": "Suka ambience tenangnya, cocok buat baca buku sendiri. Staff-nya sopan dan ga ganggu pelanggan.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Dimas Surya",
+          "rating": 4,
+          "text": "Espresso shot-nya bold dan wangi, pas buat yang suka strong. Pasti balik lagi buat coba menu lain.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Yulianti",
+          "rating": 5,
+          "text": "Hidden gem banget, ga terlalu ramai tapi kualitas kopinya top. Enak buat quality time berdua.",
+          "relative_time_description": "2 minggu lalu"
+        }
+      ],
+  
+      "ChIJPa6swGtZHS4RrbIlRvgBgok": [
+        {
+          "author_name": "Andra Lesmana",
+          "rating": 5,
+          "text": "5 CM Coffee and Eatery luas, enak buat nongkrong ramean. Meja banyak, ga takut kehabisan tempat.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Mira Rosalia",
+          "rating": 4,
+          "text": "Makanannya variatif, ga cuma kopi doang. Nasi gorengnya surprisingly enak buat ukuran cafe.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Rendy Saputra",
+          "rating": 5,
+          "text": "Sering jadi tempat nobar sama temen, layar TV-nya gede. Suasananya hidup tapi ga berisik banget.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Laila Zuhra",
+          "rating": 4,
+          "text": "Mocha-nya pas manisnya, ga bikin eneg. Staff cukup sigap kalau meja kotor langsung dibersihin.",
+          "relative_time_description": "4 hari lalu"
+        },
+        {
+          "author_name": "Ivan Prakoso",
+          "rating": 3,
+          "text": "Pas weekend agak susah cari parkir dan pesanan sedikit lama. Di luar itu, tempatnya asik kok.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Hani Kusnadi",
+          "rating": 5,
+          "text": "Spot outdoor-nya bikin betah, angin sepoi-sepoi. Cocok buat nongkrong santai sambil ngobrol panjang.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Fajar Sidik",
+          "rating": 4,
+          "text": "Wifi lumayan kencang, bisa buat upload konten. Menu minuman juga cukup banyak pilihan.",
+          "relative_time_description": "6 hari lalu"
+        },
+        {
+          "author_name": "Siska Dewi",
+          "rating": 5,
+          "text": "Pelayanan ramah, dari depan sampai barista. Anak kecil diajak ke sini juga masih oke, suasana keluarga banget.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Heri Susanto",
+          "rating": 4,
+          "text": "Harga makanan standar cafe, porsi lumayan besar. Cocok buat nongkrong lama tanpa takut kelaparan.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Rara Anggraini",
+          "rating": 5,
+          "text": "Kalau kumpul komunitas biasanya di sini, karena tempat luas dan staff kooperatif banget.",
+          "relative_time_description": "1 bulan lalu"
+        }
+      ],
+  
+      "ChIJhx6zl0BZHS4RGNla_oPoIJ0": [
+        {
+          "author_name": "Yoga Saputra",
+          "rating": 5,
+          "text": "Haruna Cafe enak buat nongkrong malem, lampunya warm dan musiknya chill. Kopi susu gulanya pas.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Santi Marlina",
+          "rating": 4,
+          "text": "Tempatnya bersih dan wangi, kursi empuk. Cocok buat ngobrol santai sama temen lama.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Rifki Anwar",
+          "rating": 5,
+          "text": "Sering WFC di sini, wifi stabil dan ga rewel kalau kita duduk lama. Pesan kopi 2–3 gelas juga masih oke.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Nadya Prameswari",
+          "rating": 4,
+          "text": "Dessert-nya enak, terutama cheesecake. Tempat duduk di pojok dekat jendela favorit banget.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Fauzan Hilmi",
+          "rating": 3,
+          "text": "Rasa kopinya oke, tapi kemarin AC agak kurang dingin. Mungkin kebetulan pas lagi rame.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Mega Lestari",
+          "rating": 5,
+          "text": "Dateng sore-sore, suasananya rileks banget. Barista ramah dan ga pelit senyum.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Irfan Nugroho",
+          "rating": 4,
+          "text": "Harga masih masuk akal, porsi minuman cukup besar. Sering ada promo juga.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Dina Yuliana",
+          "rating": 5,
+          "text": "Toilet bersih, itu plus poin buat saya. Jarang ada cafe yang jaga toilet sebersih ini.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Rio Putra",
+          "rating": 4,
+          "text": "Enak buat nugas sambil nyemil. Colokan ada di beberapa sudut, tinggal pinter cari tempat duduk.",
+          "relative_time_description": "4 minggu lalu"
+        },
+        {
+          "author_name": "Citra Amalia",
+          "rating": 5,
+          "text": "Suka sama pilihan minuman non-kopinya juga, jadi temen yang ga minum kopi tetep bisa ikut nongkrong.",
+          "relative_time_description": "6 hari lalu"
+        }
+      ],
+  
+      "ChIJIRuUuwNZHS4RrhnXINPqQQ4": [
+        {
+          "author_name": "Rendy Oktavian",
+          "rating": 5,
+          "text": "Sidedoors Coffee Shop definisi WFC friendly, wifi ngebut dan colokan banyak di tiap meja.",
+          "relative_time_description": "3 hari lalu"
+        },
+        {
+          "author_name": "Novi Larasati",
+          "rating": 5,
+          "text": "Suka banget duduk di lantai dua, lebih sepi dan enak buat fokus kerja. Barista ramah.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Andi Fauzan",
+          "rating": 4,
+          "text": "Kopinya strong tapi halus, cocok buat yang suka espresso base. Harga masih reasonable.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Selma Putri",
+          "rating": 5,
+          "text": "Meeting online di sini aman, wifi stabil dan ga pernah tiba-tiba putus. Tempatnya juga cukup tenang.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Gilang Saputra",
+          "rating": 3,
+          "text": "Kemarin pas datang musiknya agak keras, jadi kurang fokus kerja. Tapi pelayanannya tetap oke.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Hilda Anjani",
+          "rating": 5,
+          "text": "Interiornya instagramable, tiap sudut kayak bisa dipakai foto. Lighting-nya pas, ga terlalu terang.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Bambang Adi",
+          "rating": 4,
+          "text": "Cold brew-nya enak, aftertaste-nya manis. Cocok diminum siang hari di Pontianak yang panas.",
+          "relative_time_description": "4 minggu lalu"
+        },
+        {
+          "author_name": "Risa Maulida",
+          "rating": 5,
+          "text": "Staff-nya helpful banget, rekomendasiin menu sesuai selera saya yang ga terlalu suka pahit.",
+          "relative_time_description": "6 hari lalu"
+        },
+        {
+          "author_name": "Yusuf Fadli",
+          "rating": 4,
+          "text": "Parkiran motor lumayan cukup, cuma mobil agak tricky. Di luar itu sih mantap.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Cindy Oktavia",
+          "rating": 5,
+          "text": "Tempat andalan kalau ada kerjaan mepet deadline, suasana tenang dan wifi stabil bikin produktif.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJgRw0letZHS4R-v2NPpzhGfk": [
+        {
+          "author_name": "Husein Khalid",
+          "rating": 5,
+          "text": "PS Coffee salah satu tempat ngopi favorit, rasanya konsisten tiap kali datang.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Sofia Lestari",
+          "rating": 4,
+          "text": "Suasana homy, ga ribet. Barista hafal pelanggan tetap, berasa langganan beneran.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Agus Salim",
+          "rating": 5,
+          "text": "Espresso-nya bold, pas buat yang doyan pahit. Bisa request less sugar juga.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Tisa Rahma",
+          "rating": 4,
+          "text": "Tempatnya ga terlalu besar tapi nyaman. Cocok buat nongkrong berdua atau bertiga.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Jonatan",
+          "rating": 3,
+          "text": "Dateng pas hujan, ada sedikit bocor di sudut ruangan. Mudah-mudahan segera diperbaiki.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Nadya Hapsari",
+          "rating": 5,
+          "text": "Manual brew V60-nya enak banget, barista jelasin prosesnya pelan-pelan dan ramah.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Ilham Pratama",
+          "rating": 4,
+          "text": "Kue pendamping kopinya enak, ga asal-asalan. Cocok buat ngemil sambil ngobrol ringan.",
+          "relative_time_description": "4 minggu lalu"
+        },
+        {
+          "author_name": "Rafi Ahmad",
+          "rating": 5,
+          "text": "Suka ambience malem di sini, tenang dan adem. Kopi susu gula aren favorit banget.",
+          "relative_time_description": "6 hari lalu"
+        },
+        {
+          "author_name": "Caca Purnama",
+          "rating": 4,
+          "text": "Wifi lumayan, cukup buat scrolling dan nonton YouTube. Bukan yang super ngebut tapi stabil.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Bayu Pramana",
+          "rating": 5,
+          "text": "Harga bersahabat untuk kualitas rasa segini, ga nyesel jauh-jauh kesini.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJa2Gs4aNZHS4R5ChZPy9N91M": [
+        {
+          "author_name": "Gerry Putra",
+          "rating": 5,
+          "text": "CW Coffee salah satu tempat paling konsisten, tiap pesan rasanya ga pernah meleset.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Tania Sari",
+          "rating": 4,
+          "text": "Menu kopi susu kekiniannya banyak, cocok buat yang baru belajar minum kopi.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Iqbal Maulana",
+          "rating": 5,
+          "text": "Tempatnya rapi, pelayanan cepat. Dateng pas jam rame pun masih ke-handle.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Rani Kurniasih",
+          "rating": 4,
+          "text": "Cocok buat nongkrong sama temen kantor abis pulang kerja. Harganya ga bikin kaget.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Agung Wijaya",
+          "rating": 3,
+          "text": "Kursi agak rapat antar meja jadi kalau rame berasa sesak. Tapi kopi oke.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Zahra Aiman",
+          "rating": 5,
+          "text": "Suka banget sama varian es kopi mereka, ga terlalu manis dan tetap berasa kopinya.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Hendra Kusnadi",
+          "rating": 4,
+          "text": "Tempat parkir cukup, staff membantu saat cari tempat duduk. Overall nyaman.",
+          "relative_time_description": "4 minggu lalu"
+        },
+        {
+          "author_name": "Monica L.",
+          "rating": 5,
+          "text": "Pas banget buat ketemuan klien santai. Suasana ga terlalu bising.",
+          "relative_time_description": "6 hari lalu"
+        },
+        {
+          "author_name": "Yohanes",
+          "rating": 4,
+          "text": "Wifi lumayan bisa buat kerja ringan, cuma jangan harap super kencang kalau lagi rame.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Nurul Azizah",
+          "rating": 5,
+          "text": "Andalan kalau lagi butuh kopi cepat sebelum meeting, pelayanan gesit.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJVy7Gq1FYHS4RKbQohi4F6So": [
+        {
+          "author_name": "Imam Rasyid",
+          "rating": 5,
+          "text": "Panorama Coffee sesuai namanya, view ke jalan besar bikin asik nongkrong sambil people watching.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Claudia",
+          "rating": 4,
+          "text": "Tempatnya nyaman, lighting oke buat foto. Kopi susu panoran-nya jadi favorit baru.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Riko Saputra",
+          "rating": 5,
+          "text": "Suka duduk di dekat kaca, berasa santai lihat lalu lintas sambil ngopi.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Maria Ulfah",
+          "rating": 4,
+          "text": "Barista ramah, suka ngajak ngobrol dan jelasin menu. Harga juga masih masuk akal.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Ferry Gunawan",
+          "rating": 3,
+          "text": "Kemarin kopi datangnya agak lama padahal ga terlalu rame. Tapi rasanya tetep enak.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Bella Oktari",
+          "rating": 5,
+          "text": "Enak buat nongkrong sore sambil nunggu macet reda. Camilannya lumayan variatif.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Dewi Anggraeni",
+          "rating": 4,
+          "text": "Wifi oke, cukup buat kerja ringan dan streaming musik. Ga pernah tiba-tiba putus.",
+          "relative_time_description": "4 minggu lalu"
+        },
+        {
+          "author_name": "Hana Farida",
+          "rating": 5,
+          "text": "Toilet bersih, staff sopan, tempatnya juga wangi. Detail kecil tapi bikin betah.",
+          "relative_time_description": "6 hari lalu"
+        },
+        {
+          "author_name": "Bima Adiyasa",
+          "rating": 4,
+          "text": "Rokok hanya di area tertentu, jadi non-smoker masih bisa nyaman. Good job.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Rizki Rahman",
+          "rating": 5,
+          "text": "Suka konsepnya, simple tapi cozy. Cocok buat ketemuan santai atau sekadar me time.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ],
+  
+      "ChIJIVdKRARZHS4RaV0Z5rOGlC4": [
+        {
+          "author_name": "Fauzi Ahmad",
+          "rating": 4,
+          "text": "AREA Coffee Shop termasuk murah meriah, cocok buat nongkrong harian.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Lulu Ramadhani",
+          "rating": 5,
+          "text": "Kopinya enak, cemilannya juga oke. Sering ke sini sepulang kerja.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Suryo Pratama",
+          "rating": 4,
+          "text": "Tempatnya santai, ga terlalu formal. Bisa nongkrong lama tanpa diusir-usir.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Anita Kusuma",
+          "rating": 3,
+          "text": "Musik kadang terlalu keras di jam tertentu, jadi susah fokus ngobrol.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Andien",
+          "rating": 5,
+          "text": "Es kopi gulanya pas, ga kemanisan. Barista juga ramah ke pelanggan baru.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Rizal",
+          "rating": 4,
+          "text": "Wifi cukup kencang buat browsing dan kerja ringan. Colokan lumayan banyak.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Novi",
+          "rating": 5,
+          "text": "Suka spot duduk di pojok, berasa punya ruang sendiri. Cocok buat nulis jurnal.",
+          "relative_time_description": "4 minggu lalu"
+        },
+        {
+          "author_name": "Robby",
+          "rating": 4,
+          "text": "Parkir motor oke, ga terlalu sumpek. Untuk mobil mungkin agak sempit.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Della",
+          "rating": 5,
+          "text": "Harga ramah di kantong, pas buat kantong anak kos yang hobi ngopi.",
+          "relative_time_description": "6 hari lalu"
+        },
+        {
+          "author_name": "Bagus",
+          "rating": 4,
+          "text": "Tempat nongkrong sederhana tapi nyaman, cocok buat daily coffee fix.",
+          "relative_time_description": "2 minggu lalu"
+        }
+      ],
+  
+      "ChIJ8dcIZwRZHS4RcAbeV7-773w": [
+        {
+          "author_name": "Andra F.",
+          "rating": 5,
+          "text": "Deal Kopi selalu rame tapi tetap nyaman. Kopi susu signature-nya nagih banget.",
+          "relative_time_description": "1 minggu lalu"
+        },
+        {
+          "author_name": "Shinta K.",
+          "rating": 4,
+          "text": "Tempatnya luas, enak buat nongkrong ramean. Pesanan keluar lumayan cepat.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Dodi Firmansyah",
+          "rating": 5,
+          "text": "Buka sampai malam, cocok buat yang suka nongkrong abis kerja. Kopinya ga pelit rasa.",
+          "relative_time_description": "3 minggu lalu"
+        },
+        {
+          "author_name": "Lia Andini",
+          "rating": 4,
+          "text": "Makanan ringan cukup variatif, cocok buat temen ngopi. Wifi ok buat sosmed-an.",
+          "relative_time_description": "5 hari lalu"
+        },
+        {
+          "author_name": "Rama",
+          "rating": 3,
+          "text": "Kalau weekend parkirnya penuh banget, harus muter dulu. Di luar itu sih oke.",
+          "relative_time_description": "1 bulan lalu"
+        },
+        {
+          "author_name": "Selena",
+          "rating": 5,
+          "text": "Suka sama ambience-nya, lampu warm dan kursi cukup nyaman. Nyantai banget.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Ridho",
+          "rating": 4,
+          "text": "Harga standar coffee shop Pontianak, ga terlalu mahal. Porsinya pas.",
+          "relative_time_description": "4 minggu lalu"
+        },
+        {
+          "author_name": "Hana",
+          "rating": 5,
+          "text": "Suasana malam di sini enak, ga terlalu berisik. Pas buat ngobrol panjang.",
+          "relative_time_description": "6 hari lalu"
+        },
+        {
+          "author_name": "Rizal N.",
+          "rating": 4,
+          "text": "Musiknya kadang agak keras, tapi masih bisa diajak ngobrol. Kopinya enak.",
+          "relative_time_description": "2 minggu lalu"
+        },
+        {
+          "author_name": "Nanda",
+          "rating": 5,
+          "text": "Kalau ada tamu dari luar kota, sering saya ajak ngopi di sini. Jarang kecewa.",
+          "relative_time_description": "3 minggu lalu"
+        }
+      ]
+  },
+  "status": "success"
+}
+

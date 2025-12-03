@@ -825,7 +825,7 @@ Cari coffee shop yang reviewnya BENAR-BENAR menyebutkan kata kunci di atas. Jika
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_content}
             ],
-            max_tokens=1536,  # Optimal untuk 30 coffee shops dengan review
+            max_tokens=2048,  # Optimal untuk 30 coffee shops dengan review
             temperature=0.1,  # Extremely low untuk strict format adherence
             top_p=0.8  # Fokus pada token dengan probabilitas tinggi
         )

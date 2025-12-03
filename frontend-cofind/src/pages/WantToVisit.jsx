@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import CoffeeShopCard from '../components/CoffeeShopCard';
+import localPlacesData from '../data/places.json';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 const USE_API = import.meta.env.VITE_USE_API === 'true';
+const USE_LOCAL_DATA = true; // Set true untuk menggunakan data lokal JSON
 
 const WantToVisit = () => {
   const [wantToVisitShops, setWantToVisitShops] = useState([]);
@@ -27,6 +29,35 @@ const WantToVisit = () => {
 
       // Load full shop data for each want-to-visit
       let shops = [];
+
+      // Prioritaskan data lokal jika USE_LOCAL_DATA aktif
+      if (USE_LOCAL_DATA) {
+        console.log('[WantToVisit] Using local JSON data...');
+        if (localPlacesData && localPlacesData.data && Array.isArray(localPlacesData.data)) {
+          for (const placeId of wantToVisit) {
+            const foundShop = localPlacesData.data.find(shop => shop.place_id === placeId);
+            if (foundShop) {
+              console.log(`[WantToVisit] Found shop in local data: ${foundShop.name}`);
+              shops.push({
+                place_id: foundShop.place_id,
+                name: foundShop.name,
+                address: foundShop.address,
+                vicinity: foundShop.address,
+                rating: foundShop.rating,
+                user_ratings_total: foundShop.user_ratings_total,
+                location: foundShop.location,
+                business_status: foundShop.business_status,
+                price_level: foundShop.price_level,
+                photos: Array.isArray(foundShop.photos) ? foundShop.photos : [],
+              });
+            }
+          }
+          console.log(`[WantToVisit] Total shops loaded from local data: ${shops.length}`);
+          setWantToVisitShops(shops);
+          setIsLoading(false);
+          return;
+        }
+      }
 
       if (USE_API) {
         // Try to get details from backend for each want-to-visit
