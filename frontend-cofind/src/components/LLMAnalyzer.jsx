@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import reviewsData from '../data/reviews.json';
 
 const LLMAnalyzer = () => {
   const [input, setInput] = useState('');
@@ -111,7 +112,7 @@ const LLMAnalyzer = () => {
         number,
         name,
         rating,
-        reviewText,
+        reviewText, // Review dari LLM (untuk referensi, tapi tidak ditampilkan)
         verifyLink,
         placeId,
         mapsUrl,
@@ -119,7 +120,8 @@ const LLMAnalyzer = () => {
       });
     });
     
-    return shops;
+    // Batasi maksimal 3 coffee shop
+    return shops.slice(0, 3);
   };
 
   // Function untuk render text dengan markdown bold dan clickable URL
@@ -264,23 +266,17 @@ const LLMAnalyzer = () => {
   // Quick recommendation fields
   const recommendationFields = [
     { label: '🛋️ Cozy', value: 'cozy' },
-    { label: '📚 Ruang Belajar', value: 'ruang belajar, tenang, fokus' },
-    { label: '📶 WiFi', value: 'wifi bagus, internet cepat' },
-    { label: '🔌 Stopkontak', value: 'terminal banyak, colokan' },
-    { label: '🕌 Musholla', value: 'musholla, tempat ibadah' },
-    { label: '🛋️ Sofa', value: 'kursi sofa, nyaman' },
-    { label: '❄️ AC Dingin', value: 'AC dingin, sejuk' },
-    { label: '📸 Aesthetic', value: 'aesthetic, instagramable, bagus untuk foto' },
-    { label: '🤫 Tenang', value: 'tenang, sepi, tidak ramai' },
-    { label: '🎵 Live Music', value: 'live music, musik' },
-    { label: '🌳 Outdoor', value: 'outdoor seating, taman' },
-    { label: '💰 Harga Terjangkau', value: 'harga terjangkau, murah, affordable' },
+    { label: '📚 Ruang Belajar', value: 'ruang belajar' },
+    { label: '📶 WiFi', value: 'wifi stabil' },
+    { label: '🔌 Stopkontak', value: 'terminal, stopkontak' },
+    { label: '🕌 Musholla', value: 'musholla' },
+    { label: '🛋️ Sofa', value: 'sofa' },
+    { label: '❄️ Ruangan Dingin', value: 'ruangan dingin' },
+    { label: '📸 Aesthetic', value: 'aesthetic' },
+    { label: '🎵 Live Music', value: 'live music' },
     { label: '🚬 Smoking Area', value: 'indoor smoking area, boleh merokok' },
-    { label: '🐕 Pet Friendly', value: 'pet friendly, boleh bawa hewan' },
-    { label: '🍰 Menu Lengkap', value: 'makan dan minum, makanan berat' },
-    { label: '☕ Kopi Enak', value: 'kopi enak, kualitas kopi bagus' },
-    { label: '🅿️ Parkir Luas', value: 'parkir luas, mudah parkir' },
-    { label: '🌙 24 jam', value: 'buka malam, 24 jam' },
+    { label: '🅿️ Parkir Luas', value: 'parkiran luas' },
+    { label: '🌙 24 jam', value: '24 jam' },
   ];
 
   // Handle field click - append to input
@@ -340,7 +336,6 @@ const LLMAnalyzer = () => {
             <span className="flex-shrink-0">💡</span>
             <div className="space-y-1">
               <p className="font-medium">Tips: Klik tombol rekomendasi di atas atau ketik manual</p>
-              <p className="text-gray-500 dark:text-gray-500">• Kata yang match akan ditampilkan dengan <strong className="font-bold text-gray-700 dark:text-gray-300">bold</strong> di hasil</p>
               <p className="text-gray-500 dark:text-gray-500">• Anda bisa klik beberapa tombol sekaligus untuk kombinasi preferensi</p>
             </div>
           </div>
@@ -488,46 +483,82 @@ const LLMAnalyzer = () => {
                           </div>
                         )}
 
-                        {/* Review Text */}
-                        {shop.reviewText && (
-                          <div className="space-y-2 mb-4">
-                            <p className="text-sm font-bold text-gray-700 dark:text-gray-300">
-                              Berdasarkan Ulasan Pengunjung:
-                            </p>
-                            <div className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                              {(() => {
-                                // Parse review text untuk extract verification link
-                                const reviewParts = shop.reviewText.split(/(\[Verifikasi:[^\]]+\])/g);
-                                
-                                return reviewParts.map((part, idx) => {
-                                  // Check if this is a verification link
-                                  if (part.startsWith('[Verifikasi:')) {
-                                    const urlMatch = part.match(/https?:\/\/[^\]]+/);
-                                    if (urlMatch) {
-                                      return (
-                                        <a
-                                          key={idx}
-                                          href={urlMatch[0]}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="inline-flex items-center gap-1 ml-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
-                                          title="Verifikasi komentar asli di Google Maps"
-                                        >
-                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                          </svg>
-                                          Verified
-                                        </a>
-                                      );
-                                    }
-                                  }
-                                  // Regular text - render with bold support
-                                  return <span key={idx}>{renderTextWithBold(part)}</span>;
-                                });
-                              })()}
-                            </div>
-                          </div>
-                        )}
+                        {/* Review Text - Ambil dari reviews.json berdasarkan place_id */}
+                        {(() => {
+                          // Ambil review dari reviews.json berdasarkan place_id
+                          const reviewsByPlaceId = reviewsData?.reviews_by_place_id || {};
+                          const shopReviews = shop.placeId ? reviewsByPlaceId[shop.placeId] : [];
+                          
+                          // Parse kata kunci dari input user
+                          const userInput = result?.input || '';
+                          const keywords = userInput
+                            .split(',')
+                            .map(kw => kw.trim().toLowerCase())
+                            .filter(kw => kw.length > 0);
+                          
+                          // Filter review yang sesuai konteks berdasarkan kata kunci
+                          const relevantReviews = shopReviews?.filter(review => {
+                            const reviewText = (review?.text || '').toLowerCase();
+                            // Filter review yang memiliki teks minimal 20 karakter
+                            if (reviewText.trim().length < 20) {
+                              return false;
+                            }
+                            
+                            // Jika ada kata kunci, cek apakah review mengandung minimal salah satu kata kunci
+                            if (keywords.length > 0) {
+                              return keywords.some(keyword => {
+                                // Cek kata kunci yang panjangnya minimal 3 karakter untuk menghindari false positive
+                                if (keyword.length >= 3) {
+                                  return reviewText.includes(keyword);
+                                }
+                                return false;
+                              });
+                            }
+                            
+                            // Jika tidak ada kata kunci, return true (tampilkan semua review yang valid)
+                            return true;
+                          }) || [];
+                          
+                          // Ambil maksimal 2 review yang sesuai konteks
+                          const displayReviews = relevantReviews.slice(0, 2);
+                          
+                          if (displayReviews.length > 0) {
+                            return (
+                              <div className="space-y-2 mb-4">
+                                <p className="text-sm font-bold text-gray-700 dark:text-gray-300">
+                                  Berdasarkan Ulasan Pengunjung:
+                                </p>
+                                <div className="space-y-3">
+                                  {displayReviews.map((review, reviewIdx) => {
+                                    // Ambil data review PERSIS dari reviews.json - tidak diubah
+                                    const reviewText = review.text || '';
+                                    const authorName = review.author_name || 'Anonim';
+                                    const reviewRating = review.rating || 0;
+                                    
+                                    return (
+                                      <div key={reviewIdx} className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed bg-gray-50 dark:bg-zinc-700/50 p-3 rounded-lg">
+                                        <div className="mb-2">
+                                          {/* Tampilkan review text PERSIS dari reviews.json tanpa modifikasi */}
+                                          {reviewText}
+                                        </div>
+                                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                          <span className="font-medium">— {authorName}</span>
+                                          <span className="flex items-center gap-1">
+                                            <svg className="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                            </svg>
+                                            {reviewRating}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
 
                         {/* Action Buttons */}
                         <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-zinc-700">
@@ -608,23 +639,11 @@ const LLMAnalyzer = () => {
           <ul className="text-sm text-amber-800 dark:text-amber-400 space-y-2">
             <li className="flex items-start gap-2">
               <span className="mt-0.5">✓</span>
-              <span><strong>Fasilitas:</strong> wifi bagus, terminal banyak, colokan, AC, kipas angin</span>
+              <span><strong>Fasilitas:</strong> wifi bagus, terminal banyak, colokan, AC.</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="mt-0.5">✓</span>
-              <span><strong>Suasana:</strong> cozy, tenang, ramai, aesthetic, instagramable</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-0.5">✓</span>
-              <span><strong>Khusus:</strong> indoor smoking area, outdoor seating, live music, pet friendly</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-0.5">✓</span>
-              <span><strong>Harga:</strong> harga terjangkau, murah, affordable, mahal</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-0.5">✓</span>
-              <span>Kata kunci yang <strong className="text-indigo-600 dark:text-indigo-400">match</strong> akan ditampilkan <strong>bold</strong> di hasil! 🎯</span>
+              <span><strong>Suasana:</strong> cozy, tenang, ramai.</span>
             </li>
           </ul>
         </div>

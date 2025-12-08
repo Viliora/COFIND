@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import requests
 import os
+import json
 from dotenv import load_dotenv
 import time  # Tambahkan untuk penundaan
 from datetime import datetime, timedelta
@@ -122,7 +123,7 @@ def debug_reviews_context():
         max_shops = int(request.args.get('max_shops', 5))
         
         print(f"[DEBUG] Fetching reviews context for: {location}")
-        context = _fetch_coffeeshops_with_reviews_context(location, max_shops=max_shops)
+        context = _fetch_coffeeshops_with_reviews_from_json(location, max_shops=max_shops)
         
         return jsonify({
             'status': 'success',
@@ -358,7 +359,137 @@ def get_place_photo(photo_reference, maxwidth=1200):
         print(f"[WARNING] Photo fetch error: {e}")
         return None
 
-# Helper function untuk fetch coffee shops dengan REVIEWS untuk LLM context
+# Helper function untuk fetch coffee shops dengan REVIEWS dari file JSON lokal
+def _fetch_coffeeshops_with_reviews_from_json(location_str, max_shops=20):
+    """
+    Fetch coffee shops DENGAN REVIEWS dari file JSON lokal (places.json dan reviews.json) untuk LLM context.
+    Reviews digunakan sebagai bukti/evidence dalam rekomendasi.
+    Coffee shops diurutkan berdasarkan rating dan jumlah review untuk mendapatkan yang terbaik.
+    
+    Args:
+        location_str: Nama lokasi untuk filter (e.g., "Pontianak") - saat ini tidak digunakan karena semua data dari Pontianak
+        max_shops: Maksimal jumlah coffee shops yang di-fetch (default: 20)
+    
+    Returns:
+        String berisi daftar coffee shops dengan reviews untuk LLM context
+    """
+    try:
+        print(f"[JSON+REVIEWS] Loading coffee shops with reviews from local JSON files")
+        
+        # Path ke file JSON (relatif dari app.py di root)
+        places_json_path = os.path.join('frontend-cofind', 'src', 'data', 'places.json')
+        reviews_json_path = os.path.join('frontend-cofind', 'src', 'data', 'reviews.json')
+        
+        # Baca places.json
+        if not os.path.exists(places_json_path):
+            print(f"[JSON+REVIEWS] Error: File {places_json_path} tidak ditemukan")
+            return "Error: File places.json tidak ditemukan."
+        
+        with open(places_json_path, 'r', encoding='utf-8') as f:
+            places_data = json.load(f)
+        
+        coffee_shops = places_data.get('data', [])
+        if not coffee_shops:
+            print(f"[JSON+REVIEWS] Error: Tidak ada data coffee shop di places.json")
+            return "Tidak ada data coffee shop yang ditemukan."
+        
+        # Baca reviews.json
+        reviews_data = {}
+        if os.path.exists(reviews_json_path):
+            with open(reviews_json_path, 'r', encoding='utf-8') as f:
+                reviews_data = json.load(f)
+        else:
+            print(f"[JSON+REVIEWS] Warning: File {reviews_json_path} tidak ditemukan, akan menggunakan data tanpa reviews")
+        
+        reviews_by_place_id = reviews_data.get('reviews_by_place_id', {})
+        
+        # Sort coffee shops berdasarkan rating (descending) dan jumlah review (descending)
+        # Priority: Rating lebih tinggi > Jumlah review lebih banyak
+        def sort_key(shop):
+            rating = shop.get('rating', 0)
+            if isinstance(rating, str):
+                try:
+                    rating = float(rating)
+                except (ValueError, TypeError):
+                    rating = 0
+            elif rating is None:
+                rating = 0
+            
+            total_ratings = shop.get('user_ratings_total', 0)
+            if total_ratings is None:
+                total_ratings = 0
+            
+            # Return tuple untuk sorting: (rating descending, total_ratings descending)
+            # Negatif untuk descending order
+            return (-rating, -total_ratings)
+        
+        # Sort dan ambil top max_shops
+        coffee_shops_sorted = sorted(coffee_shops, key=sort_key)
+        coffee_shops = coffee_shops_sorted[:max_shops]
+        
+        print(f"[JSON+REVIEWS] Selected top {len(coffee_shops)} coffee shops (sorted by rating & review count), preparing context...")
+        
+        # Format context
+        context_lines = [
+            f"DAFTAR COFFEE SHOP DI {location_str.upper()} DENGAN REVIEW",
+            f"Total: {len(coffee_shops)} coffee shop pilihan terbaik\n"
+        ]
+        
+        for i, shop in enumerate(coffee_shops, 1):
+            place_id = shop.get('place_id', '')
+            name = shop.get('name', 'Unknown')
+            rating = shop.get('rating', 'N/A')
+            total_ratings = shop.get('user_ratings_total', 0)
+            address = shop.get('address', 'No address')
+            price_level = shop.get('price_level')
+            
+            # Generate Google Maps URL
+            maps_url = f"https://www.google.com/maps/place/?q=place_id:{place_id}"
+            
+            # Format entry dengan reviews
+            context_lines.append(f"{i}. {name}")
+            context_lines.append(f"   • Rating: {rating}/5.0 ({total_ratings} reviews)")
+            context_lines.append(f"   • Alamat: {address}")
+            context_lines.append(f"   • Google Maps: {maps_url}")
+            
+            # REVIEWS - Ambil dari reviews.json (max 2 reviews per coffee shop)
+            reviews = reviews_by_place_id.get(place_id, [])
+            if reviews:
+                context_lines.append(f"   • Review dari Pengunjung:")
+                review_count = 0
+                for review in reviews[:2]:  # Max 2 reviews per coffee shop
+                    review_text = review.get('text', '').strip()
+                    if review_text and len(review_text) > 20:  # Min 20 karakter
+                        review_rating = review.get('rating', 0)
+                        author_name = review.get('author_name', 'Anonim')
+                        
+                        # Truncate review yang terlalu panjang
+                        if len(review_text) > 150:
+                            review_text = review_text[:147] + "..."
+                        
+                        context_lines.append(f"     - {author_name} ({review_rating}⭐): \"{review_text}\"")
+                        review_count += 1
+                
+                if review_count == 0:
+                    context_lines.append(f"     - (Belum ada review dengan teks)")
+            else:
+                context_lines.append(f"   • Review: Belum ada review tersedia")
+            
+            context_lines.append("")  # Separator
+        
+        context = "\n".join(context_lines)
+        
+        print(f"[JSON+REVIEWS] Context prepared: {len(coffee_shops)} shops with reviews, {len(context)} characters")
+        return context
+        
+    except Exception as e:
+        import traceback
+        error_detail = traceback.format_exc()
+        print(f"[JSON+REVIEWS] Error: {str(e)}")
+        print(f"[JSON+REVIEWS] Traceback: {error_detail}")
+        return f"Error mengambil data coffee shop dengan review dari JSON: {str(e)}"
+
+# Helper function untuk fetch coffee shops dengan REVIEWS untuk LLM context (DEPRECATED - menggunakan API)
 def _fetch_coffeeshops_with_reviews_context(location_str, max_shops=30):
     """
     Fetch coffee shops DENGAN REVIEWS dari Google Places API untuk LLM context.
@@ -658,9 +789,9 @@ def llm_analyze():
                 'message': 'Text cannot be empty'
             }), 400
         
-        # Step 1: Fetch coffee shops DENGAN REVIEWS dari Google Places API
-        print(f"[LLM] Fetching coffee shops WITH REVIEWS from Places API for location: {location}")
-        places_context = _fetch_coffeeshops_with_reviews_context(location, max_shops=30)  # Optimal: 30 coffee shops (balance antara akurasi dan performa)
+        # Step 1: Fetch coffee shops DENGAN REVIEWS dari file JSON lokal
+        print(f"[LLM] Fetching coffee shops WITH REVIEWS from local JSON files for location: {location}")
+        places_context = _fetch_coffeeshops_with_reviews_from_json(location, max_shops=20)  # Top 20 coffee shops terbaik (sorted by rating & review count)
         
         # Debug: Print sample reviews untuk verify data
         print(f"[LLM] Context preview (first 500 chars):")
@@ -668,7 +799,7 @@ def llm_analyze():
         print(f"[LLM] Total context length: {len(places_context)} characters")
         
         # Step 2: Build system prompt dengan context REVIEWS untuk bukti rekomendasi
-        system_prompt = f"""Anda adalah asisten rekomendasi coffee shop yang AKURAT dan JUJUR. Anda menggunakan data NYATA dari Google Places API.
+        system_prompt = f"""Anda adalah asisten rekomendasi coffee shop yang AKURAT dan JUJUR. Anda menggunakan data NYATA dari file JSON lokal.
 
 DATA COFFEE SHOP DI {location.upper()} DENGAN INFORMASI LENGKAP:
 {places_context}
@@ -695,6 +826,14 @@ Rating: X.X
 Alamat: [alamat lengkap dari data - WAJIB ada]
 Google Maps: [URL dari data - WAJIB ada]
 Berdasarkan Ulasan Pengunjung: "review text dengan **kata kunci** bold" - Nama User (Rating⭐) [Verifikasi: URL]
+
+⚠️ BATASAN JUMLAH REKOMENDASI:
+- JUMLAH FLEKSIBEL: 1-3 coffee shop (TIDAK WAJIB 3)
+- Jika hanya ada 1 yang relevan → output 1 saja
+- Jika ada 2 yang relevan → output 2 saja
+- Jika ada 3+ yang relevan → pilih maksimal 3 TERBAIK berdasarkan rating dan relevansi review
+- JANGAN memaksa output 3 jika tidak ada yang relevan
+- SETIAP coffee shop yang direkomendasikan HARUS memiliki review yang menyebutkan kata kunci
 
 📋 CARA MENGUTIP REVIEW:
 - COPY PASTE teks review PERSIS kata per kata dari data
@@ -737,10 +876,11 @@ Tugas Anda: Cari coffee shop yang reviewnya BENAR-BENAR menyebutkan kata kunci d
 ⚠️ ATURAN KETAT:
 1. HANYA rekomendasikan jika ada review yang menyebutkan kata kunci ({keywords_display})
 2. Review harus RELEVAN - bukan sekedar review positif biasa
-3. Jika tidak ada review yang relevan, LANGSUNG jawab: "Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini."
-4. JANGAN memberikan rekomendasi yang dipaksakan
-5. JANGAN tambahkan penjelasan pembuka seperti "Berdasarkan kata kunci..."
-6. JANGAN tambahkan section "LOGIKA REKOMENDASI"
+3. JANGAN rekomendasikan coffee shop jika tidak ada review yang menyebutkan kata kunci
+4. Jika tidak ada review yang relevan, LANGSUNG jawab: "Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini."
+5. JANGAN memberikan rekomendasi yang dipaksakan
+6. JANGAN tambahkan penjelasan pembuka seperti "Berdasarkan kata kunci..."
+7. JANGAN tambahkan section "LOGIKA REKOMENDASI"
 
 🚫 DILARANG KERAS:
 - JANGAN gunakan emoji apapun (🏆📍📝🗺️🎯☕💡 dll)
@@ -749,6 +889,12 @@ Tugas Anda: Cari coffee shop yang reviewnya BENAR-BENAR menyebutkan kata kunci d
 - JANGAN tulis format "Toko Kami - Rating X/5.0"
 
 ✅ FORMAT OUTPUT WAJIB (COPY PERSIS):
+⚠️ JUMLAH COFFEE SHOP: FLEKSIBEL (1-3) - TIDAK WAJIB 3!
+- Jika hanya ada 1 coffee shop yang relevan → output 1 saja
+- Jika ada 2 coffee shop yang relevan → output 2 saja
+- Jika ada 3+ coffee shop yang relevan → output maksimal 3 terbaik
+- JANGAN memaksa output 3 jika tidak ada yang relevan
+- SETIAP coffee shop yang direkomendasikan HARUS memiliki review yang menyebutkan kata kunci
 
 1. **Nama Coffee Shop**
 Rating: X.X
@@ -756,7 +902,13 @@ Alamat: [alamat lengkap dari data]
 Google Maps: [URL dari data]
 Berdasarkan Ulasan Pengunjung: "Review yang menyebutkan **kata kunci**" - Nama User (Rating⭐) [Verifikasi: URL jika ada]
 
-2. **Nama Coffee Shop Kedua**
+2. **Nama Coffee Shop Kedua** (OPSIONAL - hanya jika ada yang relevan)
+Rating: X.X
+Alamat: [alamat lengkap dari data]
+Google Maps: [URL dari data]
+Berdasarkan Ulasan Pengunjung: "Review yang menyebutkan **kata kunci**" - Nama User (Rating⭐) [Verifikasi: URL jika ada]
+
+3. **Nama Coffee Shop Ketiga** (OPSIONAL - hanya jika ada yang relevan)
 Rating: X.X
 Alamat: [alamat lengkap dari data]
 Google Maps: [URL dari data]
@@ -890,8 +1042,8 @@ def llm_chat():
                 'message': 'Message cannot be empty'
             }), 400
         
-        # Fetch coffee shops data untuk context
-        places_context = _fetch_coffeeshops_context(location)
+        # Fetch coffee shops data untuk context dari JSON lokal
+        places_context = _fetch_coffeeshops_with_reviews_from_json(location, max_shops=30)
         
         # Build system prompt dengan real coffee shop data
         system_message = f"""Anda adalah AI assistant expert yang membantu user menemukan coffee shop terbaik.

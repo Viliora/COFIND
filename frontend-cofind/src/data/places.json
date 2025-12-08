@@ -1,220 +1,213 @@
 {
   "data": [
-     {
-       "address": "Jl. Putri Candramidi No.88, Sungai Bangkong, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0355222,
-         "lng": 109.3251833
-       },
+    {
+      "address": "Jl. Putri Candramidi No.88, Sungai Bangkong, Kota Pontianak",
+      "business_status": "OPERATIONAL",
+      "location": {
+        "lat": -0.0355222,
+        "lng": 109.3251833
+      },
+      "name": "Aming Coffee",
+      "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+      "price_level": 1,
+      "rating": 4.6,
+      "user_ratings_total": 3989
+    },
+    {
+      "address": "Jl. Putri Candramidi, Sungai Bangkong, Kota Pontianak",
+      "business_status": "OPERATIONAL",
+      "location": {
+        "lat": -0.037058,
+        "lng": 109.3262968
+      },
       "name": "Aming Coffee Podomoro",
-       "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
-       "price_level": 2,
-       "rating": 4.5,
-       "user_ratings_total": 2953
-     },
-     {
-       "address": "Jl. Putri Candramidi, Sungai Bangkong, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.037058,
-         "lng": 109.3262968
-       },
-       "name": "Detik Coffee & Space",
-      "photos": [],
-       "place_id": "ChIJ-ZufmAFZHS4RCM9xUBjpYYY",
-       "price_level": null,
-       "rating": 4.4,
-       "user_ratings_total": 293
-     },
-     {
-       "address": "Gg. Purnama Agung 3, Parit Tokaya, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0542551,
-         "lng": 109.3302955
-       },
-       "name": "2818 Coffee Roasters",
-      "photos": [],
-       "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
-       "price_level": null,
-       "rating": 5,
-       "user_ratings_total": 77
-     },
-     {
-       "address": "Jl. Ilham No.1, Sungai Bangkong, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0542376,
-         "lng": 109.3055719
-       },
-       "name": "Aming Coffee Ilham",
-      "photos": [],
-       "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
-       "price_level": 1,
-       "rating": 4.5,
-       "user_ratings_total": 1362
-     },
-     {
-       "address": "Jl. Uray Bawadi No.81, Sungai Bangkong, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.036481,
-         "lng": 109.3193712
-       },
+      "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+      "price_level": 2,
+      "rating": 4.5,
+      "user_ratings_total": 2953
+    },
+    {
+      "address": "Gg. Purnama Agung 3, Parit Tokaya, Kota Pontianak",
+      "business_status": "OPERATIONAL",
+      "location": {
+        "lat": -0.0542551,
+        "lng": 109.3302955
+      },
+      "name": "2818 Coffee Roasters",
+      "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+      "price_level": null,
+      "rating": 5,
+      "user_ratings_total": 77
+    },
+    {
+      "address": "Jl. Ilham No.1, Sungai Bangkong, Kota Pontianak",
+      "business_status": "OPERATIONAL",
+      "location": {
+        "lat": -0.0542376,
+        "lng": 109.3055719
+      },
+      "name": "Aming Coffee Ilham",
+      "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+      "price_level": 1,
+      "rating": 4.5,
+      "user_ratings_total": 1362
+    },
+    {
+      "address": "Jl. Uray Bawadi No.81, Sungai Bangkong, Kota Pontianak",
+      "business_status": "OPERATIONAL",
+      "location": {
+        "lat": -0.036481,
+        "lng": 109.3193712
+      },
       "name": "5 CM Coffee and Eatery",
-      "photos": [],
       "place_id": "ChIJPa6swGtZHS4RrbIlRvgBgok",
-       "price_level": null,
-       "rating": 4.7,
-       "user_ratings_total": 548
-     },
-     {
-       "address": "Jl. Danau Sentarum, Sungai Bangkong, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.04182350000000001,
-         "lng": 109.3128619
-       },
-       "name": "Haruna Cafe",
-      "photos": [],
+      "price_level": null,
+      "rating": 4.7,
+      "user_ratings_total": 548
+    },
+    {
+      "address": "Jl. Danau Sentarum, Sungai Bangkong, Kota Pontianak",
+      "business_status": "OPERATIONAL",
+      "location": {
+        "lat": -0.04182350000000001,
+        "lng": 109.3128619
+      },
+      "name": "Haruna Cafe",
       "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
-       "price_level": 2,
-       "rating": 4.7,
-       "user_ratings_total": 639
-     },
-     {
-       "address": "Jl. Karya Bhakti No.17A, Akcaya, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0460418,
-         "lng": 109.3277088
-       },
-       "name": "Rumah Kita Coffee & Eatery",
-      "photos": [],
+      "price_level": 2,
+      "rating": 4.7,
+      "user_ratings_total": 639
+    },
+    {
+      "address": "Jl. Karya Bhakti No.17A, Akcaya, Kota Pontianak",
+      "business_status": "OPERATIONAL",
+      "location": {
+        "lat": -0.0460418,
+        "lng": 109.3277088
+      },
+      "name": "Rumah Kita Coffee & Eatery",
       "place_id": "ChIJC3_RpddZHS4RMiDp7-6TemY",
-       "price_level": null,
-       "rating": 4.8,
-       "user_ratings_total": 81
-     },
-     {
-       "address": "Jl. Tj. Raya II, Parit Mayor, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.054291,
-         "lng": 109.3734311
-       },
-       "name": "CW Coffee Tanjung Raya",
-      "photos": [],
+      "price_level": null,
+      "rating": 4.8,
+      "user_ratings_total": 81
+    },
+    {
+      "address": "Jl. Tj. Raya II, Parit Mayor, Kota Pontianak",
+      "business_status": "OPERATIONAL",
+      "location": {
+        "lat": -0.054291,
+        "lng": 109.3734311
+      },
+      "name": "CW Coffee Tanjung Raya",
       "place_id": "ChIJpVctpWBZHS4RdUbSlT-pSl8",
-       "price_level": null,
-       "rating": 4.5,
-       "user_ratings_total": 370
-     },
-     {
-       "address": "Jl. Dr. Sutomo Gg. Karya 2A No.14, Sungai Bangkong, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0459128,
-         "lng": 109.3174164
-       },
-       "name": "Osamu Coffee",
-       "place_id": "ChIJBVWfsoFZHS4Rakb44yanMjs",
-       "price_level": null,
-       "rating": 4.8,
-       "user_ratings_total": 40
-     },
-     {
-       "address": "Jl. Beringin No.27, Darat Sekip, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.030369,
-         "lng": 109.3344998
-       },
-       "name": "NUTRICULA COFFEE",
-       "place_id": "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
-       "price_level": null,
-       "rating": 4.7,
-       "user_ratings_total": 173
-     },
-     {
-       "address": "Jl. Beringin No.38 A, Darat Sekip, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0308529,
-         "lng": 109.3338673
-       },
-       "name": "Seremoni Coffee",
-       "place_id": "ChIJE8-LfABZHS4R_MsSOwiHNL8",
-       "price_level": null,
-       "rating": 4.8,
-       "user_ratings_total": 75
-     },
-     {
-       "address": "Jl. Prof. DR. Hamka No.1 A, Sungai Jawi, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0228944,
-         "lng": 109.3245183
-       },
-       "name": "Sidedoors Coffee Shop",
-       "place_id": "ChIJIRuUuwNZHS4RrhnXINPqQQ4",
-       "price_level": 2,
-       "rating": 4.8,
-       "user_ratings_total": 360
-     },
-     {
-       "address": "Jl. Dr. Sutomo Gg. Karya 1 No.4, RT.1/RW.18, KELURAHAN SUNGAI BANGKONG, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0475305,
-         "lng": 109.3177032
-       },
-       "name": "Heim Coffee",
-       "place_id": "ChIJ4U6K9hdZHS4RKE7QPIKbn4Y",
-       "price_level": null,
-       "rating": 4.7,
-       "user_ratings_total": 125
-     },
-     {
-       "address": "Jl. Tanjung Pura Gg. Kelantan No.1-2, tanjung pura, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0350962,
-         "lng": 109.3460822
-       },
-       "name": "Disela Coffee & Roastery",
-       "place_id": "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
-       "price_level": null,
-       "rating": 4.7,
-       "user_ratings_total": 76
-     },
-     {
-       "address": "Jl. Pang Semangai No.16, Akcaya, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0415372,
-         "lng": 109.3317122
-       },
-       "name": "Cafe Tyga Per Ampat",
-       "place_id": "ChIJkeLtuqlZHS4RAjrhq_-O94s",
-       "price_level": 2,
-       "rating": 4.5,
-       "user_ratings_total": 719
-     },
-     {
-       "address": "COOPER COFFEE & SPACE, Jl. Kesehatan ruko block 2 No.1&2, Kota Baru, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0539516,
-         "lng": 109.318063
-       },
-       "name": "Cooper Coffee",
-       "place_id": "ChIJ98FvZm1ZHS4RQy-ELBGFEsA",
-       "price_level": 1,
-       "rating": 4.5,
-       "user_ratings_total": 189
-     },
+      "price_level": null,
+      "rating": 4.5,
+      "user_ratings_total": 370
+    },
+    {
+      "address": "Jl. Dr. Sutomo Gg. Karya 2A No.14, Sungai Bangkong, Kota Pontianak",
+      "business_status": "OPERATIONAL",
+      "location": {
+        "lat": -0.0459128,
+        "lng": 109.3174164
+      },
+      "name": "Osamu Coffee",
+      "place_id": "ChIJBVWfsoFZHS4Rakb44yanMjs",
+      "price_level": null,
+      "rating": 4.8,
+      "user_ratings_total": 40
+    },
+    {
+      "address": "Jl. Beringin No.27, Darat Sekip, Kota Pontianak",
+      "business_status": "OPERATIONAL",
+      "location": {
+        "lat": -0.030369,
+        "lng": 109.3344998
+      },
+      "name": "NUTRICULA COFFEE",
+      "place_id": "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+      "price_level": null,
+      "rating": 4.7,
+      "user_ratings_total": 173
+    },
+    {
+      "address": "Jl. Beringin No.38 A, Darat Sekip, Kota Pontianak",
+      "business_status": "OPERATIONAL",
+      "location": {
+        "lat": -0.0308529,
+        "lng": 109.3338673
+      },
+      "name": "Seremoni Coffee",
+      "place_id": "ChIJE8-LfABZHS4R_MsSOwiHNL8",
+      "price_level": null,
+      "rating": 4.8,
+      "user_ratings_total": 75
+    },
+    {
+      "address": "Jl. Prof. DR. Hamka No.1 A, Sungai Jawi, Kota Pontianak",
+      "business_status": "OPERATIONAL",
+      "location": {
+        "lat": -0.0228944,
+        "lng": 109.3245183
+      },
+      "name": "Sidedoors Coffee Shop",
+      "place_id": "ChIJIRuUuwNZHS4RrhnXINPqQQ4",
+      "price_level": 2,
+      "rating": 4.8,
+      "user_ratings_total": 360
+    },
+    {
+      "address": "Jl. Dr. Sutomo Gg. Karya 1 No.4, RT.1/RW.18, KELURAHAN SUNGAI BANGKONG, Kota Pontianak",
+      "business_status": "OPERATIONAL",
+      "location": {
+        "lat": -0.0475305,
+        "lng": 109.3177032
+      },
+      "name": "Heim Coffee",
+      "place_id": "ChIJ4U6K9hdZHS4RKE7QPIKbn4Y",
+      "price_level": null,
+      "rating": 4.7,
+      "user_ratings_total": 125
+    },
+    {
+      "address": "Jl. Tanjung Pura Gg. Kelantan No.1-2, tanjung pura, Kota Pontianak",
+      "business_status": "OPERATIONAL",
+      "location": {
+        "lat": -0.0350962,
+        "lng": 109.3460822
+      },
+      "name": "Disela Coffee & Roastery",
+      "place_id": "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+      "price_level": null,
+      "rating": 4.7,
+      "user_ratings_total": 76
+    },
+    {
+      "address": "Jl. Pang Semangai No.16, Akcaya, Kota Pontianak",
+      "business_status": "OPERATIONAL",
+      "location": {
+        "lat": -0.0415372,
+        "lng": 109.3317122
+      },
+      "name": "Cafe Tyga Per Ampat",
+      "place_id": "ChIJkeLtuqlZHS4RAjrhq_-O94s",
+      "price_level": 2,
+      "rating": 4.5,
+      "user_ratings_total": 719
+    },
+    {
+      "address": "COOPER COFFEE & SPACE, Jl. Kesehatan ruko block 2 No.1&2, Kota Baru, Kota Pontianak",
+      "business_status": "OPERATIONAL",
+      "location": {
+        "lat": -0.0539516,
+        "lng": 109.318063
+      },
+      "name": "Cooper Coffee",
+      "place_id": "ChIJ98FvZm1ZHS4RQy-ELBGFEsA",
+      "price_level": 1,
+      "rating": 4.5,
+      "user_ratings_total": 189
+    },
     {
       "address": "Jl. H. Abbas 1 No.157, Benua Melayu Darat, Kota Pontianak",
       "business_status": "OPERATIONAL",
@@ -226,568 +219,21 @@
       "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
       "price_level": 1,
       "rating": 4.6,
-      "user_ratings_total": 3989,
-      "map_embed_url": "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15959.270929372382!2d109.3425556!3d-0.0311064!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e1d585206d712c9%3A0x4482ff0caf4d858!2sAming%20Coffee!5e0!3m2!1sid!2sid!4v1764745735868!5m2!1sid!2sid"
+      "user_ratings_total": 3989
     },
-     {
-       "address": "X9M6+PXW Samping Plan & B, Jl. Gst. Situt Mahmud, Siantan, Siantan Hulu, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0156262,
-         "lng": 109.3624625
-       },
-       "name": "Aming Coffee Siantan",
-       "place_id": "ChIJKX36yixZHS4ROQfX-hNWhj0",
-       "price_level": 2,
-       "rating": 4.5,
-       "user_ratings_total": 498
-     },
-     {
-       "address": "Komp. Pontianak Mall, Jl. Gusti Sulung Lelanang No.B8 Blok B8, Darat Sekip, Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.03190420000000001,
-         "lng": 109.335925
-       },
-       "name": "Franco\u2019s Cafe",
-       "place_id": "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
-       "price_level": null,
-       "rating": 4.7,
-       "user_ratings_total": 170
-     },
-     {
-       "address": "Depan kampus STIE Boedy Oetomo, Jl. Ampera, Sungai Bangkong, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0573623,
-         "lng": 109.3043206
-       },
-       "name": "Cafe Sikribo & coffee break",
-       "place_id": "ChIJj6Rlt2RZHS4R8dtMO6pBEqY",
-       "price_level": 2,
-       "rating": 4.3,
-       "user_ratings_total": 269
-     },
-     {
-       "address": "Gg. Sukarame No.10, Sungai Bangkong, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0356211,
-         "lng": 109.3262557
-       },
-       "name": "Paskamasala",
-       "place_id": "ChIJew-cPYFZHS4RuQsI4D8LScQ",
-       "price_level": null,
-       "rating": 4.7,
-       "user_ratings_total": 309
-     },
-     {
-       "address": "Jl. Sepakat I No.8A, Bansir Laut, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0564528,
-         "lng": 109.3531013
-       },
-       "name": "Naoto Coffee",
-       "place_id": "ChIJXZmdnRpZHS4Rfdjw-EPEJUg",
-       "price_level": null,
-       "rating": 4.7,
-       "user_ratings_total": 275
-     },
-     {
-       "address": "Jalan. Gajah Mada no. 41, (seberang STBA, Benua Melayu Darat, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0305834,
-         "lng": 109.3395688
-       },
-       "name": "Kafei Coffee & Brews",
-       "place_id": "ChIJh_2PLTxZHS4RMPzh8QqZFvw",
-       "price_level": null,
-       "rating": 4.9,
-       "user_ratings_total": 68
-     },
-     {
-       "address": "Jl. Dr. Rubini No.2, Akcaya, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.044735,
-         "lng": 109.3352619
-       },
-       "name": "KamiNuansa Coffee",
-       "place_id": "ChIJh1RyCgBZHS4RNzldDa4Op-k",
-       "price_level": null,
-       "rating": 4.9,
-       "user_ratings_total": 47
-     },
-     {
-       "address": "Jl. Wan Sagaf No.37, Sungai Bangkong, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0321146,
-         "lng": 109.3280728
-       },
-       "name": "Oriental Coffee and Space",
-       "place_id": "ChIJ93EZtAhZHS4Rfp-46LEApdo",
-       "price_level": null,
-       "rating": 4.8,
-       "user_ratings_total": 15
-     },
-     {
-       "address": "Jl. Sulawesi Gg. Keluarga, Akcaya, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0429831,
-         "lng": 109.3271878
-       },
-       "name": "Silang Coffee",
-       "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
-       "price_level": null,
-       "rating": 4.7,
-       "user_ratings_total": 197
-     },
-     {
-       "address": "Gg. Manajemen, Bansir Laut, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.06324339999999999,
-         "lng": 109.3379753
-       },
-       "name": "5cm Coffee & Eatery (Cabang Reformasi)",
-       "place_id": "ChIJESuCXjdZHS4RDlYrLPontkg",
-       "price_level": null,
-       "rating": 4.5,
-       "user_ratings_total": 256
-     },
-     {
-       "address": "Jl. Suka Mulia No.10A, Sungai Bangkong, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0422981,
-         "lng": 109.3099442
-       },
-       "name": "PS Coffee",
-       "place_id": "ChIJgRw0letZHS4R-v2NPpzhGfk",
-       "price_level": null,
-       "rating": 4.9,
-       "user_ratings_total": 398
-     },
-     {
-       "address": "X998+QJ6, Jl. Panglima Aim, Tj. Hulu, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0305454,
-         "lng": 109.3665106
-       },
-       "name": "Point Coffee Panglima Aim (Ti23)",
-       "place_id": "ChIJCYkSEylZHS4Rgj-KzSUHdHQ",
-       "price_level": null,
-       "rating": 4.9,
-       "user_ratings_total": 95
-     },
-     {
-       "address": "di Rumah Jepin, Jl. Kh.A.Dahlan, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0348346,
-         "lng": 109.3323215
-       },
-       "name": "ELIO COFFEE & EATERY",
-       "place_id": "ChIJJYT322JZHS4Rpu02ZMGunCw",
-       "price_level": null,
-       "rating": 4.9,
-       "user_ratings_total": 14
-     },
-     {
-       "address": "Jl. HM Suwignyo Komplek Kurnia 6 No.mor 1, Sungai Jawi, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0274513,
-         "lng": 109.3161759
-       },
-       "name": "Coffee Toean",
-       "place_id": "ChIJ446QPRRZHS4RAcWkHjohGFs",
-       "price_level": null,
-       "rating": 5,
-       "user_ratings_total": 22
-     },
-     {
-       "address": "Jl. Prof. M.Yamin No.7, Sungai Bangkong, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0292743,
-         "lng": 109.3155826
-       },
-       "name": "ASPECT COFFEE",
-       "place_id": "ChIJv52soIZZHS4RIpP04VD5R8g",
-       "price_level": null,
-       "rating": 4.5,
-       "user_ratings_total": 171
-     },
-     {
-       "address": "Jl. Wono Baru, Kota Baru, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0562079,
-         "lng": 109.3216092
-       },
-       "name": "Barabiru Coffee",
-       "place_id": "ChIJhU6w_i9ZHS4RVkMRHhGyAOg",
-       "price_level": null,
-       "rating": 4.5,
-       "user_ratings_total": 120
-     },
-     {
-       "address": "Jl. Irian No.5b, Akcaya, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0398367,
-         "lng": 109.3285184
-       },
-       "name": "Bermuda Coffee Irian",
-       "place_id": "ChIJKfRKnx1ZHS4RNGR9M2f-b_Y",
-       "price_level": 2,
-       "rating": 4.6,
-       "user_ratings_total": 191
-     },
-     {
-       "address": "Jl. Karya Baru, Parit Tokaya, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0526564,
-         "lng": 109.3372246
-       },
-       "name": "Segitiga Coffee",
-       "place_id": "ChIJN85HBqJZHS4R7h6R0jSP2QE",
-       "price_level": 2,
-       "rating": 4.6,
-       "user_ratings_total": 538
-     },
-     {
-       "address": "Jl. Karel Satsuit Tubun No.2e, Akcaya, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0373279,
-         "lng": 109.33153
-       },
-       "name": "CW Coffee",
-       "place_id": "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
-       "price_level": 2,
-       "rating": 4.6,
-       "user_ratings_total": 538
-     },
-     {
-       "address": "Jl. Sulawesi, Akcaya, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0434088,
-         "lng": 109.3278441
-       },
-       "name": "Sediakala Coffe",
-       "place_id": "ChIJl68KXstZHS4RM5ldvDjAHM8",
-       "price_level": null,
-       "rating": 4.5,
-       "user_ratings_total": 204
-     },
-     {
-       "address": "Jl. Merdeka No.482, Mariana, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0211995,
-         "lng": 109.3289936
-       },
-       "name": "RHYTHM COFFEE",
-       "place_id": "ChIJ5ZqQxv5ZHS4R6Cp5kFFlFes",
-       "price_level": null,
-       "rating": 4.7,
-       "user_ratings_total": 90
-     },
-     {
-       "address": "Jl. Gusti Hamzah, Sungai Jawi, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0268033,
-         "lng": 109.3193675
-       },
-       "name": "5CM Coffee & Eatery (Cabang Pancasila)",
-       "place_id": "ChIJN6t4cQBZHS4RuQOZYSndWSE",
-       "price_level": null,
-       "rating": 4.6,
-       "user_ratings_total": 182
-     },
-     {
-       "address": "W9V2+4VF, Bansir Laut, Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0571418,
-         "lng": 109.3524032
-       },
-       "name": "Sahabi Coffee and Eatery",
-       "place_id": "ChIJP464wpdZHS4RCIOBcClLxUQ",
-       "price_level": null,
-       "rating": 4.7,
-       "user_ratings_total": 57
-     },
-     {
-       "address": "Jl. Dr. Sutomo No.58, Sungai Bangkong, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0419385,
-         "lng": 109.3143808
-       },
-       "name": "Bandaria Coffee House",
-       "place_id": "ChIJd2gAkFRZHS4R7UbymPDLLU0",
-       "price_level": null,
-       "rating": 4.9,
-       "user_ratings_total": 33
-     },
-     {
-       "address": "Gg.Suditrisno No.7, Sungai Bangkong, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0404284,
-         "lng": 109.3203208
-       },
-       "name": "Awal Temu Coffee",
-       "place_id": "ChIJ4cMQNwVZHS4R4t_ZFdW0vOE",
-       "price_level": null,
-       "rating": 4.9,
-       "user_ratings_total": 35
-     },
-     {
-       "address": "Gg.Suditrisno, Sungai Bangkong, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0408038,
-         "lng": 109.3199675
-       },
-       "name": "Matoea Coffee",
-       "place_id": "ChIJGbUmRbFZHS4RMGw-UANfiR0",
-       "price_level": null,
-       "rating": 4.7,
-       "user_ratings_total": 90
-     },
-     {
-       "address": "Jl. Dr. Wahidin. S No.2, Sungai Bangkong, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0406391,
-         "lng": 109.3127947
-       },
-       "name": "First Things First",
-       "place_id": "ChIJB0eOMJtZHS4Rhzu98Dx0To0",
-       "price_level": null,
-       "rating": 4.7,
-       "user_ratings_total": 122
-     },
-     {
-       "address": "depan Iwan mart/dekat futsal safani, Gg. Danau Indah, Sungai Bangkong, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0544368,
-         "lng": 109.3044956
-       },
-       "name": "Kong Coffee",
-       "place_id": "ChIJ3Sw0BVdZHS4RZzSW7_hVkdg",
-       "price_level": null,
-       "rating": 4.4,
-       "user_ratings_total": 220
-     },
-     {
-       "address": "Jl. Moh. Isja, Bansir Laut, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0521646,
-         "lng": 109.3488302
-       },
-       "name": "PARA Coffee & Eatery",
-       "place_id": "ChIJvQFMp7hZHS4RQFQZWjHyToY",
-       "price_level": null,
-       "rating": 4.5,
-       "user_ratings_total": 125
-     },
-     {
-       "address": "Jl. Wak Dalek No.7, Sungai Bangkong, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0338198,
-         "lng": 109.324319
-       },
-       "name": "Askara Coffee",
-       "place_id": "ChIJwWsbbkVZHS4RDUndPC0OSh4",
-       "price_level": null,
-       "rating": 4.7,
-       "user_ratings_total": 130
-     },
-     {
-       "address": "Jl. Teuku Umar No.55, Darat Sekip, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0323378,
-         "lng": 109.3338599
-       },
-       "name": "KOPILOJIK PONTIANAK",
-       "place_id": "ChIJgb-eqIZZHS4Rx2P_8Bwpwgk",
-       "price_level": null,
-       "rating": 4.5,
-       "user_ratings_total": 222
-     },
-     {
-       "address": "X85P+856, Jl. Mujahidin, Akcaya, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0418001,
-         "lng": 109.3354323
-       },
-       "name": "1918 Coffee & Space",
-       "place_id": "ChIJl6BBAwBZHS4ROFT_xuXuINE",
-       "price_level": null,
-       "rating": 4.2,
-       "user_ratings_total": 149
-     },
-     {
-       "address": "Jl. Tanjung Sari No.102a, Bansir Laut, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.05186499999999999,
-         "lng": 109.3481129
-       },
-       "name": "CW COFFEE TANJUNG SARI CWTS",
-       "place_id": "ChIJHdYrWU1ZHS4RuU_qB_QKTdI",
-       "price_level": null,
-       "rating": 4.4,
-       "user_ratings_total": 685
-     },
-     {
-       "address": "Jl. Reformasi No.30, Bansir Darat, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0643315,
-         "lng": 109.338757
-       },
-       "name": "Saca Coffee",
-       "place_id": "ChIJkU_6a0lZHS4R9E1r4usKuO4",
-       "price_level": null,
-       "rating": 4.7,
-       "user_ratings_total": 78
-     },
-     {
-       "address": "Jl. Akcaya II No.16, Akcaya, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.04509469999999999,
-         "lng": 109.3349568
-       },
-       "name": "Saujana Coffee & Eatery",
-       "place_id": "ChIJg01iw3FZHS4Rk7gdffuEjFU",
-       "price_level": null,
-       "rating": 4.6,
-       "user_ratings_total": 74
-     },
-     {
-       "address": "W8WP+PF9, Jl. Karya Baru Komplek. Taman Spain No.mor. 1, Parit Tokaya, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0532547,
-         "lng": 109.3362208
-       },
-       "name": "EKOFFIE CAFE & EATRY",
-       "place_id": "ChIJuR55IcdZHS4RqYXSO3jvKWo",
-       "price_level": null,
-       "rating": 4.5,
-       "user_ratings_total": 60
-     },
-     {
-       "address": "Jl. Kutilang No.3, Tengah, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0245407,
-         "lng": 109.3338137
-       },
-       "name": "Saturaga Coffee & Eatery",
-       "place_id": "ChIJMefSfNhZHS4RaK4WfXoe2E4",
-       "price_level": null,
-       "rating": 4.6,
-       "user_ratings_total": 41
-     },
-     {
-       "address": "Jl. Gajah Mada No.1, Benua Melayu Darat, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.029625,
-         "lng": 109.3393449
-       },
-       "name": "Coffee Street Pontianak",
-       "place_id": "ChIJb1WNEopZHS4RRwC8vbKpp1E",
-       "price_level": null,
-       "rating": 4.5,
-       "user_ratings_total": 60
-     },
-     {
-       "address": "Gg. Purnama 8 No.4, Parit Tokaya, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0518172,
-         "lng": 109.3321588
-       },
-       "name": "C\u00e9tho",
-       "place_id": "ChIJwy2ZYOZZHS4R0I1J3JwEIcc",
-       "price_level": null,
-       "rating": 4.8,
-       "user_ratings_total": 84
-     },
-     {
-       "address": "Jl. Diponegoro No.149, Darat Sekip, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0287931,
-         "lng": 109.3398715
-       },
-       "name": "Panorama Coffee",
-       "place_id": "ChIJVy7Gq1FYHS4RKbQohi4F6So",
-       "price_level": 2,
-       "rating": 4.5,
-       "user_ratings_total": 408
-     },
-     {
-       "address": "W8V8+35X, Jl. Kesehatan, Kota Baru, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0573193,
-         "lng": 109.3155922
-       },
-       "name": "Bright Coffee",
-       "place_id": "ChIJ0XDyOixZHS4R_7NfKDJ3tBs",
-       "price_level": null,
-       "rating": 4.7,
-       "user_ratings_total": 47
-     },
-     {
-       "address": "X85F+J5C, Jl. Uray Bawadi, Sungai Bangkong, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0409393,
-         "lng": 109.3229086
-       },
-       "name": "AREA Coffee Shop",
-       "place_id": "ChIJIVdKRARZHS4RaV0Z5rOGlC4",
-       "price_level": 1,
-       "rating": 4.4,
-       "user_ratings_total": 353
-     },
-     {
-       "address": "Jl. Uray Bawadi No.17a, Sungai Bangkong, Kota Pontianak",
-       "business_status": "OPERATIONAL",
-       "location": {
-         "lat": -0.0405516,
-         "lng": 109.3225633
-       },
-       "name": "Deal Kopi",
-       "place_id": "ChIJ8dcIZwRZHS4RcAbeV7-773w",
-       "price_level": 2,
-       "rating": 4.5,
-       "user_ratings_total": 1087
-     }
-   ],
-   "status": "success"
- }
+    {
+      "address": "X9M6+PXW Samping Plan & B, Jl. Gst. Situt Mahmud, Siantan, Siantan Hulu, Kota Pontianak",
+      "business_status": "OPERATIONAL",
+      "location": {
+        "lat": -0.0156262,
+        "lng": 109.3624625
+      },
+      "name": "Aming Coffee Siantan",
+      "place_id": "ChIJKX36yixZHS4ROQfX-hNWhj0",
+      "price_level": 2,
+      "rating": 4.5,
+      "user_ratings_total": 498
+    }
+  ],
+  "status": "success"
+}
