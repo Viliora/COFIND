@@ -1,19 +1,6 @@
 {
   "data": [
     {
-      "address": "Jl. Putri Candramidi No.88, Sungai Bangkong, Kota Pontianak",
-      "business_status": "OPERATIONAL",
-      "location": {
-        "lat": -0.0355222,
-        "lng": 109.3251833
-      },
-      "name": "Aming Coffee",
-      "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
-      "price_level": 1,
-      "rating": 4.6,
-      "user_ratings_total": 3989
-    },
-    {
       "address": "Jl. Putri Candramidi, Sungai Bangkong, Kota Pontianak",
       "business_status": "OPERATIONAL",
       "location": {

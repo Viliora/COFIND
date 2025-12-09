@@ -274,7 +274,6 @@ const LLMAnalyzer = () => {
     { label: '❄️ Ruangan Dingin', value: 'ruangan dingin' },
     { label: '📸 Aesthetic', value: 'aesthetic' },
     { label: '🎵 Live Music', value: 'live music' },
-    { label: '🚬 Smoking Area', value: 'indoor smoking area, boleh merokok' },
     { label: '🅿️ Parkir Luas', value: 'parkiran luas' },
     { label: '🌙 24 jam', value: '24 jam' },
   ];

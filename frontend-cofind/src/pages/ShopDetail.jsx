@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import OptimizedImage from '../components/OptimizedImage';
 import localPlacesData from '../data/places.json';
 import localReviewsData from '../data/reviews.json';
+import { getCoffeeShopImage } from '../utils/coffeeShopImages';
 
 // Konfigurasi API (mengikuti ShopList)
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
@@ -235,7 +236,7 @@ function ShopDetail() {
         <div className="mb-6 rounded-xl overflow-hidden shadow-lg">
           <div className="w-full h-56 sm:h-64 md:h-80">
             <OptimizedImage
-              src={shop.photos && shop.photos.length > 0 ? shop.photos[0] : null}
+              src={getCoffeeShopImage(shop.place_id || shop.name)}
               alt={shop.name}
               className="w-full h-full object-cover"
               fallbackColor={(() => {

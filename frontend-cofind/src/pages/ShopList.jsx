@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import CoffeeShopCard from '../components/CoffeeShopCard';
 import HeroSwiper from '../components/HeroSwiper';
 import { preloadFeaturedImages } from '../utils/imagePreloader';
-import { fetchWithDevCache, isDevelopmentMode, clearDevCache } from '../utils/devCache';
+import { fetchWithDevCache, isDevelopmentMode } from '../utils/devCache';
 import heroBgImage from '../assets/1R modern cafe 1.5.jpg';
 import localPlacesData from '../data/places.json';
 
@@ -18,7 +18,6 @@ export default function ShopList() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState(null);
-  const [isFromCache, setIsFromCache] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [activeFilter, setActiveFilter] = useState('all'); // Filter state
   const scrollContainerRef = useRef(null);
@@ -149,7 +148,6 @@ export default function ShopList() {
           if (localPlacesData && localPlacesData.data && Array.isArray(localPlacesData.data)) {
             console.log('[ShopList] Loaded from local JSON:', localPlacesData.data.length, 'shops');
             setCoffeeShops(localPlacesData.data);
-            setIsFromCache(true); // Tandai sebagai cached data
             setIsLoading(false);
             return;
           } else {
@@ -173,7 +171,6 @@ export default function ShopList() {
                            result.fromCache ? '(from cache)' : '(fresh)');
                 
                 setCoffeeShops(result.data.data);
-                setIsFromCache(result.fromCache);
                 
                 // If data is from cache (stale), keep loading indicator briefly
                 // Fresh data will update in background
@@ -202,7 +199,6 @@ export default function ShopList() {
               if (result.data && Array.isArray(result.data) && result.data.length > 0) {
                 console.log('[ShopList] Loaded from API:', result.data.length, 'shops');
                 setCoffeeShops(result.data);
-                setIsFromCache(false);
                 setIsLoading(false);
                 return;
               }
@@ -253,17 +249,65 @@ export default function ShopList() {
     
     return coffeeShops
       .filter(shop => shop.rating >= 4.0 && (shop.user_ratings_total || 0) < 100)
-      .sort((a, b) => (a.user_ratings_total || 0) - (b.user_ratings_total || 0))
+      .sort((a, b) => {
+        // Sort berdasarkan rating tertinggi (descending), lalu review paling sedikit (ascending)
+        const ratingA = parseFloat(a.rating) || 0;
+        const ratingB = parseFloat(b.rating) || 0;
+        const reviewsA = a.user_ratings_total || 0;
+        const reviewsB = b.user_ratings_total || 0;
+        
+        // Jika rating berbeda, urutkan berdasarkan rating tertinggi
+        if (ratingB !== ratingA) {
+          return ratingB - ratingA;
+        }
+        // Jika rating sama, urutkan berdasarkan review paling sedikit
+        return reviewsA - reviewsB;
+      })
       .slice(0, 5);
+  }, [coffeeShops]);
+
+  // Dapatkan Top Rated Coffee Shops (rating 4.8-5.0)
+  const topRatedShops = useMemo(() => {
+    if (coffeeShops.length === 0) return [];
+    
+    return coffeeShops
+      .filter(shop => {
+        const rating = parseFloat(shop.rating) || 0;
+        return rating >= 4.8 && rating <= 5.0;
+      })
+      .sort((a, b) => {
+        // Sort berdasarkan rating (descending), lalu jumlah review (descending)
+        const ratingA = parseFloat(a.rating) || 0;
+        const ratingB = parseFloat(b.rating) || 0;
+        if (ratingB !== ratingA) {
+          return ratingB - ratingA;
+        }
+        return (b.user_ratings_total || 0) - (a.user_ratings_total || 0);
+      });
   }, [coffeeShops]);
 
   // Filter berdasarkan kategori
   const getFilteredShopsByCategory = (shops) => {
     switch (activeFilter) {
       case 'top-rated':
-        return shops.filter(shop => shop.rating >= 4.5);
+        // Filter coffee shop dengan rating 4.8-5.0
+        return shops.filter(shop => {
+          const rating = parseFloat(shop.rating) || 0;
+          return rating >= 4.8 && rating <= 5.0;
+        }).sort((a, b) => {
+          // Sort berdasarkan rating (descending), lalu jumlah review (descending)
+          const ratingA = parseFloat(a.rating) || 0;
+          const ratingB = parseFloat(b.rating) || 0;
+          if (ratingB !== ratingA) {
+            return ratingB - ratingA;
+          }
+          return (b.user_ratings_total || 0) - (a.user_ratings_total || 0);
+        });
       case 'popular':
-        return shops.sort((a, b) => (b.user_ratings_total || 0) - (a.user_ratings_total || 0));
+        // Filter coffee shop dengan review di atas 1000
+        return shops
+          .filter(shop => (shop.user_ratings_total || 0) > 1000)
+          .sort((a, b) => (b.user_ratings_total || 0) - (a.user_ratings_total || 0));
       case 'newest':
         // Coffee shop terbaru: rating bagus (>= 4.0) tapi review masih sedikit (< 100)
         // Menandakan tempat baru yang berkualitas
@@ -288,7 +332,10 @@ export default function ShopList() {
     avgRating: coffeeShops.length > 0 
       ? (coffeeShops.reduce((sum, shop) => sum + (shop.rating || 0), 0) / coffeeShops.length).toFixed(1)
       : 0,
-    topRated: coffeeShops.filter(shop => shop.rating >= 4.5).length,
+    topRated: coffeeShops.filter(shop => {
+      const rating = parseFloat(shop.rating) || 0;
+      return rating >= 4.8 && rating <= 5.0;
+    }).length,
     totalReviews: coffeeShops.reduce((sum, shop) => sum + (shop.user_ratings_total || 0), 0),
   };
 
@@ -333,41 +380,6 @@ export default function ShopList() {
         <HeroSwiper coffeeShops={coffeeShops} />
       )}
 
-      {/* Modern Hero Banner with Background Image */}
-      <div className="relative h-48 sm:h-56 md:h-64 flex items-center justify-center mb-6 sm:mb-8 overflow-hidden w-full">
-        {/* Background Image with Overlay */}
-        <div 
-          className="absolute inset-0 bg-cover bg-center"
-          style={{
-            backgroundImage: `url(${heroBgImage})`,
-          }}
-        >
-          {/* Dark Overlay for better text readability */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70"></div>
-        </div>
-        
-        {/* Content */}
-        <div className="relative z-10 text-center px-4 sm:px-6 max-w-4xl mx-auto">
-          {/* Main Heading */}
-          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-3 sm:mb-4 leading-tight">
-            <span className="block mb-1 sm:mb-2 bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 bg-clip-text text-transparent drop-shadow-lg">
-              Temukan Coffee Shop
-            </span>
-            <span className="block text-white drop-shadow-2xl">
-              Yang Sesuai Dengan Keinginan Anda!
-            </span>
-          </h1>
-          
-          {/* Subtitle */}
-          <p className="text-sm sm:text-base md:text-lg text-gray-200 font-medium drop-shadow-lg">
-            Jelajahi lebih dari <span className="text-amber-400 font-bold">{coffeeShops.length}+</span> coffee shop terbaik di Pontianak
-          </p>
-        </div>
-        
-        {/* Bottom Gradient Fade */}
-        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-gray-50 dark:from-zinc-900 to-transparent"></div>
-      </div>
-
       <main className="w-full py-4 sm:py-6 md:py-8 px-4 sm:px-6">
         
         {/* Statistics Cards */}
@@ -390,7 +402,7 @@ export default function ShopList() {
             <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-4 sm:p-5 text-white shadow-lg hover:shadow-xl transition-shadow">
               <div className="text-2xl sm:text-3xl font-bold mb-1">{stats.topRated}</div>
               <div className="text-xs sm:text-sm opacity-90">Top Rated</div>
-              <div className="text-xs mt-1 opacity-75">rating ≥ 4.5</div>
+              <div className="text-xs mt-1 opacity-75">rating ≥ 4.8</div>
             </div>
             
             <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl p-4 sm:p-5 text-white shadow-lg hover:shadow-xl transition-shadow">
@@ -409,9 +421,6 @@ export default function ShopList() {
                 <span className="text-2xl">🏆</span>
                 Featured Coffee Shops
               </h2>
-              <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
-                Top {featuredShops.length}
-              </span>
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               Dipilih berdasarkan rating tinggi, popularitas, dan kelengkapan informasi
@@ -421,21 +430,87 @@ export default function ShopList() {
               <div
                 ref={featuredScrollRef}
                 className="flex gap-4 overflow-x-auto scroll-smooth pb-4 snap-x snap-mandatory"
+                style={{ paddingLeft: '16px', paddingRight: '16px' }}
               >
                 {featuredShops.map((shop, index) => (
                   <Link
                     key={shop.place_id}
                     to={`/shop/${shop.place_id}`}
-                    className="relative block hover:shadow-2xl transition duration-300 min-w-[280px] sm:min-w-[320px] md:min-w-[350px] shrink-0 snap-start group"
+                    className="relative block hover:shadow-2xl transition duration-300 w-[240px] sm:w-[280px] md:w-[300px] shrink-0 snap-start group overflow-hidden"
                   >
-                    <div className="absolute -top-2 -left-2 z-10 bg-gradient-to-r from-yellow-400 to-orange-500 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shadow-lg">
+                    <div className="absolute top-2 left-2 z-20 bg-gradient-to-r from-yellow-400 to-orange-500 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shadow-lg">
                       {index + 1}
                     </div>
+                    <div className="relative w-full h-full">
+                      <CoffeeShopCard shop={shop} />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modern Hero Banner with Background Image - Dipindahkan ke antara Featured dan Terbaru */}
+        {!error && !isLoading && coffeeShops.length > 0 && !searchTerm && (
+          <div className="relative h-48 sm:h-56 md:h-64 flex items-center justify-center mb-6 sm:mb-8 overflow-hidden w-full">
+            {/* Background Image with Overlay */}
+            <div 
+              className="absolute inset-0 bg-cover bg-center"
+              style={{
+                backgroundImage: `url(${heroBgImage})`,
+              }}
+            >
+              {/* Dark Overlay for better text readability */}
+              <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70"></div>
+            </div>
+            
+            {/* Content */}
+            <div className="relative z-10 text-center px-4 sm:px-6 max-w-4xl mx-auto">
+              {/* Main Heading */}
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-3 sm:mb-4 leading-tight">
+                <span className="block mb-1 sm:mb-2 bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 bg-clip-text text-transparent drop-shadow-lg">
+                  Temukan Coffee Shop
+                </span>
+                <span className="block text-white drop-shadow-2xl">
+                  Yang Sesuai Dengan Keinginan Anda!
+                </span>
+              </h1>
+              
+              {/* Subtitle */}
+              <p className="text-sm sm:text-base md:text-lg text-gray-200 font-medium drop-shadow-lg">
+                Jelajahi lebih dari <span className="text-amber-400 font-bold">{coffeeShops.length}+</span> coffee shop terbaik di Pontianak
+              </p>
+            </div>
+            
+            {/* Bottom Gradient Fade */}
+            <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-gray-50 dark:from-zinc-900 to-transparent"></div>
+          </div>
+        )}
+
+        {/* Top Rated Coffee Shops (4.8-5.0) */}
+        {!error && !isLoading && topRatedShops.length > 0 && !searchTerm && (
+          <div className="mb-8 sm:mb-10">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                <span className="text-2xl">⭐</span>
+                Top Rated Coffee Shops
+              </h2>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Coffee shop dengan rating tertinggi - pilihan terbaik dalam pengalaman ngopi
+            </p>
+            
+            <div className="relative">
+              <div className="flex gap-4 overflow-x-auto scroll-smooth pb-4 snap-x snap-mandatory">
+                {topRatedShops.map((shop) => (
+                  <Link
+                    key={shop.place_id}
+                    to={`/shop/${shop.place_id}`}
+                    className="relative block hover:shadow-2xl transition duration-300 w-[240px] sm:w-[280px] md:w-[300px] shrink-0 snap-start group"
+                  >
                     <div className="relative">
                       <CoffeeShopCard shop={shop} />
-                      <div className="absolute top-2 right-2 bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full text-xs font-bold shadow-md">
-                        ⭐ Featured
-                      </div>
                     </div>
                   </Link>
                 ))}
@@ -449,15 +524,12 @@ export default function ShopList() {
           <div className="mb-8 sm:mb-10">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-                <span className="text-2xl">✨</span>
-                Coffee Shop Terbaru
+                <span className="text-2xl">💎</span>
+                Coffee Shop Hidden Gem
               </h2>
-              <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 px-3 py-1 rounded-full">
-                {newestShops.length} Tempat Baru
-              </span>
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              Coffee shop dengan rating bagus yang baru dibuka (review masih sedikit)
+              Coffee shop Hidden Gem (rating tinggi dengan sedikit review)
             </p>
             
             <div className="relative">
@@ -466,16 +538,10 @@ export default function ShopList() {
                   <Link
                     key={shop.place_id}
                     to={`/shop/${shop.place_id}`}
-                    className="relative block hover:shadow-2xl transition duration-300 min-w-[280px] sm:min-w-[320px] md:min-w-[350px] shrink-0 snap-start group"
+                    className="relative block hover:shadow-2xl transition duration-300 w-[240px] sm:w-[280px] md:w-[300px] shrink-0 snap-start group"
                   >
                     <div className="relative">
                       <CoffeeShopCard shop={shop} />
-                      <div className="absolute top-2 right-2 bg-gradient-to-r from-blue-400 to-purple-500 text-white px-2 py-1 rounded-full text-xs font-bold shadow-md">
-                        ✨ Baru
-                      </div>
-                      <div className="absolute top-2 left-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 py-1 rounded-full text-xs font-medium shadow-md">
-                        {shop.user_ratings_total || 0} review
-                      </div>
                     </div>
                   </Link>
                 ))}
@@ -510,7 +576,10 @@ export default function ShopList() {
                     : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                 }`}
               >
-                ⭐ Top Rated ({coffeeShops.filter(s => s.rating >= 4.5).length})
+                ⭐ Top Rated ({coffeeShops.filter(s => {
+                  const rating = parseFloat(s.rating) || 0;
+                  return rating >= 4.8 && rating <= 5.0;
+                }).length})
               </button>
               
               <button
@@ -521,7 +590,7 @@ export default function ShopList() {
                     : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                 }`}
               >
-                🔥 Populer
+                🔥 Populer ({coffeeShops.filter(s => (s.user_ratings_total || 0) > 1000).length})
               </button>
               
               <button
@@ -532,7 +601,7 @@ export default function ShopList() {
                     : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                 }`}
               >
-                ✨ Terbaru ({coffeeShops.filter(s => s.rating >= 4.0 && (s.user_ratings_total || 0) < 100).length})
+                💎 Hidden Gem ({coffeeShops.filter(s => s.rating >= 4.0 && (s.user_ratings_total || 0) < 100).length})
               </button>
             </div>
           </div>
@@ -542,31 +611,14 @@ export default function ShopList() {
             {activeFilter === 'all' ? 'Semua Coffee Shop' : 
              activeFilter === 'top-rated' ? '⭐ Top Rated Coffee Shops' :
              activeFilter === 'popular' ? '🔥 Coffee Shop Populer' :
-             activeFilter === 'newest' ? '✨ Coffee Shop Terbaru' : 'Coffee Shop Catalog'} ({filteredShops.length})
+             activeFilter === 'newest' ? '💎 Coffee Shop Hidden Gem' : 'Coffee Shop Catalog'} ({filteredShops.length})
             {searchTerm && <span className="block sm:inline text-gray-500 dark:text-gray-400 text-sm sm:text-base md:text-lg mt-1 sm:mt-0"> - Search: "{searchTerm}"</span>}
           </h2>
           <div className="flex items-center gap-2">
-            {isFromCache && !isLoading && (
-              <span className="px-2 py-1 text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 rounded-full">
-                📦 Cached
-              </span>
-            )}
             {!isOnline && !isLoading && (
               <span className="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full">
                 📡 Offline
               </span>
-            )}
-            {isDevelopmentMode() && coffeeShops.length > 0 && (
-              <button
-                onClick={() => {
-                  clearDevCache();
-                  window.location.reload();
-                }}
-                className="px-3 py-1 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                title="Clear development cache and reload"
-              >
-                🔄 Clear Cache
-              </button>
             )}
           </div>
         </div>
@@ -620,7 +672,7 @@ export default function ShopList() {
                 <Link
                   key={shop.place_id}
                   to={`/shop/${shop.place_id}`}
-                  className="block hover:shadow-2xl transition duration-300 min-w-[240px] sm:min-w-[280px] md:min-w-[300px] shrink-0 snap-start"
+                  className="block hover:shadow-2xl transition duration-300 w-[240px] sm:w-[280px] md:w-[300px] shrink-0 snap-start"
                 >
                   <CoffeeShopCard shop={shop} />
                 </Link>

@@ -14,7 +14,9 @@ const OptimizedImage = ({
   alt, 
   className = '', 
   fallbackColor = '#4F46E5',
-  shopName = 'Coffee Shop'
+  shopName = 'Coffee Shop',
+  isHero = false,
+  style = {}
 }) => {
   const [imageState, setImageState] = useState('loading'); // loading, loaded, error
   const [imageSrc, setImageSrc] = useState(null);
@@ -104,12 +106,25 @@ const OptimizedImage = ({
           className={`${className} ${
             imageState === 'loaded' ? 'opacity-100' : 'opacity-0'
           } transition-opacity duration-500 ease-in-out`}
+          style={{
+            ...style,
+            ...(isHero ? {
+              imageRendering: 'auto',
+              WebkitImageRendering: '-webkit-optimize-contrast',
+              backfaceVisibility: 'hidden',
+              WebkitBackfaceVisibility: 'hidden',
+              transform: 'translateZ(0)',
+              willChange: 'transform',
+              WebkitTransform: 'translateZ(0)',
+              msTransform: 'translateZ(0)'
+            } : {})
+          }}
           onLoad={handleLoad}
           onError={handleError}
-          loading="lazy" // Native lazy loading sebagai fallback
+          loading={isHero ? "eager" : "lazy"} // Eager loading untuk hero images
           decoding="async" // Async decoding untuk performa
-          fetchpriority="high" // High priority untuk hero images
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 1200px"
+          fetchpriority={isHero ? "high" : "auto"} // High priority untuk hero images
+          sizes={isHero ? "100vw" : "(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 1200px"}
         />
       )}
 

@@ -11,24 +11,41 @@ import 'swiper/css/navigation';
 import 'swiper/css/effect-fade';
 
 import OptimizedImage from './OptimizedImage';
+import { getAllCoffeeShopImages } from '../utils/coffeeShopImages';
 
 const HeroSwiper = ({ coffeeShops }) => {
   const [featuredShops, setFeaturedShops] = useState([]);
 
   useEffect(() => {
     if (coffeeShops && coffeeShops.length > 0) {
-      // Ambil coffee shops yang punya foto dan rating tinggi
+      // Ambil coffee shops dengan rating tinggi dan assign foto dari asset
       const shopsWithPhotos = coffeeShops
-        .filter(shop => shop.photos && shop.photos.length > 0 && shop.rating >= 4.0)
+        .filter(shop => shop.rating >= 4.0)
         .sort((a, b) => {
           // Sort by rating dan user_ratings_total
           const scoreA = (a.rating || 0) * 0.6 + ((a.user_ratings_total || 0) / 1000) * 0.4;
           const scoreB = (b.rating || 0) * 0.6 + ((b.user_ratings_total || 0) / 1000) * 0.4;
           return scoreB - scoreA;
         })
-        .slice(0, 8); // Ambil 8 coffee shop terbaik
+        .slice(0, 20) // Ambil maksimal 20 coffee shop terbaik (sesuai jumlah asset foto)
+        .map((shop, index) => ({
+          ...shop,
+          photos: [getAllCoffeeShopImages()[index % getAllCoffeeShopImages().length]] // Assign foto dari asset secara berurutan
+        }));
 
       setFeaturedShops(shopsWithPhotos);
+
+      // Preload hero images untuk kualitas HD
+      shopsWithPhotos.forEach((shop) => {
+        if (shop.photos && shop.photos[0]) {
+          const link = document.createElement('link');
+          link.rel = 'preload';
+          link.as = 'image';
+          link.href = shop.photos[0];
+          link.fetchPriority = 'high';
+          document.head.appendChild(link);
+        }
+      });
     }
   }, [coffeeShops]);
 
@@ -58,7 +75,7 @@ const HeroSwiper = ({ coffeeShops }) => {
         speed={800}
         className="hero-swiper"
       >
-        {featuredShops.map((shop, index) => (
+        {featuredShops.map((shop) => (
           <SwiperSlide key={shop.place_id}>
             <Link to={`/shop/${shop.place_id}`} className="block relative group">
               <div className="relative w-full h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] overflow-hidden">
@@ -73,6 +90,7 @@ const HeroSwiper = ({ coffeeShops }) => {
                     return colors[seed % colors.length];
                   })()}
                   shopName={shop.name}
+                  isHero={true}
                 />
 
                 {/* Gradient Overlay */}
@@ -83,9 +101,6 @@ const HeroSwiper = ({ coffeeShops }) => {
                   <div className="max-w-4xl">
                     {/* Badge */}
                     <div className="flex items-center gap-3 mb-4">
-                      <span className="inline-flex items-center px-3 py-1 bg-yellow-400 text-yellow-900 rounded-full text-sm font-bold">
-                        ⭐ Featured #{index + 1}
-                      </span>
                       <span className="inline-flex items-center px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm font-semibold">
                         {shop.rating} ★
                       </span>
@@ -134,6 +149,29 @@ const HeroSwiper = ({ coffeeShops }) => {
       <style jsx>{`
         .hero-swiper {
           width: 100%;
+        }
+
+        /* Optimasi gambar HD untuk hero swiper - mencegah blur */
+        :global(.hero-swiper img) {
+          image-rendering: auto;
+          -webkit-image-rendering: -webkit-optimize-contrast;
+          image-rendering: -webkit-optimize-contrast;
+          backface-visibility: hidden;
+          -webkit-backface-visibility: hidden;
+          transform: translateZ(0);
+          -webkit-transform: translateZ(0);
+          -ms-transform: translateZ(0);
+          will-change: transform;
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Mencegah blur saat scale/hover - gunakan GPU acceleration */
+        :global(.hero-swiper .group:hover img) {
+          image-rendering: auto;
+          -webkit-image-rendering: -webkit-optimize-contrast;
+          transform: translateZ(0) scale(1.05);
+          -webkit-transform: translateZ(0) scale(1.05);
         }
 
         /* Custom Navigation Buttons */

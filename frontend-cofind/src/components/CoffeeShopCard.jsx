@@ -1,6 +1,7 @@
 // src/components/CoffeeShopCard.jsx
 import React from 'react';
 import OptimizedImage from './OptimizedImage';
+import { getCoffeeShopImage } from '../utils/coffeeShopImages';
 
 const CoffeeShopCard = ({ shop }) => {
     // Fungsi untuk mendapatkan warna placeholder berdasarkan nama shop
@@ -34,13 +35,12 @@ const CoffeeShopCard = ({ shop }) => {
 
     const statusInfo = formatStatus(shop.business_status);
     
-    // Gunakan foto dari API jika tersedia
-    const photoUrl = shop.photos && shop.photos.length > 0 
-        ? shop.photos[0] 
-        : null;
+    // Selalu gunakan foto dari asset lokal berdasarkan place_id untuk konsistensi
+    // Setiap coffee shop akan mendapat foto yang sama di semua halaman
+    const photoUrl = getCoffeeShopImage(shop.place_id || shop.name);
 
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 overflow-hidden group">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 overflow-hidden group w-full">
             <div className="aspect-w-16 aspect-h-9 relative overflow-hidden h-48">
                 <OptimizedImage
                     src={photoUrl}
@@ -50,7 +50,7 @@ const CoffeeShopCard = ({ shop }) => {
                     shopName={shop.name}
                 />
                 {shop.rating && (
-                    <div className="absolute top-12 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full flex items-center shadow-lg z-10">
+                    <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full flex items-center shadow-lg z-10">
                         <span className="text-yellow-500 mr-1">⭐</span>
                         <span className="font-semibold">{shop.rating}</span>
                     </div>
