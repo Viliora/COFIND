@@ -170,32 +170,6 @@
       "user_ratings_total": 76
     },
     {
-      "address": "Jl. Pang Semangai No.16, Akcaya, Kota Pontianak",
-      "business_status": "OPERATIONAL",
-      "location": {
-        "lat": -0.0415372,
-        "lng": 109.3317122
-      },
-      "name": "Cafe Tyga Per Ampat",
-      "place_id": "ChIJkeLtuqlZHS4RAjrhq_-O94s",
-      "price_level": 2,
-      "rating": 4.5,
-      "user_ratings_total": 719
-    },
-    {
-      "address": "COOPER COFFEE & SPACE, Jl. Kesehatan ruko block 2 No.1&2, Kota Baru, Kota Pontianak",
-      "business_status": "OPERATIONAL",
-      "location": {
-        "lat": -0.0539516,
-        "lng": 109.318063
-      },
-      "name": "Cooper Coffee",
-      "place_id": "ChIJ98FvZm1ZHS4RQy-ELBGFEsA",
-      "price_level": 1,
-      "rating": 4.5,
-      "user_ratings_total": 189
-    },
-    {
       "address": "Jl. H. Abbas 1 No.157, Benua Melayu Darat, Kota Pontianak",
       "business_status": "OPERATIONAL",
       "location": {

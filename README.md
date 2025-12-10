@@ -43,6 +43,13 @@ python .\app.py
 
 Server akan berjalan default di http://127.0.0.1:5000
 
+**Cara cepat membuka localhost:**
+- PowerShell: `.\open-localhost.ps1` (membuka frontend + backend)
+- Batch: `open-localhost.bat` (membuka frontend + backend)
+- Atau buka manual:
+  - Frontend: http://localhost:5173
+  - Backend: http://localhost:5000
+
 Menjalankan frontend (development)
 ----------------------------------
 1. Buka terminal baru dan masuk ke folder frontend:
@@ -64,6 +71,10 @@ npm run dev
 ```
 
 Frontend default: http://localhost:5173 (atau port yang diberikan oleh Vite). Frontend akan memanggil backend menggunakan `VITE_API_URL` dari `frontend-cofind/.env`.
+
+**Cara cepat membuka frontend:**
+- Dari folder `frontend-cofind`: `npm run open`
+- Atau dari root: `.\open-localhost.ps1 frontend`
 
 Testing endpoints
 -----------------

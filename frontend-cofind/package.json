@@ -8,7 +8,9 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "init-tailwind": "tailwindcss init -p"
+    "init-tailwind": "tailwindcss init -p",
+    "open": "start http://localhost:5173",
+    "open:backend": "start http://localhost:5000"
   },
   "dependencies": {
     "react": "^18.2.0",

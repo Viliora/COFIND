@@ -24,6 +24,11 @@ const LLMAnalyzer = () => {
   // Function untuk parse coffee shops dari response LLM
   const parseCoffeeShops = (text) => {
     if (!text) return [];
+    
+    // Cek jika backend mengembalikan pesan "tidak ada coffee shop"
+    if (text.toLowerCase().includes('maaf') && text.toLowerCase().includes('tidak ada coffee shop')) {
+      return [];
+    }
 
     // Split berdasarkan pattern nomor (1., 2., 3., dst) diikuti dengan **Nama**
     const shopPattern = /(\d+)\.\s*\*\*([^*]+)\*\*/g;
@@ -187,6 +192,12 @@ const LLMAnalyzer = () => {
       return;
     }
 
+    // Validasi panjang input (maksimal 100 karakter)
+    if (input.length > 100) {
+      setError('Input maksimal 100 karakter. Silakan perpendek kalimat Anda.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setResult(null);
@@ -266,27 +277,37 @@ const LLMAnalyzer = () => {
   // Quick recommendation fields
   const recommendationFields = [
     { label: '🛋️ Cozy', value: 'cozy' },
-    { label: '📚 Ruang Belajar', value: 'ruang belajar' },
+    { label: '📚 Belajar', value: 'belajar' },
     { label: '📶 WiFi', value: 'wifi stabil' },
-    { label: '🔌 Stopkontak', value: 'terminal, stopkontak' },
+    { label: '🔌 Stopkontak', value: 'stopkontak' },
     { label: '🕌 Musholla', value: 'musholla' },
     { label: '🛋️ Sofa', value: 'sofa' },
-    { label: '❄️ Ruangan Dingin', value: 'ruangan dingin' },
+    { label: '❄️ Dingin', value: 'dingin' },
     { label: '📸 Aesthetic', value: 'aesthetic' },
     { label: '🎵 Live Music', value: 'live music' },
     { label: '🅿️ Parkir Luas', value: 'parkiran luas' },
     { label: '🌙 24 jam', value: '24 jam' },
   ];
 
-  // Handle field click - append to input
+  // Handle field click - append to input (dengan batasan 100 karakter)
   const handleFieldClick = (fieldValue) => {
+    let newInput = '';
     if (input.trim()) {
       // Jika sudah ada input, tambahkan dengan koma
-      setInput(prev => prev + ', ' + fieldValue);
+      newInput = input + ', ' + fieldValue;
     } else {
       // Jika kosong, langsung set
-      setInput(fieldValue);
+      newInput = fieldValue;
     }
+    
+    // Batasi maksimal 100 karakter
+    if (newInput.length > 100) {
+      setError(`Input maksimal 100 karakter. Tidak bisa menambahkan "${fieldValue}"`);
+      return;
+    }
+    
+    setInput(newInput);
+    setError(null); // Clear error jika berhasil
   };
 
   return (
@@ -320,22 +341,49 @@ const LLMAnalyzer = () => {
           </div>
         </div>
 
-        {/* Input Area - Keywords */}
+        {/* Input Area - Natural Language atau Keywords */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
-            🏷️ Kata Kunci Preferensi (pisahkan dengan koma):
+            💬 Jelaskan Preferensi Anda (Bahasa Indonesia):
           </label>
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Klik tombol di atas atau ketik manual: wifi bagus, terminal banyak, cozy, tenang, harga murah, dll."
-            className="w-full p-4 border border-gray-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none resize-none h-24 sm:h-28"
-          />
+          <div className="relative">
+            <textarea
+              value={input}
+              onChange={(e) => {
+                // Batasi input maksimal 100 karakter
+                const newValue = e.target.value.slice(0, 100);
+                setInput(newValue);
+                // Clear error jika user mulai mengetik lagi
+                if (error && error.includes('100 karakter')) {
+                  setError(null);
+                }
+              }}
+              placeholder="Contoh: 'Saya ingin coffee shop yang cozy dengan wifi kencang dan cocok untuk kerja' atau 'wifi bagus, terminal banyak, cozy'"
+              maxLength={100}
+              className={`w-full p-4 border rounded-lg bg-white dark:bg-zinc-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none resize-none h-24 sm:h-28 ${
+                input.length >= 100 
+                  ? 'border-amber-500 dark:border-amber-600' 
+                  : 'border-gray-300 dark:border-zinc-600'
+              }`}
+            />
+            {/* Character Counter */}
+            <div className={`absolute bottom-2 right-2 text-xs px-2 py-1 rounded font-medium ${
+              input.length >= 100 
+                ? 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20' 
+                : input.length >= 80
+                ? 'text-orange-500 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20'
+                : 'text-gray-500 dark:text-gray-400 bg-white dark:bg-zinc-700'
+            }`}>
+              {input.length}/100
+            </div>
+          </div>
           <div className="mt-2 flex items-start gap-2 text-xs text-gray-600 dark:text-gray-400">
             <span className="flex-shrink-0">💡</span>
             <div className="space-y-1">
-              <p className="font-medium">Tips: Klik tombol rekomendasi di atas atau ketik manual</p>
-              <p className="text-gray-500 dark:text-gray-500">• Anda bisa klik beberapa tombol sekaligus untuk kombinasi preferensi</p>
+              <p className="font-medium">Tips: Gunakan bahasa Indonesia natural atau kata kunci dipisah koma</p>
+              <p className="text-gray-500 dark:text-gray-500">• Contoh kalimat: "Saya ingin tempat yang cozy dengan wifi kencang"</p>
+              <p className="text-gray-500 dark:text-gray-500">• Contoh keywords: "wifi bagus, terminal banyak, cozy"</p>
+              <p className="text-gray-500 dark:text-gray-500">• Atau klik tombol rekomendasi cepat di atas</p>
             </div>
           </div>
         </div>
@@ -427,7 +475,10 @@ const LLMAnalyzer = () => {
                 </span>
               </div>
               <p className="text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-zinc-800/50 p-3 rounded-lg">
-                <span className="font-semibold">Preferensi Anda:</span> <span className="italic">{result.input}</span>
+                <span className="font-semibold">Preferensi Anda:</span>{' '}
+                <span className="italic">
+                  {result.input}
+                </span>
               </p>
             </div>
 
@@ -435,10 +486,57 @@ const LLMAnalyzer = () => {
             {(() => {
               const shops = parseCoffeeShops(result.analysis);
               
-              if (shops.length > 0) {
+              // Parse kata kunci dari input user untuk filter
+              const userInput = result?.input || '';
+              const keywords = userInput
+                .split(',')
+                .map(kw => kw.trim().toLowerCase())
+                .filter(kw => kw.length > 0);
+              
+              // Helper function untuk cek apakah shop memiliki review relevan
+              const hasRelevantReview = (shop) => {
+                const reviewsByPlaceId = reviewsData?.reviews_by_place_id || {};
+                const shopReviews = shop.placeId ? reviewsByPlaceId[shop.placeId] : [];
+                
+                if (!shopReviews || shopReviews.length === 0) {
+                  return false;
+                }
+                
+                // Filter review yang relevan dengan keywords
+                const relevantReviews = shopReviews.filter(review => {
+                  const reviewText = (review?.text || '').toLowerCase();
+                  if (reviewText.trim().length < 20) {
+                    return false;
+                  }
+                  
+                  // Jika ada keywords, cek apakah review mengandung minimal salah satu keyword
+                  // Termasuk expanded keywords (sinonim) untuk matching yang lebih baik
+                  if (keywords.length > 0) {
+                    return keywords.some(keyword => {
+                      if (keyword.length >= 3) {
+                        const keywordLower = keyword.toLowerCase().trim();
+                        // Cek substring match (termasuk untuk multi-word keywords seperti "live music")
+                        // Contoh: "live music" akan match dengan "live music-nya", "live music", "musik", dll
+                        return reviewText.includes(keywordLower);
+                      }
+                      return false;
+                    });
+                  }
+                  
+                  // Jika tidak ada keywords, anggap relevan (untuk safety)
+                  return true;
+                });
+                
+                return relevantReviews.length > 0;
+              };
+              
+              // Filter shops: hanya tampilkan yang memiliki review relevan
+              const shopsWithRelevantReviews = shops.filter(shop => hasRelevantReview(shop));
+              
+              if (shopsWithRelevantReviews.length > 0) {
                 return (
                   <div className="space-y-4">
-                    {shops.map((shop, index) => (
+                    {shopsWithRelevantReviews.map((shop, index) => (
                       <div 
                         key={index}
                         className="bg-white dark:bg-zinc-800 p-6 rounded-xl border-2 border-gray-200 dark:border-zinc-700 shadow-lg hover:shadow-xl transition-shadow duration-300"
@@ -471,16 +569,6 @@ const LLMAnalyzer = () => {
                           </div>
                         )}
 
-                        {/* Alamat */}
-                        {shop.address && (
-                          <div className="mb-4 flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
-                            <svg className="w-5 h-5 text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                            </svg>
-                            <span className="leading-relaxed">{shop.address}</span>
-                          </div>
-                        )}
 
                         {/* Review Text - Ambil dari reviews.json berdasarkan place_id */}
                         {(() => {
@@ -496,6 +584,7 @@ const LLMAnalyzer = () => {
                             .filter(kw => kw.length > 0);
                           
                           // Filter review yang sesuai konteks berdasarkan kata kunci
+                          // Prioritas 1: Review yang relevan dengan keywords
                           const relevantReviews = shopReviews?.filter(review => {
                             const reviewText = (review?.text || '').toLowerCase();
                             // Filter review yang memiliki teks minimal 20 karakter
@@ -518,9 +607,11 @@ const LLMAnalyzer = () => {
                             return true;
                           }) || [];
                           
-                          // Ambil maksimal 2 review yang sesuai konteks
-                          const displayReviews = relevantReviews.slice(0, 2);
+                          // HANYA tampilkan review yang relevan dengan keywords
+                          // JANGAN tampilkan review yang tidak relevan sebagai fallback
+                          let displayReviews = relevantReviews.slice(0, 2);
                           
+                          // WAJIB tampilkan review HANYA jika ada review yang relevan dengan keywords
                           if (displayReviews.length > 0) {
                             return (
                               <div className="space-y-2 mb-4">
@@ -604,6 +695,30 @@ const LLMAnalyzer = () => {
                 );
               }
               
+              // Jika tidak ada shops dengan review relevan, tampilkan pesan
+              if (shops.length > 0 && shopsWithRelevantReviews.length === 0) {
+                return (
+                  <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-200 dark:border-yellow-800 p-6 rounded-xl shadow-md">
+                    <div className="flex items-start gap-3">
+                      <svg className="w-6 h-6 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                      </svg>
+                      <div className="flex-1">
+                        <h4 className="text-lg font-bold text-yellow-800 dark:text-yellow-300 mb-2">
+                          Tidak Ada Coffee Shop yang Sesuai
+                        </h4>
+                        <p className="text-yellow-700 dark:text-yellow-400 leading-relaxed">
+                          Maaf, tidak ada coffee shop yang memiliki ulasan pengunjung yang relevan dengan preferensi Anda: <span className="font-semibold italic">"{userInput}"</span>
+                        </p>
+                        <p className="text-sm text-yellow-600 dark:text-yellow-500 mt-3">
+                          💡 <strong>Tips:</strong> Coba gunakan kata kunci yang lebih umum atau cek kembali preferensi Anda.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+              
               // Fallback: tampilkan teks biasa jika parsing gagal
               return (
                 <div className="bg-white dark:bg-zinc-800 p-5 rounded-xl border border-gray-200 dark:border-zinc-700 shadow-sm">
@@ -615,8 +730,7 @@ const LLMAnalyzer = () => {
             })()}
 
             {/* Info Footer */}
-            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 px-2">
-              <span>Dianalisis oleh AI dengan data real-time dari Google Places</span>
+            <div className="flex items-center justify-end text-xs text-gray-500 dark:text-gray-400 px-2">
               <span>{new Date(result.timestamp * 1000).toLocaleTimeString('id-ID')}</span>
             </div>
           </div>

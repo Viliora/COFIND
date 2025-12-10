@@ -21,7 +21,7 @@ const About = () => {
           </h1>
           <div className="mt-6 sm:mt-8 text-left space-y-3 sm:space-y-4 text-gray-600 dark:text-gray-300 px-4">
             <p className="text-base sm:text-lg">
-              Cofind adalah aplikasi untuk menemukan coffee shop terbaik di sekitar Anda.
+              Cofind adalah aplikasi untuk menemukan coffee shop terbaik di Pontianak.
             </p>
             <p className="text-sm sm:text-base">
               Aplikasi ini membantu Anda menemukan tempat ngopi yang sesuai dengan preferensi dan kebutuhan Anda.
