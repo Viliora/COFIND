@@ -4,7 +4,7 @@
       {
         "author_name": "Aldi Pratama",
         "rating": 5,
-        "text": "Tempat favorit buat ruang belajar. suasananya cozy, ruangan dingin, kursi nyaman. wifi stabil dan colokan banyak, enak banget untuk kerja lama sambil ngopi pelan.",
+        "text": "Tempat favorit buat ruang belajar. suasananya tenang, ruangan dingin, kursi nyaman. wifi stabil dan colokan banyak, enak banget untuk kerja lama sambil ngopi pelan.",
         "relative_time_description": "1 minggu lalu"
       },
       {
@@ -16,8 +16,14 @@
       {
         "author_name": "Rico",
         "rating": 2,
-        "text": "Sebenarnya tempatnya cozy, tapi wifi tidak stabil waktu saya datang sehingga sulit dipakai kerja. colokan juga penuh karena banyak yang WFC. Semoga diperbaiki.",
+        "text": "Sebenarnya tempatnya nyaman, tapi wifi tidak stabil waktu saya datang sehingga sulit dipakai kerja. colokan juga penuh karena banyak yang WFC. Semoga diperbaiki.",
         "relative_time_description": "5 hari lalu"
+      },
+      {
+        "author_name": "Kevin D",
+        "rating": 4,
+        "text": "Tempat parkir luas dan mudah ditemukan. Walaupun cukup ramai, masih ada tempat parkir yang tersedia.",
+        "relative_time_description": "3 hari lalu"
       }
     ],
 
@@ -25,7 +31,7 @@
       {
         "author_name": "Kevin D",
         "rating": 5,
-        "text": "Desain tempatnya aesthetic dan kekinian. ruangan dingin, sofa empuk, dan suasananya cozy banget. Cocok buat WFC atau baca buku santai.",
+        "text": "Desain tempatnya aesthetic dan kekinian. ruangan dingin, sofa empuk, dan suasananya tenang banget. Cocok buat WFC atau baca buku santai.",
         "relative_time_description": "3 hari lalu"
       },
       {
@@ -39,6 +45,12 @@
         "rating": 4,
         "text": "Tempat kecil tapi nyaman. aesthetic dan terang. Cocok buat ngetik tugas dan meeting online singkat.",
         "relative_time_description": "2 minggu lalu"
+      },
+      {
+        "author_name": "Fitra",
+        "rating": 5,
+        "text": "Tempat parkir luas dan nyaman. Sangat membantu saat datang dengan mobil karena tidak perlu khawatir mencari tempat parkir.",
+        "relative_time_description": "5 hari lalu"
       }
     ],
 
@@ -46,7 +58,7 @@
       {
         "author_name": "Hana",
         "rating": 5,
-        "text": "Tempatnya hangat dan cozy. cocok buat nongkrong santai atau kerja sebentar. wifi stabil, colokan banyak, dan ada musholla yang nyaman.",
+        "text": "Tempatnya hangat dan nyaman. cocok buat nongkrong santai atau kerja sebentar. wifi stabil, colokan banyak, dan ada musholla yang nyaman.",
         "relative_time_description": "2 minggu lalu"
       },
       {
@@ -60,6 +72,12 @@
         "rating": 2,
         "text": "Tempatnya nyaman sebenarnya, tapi pelayanan kurang ramah waktu saya tanya lokasi musholla. Semoga bisa ditingkatkan.",
         "relative_time_description": "3 minggu lalu"
+      },
+      {
+        "author_name": "Gilang",
+        "rating": 4,
+        "text": "Tempat parkirnya cukup luas dan mudah diakses, jadi nyaman untuk datang menggunakan kendaraan pribadi.",
+        "relative_time_description": "1 minggu lalu"
       }
     ],
 
@@ -67,7 +85,7 @@
       {
         "author_name": "Diana",
         "rating": 5,
-        "text": "Cocok buat nongkrong dan foto-foto karena desainnya aesthetic. suasananya cozy, ruangan dingin, dan kopi enak.",
+        "text": "Cocok buat nongkrong dan foto-foto karena desainnya aesthetic. suasananya tenang, ruangan dingin, dan kopi enak.",
         "relative_time_description": "1 minggu lalu"
       },
       {
@@ -81,6 +99,12 @@
         "rating": 4,
         "text": "Tempat kecil tapi nyaman. aesthetic dan cocok buat ngopi sebentar sambil kerja.",
         "relative_time_description": "2 minggu lalu"
+      },
+      {
+        "author_name": "Roni",
+        "rating": 4,
+        "text": "Parkiran luas dan mudah diakses, sangat memudahkan untuk pengunjung yang datang membawa kendaraan pribadi.",
+        "relative_time_description": "1 minggu lalu"
       }
     ],
 
@@ -94,7 +118,7 @@
       {
         "author_name": "Samuel",
         "rating": 5,
-        "text": "Tempatnya cozy, desainnya cantik, dan makanan cukup variatif. Enak buat nongkrong santai.",
+        "text": "Tempatnya nyaman, desainnya cantik, dan makanan cukup variatif. Enak buat nongkrong santai.",
         "relative_time_description": "4 hari lalu"
       },
       {
@@ -102,6 +126,12 @@
         "rating": 4,
         "text": "Ambience nyaman dan pencahayaan bagus. Cocok untuk WFC atau baca buku.",
         "relative_time_description": "2 minggu lalu"
+      },
+      {
+        "author_name": "Diana",
+        "rating": 4,
+        "text": "Parkirannya luas dan nyaman. Sangat membantu terutama bagi pengunjung yang membawa kendaraan.",
+        "relative_time_description": "1 minggu lalu"
       }
     ],
 
@@ -109,7 +139,7 @@
       {
         "author_name": "Fajar",
         "rating": 5,
-        "text": "Tempat ideal buat kumpul keluarga. suasananya cozy dan nyaman. wifi stabil kalau mau kerja sebentar.",
+        "text": "Tempat ideal buat kumpul keluarga. suasananya tenang dan nyaman. wifi stabil kalau mau kerja sebentar.",
         "relative_time_description": "1 minggu lalu"
       },
       {
@@ -130,7 +160,7 @@
       {
         "author_name": "Deni",
         "rating": 5,
-        "text": "Suka live music-nya, suasananya cozy. wifi kencang dan colokan banyak, enak buat nongkrong malam.",
+        "text": "Suka live music-nya, suasananya tenang. wifi kencang dan colokan banyak, enak buat nongkrong malam.",
         "relative_time_description": "1 minggu lalu"
       },
       {
@@ -157,7 +187,7 @@
       {
         "author_name": "Jihan",
         "rating": 5,
-        "text": "Cocok buat baca buku atau kerja santai. suasananya cozy, colokan ada, dan ada musholla.",
+        "text": "Cocok buat baca buku atau kerja santai. suasananya tenang, colokan ada, dan ada musholla.",
         "relative_time_description": "3 hari lalu"
       },
       {
@@ -172,7 +202,7 @@
       {
         "author_name": "Nana",
         "rating": 5,
-        "text": "Cafe yang hangat dan cozy, enak buat kerja ringan. wifi kencang, pencahayaan bagus.",
+        "text": "Cafe yang hangat dan nyaman, enak buat kerja ringan. wifi kencang, pencahayaan bagus.",
         "relative_time_description": "3 minggu lalu"
       },
       {
@@ -193,7 +223,7 @@
       {
         "author_name": "Fajar",
         "rating": 5,
-        "text": "Seremoni Coffee aesthetic banget. suasananya cozy, kursi nyaman, wifi stabil dan colokan banyak.",
+        "text": "Seremoni Coffee aesthetic banget. suasananya tenang, kursi nyaman, wifi stabil dan colokan banyak.",
         "relative_time_description": "4 hari lalu"
       },
       {
@@ -241,7 +271,7 @@
       {
         "author_name": "Selvi",
         "rating": 5,
-        "text": "suasananya cozy, kursi nyaman, dan ada musholla. Cocok untuk WFC sebentar.",
+        "text": "suasananya tenang, kursi nyaman, dan ada musholla. Cocok untuk WFC sebentar.",
         "relative_time_description": "2 minggu lalu"
       },
       {
@@ -256,7 +286,7 @@
       {
         "author_name": "Heri",
         "rating": 5,
-        "text": "Cafe aesthetic dengan suasana cozy. wifi stabil, colokan banyak, kopi enak.",
+        "text": "Cafe aesthetic dengan suasana tenang. wifi stabil, colokan banyak, kopi enak.",
         "relative_time_description": "3 minggu lalu"
       },
       {
@@ -277,7 +307,7 @@
       {
         "author_name": "Miko",
         "rating": 5,
-        "text": "Aming Coffee legendaris, tempat cozy buat nongkrong dan gaming santai. wifi stabil dan buka 24 jam.",
+        "text": "Aming Coffee legendaris, tempat tenang buat nongkrong dan gaming santai. wifi stabil dan buka 24 jam.",
         "relative_time_description": "3 hari lalu"
       },
       {
@@ -304,7 +334,7 @@
       {
         "author_name": "Dewi",
         "rating": 5,
-        "text": "Tempatnya hangat dan cozy, cocok buat ngerjain tugas sore hari.",
+        "text": "Tempatnya hangat dan nyaman, cocok buat ngerjain tugas sore hari.",
         "relative_time_description": "4 hari lalu"
       },
       {

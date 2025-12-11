@@ -1010,7 +1010,7 @@ Tugas Anda: Cari coffee shop yang reviewnya BENAR-BENAR menyebutkan kata kunci d
 - Kata kunci "sofa" = "kursi nyaman" = "kursi empuk" = "ruas sofa" = "kursi cukup nyaman"
 - Kata kunci "ruangan dingin" = "ac" = "dingin" = "sejuk" = "adem" = "ruangan sejuk"
 - Kata kunci "aesthetic" = "estetik" = "kekinian" = "desain" = "dekor" = "instagramable"
-- Kata kunci "live music" = "musik" = "akustik" = "pertunjukan live music" = "musiknya santai" = "musiknya tenang"
+- Kata kunci "live music" = "akustik" = "pertunjukan live music" = "live musicnya santai" = "live musik"
 - Kata kunci "parkiran luas" = "parkir luas" = "parkir mobil nyaman" = "parkir" = "tempat parkir luas"
 - Kata kunci "gaming" = "ngegame" = "main game" = "bermain game" = "untuk gaming" = "cocok gaming" = "enak untuk ngegame"
 - PENTING: Jika user mencari "gaming" atau "ngegame", review yang menyebutkan "wifi bagus", "wifi kencang", "stopkontak banyak", "colokan banyak", "24 jam", "buka malam" TETAP RELEVAN karena gaming membutuhkan fasilitas tersebut
@@ -1116,7 +1116,7 @@ MULAI OUTPUT SEKARANG (langsung tulis tanpa penjelasan):"""
 - Kata kunci "sofa" = "kursi nyaman" = "kursi empuk" = "ruas sofa" = "kursi cukup nyaman"
 - Kata kunci "ruangan dingin" = "ac" = "dingin" = "sejuk" = "adem" = "ruangan sejuk"
 - Kata kunci "aesthetic" = "estetik" = "kekinian" = "desain" = "dekor" = "instagramable"
-- Kata kunci "live music" = "musik" = "akustik" = "pertunjukan live music" = "musiknya santai" = "musiknya tenang"
+- Kata kunci "live music" = "akustik" = "pertunjukan live music" = "live musicnya santai" = "live musik"
 - Kata kunci "parkiran luas" = "parkir luas" = "parkir mobil nyaman" = "parkir" = "tempat parkir luas"
 - Jika user mencari salah satu variasi di atas, review yang menyebutkan variasi lain TETAP RELEVAN dan BOLEH direkomendasikan
 
@@ -1660,6 +1660,218 @@ Jadilah ramah, helpful, dan memberikan alasan detail untuk setiap rekomendasi.""
     except Exception as e:
         import traceback
         error_message = f"LLM Chat Error: {str(e)}"
+        traceback_str = traceback.format_exc()
+        print(f"[ERROR] {error_message}")
+        print(f"[TRACEBACK]\n{traceback_str}")
+        return jsonify({
+            'status': 'error',
+            'message': error_message,
+            'error_details': traceback_str
+        }), 500
+
+# Endpoint untuk summarize review coffee shop berdasarkan place_id
+@app.route('/api/llm/summarize-review', methods=['POST'])
+def summarize_review():
+    """
+    Endpoint untuk membuat ringkasan review coffee shop berdasarkan place_id
+    
+    Request JSON:
+    {
+        "place_id": "ChIJ...",
+        "shop_name": "Nama Coffee Shop" (optional)
+    }
+    """
+    try:
+        if hf_client is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'HF_API_TOKEN tidak dikonfigurasi. LLM summarize endpoint nonaktif.'
+            }), 503
+        
+        data = request.get_json()
+        if not data or 'place_id' not in data:
+            return jsonify({
+                'status': 'error',
+                'message': 'Missing required field: place_id'
+            }), 400
+        
+        place_id = data.get('place_id', '').strip()
+        shop_name = data.get('shop_name', 'Coffee Shop')
+        
+        if not place_id:
+            return jsonify({
+                'status': 'error',
+                'message': 'place_id cannot be empty'
+            }), 400
+        
+        # Baca reviews dari reviews.json
+        reviews_json_path = os.path.join('frontend-cofind', 'src', 'data', 'reviews.json')
+        reviews_data = {}
+        
+        if os.path.exists(reviews_json_path):
+            with open(reviews_json_path, 'r', encoding='utf-8') as f:
+                reviews_data = json.load(f)
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'File reviews.json tidak ditemukan'
+            }), 404
+        
+        reviews_by_place_id = reviews_data.get('reviews_by_place_id', {})
+        shop_reviews = reviews_by_place_id.get(place_id, [])
+        
+        if not shop_reviews or len(shop_reviews) == 0:
+            return jsonify({
+                'status': 'error',
+                'message': 'Tidak ada review untuk coffee shop ini'
+            }), 404
+        
+        # Ambil maksimal 10 review terbaru untuk context
+        reviews_for_summary = shop_reviews[:10]
+        
+        # Format reviews untuk context
+        reviews_text = []
+        for review in reviews_for_summary:
+            review_text = review.get('text', '').strip()
+            rating = review.get('rating', 0)
+            author = review.get('author_name', 'Anonim')
+            if review_text and len(review_text) > 20:
+                reviews_text.append(f"- {author} ({rating}⭐): \"{review_text}\"")
+        
+        if not reviews_text:
+            return jsonify({
+                'status': 'error',
+                'message': 'Tidak ada review yang valid untuk di-summarize'
+            }), 404
+        
+        reviews_context = '\n'.join(reviews_text)
+        
+        # Build system prompt untuk summarize
+        system_prompt = f"""Anda adalah asisten yang ahli dalam meringkas review coffee shop. Tugas Anda adalah membuat ringkasan SINGKAT (maksimal 1 kalimat, 15-30 kata) yang menonjolkan keunikan atau hal otentik dari coffee shop berdasarkan review pengunjung.
+
+ATURAN KETAT:
+1. Ringkasan HARUS singkat (maksimal 1 kalimat, 15-30 kata)
+2. Fokus pada keunikan, keistimewaan, atau hal otentik yang disebutkan di review
+3. Gunakan bahasa Indonesia yang natural dan menarik
+4. JANGAN gunakan emoji
+5. JANGAN gunakan nama coffee shop di awal kalimat
+6. JANGAN gunakan frasa pembuka seperti:
+   - "{shop_name} menawarkan..."
+   - "Coffee shop ini menawarkan..."
+   - "Tempat ini menawarkan..."
+   - "Menawarkan suasana..."
+   - "Dengan suasana..."
+   - "Memiliki..."
+   - "Berlokasi di..."
+7. LANGSUNG ke poin utama tanpa pembuka apapun
+8. Contoh format yang BENAR:
+   - "Interior mewah dengan area outdoor yang cozy"
+   - "Suasana tenang dengan wifi kencang, cocok untuk ruang belajar"
+   - "Desain aesthetic dengan live music dan ruangan ber-AC"
+   - "Tempat favorit untuk WFC dengan colokan banyak dan sofa nyaman"
+9. Contoh format yang SALAH (JANGAN IKUTI):
+   - "{shop_name} menawarkan interior mewah..." ❌
+   - "Menawarkan suasana tenang..." ❌
+   - "Coffee shop ini memiliki desain aesthetic..." ❌
+
+REVIEW PENGUNJUNG:
+{reviews_context}
+
+Buat ringkasan SINGKAT (maksimal 1 kalimat, 15-30 kata) yang menonjolkan keunikan atau hal otentik dari coffee shop berdasarkan review di atas. LANGSUNG mulai dengan poin utama, TANPA nama coffee shop atau frasa pembuka apapun."""
+        
+        # Build user prompt
+        user_prompt = f"Buat ringkasan singkat (maksimal 1 kalimat, 15-30 kata) yang menonjolkan keunikan atau hal otentik dari coffee shop \"{shop_name}\" berdasarkan review pengunjung di atas."
+        
+        # Call Hugging Face Inference API
+        print(f"[SUMMARIZE] Summarizing reviews for place_id: {place_id}")
+        print(f"[SUMMARIZE] Total reviews: {len(reviews_for_summary)}")
+        
+        response = hf_client.chat.completions.create(
+            model=HF_MODEL,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            max_tokens=100,  # Ringkas, cukup untuk 1 kalimat
+            temperature=0.3,  # Lebih deterministik untuk konsistensi
+            top_p=0.85
+        )
+        
+        generated_text = response.choices[0].message.content.strip()
+        
+        # Clean up: hapus quotes jika ada, trim whitespace
+        generated_text = generated_text.replace('"', '').replace("'", '').strip()
+        
+        # Post-processing: Hapus nama coffee shop dan frasa pembuka yang tidak diinginkan
+        shop_name_lower = shop_name.lower()
+        generated_text_lower = generated_text.lower()
+        
+        # Hapus nama coffee shop di awal jika ada
+        if generated_text_lower.startswith(shop_name_lower):
+            generated_text = generated_text[len(shop_name):].strip()
+            # Hapus koma, titik, atau spasi di awal
+            generated_text = generated_text.lstrip('.,;: ')
+        
+        # Hapus frasa pembuka yang tidak diinginkan
+        unwanted_prefixes = [
+            f"{shop_name} menawarkan",
+            f"{shop_name} memiliki",
+            f"{shop_name} dengan",
+            "menawarkan suasana",
+            "menawarkan",
+            "memiliki suasana",
+            "memiliki",
+            "dengan suasana",
+            "coffee shop ini menawarkan",
+            "coffee shop ini memiliki",
+            "tempat ini menawarkan",
+            "tempat ini memiliki",
+            "berlokasi di",
+        ]
+        
+        for prefix in unwanted_prefixes:
+            if generated_text_lower.startswith(prefix.lower()):
+                generated_text = generated_text[len(prefix):].strip()
+                # Hapus koma, titik, atau spasi di awal
+                generated_text = generated_text.lstrip('.,;: ')
+                break
+        
+        # Capitalize huruf pertama
+        if generated_text:
+            generated_text = generated_text[0].upper() + generated_text[1:] if len(generated_text) > 1 else generated_text.upper()
+        
+        # Jika terlalu panjang, potong di titik atau koma terakhir sebelum 30 kata
+        words = generated_text.split()
+        if len(words) > 30:
+            # Ambil 30 kata pertama dan cari titik/koma terakhir
+            first_30 = ' '.join(words[:30])
+            last_period = first_30.rfind('.')
+            last_comma = first_30.rfind(',')
+            cut_point = max(last_period, last_comma)
+            if cut_point > 0:
+                generated_text = first_30[:cut_point + 1]
+            else:
+                generated_text = first_30
+        
+        print(f"[SUMMARIZE] Generated summary: {generated_text}")
+        
+        # Hitung hash dari reviews untuk cache invalidation
+        import hashlib
+        reviews_hash = hashlib.md5(json.dumps(shop_reviews, sort_keys=True).encode('utf-8')).hexdigest()[:8]
+        
+        return jsonify({
+            'status': 'success',
+            'place_id': place_id,
+            'shop_name': shop_name,
+            'summary': generated_text,
+            'reviews_count': len(reviews_for_summary),
+            'reviews_hash': reviews_hash,  # Hash untuk cache invalidation
+            'timestamp': time.time()
+        }), 200
+    
+    except Exception as e:
+        import traceback
+        error_message = f"LLM Summarize Error: {str(e)}"
         traceback_str = traceback.format_exc()
         print(f"[ERROR] {error_message}")
         print(f"[TRACEBACK]\n{traceback_str}")

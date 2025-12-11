@@ -6,6 +6,7 @@ import { preloadFeaturedImages } from '../utils/imagePreloader';
 import { fetchWithDevCache, isDevelopmentMode } from '../utils/devCache';
 import heroBgImage from '../assets/1R modern cafe 1.5.jpg';
 import localPlacesData from '../data/places.json';
+import localReviewsData from '../data/reviews.json';
 
 // Konfigurasi API (optional - bisa di-set via environment variable)
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
@@ -19,7 +20,8 @@ export default function ShopList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [activeFilter, setActiveFilter] = useState('all'); // Filter state
+  const [activeFilter] = useState('all'); // Filter state (default: all, tidak ada UI untuk mengubahnya)
+  const [selectedPills, setSelectedPills] = useState([]); // Selected quick recommendation pills (max 3)
   const scrollContainerRef = useRef(null);
   const featuredScrollRef = useRef(null);
 
@@ -266,6 +268,7 @@ export default function ShopList() {
       .slice(0, 5);
   }, [coffeeShops]);
 
+
   // Dapatkan Top Rated Coffee Shops (rating 4.8-5.0)
   const topRatedShops = useMemo(() => {
     if (coffeeShops.length === 0) return [];
@@ -319,10 +322,94 @@ export default function ShopList() {
     }
   };
 
-  // Filter berdasarkan search dan kategori
+  // Quick recommendation fields (sama dengan LLMAnalyzer)
+  const recommendationFields = [
+    { label: '🛋️ Cozy', value: 'cozy' },
+    { label: '📚 Belajar', value: 'belajar' },
+    { label: '📶 WiFi', value: 'wifi stabil' },
+    { label: '🔌 Stopkontak', value: 'stopkontak' },
+    { label: '🕌 Musholla', value: 'musholla' },
+    { label: '🛋️ Sofa', value: 'sofa' },
+    { label: '❄️ Dingin', value: 'dingin' },
+    { label: '📸 Aesthetic', value: 'aesthetic' },
+    { label: '🎵 Live Music', value: 'live music' },
+    { label: '🅿️ Parkir Luas', value: 'parkiran luas' },
+    { label: '🌙 24 jam', value: '24 jam' },
+  ];
+
+  // Handle pill click - toggle selection (max 3)
+  const handlePillClick = (pillValue) => {
+    setSelectedPills(prev => {
+      if (prev.includes(pillValue)) {
+        // Jika sudah dipilih, hapus
+        return prev.filter(p => p !== pillValue);
+      } else {
+        // Jika belum dipilih dan belum mencapai max 3, tambahkan
+        if (prev.length < 3) {
+          return [...prev, pillValue];
+        } else {
+          // Sudah mencapai max 3, tidak bisa tambah lagi
+          return prev;
+        }
+      }
+    });
+  };
+
+  // Filter coffee shops berdasarkan selected pills (menggunakan reviews)
+  const filterShopsByPills = (shops) => {
+    if (selectedPills.length === 0) {
+      return shops;
+    }
+
+    const reviewsByPlaceId = localReviewsData?.reviews_by_place_id || {};
+    
+    return shops.filter(shop => {
+      if (!shop.place_id) return false;
+      
+      const shopReviews = reviewsByPlaceId[shop.place_id] || [];
+      if (shopReviews.length === 0) return false;
+      
+      // Cek apakah ada review yang relevan dengan minimal salah satu selected pill
+      const hasRelevantReview = shopReviews.some(review => {
+        const reviewText = (review.text || '').toLowerCase();
+        if (reviewText.length < 20) return false;
+        
+        // Cek apakah review mengandung minimal salah satu keyword dari selected pills
+        return selectedPills.some(pillValue => {
+          const pillLower = pillValue.toLowerCase();
+          
+          // Mapping sinonim untuk matching yang lebih baik
+          const synonymMap = {
+            'cozy': ['cozy', 'nyaman', 'hangat', 'tenang', 'santai', 'atmosfernya hangat', 'suasananya cozy'],
+            'belajar': ['belajar', 'ruang belajar', 'kerja', 'wfc', 'ngerjain tugas', 'cocok buat belajar', 'enak buat kerja'],
+            'wifi stabil': ['wifi', 'wifi bagus', 'wifi kencang', 'wifi stabil', 'koneksi internet lancar', 'internet kencang'],
+            'stopkontak': ['stopkontak', 'colokan', 'colokan banyak', 'terminal listrik', 'colokan di setiap meja'],
+            'musholla': ['musholla', 'tempat sholat', 'tempat sholat tersedia', 'ada musholla', 'ruang sholat'],
+            'sofa': ['sofa', 'kursi nyaman', 'kursi empuk', 'ruas sofa', 'kursi cukup nyaman'],
+            'dingin': ['dingin', 'ruangan dingin', 'ac', 'sejuk', 'adem', 'ruangan sejuk', 'ruangan adem'],
+            'aesthetic': ['aesthetic', 'estetik', 'kekinian', 'desain', 'dekor', 'instagramable'],
+            'live music': ['live music', 'musik', 'akustik', 'pertunjukan live music', 'musiknya santai', 'musiknya tenang'],
+            'parkiran luas': ['parkir', 'parkiran luas', 'parkir luas', 'parkir mobil nyaman', 'tempat parkir luas'],
+            '24 jam': ['24 jam', 'buka 24 jam', 'buka sampai larut', 'larut malam', 'buka malam', 'buka sampai subuh'],
+          };
+          
+          const synonyms = synonymMap[pillLower] || [pillLower];
+          
+          // Cek apakah review mengandung salah satu sinonim
+          return synonyms.some(synonym => reviewText.includes(synonym));
+        });
+      });
+      
+      return hasRelevantReview;
+    });
+  };
+
+  // Filter berdasarkan search, kategori, dan pills
   const filteredShops = getFilteredShopsByCategory(
-    coffeeShops.filter(shop =>
-      shop.name.toLowerCase().includes(searchTerm.toLowerCase())
+    filterShopsByPills(
+      coffeeShops.filter(shop =>
+        shop.name.toLowerCase().includes(searchTerm.toLowerCase())
+      )
     )
   );
 
@@ -413,8 +500,66 @@ export default function ShopList() {
           </div>
         )}
 
+        {/* Quick Recommendation Pills */}
+        {!error && !isLoading && coffeeShops.length > 0 && !searchTerm && (
+          <div className="mb-6 sm:mb-8">
+            <div className="mb-3">
+              <h3 className="text-sm sm:text-base font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                Cari berdasarkan preferensi:
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                Pilih maksimal 3 preferensi untuk menemukan coffee shop yang sesuai
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2 sm:gap-3">
+              {recommendationFields.map((field) => {
+                const isSelected = selectedPills.includes(field.value);
+                const isDisabled = !isSelected && selectedPills.length >= 3;
+                
+                return (
+                  <button
+                    key={field.value}
+                    onClick={() => handlePillClick(field.value)}
+                    disabled={isDisabled}
+                    className={`
+                      px-3 sm:px-4 py-2 rounded-full text-sm font-medium
+                      transition-all duration-200
+                      ${
+                        isSelected
+                          ? 'bg-indigo-600 text-white shadow-md hover:bg-indigo-700 scale-105'
+                          : isDisabled
+                          ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-50'
+                          : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:shadow-sm'
+                      }
+                    `}
+                    title={isDisabled ? 'Maksimal 3 preferensi yang bisa dipilih' : isSelected ? 'Klik untuk menghapus' : 'Klik untuk memilih'}
+                  >
+                    {field.label}
+                    {isSelected && (
+                      <span className="ml-1.5 text-xs">✓</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            {selectedPills.length > 0 && (
+              <div className="mt-3 flex items-center gap-2">
+                <button
+                  onClick={() => setSelectedPills([])}
+                  className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium underline"
+                >
+                  Hapus semua filter
+                </button>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  ({filteredShops.length} coffee shop ditemukan)
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Featured Coffee Shops */}
-        {!error && !isLoading && featuredShops.length > 0 && !searchTerm && (
+        {!error && !isLoading && featuredShops.length > 0 && !searchTerm && !selectedPills.length && (
           <div className="mb-8 sm:mb-10">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
@@ -452,7 +597,7 @@ export default function ShopList() {
         )}
 
         {/* Modern Hero Banner with Background Image - Dipindahkan ke antara Featured dan Terbaru */}
-        {!error && !isLoading && coffeeShops.length > 0 && !searchTerm && (
+        {!error && !isLoading && coffeeShops.length > 0 && !searchTerm && !selectedPills.length && (
           <div className="relative h-48 sm:h-56 md:h-64 flex items-center justify-center mb-6 sm:mb-8 overflow-hidden w-full">
             {/* Background Image with Overlay */}
             <div 
@@ -479,7 +624,7 @@ export default function ShopList() {
               
               {/* Subtitle */}
               <p className="text-sm sm:text-base md:text-lg text-gray-200 font-medium drop-shadow-lg">
-                Jelajahi lebih dari <span className="text-amber-400 font-bold">{coffeeShops.length}+</span> coffee shop terbaik di Pontianak
+                Jelajahi <span className="text-amber-400 font-bold">{coffeeShops.length}</span> coffee shop di Pontianak
               </p>
             </div>
             
@@ -489,7 +634,7 @@ export default function ShopList() {
         )}
 
         {/* Top Rated Coffee Shops (4.8-5.0) */}
-        {!error && !isLoading && topRatedShops.length > 0 && !searchTerm && (
+        {!error && !isLoading && topRatedShops.length > 0 && !searchTerm && !selectedPills.length && (
           <div className="mb-8 sm:mb-10">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
@@ -520,12 +665,12 @@ export default function ShopList() {
         )}
 
         {/* Newest Coffee Shops */}
-        {!error && !isLoading && newestShops.length > 0 && !searchTerm && (
+        {!error && !isLoading && newestShops.length > 0 && !searchTerm && !selectedPills.length && (
           <div className="mb-8 sm:mb-10">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
                 <span className="text-2xl">💎</span>
-                Coffee Shop Hidden Gem
+                Hidden Gem Coffee Shops
               </h2>
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
@@ -550,68 +695,42 @@ export default function ShopList() {
           </div>
         )}
 
-        {/* Quick Filter Categories */}
-        {!error && !isLoading && coffeeShops.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-200 mb-3">
-              Filter Cepat
-            </h3>
-            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-              <button
-                onClick={() => setActiveFilter('all')}
-                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                  activeFilter === 'all'
-                    ? 'bg-indigo-600 text-white shadow-lg scale-105'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                }`}
-              >
-                🏠 Semua ({coffeeShops.length})
-              </button>
-              
-              <button
-                onClick={() => setActiveFilter('top-rated')}
-                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                  activeFilter === 'top-rated'
-                    ? 'bg-indigo-600 text-white shadow-lg scale-105'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                }`}
-              >
-                ⭐ Top Rated ({coffeeShops.filter(s => {
-                  const rating = parseFloat(s.rating) || 0;
-                  return rating >= 4.8 && rating <= 5.0;
-                }).length})
-              </button>
-              
-              <button
-                onClick={() => setActiveFilter('popular')}
-                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                  activeFilter === 'popular'
-                    ? 'bg-indigo-600 text-white shadow-lg scale-105'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                }`}
-              >
-                🔥 Populer ({coffeeShops.filter(s => (s.user_ratings_total || 0) > 1000).length})
-              </button>
-              
-              <button
-                onClick={() => setActiveFilter('newest')}
-                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                  activeFilter === 'newest'
-                    ? 'bg-indigo-600 text-white shadow-lg scale-105'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                }`}
-              >
-                💎 Hidden Gem ({coffeeShops.filter(s => s.rating >= 4.0 && (s.user_ratings_total || 0) < 100).length})
-              </button>
+        {/* Header untuk hasil filter pills */}
+        {selectedPills.length > 0 && (
+          <div className="mb-4 sm:mb-6">
+            <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200">
+                Coffee Shop yang Sesuai Preferensi
+              </h2>
             </div>
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                Preferensi yang dipilih:
+              </span>
+              {selectedPills.map((pillValue) => {
+                const pill = recommendationFields.find(f => f.value === pillValue);
+                return (
+                  <span
+                    key={pillValue}
+                    className="inline-flex items-center gap-1 px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-full text-sm font-medium"
+                  >
+                    {pill?.label}
+                  </span>
+                );
+              })}
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Menampilkan {filteredShops.length} coffee shop yang sesuai dengan preferensi Anda
+            </p>
           </div>
         )}
+
         <div className="flex items-center justify-between mb-4 sm:mb-6 flex-wrap gap-2">
           <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 border-b pb-2 flex-1">
-            {activeFilter === 'all' ? 'Semua Coffee Shop' : 
+            {selectedPills.length > 0 ? 'Hasil Pencarian' :
+             activeFilter === 'all' ? 'All Coffee Shops' : 
              activeFilter === 'top-rated' ? '⭐ Top Rated Coffee Shops' :
-             activeFilter === 'popular' ? '🔥 Coffee Shop Populer' :
-             activeFilter === 'newest' ? '💎 Coffee Shop Hidden Gem' : 'Coffee Shop Catalog'} ({filteredShops.length})
+             activeFilter === 'newest' ? '💎 Hidden Gem Coffee Shops' : 'Coffee Shop Catalog'} ({filteredShops.length})
             {searchTerm && <span className="block sm:inline text-gray-500 dark:text-gray-400 text-sm sm:text-base md:text-lg mt-1 sm:mt-0"> - Search: "{searchTerm}"</span>}
           </h2>
           <div className="flex items-center gap-2">
@@ -681,13 +800,33 @@ export default function ShopList() {
           </div>
         )}
 
-        {!error && !isLoading && filteredShops.length === 0 && searchTerm === '' && (
+        {!error && !isLoading && filteredShops.length === 0 && searchTerm === '' && selectedPills.length === 0 && (
           <div className="text-center py-12">
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M12 20a8 8 0 100-16 8 8 0 000 16z" />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No coffee shops found</h3>
-            <p className="mt-1 text-sm text-gray-500">Check if the backend is returning data correctly.</p>
+            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No coffee shops found</h3>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Check if the backend is returning data correctly.</p>
+          </div>
+        )}
+        
+        {!error && !isLoading && filteredShops.length === 0 && selectedPills.length > 0 && (
+          <div className="text-center py-12">
+            <svg className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M12 20a8 8 0 100-16 8 8 0 000 16z" />
+            </svg>
+            <h3 className="mt-2 text-lg font-medium text-gray-900 dark:text-gray-100">
+              Tidak ada coffee shop yang sesuai
+            </h3>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Tidak ada coffee shop yang memiliki review sesuai dengan preferensi yang Anda pilih.
+            </p>
+            <button
+              onClick={() => setSelectedPills([])}
+              className="mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              Hapus Filter
+            </button>
           </div>
         )}
         {!error && !isLoading && filteredShops.length === 0 && searchTerm !== '' && (

@@ -374,7 +374,7 @@ async function networkFirstStrategy(request, cacheName) {
     
     throw new Error('Network response not OK');
   } catch (error) {
-    console.log('[Service Worker] Network First - Network failed, trying cache:', request.url);
+    console.log('[Service Worker] Network First - Network failed, trying cache:', request.url, error.message);
     
     // Fallback ke cache
     const cache = await caches.open(cacheName);
@@ -466,8 +466,8 @@ self.addEventListener('push', (event) => {
   let notificationData = {
     title: 'Cofind',
     body: 'Anda memiliki notifikasi baru',
-    icon: '/vite.svg',
-    badge: '/vite.svg',
+    icon: '/cofind.svg',
+    badge: '/cofind.svg',
     tag: 'cofind-notification',
     requireInteraction: false,
   };
@@ -479,7 +479,8 @@ self.addEventListener('push', (event) => {
         ...notificationData,
         ...data,
       };
-    } catch (e) {
+    } catch (error) {
+      console.warn('[Service Worker] Failed to parse push data:', error);
       notificationData.body = event.data.text();
     }
   }
@@ -546,11 +547,25 @@ self.addEventListener('notificationclick', (event) => {
   
   event.notification.close();
   
-  if (event.action === 'open') {
-    event.waitUntil(clients.openWindow('/'));
-  }
+  // Open window menggunakan self.clients
+  const openApp = () => {
+    return self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientList) => {
+        // Jika ada window yang sudah terbuka, focus ke window tersebut
+        for (let i = 0; i < clientList.length; i++) {
+          const client = clientList[i];
+          if (client.url === '/' && 'focus' in client) {
+            return client.focus();
+          }
+        }
+        // Jika tidak ada window terbuka, buka window baru
+        if (self.clients.openWindow) {
+          return self.clients.openWindow('/');
+        }
+      });
+  };
   
-  if (!event.action) {
-    event.waitUntil(clients.openWindow('/'));
+  if (event.action === 'open' || !event.action) {
+    event.waitUntil(openApp());
   }
 });

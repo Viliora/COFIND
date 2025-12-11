@@ -4,21 +4,16 @@ import coffeeshop2 from '../assets/coffeeshop_2.jpg';
 import coffeeshop3 from '../assets/coffeeshop_3.jpg';
 import coffeeshop4 from '../assets/coffeeshop_4.jpg';
 import coffeeshop5 from '../assets/coffeeshop_5.jpg';
-import coffeeshop6 from '../assets/coffeeshop_6.jpeg';
-import coffeeshop7 from '../assets/coffeeshop_7.jpeg';
-import coffeeshop8 from '../assets/coffeeshop_8.jpeg';
-import coffeeshop9 from '../assets/coffeeshop_9.jpeg';
-import coffeeshop10 from '../assets/coffeeshop_10.jpeg';
-import coffeeshop11 from '../assets/coffeeshop_11.jpeg';
-import coffeeshop12 from '../assets/coffeeshop_12.jpeg';
-import coffeeshop13 from '../assets/coffeeshop_13.jpeg';
-import coffeeshop14 from '../assets/coffeeshop_14.jpeg';
-import coffeeshop15 from '../assets/coffeeshop_15.jpeg';
-import coffeeshop16 from '../assets/coffeeshop_16.jpeg';
-import coffeeshop17 from '../assets/coffeeshop_17.jpeg';
-import coffeeshop18 from '../assets/coffeeshop_18.jpeg';
-import coffeeshop19 from '../assets/coffeeshop_19.jpeg';
-import coffeeshop20 from '../assets/coffeeshop_20.jpeg';
+import coffeeshop6 from '../assets/coffeeshop_6.jpg';
+import coffeeshop7 from '../assets/coffeeshop_7.jpg';
+import coffeeshop8 from '../assets/coffeeshop_8.jpg';
+import coffeeshop9 from '../assets/coffeeshop_9.jpg';
+import coffeeshop10 from '../assets/coffeeshop_10.jpg';
+import coffeeshop11 from '../assets/coffeeshop_11.jpg';
+import coffeeshop12 from '../assets/coffeeshop_12.jpg';
+import coffeeshop13 from '../assets/coffeeshop_13.jpg';
+import coffeeshop14 from '../assets/coffeeshop_14.jpg';
+import coffeeshop15 from '../assets/coffeeshop_15.jpg';
 
 import localPlacesData from '../data/places.json';
 
@@ -38,11 +33,6 @@ const coffeeShopImages = [
   coffeeshop13,
   coffeeshop14,
   coffeeshop15,
-  coffeeshop16,
-  coffeeshop17,
-  coffeeshop18,
-  coffeeshop19,
-  coffeeshop20,
 ];
 
 // Mapping place_id ke index di places.json untuk konsistensi

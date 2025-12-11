@@ -9,7 +9,7 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/vite.svg",
+      "src": "/cofind.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
@@ -23,14 +23,14 @@
       "short_name": "Home",
       "description": "Lihat daftar coffee shop",
       "url": "/",
-      "icons": [{ "src": "/vite.svg", "sizes": "96x96" }]
+      "icons": [{ "src": "/cofind.svg", "sizes": "96x96" }]
     },
     {
       "name": "Favorites",
       "short_name": "Favorites",
       "description": "Lihat coffee shop favorit",
       "url": "/favorite",
-      "icons": [{ "src": "/vite.svg", "sizes": "96x96" }]
+      "icons": [{ "src": "/cofind.svg", "sizes": "96x96" }]
     }
   ],
   "related_applications": [],

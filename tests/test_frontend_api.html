@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API Connection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .loading { color: orange; }
+        pre {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            max-height: 300px;
+        }
+        button {
+            background: #4F46E5;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #4338CA;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Test API Connection - COFIND</h1>
+    
+    <div class="test-box">
+        <h2>Test 1: Backend Health Check</h2>
+        <button onclick="testBackend()">Test Backend</button>
+        <div id="backend-result"></div>
+    </div>
+
+    <div class="test-box">
+        <h2>Test 2: Coffee Shops API</h2>
+        <button onclick="testCoffeeShops()">Test Coffee Shops Endpoint</button>
+        <div id="coffeeshops-result"></div>
+    </div>
+
+    <div class="test-box">
+        <h2>Test 3: CORS Check</h2>
+        <button onclick="testCORS()">Test CORS</button>
+        <div id="cors-result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000';
+
+        async function testBackend() {
+            const resultDiv = document.getElementById('backend-result');
+            resultDiv.innerHTML = '<p class="loading">Testing...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/`);
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <p class="success">✅ Backend is running!</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <p class="error">❌ Backend Error: ${error.message}</p>
+                    <p>Make sure Flask is running: <code>python app.py</code></p>
+                `;
+            }
+        }
+
+        async function testCoffeeShops() {
+            const resultDiv = document.getElementById('coffeeshops-result');
+            resultDiv.innerHTML = '<p class="loading">Fetching coffee shops...</p>';
+            
+            try {
+                const url = `${API_BASE}/api/search/coffeeshops?lat=-0.026330&lng=109.342506`;
+                console.log('Fetching:', url);
+                
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.status === 'success' && Array.isArray(data.data)) {
+                    const firstShop = data.data[0];
+                    const shopsWithPhotos = data.data.filter(s => s.photos && s.photos.length > 0);
+                    
+                    resultDiv.innerHTML = `
+                        <p class="success">✅ API Working!</p>
+                        <p><strong>Total Coffee Shops:</strong> ${data.data.length}</p>
+                        <p><strong>Shops with Photos:</strong> ${shopsWithPhotos.length}</p>
+                        <p><strong>First Shop:</strong> ${firstShop.name}</p>
+                        <p><strong>First Shop Photo:</strong> ${firstShop.photos && firstShop.photos.length > 0 ? '✅ Available' : '❌ Not available'}</p>
+                        <details>
+                            <summary>View First Shop Data</summary>
+                            <pre>${JSON.stringify(firstShop, null, 2)}</pre>
+                        </details>
+                    `;
+                } else {
+                    throw new Error('Invalid data format from API');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <p class="error">❌ Error: ${error.message}</p>
+                    <p>Check console for more details</p>
+                `;
+                console.error('Coffee Shops API Error:', error);
+            }
+        }
+
+        async function testCORS() {
+            const resultDiv = document.getElementById('cors-result');
+            resultDiv.innerHTML = '<p class="loading">Testing CORS...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': window.location.origin,
+                        'Access-Control-Request-Method': 'GET'
+                    }
+                });
+                
+                const corsHeaders = {
+                    'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
+                    'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
+                    'Access-Control-Allow-Headers': response.headers.get('Access-Control-Allow-Headers')
+                };
+                
+                resultDiv.innerHTML = `
+                    <p class="success">✅ CORS is configured!</p>
+                    <pre>${JSON.stringify(corsHeaders, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <p class="error">❌ CORS Error: ${error.message}</p>
+                    <p>This might cause API fetch failures in the main app</p>
+                `;
+            }
+        }
+
+        // Auto-run tests on page load
+        window.onload = () => {
+            console.log('🔍 Testing API connection...');
+            testBackend();
+            setTimeout(() => testCoffeeShops(), 1000);
+            setTimeout(() => testCORS(), 2000);
+        };
+    </script>
+</body>
+</html>
+

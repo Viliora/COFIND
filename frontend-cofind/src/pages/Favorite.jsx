@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import CoffeeShopCard from '../components/CoffeeShopCard';
 import localPlacesData from '../data/places.json';
+// CoffeeShopCard sudah menggunakan getCoffeeShopImage berdasarkan place_id, jadi tidak perlu set photos
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 const USE_API = import.meta.env.VITE_USE_API === 'true';
@@ -48,7 +49,7 @@ const Favorite = () => {
                 location: foundShop.location,
                 business_status: foundShop.business_status,
                 price_level: foundShop.price_level,
-                photos: Array.isArray(foundShop.photos) ? foundShop.photos : [],
+                // photos tidak perlu di-set karena CoffeeShopCard menggunakan getCoffeeShopImage(place_id)
               });
             }
           }
@@ -72,14 +73,6 @@ const Favorite = () => {
             if (data.status === 'success' && data.data) {
               const detail = data.data;
               
-              // Pastikan photos adalah array of URLs (bukan objects)
-              let photoUrls = [];
-              if (Array.isArray(detail.photos)) {
-                // Photos sudah dalam format URL string dari backend
-                photoUrls = detail.photos.slice(0, 1); // Ambil 1 foto pertama
-                console.log(`[Favorite] Photos for ${detail.name}:`, photoUrls);
-              }
-              
               const shop = {
                 place_id: placeId,
                 name: detail.name,
@@ -90,7 +83,7 @@ const Favorite = () => {
                 location: detail.geometry?.location,
                 business_status: detail.business_status,
                 price_level: detail.price_level,
-                photos: photoUrls,
+                // photos tidak perlu di-set karena CoffeeShopCard menggunakan getCoffeeShopImage(place_id)
               };
               
               console.log(`[Favorite] Shop data prepared:`, shop);

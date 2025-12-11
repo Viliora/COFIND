@@ -11,14 +11,14 @@ import 'swiper/css/navigation';
 import 'swiper/css/effect-fade';
 
 import OptimizedImage from './OptimizedImage';
-import { getAllCoffeeShopImages } from '../utils/coffeeShopImages';
+import { getCoffeeShopImage } from '../utils/coffeeShopImages';
 
 const HeroSwiper = ({ coffeeShops }) => {
   const [featuredShops, setFeaturedShops] = useState([]);
 
   useEffect(() => {
     if (coffeeShops && coffeeShops.length > 0) {
-      // Ambil coffee shops dengan rating tinggi dan assign foto dari asset
+      // Ambil coffee shops dengan rating tinggi dan assign foto dari asset berdasarkan place_id
       const shopsWithPhotos = coffeeShops
         .filter(shop => shop.rating >= 4.0)
         .sort((a, b) => {
@@ -27,10 +27,10 @@ const HeroSwiper = ({ coffeeShops }) => {
           const scoreB = (b.rating || 0) * 0.6 + ((b.user_ratings_total || 0) / 1000) * 0.4;
           return scoreB - scoreA;
         })
-        .slice(0, 20) // Ambil maksimal 20 coffee shop terbaik (sesuai jumlah asset foto)
-        .map((shop, index) => ({
+        .slice(0, 20) // Ambil maksimal 20 coffee shop terbaik
+        .map((shop) => ({
           ...shop,
-          photos: [getAllCoffeeShopImages()[index % getAllCoffeeShopImages().length]] // Assign foto dari asset secara berurutan
+          photos: [getCoffeeShopImage(shop.place_id || shop.name)] // Gunakan foto konsisten berdasarkan place_id
         }));
 
       setFeaturedShops(shopsWithPhotos);
