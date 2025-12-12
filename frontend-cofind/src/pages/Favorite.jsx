@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import CoffeeShopCard from '../components/CoffeeShopCard';
+import { getPersonalizedRecommendations } from '../utils/personalizedRecommendations';
 import localPlacesData from '../data/places.json';
 // CoffeeShopCard sudah menggunakan getCoffeeShopImage berdasarkan place_id, jadi tidak perlu set photos
 
@@ -11,10 +12,37 @@ const USE_LOCAL_DATA = true; // Set true untuk menggunakan data lokal JSON
 const Favorite = () => {
   const [favoriteShops, setFavoriteShops] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [allShops, setAllShops] = useState([]); // Semua coffee shops untuk recommendations
 
   useEffect(() => {
     loadFavorites();
+    loadAllShops();
   }, []);
+
+  // Load semua coffee shops untuk recommendations
+  const loadAllShops = async () => {
+    try {
+      if (USE_LOCAL_DATA) {
+        if (localPlacesData && localPlacesData.data && Array.isArray(localPlacesData.data)) {
+          setAllShops(localPlacesData.data);
+          return;
+        }
+      }
+      
+      if (USE_API) {
+        const apiUrl = `${API_BASE}/api/search/coffeeshops?lat=-0.026330&lng=109.342506`;
+        const response = await fetch(apiUrl);
+        if (response.ok) {
+          const result = await response.json();
+          if (result.data && Array.isArray(result.data)) {
+            setAllShops(result.data);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('[Favorite] Error loading all shops:', error);
+    }
+  };
 
   const loadFavorites = async () => {
     try {
@@ -105,6 +133,31 @@ const Favorite = () => {
     }
   };
 
+  // Generate Personalized Recommendations berdasarkan favorit
+  const personalizedRecommendations = useMemo(() => {
+    if (favoriteShops.length === 0 || allShops.length === 0) return [];
+    
+    try {
+      const recommendations = getPersonalizedRecommendations(
+        favoriteShops,
+        allShops,
+        {
+          maxResults: 8,
+          minRating: 4.0,
+          excludeFavorites: true,
+          weightFeatures: 0.7, // 70% fokus pada context similarity
+          weightRating: 0.2,
+          weightLocation: 0.1,
+        }
+      );
+      
+      return recommendations;
+    } catch (error) {
+      console.error('[Favorite] Error generating personalized recommendations:', error);
+      return [];
+    }
+  }, [favoriteShops, allShops]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-zinc-900 py-6 sm:py-8 px-3 sm:px-4 md:px-6 lg:px-8">
@@ -167,6 +220,33 @@ const Favorite = () => {
             </Link>
           ))}
         </div>
+
+        {/* Personalized Recommendations - Berdasarkan kemiripan konteks review */}
+        {personalizedRecommendations.length > 0 && (
+          <div className="mt-12">
+            <div className="mb-6">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-2">
+                <span className="text-2xl">✨</span>
+                Rekomendasi untuk Anda
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Coffee shop dengan review yang mirip dengan favorit Anda
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+              {personalizedRecommendations.map((shop) => (
+                <Link
+                  key={shop.place_id}
+                  to={`/shop/${shop.place_id}`}
+                  className="block hover:shadow-2xl transition duration-300"
+                >
+                  <CoffeeShopCard shop={shop} />
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

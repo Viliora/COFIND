@@ -4,6 +4,7 @@ import OptimizedImage from '../components/OptimizedImage';
 import localPlacesData from '../data/places.json';
 import localReviewsData from '../data/reviews.json';
 import { getCoffeeShopImage } from '../utils/coffeeShopImages';
+import { addToRecentlyViewed } from '../utils/recentlyViewed';
 
 // Konfigurasi API (mengikuti ShopList)
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
@@ -49,6 +50,9 @@ function ShopDetail() {
                 map_embed_url: foundShop.map_embed_url || null,
               };
               setShop(normalized);
+              
+              // Simpan ke recently viewed
+              addToRecentlyViewed(normalized);
               
               // Ambil reviews dari file reviews.json terpisah berdasarkan place_id
               const reviewsForShop = localReviewsData?.reviews_by_place_id?.[id] || [];
@@ -98,6 +102,10 @@ function ShopDetail() {
                   : [],
               };
               setShop(normalized);
+              
+              // Simpan ke recently viewed
+              addToRecentlyViewed(normalized);
+              
               // Hanya tampilkan komentar yang punya teks, dan batasi maksimal 10 reviews
               const reviewsWithText = Array.isArray(detail.reviews)
                 ? detail.reviews

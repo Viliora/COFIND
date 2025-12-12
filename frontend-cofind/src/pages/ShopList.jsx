@@ -4,6 +4,7 @@ import CoffeeShopCard from '../components/CoffeeShopCard';
 import HeroSwiper from '../components/HeroSwiper';
 import { preloadFeaturedImages } from '../utils/imagePreloader';
 import { fetchWithDevCache, isDevelopmentMode } from '../utils/devCache';
+import { getRecentlyViewedWithDetails } from '../utils/recentlyViewed';
 import heroBgImage from '../assets/1R modern cafe 1.5.jpg';
 import localPlacesData from '../data/places.json';
 import localReviewsData from '../data/reviews.json';
@@ -22,7 +23,6 @@ export default function ShopList() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [activeFilter] = useState('all'); // Filter state (default: all, tidak ada UI untuk mengubahnya)
   const [selectedPills, setSelectedPills] = useState([]); // Selected quick recommendation pills (max 3)
-  const scrollContainerRef = useRef(null);
   const featuredScrollRef = useRef(null);
 
   // Update search term from URL params
@@ -43,87 +43,6 @@ export default function ShopList() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  const [isDragging, setIsDragging] = useState(false);
-  const dragStateRef = useRef({ startX: 0, scrollLeft: 0 });
-
-  const addGrabbingCursor = () => {
-    const container = scrollContainerRef.current;
-    if (container) {
-      container.classList.add('cursor-grabbing');
-    }
-  };
-
-  const removeGrabbingCursor = () => {
-    const container = scrollContainerRef.current;
-    if (container) {
-      container.classList.remove('cursor-grabbing');
-    }
-  };
-
-  const handleMouseDown = (event) => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    setIsDragging(true);
-    dragStateRef.current = {
-      startX: event.pageX - container.offsetLeft,
-      scrollLeft: container.scrollLeft,
-    };
-    addGrabbingCursor();
-  };
-
-  const handleMouseLeave = () => {
-    if (!isDragging) return;
-    setIsDragging(false);
-    removeGrabbingCursor();
-  };
-
-  const handleMouseUp = () => {
-    if (!isDragging) return;
-    setIsDragging(false);
-    removeGrabbingCursor();
-  };
-
-  const handleMouseMove = (event) => {
-    if (!isDragging) return;
-    event.preventDefault();
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    const x = event.pageX - container.offsetLeft;
-    const walk = x - dragStateRef.current.startX;
-    container.scrollLeft = dragStateRef.current.scrollLeft - walk;
-  };
-
-  const handleTouchStart = (event) => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    const touch = event.touches[0];
-    setIsDragging(true);
-    dragStateRef.current = {
-      startX: touch.pageX - container.offsetLeft,
-      scrollLeft: container.scrollLeft,
-    };
-    addGrabbingCursor();
-  };
-
-  const handleTouchMove = (event) => {
-    if (!isDragging) return;
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    const touch = event.touches[0];
-    const x = touch.pageX - container.offsetLeft;
-    const walk = x - dragStateRef.current.startX;
-    container.scrollLeft = dragStateRef.current.scrollLeft - walk;
-  };
-
-  const handleTouchEnd = () => {
-    if (!isDragging) return;
-    setIsDragging(false);
-    removeGrabbingCursor();
-  };
 
   // Listen untuk online/offline events
   useEffect(() => {
@@ -287,6 +206,11 @@ export default function ShopList() {
         }
         return (b.user_ratings_total || 0) - (a.user_ratings_total || 0);
       });
+  }, [coffeeShops]);
+
+  // Dapatkan Recently Viewed Coffee Shops
+  const recentlyViewedShops = useMemo(() => {
+    return getRecentlyViewedWithDetails(coffeeShops);
   }, [coffeeShops]);
 
   // Filter berdasarkan kategori
@@ -546,13 +470,10 @@ export default function ShopList() {
               <div className="mt-3 flex items-center gap-2">
                 <button
                   onClick={() => setSelectedPills([])}
-                  className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium underline"
+                  className="px-3 sm:px-4 py-2 rounded-full text-sm font-medium bg-indigo-600 text-white shadow-md hover:bg-indigo-700 transition-all duration-200"
                 >
                   Hapus semua filter
                 </button>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  ({filteredShops.length} coffee shop ditemukan)
-                </span>
               </div>
             )}
           </div>
@@ -695,33 +616,30 @@ export default function ShopList() {
           </div>
         )}
 
-        {/* Header untuk hasil filter pills */}
-        {selectedPills.length > 0 && (
-          <div className="mb-4 sm:mb-6">
-            <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200">
-                Coffee Shop yang Sesuai Preferensi
+        {/* Recently Viewed Coffee Shops - Tampilkan di atas All Coffee Shops */}
+        {!error && !isLoading && recentlyViewedShops.length > 0 && !searchTerm && !selectedPills.length && (
+          <div className="mb-8 sm:mb-10">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                <span className="text-2xl">🕒</span>
+                Baru Saja Dilihat
               </h2>
             </div>
-            <div className="flex flex-wrap items-center gap-2 mb-3">
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                Preferensi yang dipilih:
-              </span>
-              {selectedPills.map((pillValue) => {
-                const pill = recommendationFields.find(f => f.value === pillValue);
-                return (
-                  <span
-                    key={pillValue}
-                    className="inline-flex items-center gap-1 px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-full text-sm font-medium"
-                  >
-                    {pill?.label}
-                  </span>
-                );
-              })}
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Menampilkan {filteredShops.length} coffee shop yang sesuai dengan preferensi Anda
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Coffee shop yang baru saja Anda lihat
             </p>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+              {recentlyViewedShops.map((shop) => (
+                <Link
+                  key={shop.place_id}
+                  to={`/shop/${shop.place_id}`}
+                  className="block hover:shadow-2xl transition duration-300"
+                >
+                  <CoffeeShopCard shop={shop} />
+                </Link>
+              ))}
+            </div>
           </div>
         )}
 
@@ -775,28 +693,16 @@ export default function ShopList() {
         )}
 
         {!error && filteredShops.length > 0 && (
-          <div className="relative px-2 sm:px-0">
-            <div
-              ref={scrollContainerRef}
-              className="flex gap-3 sm:gap-4 md:gap-6 overflow-x-auto scroll-smooth pb-4 pr-12 sm:pr-16 snap-x snap-mandatory cursor-grab select-none"
-              onMouseDown={handleMouseDown}
-              onMouseLeave={handleMouseLeave}
-              onMouseUp={handleMouseUp}
-              onMouseMove={handleMouseMove}
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-            >
-              {filteredShops.map((shop) => (
-                <Link
-                  key={shop.place_id}
-                  to={`/shop/${shop.place_id}`}
-                  className="block hover:shadow-2xl transition duration-300 w-[240px] sm:w-[280px] md:w-[300px] shrink-0 snap-start"
-                >
-                  <CoffeeShopCard shop={shop} />
-                </Link>
-              ))}
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+            {filteredShops.map((shop) => (
+              <Link
+                key={shop.place_id}
+                to={`/shop/${shop.place_id}`}
+                className="block hover:shadow-2xl transition duration-300"
+              >
+                <CoffeeShopCard shop={shop} />
+              </Link>
+            ))}
           </div>
         )}
 
