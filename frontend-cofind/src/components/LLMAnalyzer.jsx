@@ -232,7 +232,18 @@ const LLMAnalyzer = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Terjadi kesalahan');
+        // Handle specific error codes
+        if (response.status === 402 || data.error_code === 'QUOTA_EXCEEDED') {
+          throw new Error('Kuota token LLM telah habis. Silakan cek akun Hugging Face Anda atau upgrade tier untuk mendapatkan lebih banyak token.');
+        } else if (response.status === 429 || data.error_code === 'RATE_LIMIT') {
+          throw new Error('Terlalu banyak request. Silakan tunggu beberapa saat sebelum mencoba lagi.');
+        } else if (response.status === 401 || data.error_code === 'UNAUTHORIZED') {
+          throw new Error('Token API Hugging Face tidak valid. Silakan hubungi administrator.');
+        } else if (response.status === 503) {
+          throw new Error('Layanan LLM sedang tidak tersedia. Silakan coba lagi nanti.');
+        } else {
+          throw new Error(data.message || 'Terjadi kesalahan saat menganalisis preferensi Anda');
+        }
       }
 
       // Set progress ke 100% saat selesai
@@ -274,41 +285,6 @@ const LLMAnalyzer = () => {
     setError(null);
   };
 
-  // Quick recommendation fields
-  const recommendationFields = [
-    { label: '🛋️ Cozy', value: 'cozy' },
-    { label: '📚 Belajar', value: 'belajar' },
-    { label: '📶 WiFi', value: 'wifi stabil' },
-    { label: '🔌 Stopkontak', value: 'stopkontak' },
-    { label: '🕌 Musholla', value: 'musholla' },
-    { label: '🛋️ Sofa', value: 'sofa' },
-    { label: '❄️ Dingin', value: 'dingin' },
-    { label: '📸 Aesthetic', value: 'aesthetic' },
-    { label: '🎵 Live Music', value: 'live music' },
-    { label: '🅿️ Parkir Luas', value: 'parkiran luas' },
-    { label: '🌙 24 jam', value: '24 jam' },
-  ];
-
-  // Handle field click - append to input (dengan batasan 100 karakter)
-  const handleFieldClick = (fieldValue) => {
-    let newInput = '';
-    if (input.trim()) {
-      // Jika sudah ada input, tambahkan dengan koma
-      newInput = input + ', ' + fieldValue;
-    } else {
-      // Jika kosong, langsung set
-      newInput = fieldValue;
-    }
-    
-    // Batasi maksimal 100 karakter
-    if (newInput.length > 100) {
-      setError(`Input maksimal 100 karakter. Tidak bisa menambahkan "${fieldValue}"`);
-      return;
-    }
-    
-    setInput(newInput);
-    setError(null); // Clear error jika berhasil
-  };
 
   return (
     <div className="w-full max-w-2xl mx-auto p-4 sm:p-6">
@@ -321,24 +297,6 @@ const LLMAnalyzer = () => {
           <p className="text-gray-600 dark:text-gray-400 text-sm">
             Jelaskan preferensi Anda, dan AI akan memberikan rekomendasi coffee shop terbaik di <span className="font-semibold text-indigo-600 dark:text-indigo-400">Pontianak</span> <span className="font-semibold text-green-600 dark:text-green-400">berdasarkan ulasan pengunjung yang relevan</span> (nama + komentar asli)
           </p>
-        </div>
-
-        {/* Quick Recommendation Fields */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-900 dark:text-white mb-3">
-            ⚡ Rekomendasi Cepat - Klik untuk menambahkan:
-          </label>
-          <div className="flex flex-wrap gap-2 mb-4 p-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
-            {recommendationFields.map((field, index) => (
-              <button
-                key={index}
-                onClick={() => handleFieldClick(field.value)}
-                className="px-3 py-1.5 bg-white dark:bg-zinc-700 hover:bg-indigo-100 dark:hover:bg-indigo-800 text-gray-700 dark:text-gray-200 text-xs sm:text-sm font-medium rounded-full border border-gray-300 dark:border-zinc-600 hover:border-indigo-400 dark:hover:border-indigo-500 transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-105"
-              >
-                {field.label}
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* Input Area - Natural Language atau Keywords */}
@@ -383,7 +341,6 @@ const LLMAnalyzer = () => {
               <p className="font-medium">Tips: Gunakan bahasa Indonesia natural atau kata kunci dipisah koma</p>
               <p className="text-gray-500 dark:text-gray-500">• Contoh kalimat: "Saya ingin tempat yang cozy dengan wifi kencang"</p>
               <p className="text-gray-500 dark:text-gray-500">• Contoh keywords: "wifi bagus, terminal banyak, cozy"</p>
-              <p className="text-gray-500 dark:text-gray-500">• Atau klik tombol rekomendasi cepat di atas</p>
             </div>
           </div>
         </div>

@@ -774,16 +774,19 @@ def llm_analyze():
         print(f"[LLM] Total context length: {len(places_context)} characters")
         
         # Step 2: Build system prompt dengan context REVIEWS untuk bukti rekomendasi
-        system_prompt = f"""Anda adalah asisten rekomendasi coffee shop yang AKURAT dan JUJUR. Anda menggunakan data NYATA dari file JSON lokal.
+        system_prompt = f"""Anda adalah asisten rekomendasi coffee shop yang AKURAT dan JUJUR. Anda menggunakan data NYATA dari file JSON lokal dan menganalisis input user menggunakan Natural Language Processing (NLP).
 
 DATA COFFEE SHOP DI {location.upper()} DENGAN INFORMASI LENGKAP:
 {places_context}
 
-🎯 ATURAN UTAMA:
-1. HANYA rekomendasikan jika ADA review yang relevan dengan kata kunci user
-2. Review harus BENAR-BENAR menyebutkan atau berhubungan erat dengan kata kunci
-3. Jika tidak ada review yang relevan, JANGAN rekomendasikan - langsung jawab: "Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini."
-4. JANGAN memberikan rekomendasi yang dipaksakan atau diada-adakan
+🎯 ATURAN UTAMA - NLP ANALYSIS:
+1. Analisis input user menggunakan Natural Language Processing untuk memahami maksud dan preferensi
+2. Input user bisa berupa kalimat natural language (tidak terstruktur) atau kata kunci
+3. Pahami konteks, sinonim, dan makna dari input user (bukan hanya keyword matching)
+4. HANYA rekomendasikan jika ADA review yang relevan dengan maksud/preferensi user
+5. Review harus BENAR-BENAR menyebutkan atau berhubungan erat dengan preferensi yang dimaksud user
+6. Jika tidak ada review yang relevan, JANGAN rekomendasikan - langsung jawab: "Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini."
+7. JANGAN memberikan rekomendasi yang dipaksakan atau diada-adakan
 
 🚨 WAJIB - REVIEW SEBAGAI BUKTI:
 - SETIAP coffee shop yang direkomendasikan WAJIB disertai dengan review pengunjung yang relevan
@@ -871,27 +874,29 @@ PENTING:
 - Jika coffee shop tidak memiliki review yang relevan dengan kata kunci, JANGAN rekomendasikan"""
 
         # Step 3: Extract keywords dari user input (mendukung natural language dan comma-separated)
+        # Untuk NLP analysis, kita tetap perlu extract keywords untuk pre-filtering, tapi dengan fokus pada understanding
         # Cek apakah input adalah comma-separated keywords atau natural language
         if ',' in user_text and len(user_text.split(',')) > 1:
             # Format: comma-separated keywords
             keywords = [kw.strip().lower() for kw in user_text.split(',') if kw.strip()]
         else:
-            # Format: natural language - gunakan LLM untuk extract keywords
-            # Buat prompt untuk ekstraksi keyword dari natural language
-            extraction_prompt = f"""Anda adalah asisten yang ahli dalam mengekstrak kata kunci dari kalimat bahasa Indonesia.
+            # Format: natural language - extract keywords untuk pre-filtering (LLM akan melakukan deep NLP analysis)
+            # Buat prompt untuk ekstraksi keyword dari natural language dengan fokus pada understanding
+            extraction_prompt = f"""Anda adalah asisten yang ahli dalam memahami maksud user dari kalimat natural language.
 
 KALIMAT USER:
 "{user_text}"
 
-Tugas Anda: Ekstrak kata kunci penting dari kalimat di atas yang relevan untuk mencari coffee shop.
+Tugas Anda: Pahami maksud dan preferensi user, lalu ekstrak kata kunci penting yang relevan untuk mencari coffee shop.
 
 ATURAN:
-1. Ekstrak HANYA kata kunci yang relevan dengan coffee shop (fasilitas, suasana, fitur, dll)
-2. Abaikan kata-kata umum seperti "saya", "ingin", "mencari", "yang", "untuk", "dan", "atau", dll
-3. Fokus pada: wifi, musholla, colokan, cozy, belajar, kerja, sofa, ac, aesthetic, live music, parkir, 24 jam, dll
-4. Output HANYA kata kunci yang dipisah koma, tanpa penjelasan
-5. Gunakan bahasa Indonesia
-6. Maksimal 10 kata kunci
+1. Pahami konteks dan maksud dari kalimat user (bukan hanya keyword matching)
+2. Identifikasi preferensi inti: fasilitas, suasana, kebutuhan spesifik, dll
+3. Ekstrak kata kunci yang relevan dengan coffee shop (wifi, musholla, colokan, cozy, belajar, kerja, sofa, ac, aesthetic, live music, parkir, 24 jam, dll)
+4. Abaikan kata-kata umum seperti "saya", "ingin", "mencari", "yang", "untuk", "dan", "atau", dll
+5. Output HANYA kata kunci yang dipisah koma, tanpa penjelasan
+6. Gunakan bahasa Indonesia
+7. Maksimal 10 kata kunci
 
 CONTOH:
 Input: "Saya ingin mencari coffee shop yang cozy, ada wifi kencang, dan cocok untuk kerja"
@@ -903,7 +908,10 @@ Output: nyaman, musholla, parkir luas
 Input: "Coffee shop aesthetic dengan live music dan ruangan dingin"
 Output: aesthetic, live music, ruangan dingin
 
-Sekarang ekstrak kata kunci dari kalimat user di atas:"""
+Input: "Saya butuh tempat yang buka sampai larut malam"
+Output: 24 jam, buka malam, buka sampai larut
+
+Sekarang pahami maksud user dan ekstrak kata kunci dari kalimat di atas:"""
 
             try:
                 # Gunakan LLM untuk extract keywords (hanya jika hf_client tersedia)
@@ -976,22 +984,32 @@ Sekarang ekstrak kata kunci dari kalimat user di atas:"""
 
 Cari coffee shop yang reviewnya BENAR-BENAR menyebutkan kata kunci di atas atau sinonimnya. Jika tidak ada yang sesuai, jawab: "🙏 Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini." Jangan tambahkan penjelasan pembuka atau logika rekomendasi."""
         elif task == 'recommend':
-            user_content = f"""KATA KUNCI PREFERENSI saya:
-{user_text}
+            user_content = f"""PREFERENSI SAYA (Natural Language):
+"{user_text}"
 
-Tugas Anda: Cari coffee shop yang reviewnya BENAR-BENAR menyebutkan kata kunci di atas.
+Tugas Anda: 
+1. Analisis preferensi saya menggunakan Natural Language Processing (NLP)
+2. Pahami maksud, konteks, dan preferensi yang saya inginkan (bukan hanya keyword matching)
+3. Identifikasi sinonim dan variasi kata yang relevan dengan preferensi saya
+4. Cari coffee shop yang reviewnya BENAR-BENAR relevan dengan preferensi yang saya maksud
 
 ⚠️ ATURAN KETAT - WAJIB DIIKUTI (TIDAK BOLEH DILANGGAR):
-1. HANYA rekomendasikan jika ada review yang BENAR-BENAR menyebutkan kata kunci ({keywords_display}) atau sinonimnya
-2. Review harus RELEVAN - bukan sekedar review positif biasa
-3. JANGAN rekomendasikan coffee shop jika tidak ada review yang menyebutkan kata kunci atau sinonimnya
-4. Jika tidak ada review yang relevan, LANGSUNG jawab: "Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini."
-5. JANGAN memberikan rekomendasi yang dipaksakan
-6. JANGAN tambahkan penjelasan pembuka seperti "Berdasarkan kata kunci..."
-7. JANGAN tambahkan section "LOGIKA REKOMENDASI"
-8. ⚠️ PENTING: Jika coffee shop tidak memiliki review yang menyebutkan kata kunci, JANGAN rekomendasikan coffee shop tersebut, meskipun ratingnya tinggi atau populer
-9. ⚠️ PENTING - JUMLAH REKOMENDASI: Jika ada BANYAK coffee shop dengan review yang relevan, output SEMUA yang relevan (maksimal 3 terbaik berdasarkan rating). JANGAN hanya output 1 jika ada lebih banyak yang relevan!
-10. ⚠️ CONTOH: Jika user mencari "24 jam", HANYA rekomendasikan coffee shop yang reviewnya menyebutkan "24 jam", "buka sampai larut", "larut malam", "buka malam", dll. JANGAN rekomendasikan coffee shop yang reviewnya hanya menyebutkan "cozy" atau "wifi bagus" tanpa menyebutkan jam operasional.
+1. Gunakan NLP untuk memahami maksud user dari input natural language
+2. Identifikasi preferensi inti dari kalimat user (fasilitas, suasana, kebutuhan, dll)
+3. HANYA rekomendasikan jika ada review yang BENAR-BENAR relevan dengan preferensi yang dimaksud user
+4. Review harus RELEVAN secara semantik - bukan sekedar review positif biasa
+5. Pahami sinonim dan variasi kata yang relevan (contoh: "wifi bagus" = "wifi kencang" = "internet lancar")
+6. JANGAN rekomendasikan coffee shop jika tidak ada review yang relevan dengan preferensi user
+7. Jika tidak ada review yang relevan, LANGSUNG jawab: "Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini."
+8. JANGAN memberikan rekomendasi yang dipaksakan
+9. JANGAN tambahkan penjelasan pembuka seperti "Berdasarkan preferensi Anda..."
+10. JANGAN tambahkan section "LOGIKA REKOMENDASI"
+11. ⚠️ PENTING: Jika coffee shop tidak memiliki review yang relevan, JANGAN rekomendasikan coffee shop tersebut, meskipun ratingnya tinggi atau populer
+12. ⚠️ PENTING - JUMLAH REKOMENDASI: Jika ada BANYAK coffee shop dengan review yang relevan, output SEMUA yang relevan (maksimal 3 terbaik berdasarkan rating). JANGAN hanya output 1 jika ada lebih banyak yang relevan!
+13. ⚠️ CONTOH NLP: 
+    - User: "Saya ingin tempat yang buka sampai larut" → Pahami: user butuh tempat dengan jam operasional panjang (24 jam, buka malam, buka sampai subuh, dll)
+    - User: "Tempat yang cocok untuk kerja" → Pahami: user butuh tempat dengan wifi, colokan, suasana tenang, cocok untuk belajar/kerja
+    - User: "Coffee shop yang cozy dan ada musholla" → Pahami: user butuh tempat nyaman dengan fasilitas musholla/tempat sholat
 
 🚨 WAJIB - SETIAP REKOMENDASI HARUS DISERTAI REVIEW:
 - Setiap coffee shop yang direkomendasikan WAJIB memiliki baris "Berdasarkan Ulasan Pengunjung"
@@ -1104,9 +1122,16 @@ Google Maps: https://...
 
 MULAI OUTPUT SEKARANG (langsung tulis tanpa penjelasan):"""
         else:  # analyze (default)
-            user_content = f"""Kata kunci preferensi: {user_text}
+            user_content = f"""PREFERENSI SAYA (Natural Language):
+"{user_text}"
 
-🔗 PENTING - SINONIM YANG RELEVAN:
+Tugas Anda:
+1. Analisis preferensi saya menggunakan Natural Language Processing (NLP)
+2. Pahami maksud, konteks, dan kebutuhan yang saya inginkan
+3. Identifikasi preferensi inti (fasilitas, suasana, kebutuhan spesifik)
+4. Cari coffee shop yang reviewnya BENAR-BENAR relevan dengan preferensi yang saya maksud
+
+🔗 PENTING - SINONIM YANG RELEVAN (untuk membantu pemahaman NLP):
 - Kata kunci "24 jam" = "buka sampai larut" = "larut malam" = "buka malam" = "buka sampai subuh" = "buka tengah malam"
 - Kata kunci "wifi bagus" = "wifi kencang" = "wifi stabil" = "koneksi internet lancar"
 - Kata kunci "musholla" = "tempat sholat" = "tempat sholat tersedia" = "ada musholla"
@@ -1120,7 +1145,7 @@ MULAI OUTPUT SEKARANG (langsung tulis tanpa penjelasan):"""
 - Kata kunci "parkiran luas" = "parkir luas" = "parkir mobil nyaman" = "parkir" = "tempat parkir luas"
 - Jika user mencari salah satu variasi di atas, review yang menyebutkan variasi lain TETAP RELEVAN dan BOLEH direkomendasikan
 
-Cari coffee shop yang reviewnya BENAR-BENAR menyebutkan kata kunci di atas atau sinonimnya. 
+Cari coffee shop yang reviewnya BENAR-BENAR relevan dengan preferensi yang saya maksud (gunakan pemahaman NLP, bukan hanya keyword matching).
 
 🚨 PENTING - JUMLAH REKOMENDASI:
 - Jika ada 1 coffee shop yang relevan → output 1
@@ -1128,7 +1153,7 @@ Cari coffee shop yang reviewnya BENAR-BENAR menyebutkan kata kunci di atas atau 
 - Jika ada 3+ coffee shop yang relevan → output SEMUA yang relevan (maksimal 3 terbaik berdasarkan rating)
 - Jangan hanya output 1 jika ada lebih banyak yang relevan - output SEMUA yang relevan (maksimal 3)
 
-Jika tidak ada review yang relevan, jawab: "🙏 Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini." Gunakan **bold** untuk highlight kata yang match. Jangan tambahkan penjelasan pembuka atau logika rekomendasi.
+Jika tidak ada review yang relevan, jawab: "Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini." Gunakan **bold** untuk highlight kata dalam review yang relevan dengan preferensi saya. Jangan tambahkan penjelasan pembuka atau logika rekomendasi.
 
 🚨 WAJIB - SETIAP REKOMENDASI HARUS DISERTAI REVIEW:
 - Setiap coffee shop yang direkomendasikan WAJIB memiliki review pengunjung yang relevan sebagai bukti
@@ -1211,19 +1236,54 @@ Jika tidak ada review yang relevan, jawab: "🙏 Maaf, tidak ada coffee shop yan
         print(f"[LLM] Calling HF API with task: {task}")
         print(f"[LLM] Model: {HF_MODEL}")
         
-        response = hf_client.chat.completions.create(
-            model=HF_MODEL,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_content}
-            ],
-            max_tokens=actual_max_tokens,  # Gunakan max_tokens yang sudah disesuaikan dengan context window
-            temperature=0.2,  # Ditingkatkan dari 0.1 untuk output yang lebih natural namun tetap akurat
-            top_p=0.85  # Sedikit lebih fleksibel untuk variasi output yang lebih baik
-        )
-        
-        print(f"[LLM] Response received successfully")
-        generated_text = response.choices[0].message.content
+        try:
+            response = hf_client.chat.completions.create(
+                model=HF_MODEL,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_content}
+                ],
+                max_tokens=actual_max_tokens,  # Gunakan max_tokens yang sudah disesuaikan dengan context window
+                temperature=0.2,  # Ditingkatkan dari 0.1 untuk output yang lebih natural namun tetap akurat
+                top_p=0.85  # Sedikit lebih fleksibel untuk variasi output yang lebih baik
+            )
+            
+            print(f"[LLM] Response received successfully")
+            generated_text = response.choices[0].message.content
+        except Exception as api_error:
+            error_str = str(api_error)
+            print(f"[LLM] API Error: {error_str}")
+            
+            # Handle specific error cases
+            if "402" in error_str or "quota" in error_str.lower() or "payment" in error_str.lower():
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Kuota token LLM telah habis. Silakan cek akun Hugging Face Anda atau upgrade tier untuk mendapatkan lebih banyak token.',
+                    'error_code': 'QUOTA_EXCEEDED',
+                    'error_details': 'Hugging Face API quota has been exceeded. Please check your account or upgrade your tier.'
+                }), 402
+            elif "429" in error_str or "rate limit" in error_str.lower():
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Terlalu banyak request. Silakan tunggu beberapa saat sebelum mencoba lagi.',
+                    'error_code': 'RATE_LIMIT',
+                    'error_details': 'Rate limit exceeded. Please wait before trying again.'
+                }), 429
+            elif "401" in error_str or "unauthorized" in error_str.lower():
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Token API Hugging Face tidak valid atau tidak dikonfigurasi dengan benar.',
+                    'error_code': 'UNAUTHORIZED',
+                    'error_details': 'Invalid or missing Hugging Face API token.'
+                }), 401
+            else:
+                # Generic error
+                return jsonify({
+                    'status': 'error',
+                    'message': f'Terjadi kesalahan saat memanggil LLM API: {error_str}',
+                    'error_code': 'API_ERROR',
+                    'error_details': error_str
+                }), 500
         print(f"[LLM] Generated text length: {len(generated_text)} characters")
         print(f"[LLM] Generated text preview (first 200 chars): {generated_text[:200]}")
         print(f"[LLM] Generated text preview (last 200 chars): {generated_text[-200:]}")

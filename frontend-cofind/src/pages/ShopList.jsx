@@ -280,6 +280,7 @@ export default function ShopList() {
   };
 
   // Filter coffee shops berdasarkan selected pills (menggunakan reviews)
+  // AND Logic: Coffee shop harus memiliki SEMUA preferensi yang dipilih
   const filterShopsByPills = (shops) => {
     if (selectedPills.length === 0) {
       return shops;
@@ -287,44 +288,46 @@ export default function ShopList() {
 
     const reviewsByPlaceId = localReviewsData?.reviews_by_place_id || {};
     
+    // Mapping sinonim untuk matching yang lebih baik
+    const synonymMap = {
+      'cozy': ['cozy', 'nyaman', 'hangat', 'tenang', 'santai', 'atmosfernya hangat', 'suasananya cozy'],
+      'belajar': ['belajar', 'ruang belajar', 'kerja', 'wfc', 'ngerjain tugas', 'cocok buat belajar', 'enak buat kerja'],
+      'wifi stabil': ['wifi', 'wifi bagus', 'wifi kencang', 'wifi stabil', 'koneksi internet lancar', 'internet kencang'],
+      'stopkontak': ['stopkontak', 'colokan', 'colokan banyak', 'terminal listrik', 'colokan di setiap meja'],
+      'musholla': ['musholla', 'tempat sholat', 'tempat sholat tersedia', 'ada musholla', 'ruang sholat'],
+      'sofa': ['sofa', 'kursi nyaman', 'kursi empuk', 'ruas sofa', 'kursi cukup nyaman'],
+      'dingin': ['dingin', 'ruangan dingin', 'ac', 'sejuk', 'adem', 'ruangan sejuk', 'ruangan adem'],
+      'aesthetic': ['aesthetic', 'estetik', 'kekinian', 'desain', 'dekor', 'instagramable'],
+      'live music': ['live music', 'musik', 'akustik', 'pertunjukan live music', 'musiknya santai', 'musiknya tenang'],
+      'parkiran luas': ['parkir', 'parkiran luas', 'parkir luas', 'parkir mobil nyaman', 'tempat parkir luas'],
+      '24 jam': ['24 jam', 'buka 24 jam', 'buka sampai larut', 'larut malam', 'buka malam', 'buka sampai subuh'],
+    };
+    
     return shops.filter(shop => {
       if (!shop.place_id) return false;
       
       const shopReviews = reviewsByPlaceId[shop.place_id] || [];
       if (shopReviews.length === 0) return false;
       
-      // Cek apakah ada review yang relevan dengan minimal salah satu selected pill
-      const hasRelevantReview = shopReviews.some(review => {
-        const reviewText = (review.text || '').toLowerCase();
-        if (reviewText.length < 20) return false;
+      // Gabungkan semua review text menjadi satu untuk pencarian yang lebih komprehensif
+      const allReviewText = shopReviews
+        .map(review => (review.text || '').toLowerCase())
+        .filter(text => text.length >= 20)
+        .join(' ');
+      
+      if (allReviewText.length === 0) return false;
+      
+      // AND Logic: Cek apakah SEMUA pill yang dipilih terpenuhi
+      // Setiap pill harus ada di review (tidak harus di review yang sama)
+      const allPillsMatched = selectedPills.every(pillValue => {
+        const pillLower = pillValue.toLowerCase();
+        const synonyms = synonymMap[pillLower] || [pillLower];
         
-        // Cek apakah review mengandung minimal salah satu keyword dari selected pills
-        return selectedPills.some(pillValue => {
-          const pillLower = pillValue.toLowerCase();
-          
-          // Mapping sinonim untuk matching yang lebih baik
-          const synonymMap = {
-            'cozy': ['cozy', 'nyaman', 'hangat', 'tenang', 'santai', 'atmosfernya hangat', 'suasananya cozy'],
-            'belajar': ['belajar', 'ruang belajar', 'kerja', 'wfc', 'ngerjain tugas', 'cocok buat belajar', 'enak buat kerja'],
-            'wifi stabil': ['wifi', 'wifi bagus', 'wifi kencang', 'wifi stabil', 'koneksi internet lancar', 'internet kencang'],
-            'stopkontak': ['stopkontak', 'colokan', 'colokan banyak', 'terminal listrik', 'colokan di setiap meja'],
-            'musholla': ['musholla', 'tempat sholat', 'tempat sholat tersedia', 'ada musholla', 'ruang sholat'],
-            'sofa': ['sofa', 'kursi nyaman', 'kursi empuk', 'ruas sofa', 'kursi cukup nyaman'],
-            'dingin': ['dingin', 'ruangan dingin', 'ac', 'sejuk', 'adem', 'ruangan sejuk', 'ruangan adem'],
-            'aesthetic': ['aesthetic', 'estetik', 'kekinian', 'desain', 'dekor', 'instagramable'],
-            'live music': ['live music', 'musik', 'akustik', 'pertunjukan live music', 'musiknya santai', 'musiknya tenang'],
-            'parkiran luas': ['parkir', 'parkiran luas', 'parkir luas', 'parkir mobil nyaman', 'tempat parkir luas'],
-            '24 jam': ['24 jam', 'buka 24 jam', 'buka sampai larut', 'larut malam', 'buka malam', 'buka sampai subuh'],
-          };
-          
-          const synonyms = synonymMap[pillLower] || [pillLower];
-          
-          // Cek apakah review mengandung salah satu sinonim
-          return synonyms.some(synonym => reviewText.includes(synonym));
-        });
+        // Cek apakah salah satu sinonim ada di review text
+        return synonyms.some(synonym => allReviewText.includes(synonym));
       });
       
-      return hasRelevantReview;
+      return allPillsMatched;
     });
   };
 
