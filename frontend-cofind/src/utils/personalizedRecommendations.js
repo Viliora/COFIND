@@ -4,6 +4,7 @@
  */
 
 import localReviewsData from '../data/reviews.json';
+import { filterStopWords, normalizeWord } from './keywordMapping';
 
 /**
  * Ekstrak konteks review (full text) untuk similarity matching
@@ -30,23 +31,18 @@ function extractReviewContext(reviews) {
 function extractImportantKeywords(reviewContext) {
   if (!reviewContext) return new Set();
   
-  // Hapus stop words (kata umum yang tidak penting)
-  const stopWords = new Set([
-    'yang', 'dan', 'atau', 'dari', 'di', 'ke', 'pada', 'untuk', 'dengan', 'adalah',
-    'ini', 'itu', 'saya', 'kamu', 'dia', 'kami', 'kita', 'mereka',
-    'sangat', 'sangat', 'sekali', 'juga', 'sudah', 'belum', 'akan', 'telah',
-    'ada', 'tidak', 'bukan', 'jika', 'karena', 'jadi', 'maka',
-    'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
-    'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should',
-  ]);
-  
-  // Split menjadi words, filter stop words, ambil yang panjangnya >= 3
+  // Split menjadi words, filter stop words, normalisasi, ambil yang panjangnya >= 3
   const words = reviewContext
     .split(/\s+/)
     .map(word => word.replace(/[^\w]/g, '')) // Remove punctuation
-    .filter(word => word.length >= 3 && !stopWords.has(word));
+    .filter(word => word.length >= 3);
   
-  return new Set(words);
+  // Filter stop words dan normalisasi menggunakan utility
+  const filteredWords = filterStopWords(words)
+    .map(word => normalizeWord(word))
+    .filter(word => word.length >= 3);
+  
+  return new Set(filteredWords);
 }
 
 /**
@@ -91,32 +87,30 @@ function calculateContextSimilarity(context1, context2) {
 function extractPhrases(text) {
   if (!text) return [];
   
-  // Hapus stop words dulu
-  const stopWords = new Set([
-    'yang', 'dan', 'atau', 'dari', 'di', 'ke', 'pada', 'untuk', 'dengan', 'adalah',
-    'ini', 'itu', 'saya', 'kamu', 'dia', 'kami', 'kita', 'mereka',
-    'sangat', 'sekali', 'juga', 'sudah', 'belum', 'akan', 'telah',
-    'ada', 'tidak', 'bukan', 'jika', 'karena', 'jadi', 'maka',
-  ]);
-  
+  // Split menjadi words
   const words = text
     .split(/\s+/)
     .map(w => w.replace(/[^\w]/g, '').toLowerCase())
-    .filter(w => w.length >= 3 && !stopWords.has(w));
+    .filter(w => w.length >= 3);
   
-  if (words.length < 2) return [];
+  // Filter stop words dan normalisasi menggunakan utility
+  const filteredWords = filterStopWords(words)
+    .map(word => normalizeWord(word))
+    .filter(word => word.length >= 3);
+  
+  if (filteredWords.length < 2) return [];
   
   const phrases = [];
   
   // 2-word phrases
-  for (let i = 0; i < words.length - 1; i++) {
-    phrases.push(`${words[i]} ${words[i + 1]}`);
+  for (let i = 0; i < filteredWords.length - 1; i++) {
+    phrases.push(`${filteredWords[i]} ${filteredWords[i + 1]}`);
   }
   
   // 3-word phrases (hanya jika ada cukup words)
-  if (words.length >= 3) {
-    for (let i = 0; i < words.length - 2; i++) {
-      phrases.push(`${words[i]} ${words[i + 1]} ${words[i + 2]}`);
+  if (filteredWords.length >= 3) {
+    for (let i = 0; i < filteredWords.length - 2; i++) {
+      phrases.push(`${filteredWords[i]} ${filteredWords[i + 1]} ${filteredWords[i + 2]}`);
     }
   }
   
@@ -199,9 +193,6 @@ export function getPersonalizedRecommendations(favoriteShops, allShops, options 
     lat: favoriteLocations.reduce((sum, loc) => sum + loc.lat, 0) / favoriteLocations.length,
     lng: favoriteLocations.reduce((sum, loc) => sum + loc.lng, 0) / favoriteLocations.length,
   } : null;
-  
-  // Calculate average rating dari favorit
-  const avgFavoriteRating = favoriteShops.reduce((sum, shop) => sum + (shop.rating || 0), 0) / favoriteShops.length;
   
   // Filter dan score semua coffee shops
   const favoritePlaceIds = new Set(favoriteShops.map(f => f.place_id));

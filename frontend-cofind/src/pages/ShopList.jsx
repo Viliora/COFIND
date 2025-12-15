@@ -625,7 +625,7 @@ export default function ShopList() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
                 <span className="text-2xl">🕒</span>
-                Baru Saja Dilihat
+                Just Seen Coffee Shops
               </h2>
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">

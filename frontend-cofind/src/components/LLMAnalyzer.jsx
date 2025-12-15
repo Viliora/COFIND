@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import reviewsData from '../data/reviews.json';
+import { normalizeAndFilterKeywords, expandKeywordWithSynonyms } from '../utils/keywordMapping';
 
 const LLMAnalyzer = () => {
   const [input, setInput] = useState('');
@@ -316,7 +317,7 @@ const LLMAnalyzer = () => {
                   setError(null);
                 }
               }}
-              placeholder="Contoh: 'Saya ingin coffee shop yang cozy dengan wifi kencang dan cocok untuk kerja' atau 'wifi bagus, terminal banyak, cozy'"
+              placeholder="Contoh: 'Saya butuh tempat yang cocok untuk kerja dengan wifi kencang dan colokan banyak'"
               maxLength={100}
               className={`w-full p-4 border rounded-lg bg-white dark:bg-zinc-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none resize-none h-24 sm:h-28 ${
                 input.length >= 100 
@@ -444,11 +445,21 @@ const LLMAnalyzer = () => {
               const shops = parseCoffeeShops(result.analysis);
               
               // Parse kata kunci dari input user untuk filter
+              // Filter stop words dan normalisasi menggunakan utility
               const userInput = result?.input || '';
-              const keywords = userInput
+              const rawKeywords = userInput
                 .split(',')
                 .map(kw => kw.trim().toLowerCase())
                 .filter(kw => kw.length > 0);
+              
+              // Normalisasi dan filter stop words, lalu expand dengan sinonim
+              const keywords = normalizeAndFilterKeywords(rawKeywords);
+              const expandedKeywords = new Set(keywords);
+              keywords.forEach(keyword => {
+                const synonyms = expandKeywordWithSynonyms(keyword);
+                synonyms.forEach(syn => expandedKeywords.add(syn));
+              });
+              const allKeywords = Array.from(expandedKeywords);
               
               // Helper function untuk cek apakah shop memiliki review relevan
               const hasRelevantReview = (shop) => {
@@ -468,8 +479,8 @@ const LLMAnalyzer = () => {
                   
                   // Jika ada keywords, cek apakah review mengandung minimal salah satu keyword
                   // Termasuk expanded keywords (sinonim) untuk matching yang lebih baik
-                  if (keywords.length > 0) {
-                    return keywords.some(keyword => {
+                  if (allKeywords.length > 0) {
+                    return allKeywords.some(keyword => {
                       if (keyword.length >= 3) {
                         const keywordLower = keyword.toLowerCase().trim();
                         // Cek substring match (termasuk untuk multi-word keywords seperti "live music")
@@ -534,11 +545,21 @@ const LLMAnalyzer = () => {
                           const shopReviews = shop.placeId ? reviewsByPlaceId[shop.placeId] : [];
                           
                           // Parse kata kunci dari input user
+                          // Filter stop words dan normalisasi menggunakan utility
                           const userInput = result?.input || '';
-                          const keywords = userInput
+                          const rawKeywords = userInput
                             .split(',')
                             .map(kw => kw.trim().toLowerCase())
                             .filter(kw => kw.length > 0);
+                          
+                          // Normalisasi dan filter stop words, lalu expand dengan sinonim
+                          const keywords = normalizeAndFilterKeywords(rawKeywords);
+                          const expandedKeywords = new Set(keywords);
+                          keywords.forEach(keyword => {
+                            const synonyms = expandKeywordWithSynonyms(keyword);
+                            synonyms.forEach(syn => expandedKeywords.add(syn));
+                          });
+                          const allKeywords = Array.from(expandedKeywords);
                           
                           // Filter review yang sesuai konteks berdasarkan kata kunci
                           // Prioritas 1: Review yang relevan dengan keywords
@@ -550,8 +571,8 @@ const LLMAnalyzer = () => {
                             }
                             
                             // Jika ada kata kunci, cek apakah review mengandung minimal salah satu kata kunci
-                            if (keywords.length > 0) {
-                              return keywords.some(keyword => {
+                            if (allKeywords.length > 0) {
+                              return allKeywords.some(keyword => {
                                 // Cek kata kunci yang panjangnya minimal 3 karakter untuk menghindari false positive
                                 if (keyword.length >= 3) {
                                   return reviewText.includes(keyword);
@@ -700,23 +721,6 @@ const LLMAnalyzer = () => {
           </div>
         )}
 
-        {/* Tips */}
-        <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-          <h4 className="font-semibold text-amber-900 dark:text-amber-300 mb-2 flex items-center gap-2">
-            <span>💡</span>
-            Tips Kata Kunci yang Efektif:
-          </h4>
-          <ul className="text-sm text-amber-800 dark:text-amber-400 space-y-2">
-            <li className="flex items-start gap-2">
-              <span className="mt-0.5">✓</span>
-              <span><strong>Fasilitas:</strong> wifi bagus, terminal banyak, colokan, AC.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-0.5">✓</span>
-              <span><strong>Suasana:</strong> cozy, tenang, ramai.</span>
-            </li>
-          </ul>
-        </div>
       </div>
     </div>
   );

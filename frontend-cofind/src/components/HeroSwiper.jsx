@@ -27,7 +27,7 @@ const HeroSwiper = ({ coffeeShops }) => {
           const scoreB = (b.rating || 0) * 0.6 + ((b.user_ratings_total || 0) / 1000) * 0.4;
           return scoreB - scoreA;
         })
-        .slice(0, 20) // Ambil maksimal 20 coffee shop terbaik
+        .slice(0, 5) // Ambil maksimal 5 coffee shop terbaik untuk hero swiper
         .map((shop) => ({
           ...shop,
           photos: [getCoffeeShopImage(shop.place_id || shop.name)] // Gunakan foto konsisten berdasarkan place_id
@@ -35,8 +35,9 @@ const HeroSwiper = ({ coffeeShops }) => {
 
       setFeaturedShops(shopsWithPhotos);
 
-      // Preload hero images untuk kualitas HD
-      shopsWithPhotos.forEach((shop) => {
+      // Preload semua 5 slide karena jumlahnya sedikit dan semuanya akan ditampilkan
+      const slidesToPreload = 5;
+      shopsWithPhotos.slice(0, slidesToPreload).forEach((shop) => {
         if (shop.photos && shop.photos[0]) {
           const link = document.createElement('link');
           link.rel = 'preload';
@@ -146,13 +147,13 @@ const HeroSwiper = ({ coffeeShops }) => {
       </Swiper>
 
       {/* Custom Styles */}
-      <style jsx>{`
+      <style>{`
         .hero-swiper {
           width: 100%;
         }
 
         /* Optimasi gambar HD untuk hero swiper - mencegah blur */
-        :global(.hero-swiper img) {
+        .hero-swiper img {
           image-rendering: auto;
           -webkit-image-rendering: -webkit-optimize-contrast;
           image-rendering: -webkit-optimize-contrast;
@@ -167,7 +168,7 @@ const HeroSwiper = ({ coffeeShops }) => {
         }
 
         /* Mencegah blur saat scale/hover - gunakan GPU acceleration */
-        :global(.hero-swiper .group:hover img) {
+        .hero-swiper .group:hover img {
           image-rendering: auto;
           -webkit-image-rendering: -webkit-optimize-contrast;
           transform: translateZ(0) scale(1.05);
@@ -175,35 +176,40 @@ const HeroSwiper = ({ coffeeShops }) => {
         }
 
         /* Custom Navigation Buttons */
-        :global(.hero-swiper .swiper-button-next),
-        :global(.hero-swiper .swiper-button-prev) {
+        .hero-swiper .swiper-button-next,
+        .hero-swiper .swiper-button-prev {
           color: white;
-          background: rgba(0, 0, 0, 0.5);
-          backdrop-filter: blur(10px);
+          background: transparent;
+          backdrop-filter: none;
           width: 50px;
           height: 50px;
-          border-radius: 50%;
+          border-radius: 0;
           transition: all 0.3s;
         }
 
-        :global(.hero-swiper .swiper-button-next:hover),
-        :global(.hero-swiper .swiper-button-prev:hover) {
-          background: rgba(0, 0, 0, 0.7);
-          transform: scale(1.1);
+        .hero-swiper .swiper-button-next {
+          right: 4px;
         }
 
-        :global(.hero-swiper .swiper-button-next::after),
-        :global(.hero-swiper .swiper-button-prev::after) {
+        .hero-swiper .swiper-button-next:hover,
+        .hero-swiper .swiper-button-prev:hover {
+          background: transparent;
+          transform: scale(1.1);
+          opacity: 0.8;
+        }
+
+        .hero-swiper .swiper-button-next::after,
+        .hero-swiper .swiper-button-prev::after {
           font-size: 20px;
           font-weight: bold;
         }
 
         /* Custom Pagination */
-        :global(.hero-swiper .swiper-pagination) {
+        .hero-swiper .swiper-pagination {
           bottom: 20px;
         }
 
-        :global(.hero-swiper .swiper-pagination-bullet) {
+        .hero-swiper .swiper-pagination-bullet {
           width: 12px;
           height: 12px;
           background: white;
@@ -211,7 +217,7 @@ const HeroSwiper = ({ coffeeShops }) => {
           transition: all 0.3s;
         }
 
-        :global(.hero-swiper .swiper-pagination-bullet-active) {
+        .hero-swiper .swiper-pagination-bullet-active {
           opacity: 1;
           background: #4F46E5;
           width: 32px;
@@ -220,22 +226,22 @@ const HeroSwiper = ({ coffeeShops }) => {
 
         /* Responsive adjustments */
         @media (max-width: 640px) {
-          :global(.hero-swiper .swiper-button-next),
-          :global(.hero-swiper .swiper-button-prev) {
+          .hero-swiper .swiper-button-next,
+          .hero-swiper .swiper-button-prev {
             width: 40px;
             height: 40px;
           }
 
-          :global(.hero-swiper .swiper-button-next::after),
-          :global(.hero-swiper .swiper-button-prev::after) {
+          .hero-swiper .swiper-button-next::after,
+          .hero-swiper .swiper-button-prev::after {
             font-size: 16px;
           }
         }
 
         /* Hide navigation on very small screens */
         @media (max-width: 480px) {
-          :global(.hero-swiper .swiper-button-next),
-          :global(.hero-swiper .swiper-button-prev) {
+          .hero-swiper .swiper-button-next,
+          .hero-swiper .swiper-button-prev {
             display: none;
           }
         }
