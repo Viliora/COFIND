@@ -244,4 +244,3 @@ export function expandKeywordWithSynonyms(keyword) {
   // Return original + synonyms (unique)
   return [normalized, ...synonyms].filter((v, i, self) => self.indexOf(v) === i);
 }
-
