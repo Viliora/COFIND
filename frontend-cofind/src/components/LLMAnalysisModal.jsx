@@ -6,36 +6,17 @@ const LLMAnalysisModal = ({ isOpen, onClose, shop, buttonRef }) => {
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [progress, setProgress] = useState(0);
-  const [position, setPosition] = useState({ top: 0, left: 0 });
+  const [position, setPosition] = useState({ 
+    top: 0, 
+    left: 0, 
+    viewportTop: 0, 
+    viewportLeft: 0 
+  });
+  const lastShopIdRef = useRef(null); // Track shop ID terakhir untuk reset saat shop berubah
   const progressIntervalRef = useRef(null);
   const bubbleRef = useRef(null);
   
   const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
-
-  // Update position ketika modal dibuka
-  useEffect(() => {
-    if (isOpen && buttonRef?.current) {
-      const buttonRect = buttonRef.current.getBoundingClientRect();
-      setPosition({
-        top: buttonRect.top - 10, // 10px di atas button
-        left: buttonRect.left + buttonRect.width / 2, // Tengah button
-      });
-      fetchLLMAnalysis();
-    } else {
-      // Reset state ketika modal ditutup
-      setAnalysis(null);
-      setError(null);
-      setProgress(0);
-    }
-
-    return () => {
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-        progressIntervalRef.current = null;
-      }
-    };
-  }, [isOpen, shop, buttonRef]);
 
   const fetchLLMAnalysis = async () => {
     if (!shop || !shop.place_id) {
@@ -45,16 +26,6 @@ const LLMAnalysisModal = ({ isOpen, onClose, shop, buttonRef }) => {
 
     setLoading(true);
     setError(null);
-    setProgress(0);
-
-    // Simulasi progress bar
-    const intervalTime = 100;
-    progressIntervalRef.current = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 90) return prev;
-        return prev + Math.random() * 10;
-      });
-    }, intervalTime);
 
     try {
       // Ambil reviews untuk coffee shop ini
@@ -94,27 +65,139 @@ const LLMAnalysisModal = ({ isOpen, onClose, shop, buttonRef }) => {
         }
       }
 
-      // Set progress ke 100% saat selesai
-      setProgress(100);
-      
       setTimeout(() => {
         setAnalysis(data);
         setLoading(false);
-        setProgress(0);
       }, 300);
       
     } catch (err) {
       setError(err.message || 'Gagal menganalisis coffee shop');
       console.error('LLM Analysis Error:', err);
       setLoading(false);
-      setProgress(0);
-    } finally {
+    }
+  };
+
+  // Update position ketika modal dibuka - HANYA SEKALI saat pertama kali dibuka
+  useEffect(() => {
+    if (isOpen && buttonRef?.current) {
+      // Simpan posisi absolut dengan menambahkan scroll offset
+      // Ini memastikan posisi tetap sama meskipun halaman di-scroll
+      const buttonRect = buttonRef.current.getBoundingClientRect();
+      const scrollX = window.scrollX || window.pageXOffset;
+      const scrollY = window.scrollY || window.pageYOffset;
+      
+      // Simpan posisi absolut (relatif terhadap document, bukan viewport)
+      // Dengan fixed positioning, kita perlu menggunakan posisi viewport TAPI
+      // kita akan update posisi ini saat scroll untuk menjaga bubble tetap di tempat yang sama
+      const initialPosition = {
+        top: buttonRect.top + scrollY - 10, // 10px di atas button (absolute position)
+        left: buttonRect.left + scrollX + buttonRect.width / 2, // Tengah button (absolute position)
+        viewportTop: buttonRect.top - 10, // Posisi viewport untuk fixed positioning
+        viewportLeft: buttonRect.left + buttonRect.width / 2,
+      };
+      
+      setPosition(initialPosition);
+      
+      // Fetch analysis setiap kali modal dibuka (jika shop ada)
+      const currentShopId = shop?.place_id;
+      if (currentShopId) {
+        // Reset state sebelum fetch baru
+        if (currentShopId !== lastShopIdRef.current) {
+          setAnalysis(null);
+          setError(null);
+          lastShopIdRef.current = currentShopId;
+        }
+        fetchLLMAnalysis();
+      }
+    } else if (!isOpen) {
+      // Reset state ketika modal ditutup
+      setAnalysis(null);
+      setError(null);
+    }
+
+    return () => {
       if (progressIntervalRef.current) {
         clearInterval(progressIntervalRef.current);
         progressIntervalRef.current = null;
       }
-    }
-  };
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, shop, buttonRef]);
+
+  // State untuk z-index bubble (akan berubah saat melewati navbar)
+  const [bubbleZIndex, setBubbleZIndex] = useState(40); // Default lebih rendah dari navbar
+
+  // Update posisi saat scroll agar bubble tetap di posisi absolut yang sama
+  useEffect(() => {
+    if (!isOpen || !position.top || !position.left) return;
+
+    // Dapatkan tinggi navbar secara dinamis dari DOM
+    const getNavbarHeight = () => {
+      const navbar = document.querySelector('nav');
+      if (navbar) {
+        return navbar.offsetHeight || navbar.getBoundingClientRect().height;
+      }
+      // Fallback: berdasarkan pt-14 sm:pt-16 di App.jsx
+      return window.innerWidth >= 640 ? 64 : 56;
+    };
+
+    const handleScroll = () => {
+      const scrollX = window.scrollX || window.pageXOffset;
+      const scrollY = window.scrollY || window.pageYOffset;
+      
+      // Update posisi viewport berdasarkan posisi absolut dan scroll saat ini
+      // Ini memastikan bubble tetap di posisi absolut yang sama
+      const viewportTop = position.top - scrollY;
+      
+      setPosition(prev => ({
+        ...prev,
+        viewportTop: viewportTop,
+        viewportLeft: prev.left - scrollX,
+      }));
+
+      // Dapatkan tinggi navbar secara dinamis
+      const navbarHeight = getNavbarHeight();
+      
+      // Cek apakah bubble melewati navbar menggunakan posisi aktual dari DOM
+      if (bubbleRef.current) {
+        const bubbleRect = bubbleRef.current.getBoundingClientRect();
+        // Bagian atas bubble (karena transform translate(-50%, -100%), top adalah posisi bawah)
+        // Tapi getBoundingClientRect() memberikan posisi aktual setelah transform
+        const bubbleTopEdge = bubbleRect.top;
+        
+        // Jika bagian atas bubble berada di area navbar atau di atas navbar, set z-index lebih rendah
+        // Tambahkan margin 10px untuk memastikan deteksi lebih akurat
+        if (bubbleTopEdge <= navbarHeight + 10) {
+          // Bubble melewati navbar, set z-index lebih rendah dari navbar (z-50)
+          setBubbleZIndex(40); // Di bawah navbar (z-50)
+        } else {
+          // Bubble tidak melewati navbar, set z-index normal
+          setBubbleZIndex(60); // Di atas konten normal
+        }
+      } else {
+        // Fallback: gunakan perhitungan estimasi jika ref belum tersedia
+        const estimatedBubbleHeight = 150;
+        const bubbleTopEdge = viewportTop - estimatedBubbleHeight;
+        
+        if (bubbleTopEdge <= navbarHeight + 10) {
+          setBubbleZIndex(40);
+        } else {
+          setBubbleZIndex(60);
+        }
+      }
+    };
+
+    // Panggil sekali untuk set initial z-index
+    handleScroll();
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [isOpen, position.top, position.left]);
 
   if (!isOpen) return null;
 
@@ -145,24 +228,28 @@ const LLMAnalysisModal = ({ isOpen, onClose, shop, buttonRef }) => {
 
   return (
     <div 
-      className="fixed inset-0 z-50" 
+      className="fixed inset-0" 
       onClick={handleBackdropClick}
       onMouseDown={(e) => {
         // Prevent all mouse down events from propagating
         e.preventDefault();
         e.stopPropagation();
       }}
-      style={{ pointerEvents: 'auto' }}
+      style={{ 
+        pointerEvents: 'auto',
+        zIndex: bubbleZIndex < 50 ? 30 : 50 // Backdrop juga perlu z-index yang sesuai
+      }}
     >
       <div 
         ref={bubbleRef}
-        className="absolute bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-xs w-full border border-gray-200 dark:border-gray-700 z-[60]"
+        className="fixed bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-xs w-full border border-gray-200 dark:border-gray-700"
         style={{
-          top: `${position.top}px`,
-          left: `${position.left}px`,
+          top: `${position.viewportTop || position.top}px`,
+          left: `${position.viewportLeft || position.left}px`,
           transform: 'translate(-50%, -100%)',
           marginTop: '-8px',
-          pointerEvents: 'auto'
+          pointerEvents: 'auto',
+          zIndex: bubbleZIndex
         }}
         onClick={(e) => {
           e.stopPropagation();

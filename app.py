@@ -501,6 +501,58 @@ def _get_keyword_synonyms(keyword):
     # Jika tidak ada mapping, kembalikan list kosong
     return []
 
+# Daftar keywords yang tidak relevan dengan coffee shop (tidak perlu dianalisis oleh LLM)
+IRRELEVANT_KEYWORDS = [
+    # Hewan yang tidak relevan
+    'dinosaurus', 'dinosaur', 'musang', 'kijang', 'rusa', 'gajah', 'harimau', 'singa', 'beruang',
+    'kucing', 'anjing', 'kelinci', 'tikus', 'burung', 'ikan', 'ular', 'buaya', 'kura-kura',
+    'kuda', 'sapi', 'kerbau', 'ayam', 'bebek', 'angsa', 'merpati', 'elang', 'rajawali',
+    # Benda/objek yang tidak relevan
+    'mobil', 'motor', 'sepeda', 'pesawat', 'kapal', 'kereta', 'truk', 'bus',
+    'gunung', 'laut', 'sungai', 'danau', 'hutan', 'pantai', 'pulau',
+    # Aktivitas yang tidak relevan
+    'berenang', 'mendaki', 'memancing', 'berkebun', 'memasak', 'menjahit',
+    # Objek abstrak yang tidak relevan
+    'planet', 'bintang', 'bulan', 'matahari', 'galaksi', 'nebula',
+    # Kata-kata random lainnya yang jelas tidak relevan
+    'alien', 'robot', 'monster', 'hantu', 'setan', 'jin', 'peri',
+]
+
+def _filter_irrelevant_keywords(keywords):
+    """
+    Filter keywords yang tidak relevan dengan konteks coffee shop.
+    Hanya mengembalikan keywords yang relevan untuk dianalisis oleh LLM.
+    
+    Args:
+        keywords: List of keywords (lowercase)
+    
+    Returns:
+        Tuple: (relevant_keywords, irrelevant_keywords_found)
+    """
+    if not keywords:
+        return [], []
+    
+    relevant_keywords = []
+    irrelevant_found = []
+    
+    for keyword in keywords:
+        keyword_lower = keyword.lower().strip()
+        
+        # Cek apakah keyword mengandung kata yang tidak relevan
+        is_irrelevant = False
+        for irrelevant_kw in IRRELEVANT_KEYWORDS:
+            # Cek exact match atau substring match
+            if irrelevant_kw in keyword_lower or keyword_lower in irrelevant_kw:
+                is_irrelevant = True
+                irrelevant_found.append(keyword)
+                print(f"[KEYWORD FILTER] Filtered irrelevant keyword: '{keyword}' (matched: '{irrelevant_kw}')")
+                break
+        
+        if not is_irrelevant:
+            relevant_keywords.append(keyword)
+    
+    return relevant_keywords, irrelevant_found
+
 def _expand_keywords_with_synonyms(keywords):
     """
     Expand keywords dengan menambahkan sinonim-sinonimnya.
@@ -751,10 +803,49 @@ def llm_analyze():
         # Cek apakah input adalah comma-separated keywords atau natural language
         if ',' in user_text and len(user_text.split(',')) > 1:
             # Format: comma-separated keywords
-            keywords = [kw.strip().lower() for kw in user_text.split(',') if kw.strip()]
+            raw_keywords = [kw.strip().lower() for kw in user_text.split(',') if kw.strip()]
         else:
-            # Format: natural language - akan di-extract nanti, tapi untuk sekarang gunakan user_text sebagai keyword
-            keywords = [user_text.strip().lower()] if user_text.strip() else []
+            # Format: natural language - split menjadi kata-kata untuk filtering
+            # Ambil kata-kata penting dari kalimat (minimal 3 karakter)
+            words = user_text.lower().split()
+            raw_keywords = [w.strip() for w in words if len(w.strip()) >= 3]
+        
+        # Filter keywords yang tidak relevan dengan konteks coffee shop
+        keywords, irrelevant_found = _filter_irrelevant_keywords(raw_keywords)
+        
+        # Jika semua keywords tidak relevan, kembalikan error tanpa mengirim ke LLM
+        if not keywords and raw_keywords:
+            irrelevant_str = ', '.join(irrelevant_found) if irrelevant_found else ', '.join(raw_keywords)
+            return jsonify({
+                'status': 'error',
+                'message': f'Maaf, keywords yang Anda masukkan tidak relevan dengan konteks coffee shop: {irrelevant_str}. Silakan gunakan keywords yang relevan seperti: wifi, cozy, colokan, musholla, live music, dll.'
+            }), 400
+        
+        # Jika ada keywords yang tidak relevan, modifikasi user_text untuk menghilangkannya
+        filtered_user_text = user_text
+        if irrelevant_found:
+            print(f"[LLM] Warning: Filtered {len(irrelevant_found)} irrelevant keywords: {irrelevant_found}")
+            print(f"[LLM] Continuing with {len(keywords)} relevant keywords: {keywords}")
+            
+            # Untuk natural language, hapus keywords yang tidak relevan dari kalimat
+            if ',' not in user_text or len(user_text.split(',')) <= 1:
+                # Natural language: hapus kata-kata yang tidak relevan
+                words = user_text.split()
+                filtered_words = []
+                for word in words:
+                    word_lower = word.lower().strip()
+                    # Cek apakah kata ini adalah keyword yang tidak relevan
+                    is_irrelevant = False
+                    for irrelevant_kw in irrelevant_found:
+                        if irrelevant_kw in word_lower or word_lower in irrelevant_kw:
+                            is_irrelevant = True
+                            break
+                    if not is_irrelevant:
+                        filtered_words.append(word)
+                filtered_user_text = ' '.join(filtered_words).strip()
+            else:
+                # Comma-separated: hanya ambil keywords yang relevan
+                filtered_user_text = ', '.join(keywords)
         
         # Expand keywords dengan sinonim untuk pre-filtering yang lebih baik
         if keywords:
@@ -773,20 +864,39 @@ def llm_analyze():
         print(places_context[:500] if len(places_context) > 500 else places_context)
         print(f"[LLM] Total context length: {len(places_context)} characters")
         
+        # Log informasi tentang apa yang dikirim ke LLM
+        print(f"[LLM] ========== INFORMASI ANALISIS LLM ==========")
+        print(f"[LLM] ✅ Irrelevant keywords SUDAH DIFILTER sebelum dikirim ke LLM")
+        print(f"[LLM] ✅ Irrelevant keywords yang difilter: {irrelevant_found if irrelevant_found else 'Tidak ada'}")
+        print(f"[LLM] ✅ Keywords relevan yang digunakan: {keywords}")
+        print(f"[LLM] ✅ Filtered user text yang dikirim ke LLM: '{filtered_user_text}'")
+        print(f"[LLM] ✅ Expanded keywords untuk pre-filtering: {expanded_keywords_for_filter[:10]}... (total: {len(expanded_keywords_for_filter)})")
+        print(f"[LLM] ============================================")
+        
         # Step 2: Build system prompt dengan context REVIEWS untuk bukti rekomendasi
         system_prompt = f"""Anda adalah asisten rekomendasi coffee shop yang AKURAT dan JUJUR. Anda menggunakan data NYATA dari file JSON lokal dan menganalisis input user menggunakan Natural Language Processing (NLP).
 
 DATA COFFEE SHOP DI {location.upper()} DENGAN INFORMASI LENGKAP:
 {places_context}
 
-🎯 ATURAN UTAMA - NLP ANALYSIS:
+🎯 ATURAN UTAMA - ANALISIS MENDALAM SEBELUM REKOMENDASI:
+⚠️ PENTING: SEBELUM memberikan rekomendasi, WAJIB lakukan analisis mendalam terlebih dahulu untuk mengekstrak HANYA atribut pilihan/kriteria coffee shop yang relevan.
+
 1. Analisis input user menggunakan Natural Language Processing untuk memahami maksud dan preferensi
-2. Input user bisa berupa kalimat natural language (tidak terstruktur) atau kata kunci
-3. Pahami konteks, sinonim, dan makna dari input user (bukan hanya keyword matching)
-4. HANYA rekomendasikan jika ADA review yang relevan dengan maksud/preferensi user
-5. Review harus BENAR-BENAR menyebutkan atau berhubungan erat dengan preferensi yang dimaksud user
-6. Jika tidak ada review yang relevan, JANGAN rekomendasikan - langsung jawab: "Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini."
-7. JANGAN memberikan rekomendasi yang dipaksakan atau diada-adakan
+2. Identifikasi HANYA kata-kata yang berkaitan dengan atribut pilihan/kriteria coffee shop:
+   - Sifat-sifat: nyaman, cozy, tenang, hangat, santai, ramai, sepi, dll
+   - Fasilitas: wifi, colokan, terminal listrik, musholla, printer, scanner, AC, sofa, kursi nyaman, dll
+   - Jam operasional: 24 jam, buka malam, buka sampai larut, dll
+   - Lokasi/parkir: parkir luas, parkir mudah, akses mudah, dll
+   - Suasana/atmosfer: aesthetic, instagramable, live music, akustik, dll
+   - Kebutuhan spesifik: cocok untuk kerja, belajar, meeting, gaming, dll
+3. ABAIKAN semua kata yang TIDAK relevan dengan atribut pilihan/kriteria coffee shop (hewan, benda, aktivitas yang tidak berhubungan, dll)
+4. Input user bisa berupa kalimat natural language (tidak terstruktur) atau kata kunci
+5. Pahami konteks, sinonim, dan makna dari input user (bukan hanya keyword matching)
+6. HANYA rekomendasikan jika ADA review yang relevan dengan atribut pilihan yang sudah diekstrak
+7. Review harus BENAR-BENAR menyebutkan atau berhubungan erat dengan atribut pilihan yang sudah diekstrak
+8. Jika tidak ada review yang relevan, JANGAN rekomendasikan - langsung jawab: "Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini."
+9. JANGAN memberikan rekomendasi yang dipaksakan atau diada-adakan
 
 🚨 WAJIB - REVIEW SEBAGAI BUKTI:
 - SETIAP coffee shop yang direkomendasikan WAJIB disertai dengan review pengunjung yang relevan
@@ -874,18 +984,19 @@ PENTING:
 - Jika coffee shop tidak memiliki review yang relevan dengan kata kunci, JANGAN rekomendasikan"""
 
         # Step 3: Extract keywords dari user input (mendukung natural language dan comma-separated)
-        # Untuk NLP analysis, kita tetap perlu extract keywords untuk pre-filtering, tapi dengan fokus pada understanding
+        # CATATAN: Keywords sudah difilter di Step 1, jadi kita gunakan keywords yang sudah relevan
+        # Untuk task 'analyze', kita tetap perlu extract keywords untuk display, tapi sudah menggunakan filtered_user_text
         # Cek apakah input adalah comma-separated keywords atau natural language
-        if ',' in user_text and len(user_text.split(',')) > 1:
+        if ',' in filtered_user_text and len(filtered_user_text.split(',')) > 1:
             # Format: comma-separated keywords
-            keywords = [kw.strip().lower() for kw in user_text.split(',') if kw.strip()]
+            keywords = [kw.strip().lower() for kw in filtered_user_text.split(',') if kw.strip()]
         else:
             # Format: natural language - extract keywords untuk pre-filtering (LLM akan melakukan deep NLP analysis)
             # Buat prompt untuk ekstraksi keyword dari natural language dengan fokus pada understanding
             extraction_prompt = f"""Anda adalah asisten yang ahli dalam memahami maksud user dari kalimat natural language.
 
 KALIMAT USER:
-"{user_text}"
+"{filtered_user_text}"
 
 Tugas Anda: Pahami maksud dan preferensi user, lalu ekstrak kata kunci penting yang relevan untuk mencari coffee shop.
 
@@ -942,15 +1053,125 @@ Sekarang pahami maksud user dan ekstrak kata kunci dari kalimat di atas:"""
                 else:
                     # Jika hf_client tidak tersedia, gunakan fallback
                     print(f"[LLM] HF client not available, using fallback extraction")
-                    words = user_text.lower().split()
+                    words = filtered_user_text.lower().split()
                     stop_words = {'saya', 'ingin', 'mencari', 'yang', 'untuk', 'dan', 'atau', 'dengan', 'ada', 'adalah', 'ini', 'itu', 'di', 'ke', 'dari', 'pada', 'oleh', 'coffee', 'shop', 'tempat', 'cafe', 'yang', 'dengan', 'untuk'}
                     keywords = [w for w in words if w not in stop_words and len(w) > 2]
             except Exception as e:
                 print(f"[LLM] Error extracting keywords: {e}")
                 # Fallback: split berdasarkan spasi
-                words = user_text.lower().split()
+                words = filtered_user_text.lower().split()
                 stop_words = {'saya', 'ingin', 'mencari', 'yang', 'untuk', 'dan', 'atau', 'dengan', 'ada', 'adalah', 'ini', 'itu', 'di', 'ke', 'dari', 'pada', 'oleh', 'coffee', 'shop', 'tempat', 'cafe', 'yang', 'dengan', 'untuk'}
                 keywords = [w for w in words if w not in stop_words and len(w) > 2]
+        
+        # Validasi: Pastikan keywords yang diekstrak benar-benar relevan dan memiliki instruksi yang jelas
+        # Jika keywords tidak jelas atau hanya deskripsi umum tanpa instruksi spesifik, return pesan tidak ada
+        def _validate_keywords_relevance(keywords_list):
+            """
+            Validasi apakah keywords yang diekstrak benar-benar relevan dan memiliki instruksi yang jelas.
+            Keywords harus berupa atribut pilihan/kriteria coffee shop yang spesifik, bukan hanya deskripsi umum.
+            
+            Returns:
+                Tuple: (is_valid, reason)
+            """
+            if not keywords_list or len(keywords_list) == 0:
+                return False, "Tidak ada keywords yang diekstrak"
+            
+            # Daftar keywords yang valid (atribut pilihan/kriteria coffee shop)
+            valid_keyword_patterns = [
+                # Sifat-sifat/Suasana
+                'nyaman', 'cozy', 'tenang', 'hangat', 'santai', 'ramai', 'sepi', 'asri', 'hijau', 'teduh',
+                # Fasilitas Internet
+                'wifi', 'internet', 'koneksi',
+                # Fasilitas Listrik
+                'colokan', 'terminal', 'stopkontak', 'listrik',
+                # Fasilitas Ibadah
+                'musholla', 'sholat', 'ibadah',
+                # Fasilitas Kerja/Belajar
+                'printer', 'scanner', 'fotocopy', 'meeting', 'kerja', 'belajar',
+                # Fasilitas Tempat Duduk
+                'sofa', 'kursi', 'meja',
+                # Fasilitas Suhu
+                'ac', 'dingin', 'sejuk', 'adem',
+                # Jam Operasional
+                '24 jam', 'buka', 'malam', 'larut', 'subuh',
+                # Lokasi/Parkir
+                'parkir', 'akses',
+                # Suasana/Atmosfer
+                'aesthetic', 'instagramable', 'estetik', 'kekinian', 'desain', 'dekor',
+                # Hiburan
+                'music', 'musik', 'akustik', 'live',
+                # Kebutuhan Spesifik
+                'gaming', 'ngegame', 'game', 'nongkrong', 'wfc', 'tugas'
+            ]
+            
+            # Kata-kata umum yang tidak memiliki instruksi spesifik (hanya deskripsi)
+            general_words = ['coffee', 'shop', 'tempat', 'cafe', 'kopi', 'minum', 'makan', 'enak', 'bagus', 'baik', 'saya', 'ingin', 'mencari', 'yang', 'untuk', 'dan', 'atau', 'dengan', 'ada', 'adalah', 'ini', 'itu', 'di', 'ke', 'dari', 'pada', 'oleh']
+            
+            # Cek apakah minimal salah satu keyword mengandung pattern yang valid
+            has_valid_keyword = False
+            valid_keywords_found = []
+            
+            for kw in keywords_list:
+                kw_lower = kw.lower().strip()
+                
+                # Skip jika keyword hanya berisi kata-kata umum
+                is_general = any(gw in kw_lower for gw in general_words) and len(kw_lower.split()) <= 2
+                if is_general:
+                    continue
+                
+                # Cek apakah keyword mengandung minimal salah satu pattern yang valid
+                for pattern in valid_keyword_patterns:
+                    if pattern in kw_lower or kw_lower in pattern:
+                        has_valid_keyword = True
+                        valid_keywords_found.append(kw)
+                        break
+            
+            if not has_valid_keyword:
+                return False, f"Keywords yang diekstrak tidak relevan dengan atribut pilihan coffee shop atau hanya berisi deskripsi umum: {keywords_list}"
+            
+            # Cek apakah keywords hanya berisi kata-kata umum tanpa instruksi spesifik
+            # Jika semua keywords adalah general words, maka tidak valid
+            all_general = all(any(gw in kw.lower() for gw in general_words) for kw in keywords_list if len(kw) > 0)
+            
+            if all_general and len(keywords_list) > 0:
+                return False, f"Keywords hanya berisi kata-kata umum tanpa instruksi spesifik: {keywords_list}"
+            
+            return True, f"Keywords valid: {valid_keywords_found}"
+        
+        # Validasi keywords sebelum melanjutkan
+        # CATATAN: Validasi ini hanya untuk memastikan keywords tidak kosong setelah filtering
+        # Untuk natural language, LLM akan melakukan analisis mendalam sendiri
+        # Jadi validasi ini tidak boleh terlalu ketat untuk natural language
+        is_keywords_valid = True
+        validation_reason = "Keywords akan dianalisis oleh LLM"
+        
+        # Hanya validasi jika keywords benar-benar kosong atau hanya berisi stop words
+        if not keywords or len(keywords) == 0:
+            is_keywords_valid = False
+            validation_reason = "Tidak ada keywords yang relevan setelah filtering"
+        else:
+            # Untuk natural language, biarkan LLM yang menganalisis
+            # Validasi ketat hanya untuk comma-separated keywords
+            if ',' in filtered_user_text and len(filtered_user_text.split(',')) > 1:
+                # Untuk comma-separated, lakukan validasi lebih ketat
+                is_keywords_valid, validation_reason = _validate_keywords_relevance(keywords)
+        
+        if not is_keywords_valid:
+            print(f"[LLM] ⚠️ Keywords validation failed: {validation_reason}")
+            print(f"[LLM] Keywords extracted: {keywords}")
+            print(f"[LLM] Returning empty result with message: 'tidak ada coffee shop yang sesuai preferensi'")
+            return jsonify({
+                'status': 'success',
+                'task': task,
+                'input': user_text,
+                'extracted_keywords': ', '.join(keywords) if keywords else '',
+                'analysis': 'Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini.',
+                'timestamp': time.time()
+            }), 200
+        
+        print(f"[LLM] ✅ Keywords validation passed: {validation_reason}")
+        print(f"[LLM] Keywords yang akan digunakan: {keywords}")
+        print(f"[LLM] Filtered user text yang dikirim ke LLM: '{filtered_user_text}'")
         
         # Expand keywords dengan sinonim untuk membantu LLM memahami variasi kata
         expanded_keywords = _expand_keywords_with_synonyms(keywords)
@@ -964,7 +1185,7 @@ Sekarang pahami maksud user dan ekstrak kata kunci dari kalimat di atas:"""
         # Step 4: Build user prompt khusus untuk KEYWORD-BASED RECOMMENDATION dengan BOLD
         if task == 'summarize':
             user_content = f"""Kata kunci preferensi user:
-{user_text}
+{filtered_user_text}
 
 🔗 PENTING - SINONIM YANG RELEVAN:
 - Kata kunci "24 jam" = "buka sampai larut" = "larut malam" = "buka malam" = "buka sampai subuh" = "buka tengah malam"
@@ -985,31 +1206,80 @@ Sekarang pahami maksud user dan ekstrak kata kunci dari kalimat di atas:"""
 Cari coffee shop yang reviewnya BENAR-BENAR menyebutkan kata kunci di atas atau sinonimnya. Jika tidak ada yang sesuai, jawab: "🙏 Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini." Jangan tambahkan penjelasan pembuka atau logika rekomendasi."""
         elif task == 'recommend':
             user_content = f"""PREFERENSI SAYA (Natural Language):
-"{user_text}"
+"{filtered_user_text}"
 
-Tugas Anda: 
-1. Analisis preferensi saya menggunakan Natural Language Processing (NLP)
-2. Pahami maksud, konteks, dan preferensi yang saya inginkan (bukan hanya keyword matching)
-3. Identifikasi sinonim dan variasi kata yang relevan dengan preferensi saya
-4. Cari coffee shop yang reviewnya BENAR-BENAR relevan dengan preferensi yang saya maksud
+⚠️ PENTING - ANALISIS MENDALAM SEBELUM REKOMENDASI:
+Sebelum memberikan rekomendasi, WAJIB lakukan analisis mendalam terlebih dahulu untuk mengekstrak HANYA atribut pilihan/kriteria coffee shop yang relevan.
+
+🔍 STEP 1: ANALISIS INPUT USER (WAJIB DILAKUKAN TERLEBIH DAHULU):
+1. Baca dan pahami kalimat user dengan teliti menggunakan Natural Language Processing (NLP)
+2. Identifikasi HANYA kata-kata yang berkaitan dengan:
+   - ✅ Sifat-sifat coffee shop: nyaman, cozy, tenang, hangat, santai, ramai, sepi, dll
+   - ✅ Fasilitas coffee shop: wifi, colokan, terminal listrik, musholla, tempat sholat, printer, scanner, AC, ruangan dingin, sofa, kursi nyaman, dll
+   - ✅ Kebutuhan spesifik: cocok untuk kerja, belajar, meeting, nongkrong, gaming, dll
+   - ✅ Jam operasional: 24 jam, buka malam, buka sampai larut, buka sampai subuh, dll
+   - ✅ Lokasi/parkir: parkir luas, parkir mudah, akses mudah, dll
+   - ✅ Suasana/atmosfer: aesthetic, instagramable, live music, akustik, dll
+3. ABAIKAN semua kata yang TIDAK relevan dengan atribut pilihan/kriteria coffee shop:
+   - ❌ Hewan, benda, atau objek yang tidak berhubungan dengan coffee shop
+   - ❌ Aktivitas yang tidak relevan dengan konteks coffee shop
+   - ❌ Kata-kata umum seperti "saya", "ingin", "mencari", "yang", "untuk", "dan", "atau", dll
+4. Ekstrak HANYA keywords/atribut pilihan yang relevan dengan coffee shop
+5. Identifikasi sinonim dan variasi kata yang relevan dengan atribut pilihan yang diekstrak
+
+📋 CONTOH ANALISIS:
+Input: "Saya butuh coffee shop yang ada dinosaurus, musang, dan kijang"
+Analisis: ❌ TIDAK ADA atribut pilihan yang relevan - semua keywords tidak relevan dengan coffee shop
+Kesimpulan: Tidak ada rekomendasi yang bisa diberikan
+
+Input: "Saya ingin tempat yang nyaman dengan wifi bagus dan parkir luas"
+Analisis: ✅ Atribut pilihan yang relevan: nyaman, wifi bagus, parkir luas
+Kesimpulan: Cari coffee shop dengan review yang menyebutkan nyaman, wifi bagus, atau parkir luas
+
+Input: "Coffee shop yang cozy, ada musholla, dan menyediakan printer"
+Analisis: ✅ Atribut pilihan yang relevan: cozy, musholla, printer
+Kesimpulan: Cari coffee shop dengan review yang menyebutkan cozy, musholla, atau printer
+
+🎯 STEP 2: CARI COFFEE SHOP YANG RELEVAN:
+Setelah analisis selesai dan atribut pilihan sudah diekstrak:
+1. Cari coffee shop yang reviewnya BENAR-BENAR relevan dengan atribut pilihan yang sudah diekstrak
+2. Review harus menyebutkan atau berhubungan erat dengan atribut pilihan yang relevan
+3. HANYA rekomendasikan jika ada review yang relevan dengan atribut pilihan yang sudah diekstrak
+4. Jika tidak ada review yang relevan, LANGSUNG jawab: "Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini."
+
+📝 DAFTAR ATRIBUT PILIHAN/KRITERIA COFFEE SHOP YANG RELEVAN:
+✅ Sifat-sifat/Suasana: nyaman, cozy, tenang, hangat, santai, ramai, sepi, asri, hijau, teduh, dll
+✅ Fasilitas Internet: wifi, wifi bagus, wifi kencang, wifi stabil, koneksi internet lancar, internet cepat, dll
+✅ Fasilitas Listrik: colokan, colokan banyak, terminal listrik, stopkontak, stopkontak banyak, colokan di setiap meja, dll
+✅ Fasilitas Ibadah: musholla, tempat sholat, tempat sholat tersedia, ada musholla, dll
+✅ Fasilitas Kerja/Belajar: printer, scanner, fotocopy, ruang meeting, ruang kerja, ruang belajar, dll
+✅ Fasilitas Tempat Duduk: sofa, kursi nyaman, kursi empuk, ruas sofa, meja besar, meja kecil, dll
+✅ Fasilitas Suhu: AC, ruangan dingin, sejuk, adem, ruangan sejuk, dll
+✅ Jam Operasional: 24 jam, buka malam, buka sampai larut, buka sampai subuh, buka tengah malam, dll
+✅ Lokasi/Parkir: parkir luas, parkir mudah, parkir mobil nyaman, akses mudah, dll
+✅ Suasana/Atmosfer: aesthetic, instagramable, estetik, kekinian, desain bagus, dekor bagus, dll
+✅ Hiburan: live music, musik, akustik, pertunjukan live music, dll
+✅ Kebutuhan Spesifik: cocok untuk kerja, belajar, meeting, nongkrong, gaming, ngegame, dll
 
 ⚠️ ATURAN KETAT - WAJIB DIIKUTI (TIDAK BOLEH DILANGGAR):
-1. Gunakan NLP untuk memahami maksud user dari input natural language
-2. Identifikasi preferensi inti dari kalimat user (fasilitas, suasana, kebutuhan, dll)
-3. HANYA rekomendasikan jika ada review yang BENAR-BENAR relevan dengan preferensi yang dimaksud user
-4. Review harus RELEVAN secara semantik - bukan sekedar review positif biasa
-5. Pahami sinonim dan variasi kata yang relevan (contoh: "wifi bagus" = "wifi kencang" = "internet lancar")
-6. JANGAN rekomendasikan coffee shop jika tidak ada review yang relevan dengan preferensi user
-7. Jika tidak ada review yang relevan, LANGSUNG jawab: "Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini."
-8. JANGAN memberikan rekomendasi yang dipaksakan
-9. JANGAN tambahkan penjelasan pembuka seperti "Berdasarkan preferensi Anda..."
-10. JANGAN tambahkan section "LOGIKA REKOMENDASI"
-11. ⚠️ PENTING: Jika coffee shop tidak memiliki review yang relevan, JANGAN rekomendasikan coffee shop tersebut, meskipun ratingnya tinggi atau populer
-12. ⚠️ PENTING - JUMLAH REKOMENDASI: Jika ada BANYAK coffee shop dengan review yang relevan, output SEMUA yang relevan (maksimal 3 terbaik berdasarkan rating). JANGAN hanya output 1 jika ada lebih banyak yang relevan!
-13. ⚠️ CONTOH NLP: 
-    - User: "Saya ingin tempat yang buka sampai larut" → Pahami: user butuh tempat dengan jam operasional panjang (24 jam, buka malam, buka sampai subuh, dll)
-    - User: "Tempat yang cocok untuk kerja" → Pahami: user butuh tempat dengan wifi, colokan, suasana tenang, cocok untuk belajar/kerja
-    - User: "Coffee shop yang cozy dan ada musholla" → Pahami: user butuh tempat nyaman dengan fasilitas musholla/tempat sholat
+1. WAJIB lakukan analisis mendalam terlebih dahulu (Step 1) sebelum memberikan rekomendasi (Step 2)
+2. HANYA ekstrak atribut pilihan/kriteria yang relevan dengan coffee shop (lihat daftar di atas)
+3. ABAIKAN semua kata yang TIDAK ada dalam daftar atribut pilihan yang relevan
+4. HANYA rekomendasikan jika ada review yang BENAR-BENAR relevan dengan atribut pilihan yang sudah diekstrak
+5. Review harus RELEVAN secara semantik - bukan sekedar review positif biasa
+6. Pahami sinonim dan variasi kata yang relevan (contoh: "wifi bagus" = "wifi kencang" = "internet lancar")
+7. JANGAN rekomendasikan coffee shop jika tidak ada review yang relevan dengan atribut pilihan yang sudah diekstrak
+8. Jika tidak ada review yang relevan, LANGSUNG jawab: "Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini."
+9. JANGAN memberikan rekomendasi yang dipaksakan
+10. JANGAN tambahkan penjelasan pembuka seperti "Berdasarkan preferensi Anda..."
+11. JANGAN tambahkan section "LOGIKA REKOMENDASI"
+12. ⚠️ PENTING: Jika coffee shop tidak memiliki review yang relevan, JANGAN rekomendasikan coffee shop tersebut, meskipun ratingnya tinggi atau populer
+13. ⚠️ PENTING - JUMLAH REKOMENDASI: Jika ada BANYAK coffee shop dengan review yang relevan, output SEMUA yang relevan (maksimal 3 terbaik berdasarkan rating). JANGAN hanya output 1 jika ada lebih banyak yang relevan!
+14. ⚠️ CONTOH ANALISIS NLP: 
+    - User: "Saya ingin tempat yang buka sampai larut" → Analisis: atribut pilihan = jam operasional (24 jam, buka malam, buka sampai subuh)
+    - User: "Tempat yang cocok untuk kerja" → Analisis: atribut pilihan = kebutuhan spesifik (kerja) → butuh wifi, colokan, suasana tenang
+    - User: "Coffee shop yang cozy dan ada musholla" → Analisis: atribut pilihan = sifat-sifat (cozy) + fasilitas ibadah (musholla)
+    - User: "Saya butuh coffee shop yang ada dinosaurus, musang, dan kijang" → Analisis: TIDAK ADA atribut pilihan yang relevan → Tidak ada rekomendasi
 
 🚨 WAJIB - SETIAP REKOMENDASI HARUS DISERTAI REVIEW:
 - Setiap coffee shop yang direkomendasikan WAJIB memiliki baris "Berdasarkan Ulasan Pengunjung"
@@ -1123,7 +1393,12 @@ Google Maps: https://...
 MULAI OUTPUT SEKARANG (langsung tulis tanpa penjelasan):"""
         else:  # analyze (default)
             user_content = f"""PREFERENSI SAYA (Natural Language):
-"{user_text}"
+"{filtered_user_text}"
+
+⚠️ PENTING - FILTER KEYWORDS TIDAK RELEVAN:
+- Hanya analisis keywords yang relevan dengan konteks coffee shop (fasilitas, suasana, kebutuhan)
+- Abaikan keywords yang tidak relevan seperti hewan, benda, atau aktivitas yang tidak berhubungan dengan coffee shop
+- Fokus pada atribut pilihan yang relevan: wifi, cozy, colokan, musholla, live music, parkir, 24 jam, dll
 
 Tugas Anda:
 1. Analisis preferensi saya menggunakan Natural Language Processing (NLP)
