@@ -3,6 +3,7 @@ from flask_cors import CORS
 import requests
 import os
 import json
+import re  # Untuk regex operations
 from dotenv import load_dotenv
 import time  # Tambahkan untuk penundaan
 from datetime import datetime, timedelta
@@ -15,9 +16,6 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)  # Enable CORS
 
-# Configure Google Places API (prefer using .env for key)
-GOOGLE_PLACES_API_KEY = os.getenv('GOOGLE_PLACES_API_KEY') or 'YOUR_API_KEY'
-
 # Configure Hugging Face Inference API (gunakan env, jangan hardcode token)
 HF_API_TOKEN = os.getenv('HF_API_TOKEN')  # Pastikan diset di environment (.env)
 HF_MODEL = os.getenv('HF_MODEL', "meta-llama/Llama-3.1-8B-Instruct")  # default model
@@ -28,8 +26,6 @@ if HF_API_TOKEN:
     hf_client = InferenceClient(api_key=HF_API_TOKEN)
 else:
     print("[WARNING] HF_API_TOKEN tidak diset. Endpoint LLM akan nonaktif.")
-
-print(f"Using API Key: {GOOGLE_PLACES_API_KEY}")
 
 # ============================================================================
 # CACHING SYSTEM DISABLED - Using direct API calls
@@ -54,65 +50,6 @@ def test_api():
     })
 
 # Cache endpoints removed - caching disabled
-
-# DEBUG Endpoint untuk melihat raw pagination response
-@app.route('/api/debug/pagination', methods=['GET'])
-def debug_pagination():
-    """Debug endpoint untuk melihat bagaimana pagination bekerja"""
-    try:
-        lat = request.args.get('lat', type=float, default=-0.026330)
-        lng = request.args.get('lng', type=float, default=109.342506)
-        
-        base_url = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json'
-        params = {
-            'location': f"{lat},{lng}",
-            'radius': '5000',
-            'type': 'cafe',
-            'keyword': 'coffee',
-            'key': GOOGLE_PLACES_API_KEY
-        }
-        
-        all_pages = []
-        page_number = 1
-        
-        while page_number <= 3:  # Max 3 pages
-            print(f"[DEBUG PAGINATION] Fetching page {page_number}")
-            response = requests.get(base_url, params=params)
-            data = response.json()
-            
-            page_info = {
-                'page_number': page_number,
-                'status': data.get('status'),
-                'results_count': len(data.get('results', [])),
-                'has_next_page': 'next_page_token' in data,
-                'next_page_token': data.get('next_page_token', None),
-                'shop_names': [r.get('name') for r in data.get('results', [])]
-            }
-            
-            all_pages.append(page_info)
-            
-            # Check for next page
-            next_page_token = data.get('next_page_token')
-            if next_page_token and page_number < 3:
-                time.sleep(2)
-                params['pagetoken'] = next_page_token
-                page_number += 1
-            else:
-                break
-        
-        return jsonify({
-            'status': 'success',
-            'total_pages': len(all_pages),
-            'total_shops': sum(p['results_count'] for p in all_pages),
-            'pages': all_pages
-        })
-    except Exception as e:
-        import traceback
-        return jsonify({
-            'status': 'error',
-            'message': str(e),
-            'traceback': traceback.format_exc()
-        }), 500
 
 # DEBUG Endpoint untuk melihat raw review context
 @app.route('/api/debug/reviews-context', methods=['GET'])
@@ -140,224 +77,6 @@ def debug_reviews_context():
             'message': str(e),
             'traceback': traceback.format_exc()
         }), 500
-
-# Endpoint untuk mencari coffee shop menggunakan Google Places API
-# Endpoint untuk mencari coffee shop menggunakan Google Places API
-@app.route('/api/search/coffeeshops', methods=['GET'])
-def search_coffeeshops():
-    try:
-        # Baca query params: support `lat`+`lng` (nearbysearch) atau `location` string (textsearch)
-        lat = request.args.get('lat', type=float)
-        lng = request.args.get('lng', type=float)
-        location_str = request.args.get('location')  # e.g. 'Pontianak' or an address
-        radius = request.args.get('radius', default='5000')
-        keyword = request.args.get('keyword', default='coffee')
-        
-        # Pilih endpoint berdasarkan input
-        if lat is not None and lng is not None:
-            # Nearby Search (menggunakan koordinat)
-            base_url = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json'
-            params = {
-                'location': f"{lat},{lng}",
-                'radius': radius,
-                'type': 'cafe',
-                'keyword': keyword,
-                'key': GOOGLE_PLACES_API_KEY
-            }
-        elif location_str:
-            # Text Search (gunakan nama lokasi / kota)
-            base_url = 'https://maps.googleapis.com/maps/api/place/textsearch/json'
-            params = {
-                'query': f"{keyword} in {location_str}",
-                'key': GOOGLE_PLACES_API_KEY
-            }
-        else:
-            # Default ke koordinat pusat Pontianak jika tidak ada param
-            lat = 0.0263303
-            lng = 109.3425039
-            base_url = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json'
-            params = {
-                'location': f"{lat},{lng}",
-                'radius': radius,
-                'type': 'cafe',
-                'keyword': keyword,
-                'key': GOOGLE_PLACES_API_KEY
-            }
-
-        coffee_shops = []  # Data coffee shop yang akan dikirim ke frontend
-        page_number = 1
-        while True:
-            print(f"\n[PAGE {page_number}] Making request to Google Places API: {base_url}")
-            print(f"[PAGE {page_number}] Params: {params}")
-            response = requests.get(base_url, params=params)
-            data = response.json()
-
-            print(f"[PAGE {page_number}] Response status: {data.get('status')}, error_message: {data.get('error_message')}")
-
-            if data.get('status') == 'OK':
-                results = data.get('results', [])
-                print(f"[PAGE {page_number}] Found {len(results)} coffee shops")
-                for place in results:
-                    coffee_shop = {
-                        'place_id': place.get('place_id'),
-                        'name': place.get('name'),
-                        'address': place.get('vicinity') or place.get('formatted_address'),
-                        'rating': place.get('rating'),
-                        'user_ratings_total': place.get('user_ratings_total'),
-                        'location': place.get('geometry', {}).get('location'),
-                        'business_status': place.get('business_status'),
-                        'price_level': place.get('price_level'),
-                        'photos': []  # Start with empty list for photos
-                    }
-
-                    # Cek apakah ada foto dan ambil foto URL (HANYA 1 FOTO untuk optimasi)
-                    if 'photos' in place and len(place['photos']) > 0:
-                        # Ambil hanya foto pertama untuk menghindari socket exhaustion
-                        photo = place['photos'][0]
-                        photo_reference = photo.get('photo_reference')
-                        if photo_reference:
-                            try:
-                                # Ambil URL foto dengan HD quality (1200px) untuk hero swiper
-                                photo_url = get_place_photo(photo_reference, maxwidth=1200)
-                                if photo_url:
-                                    coffee_shop['photos'].append(photo_url)
-                            except Exception as photo_error:
-                                # Jika gagal ambil foto, skip saja (tidak critical)
-                                print(f"[WARNING] Failed to fetch photo for {coffee_shop['name']}: {photo_error}")
-                                pass
-
-                    coffee_shops.append(coffee_shop)
-
-                # Cek apakah ada halaman berikutnya
-                next_page_token = data.get('next_page_token')
-                if next_page_token:
-                    print(f"[PAGE {page_number}] Next page token found: {next_page_token[:20]}...")
-                    print(f"[PAGE {page_number}] Total coffee shops so far: {len(coffee_shops)}")
-                    # Menambahkan penundaan sebelum mengambil halaman berikutnya
-                    time.sleep(2)  # Delay untuk memastikan next_page_token valid
-                    params['pagetoken'] = next_page_token  # Gunakan token untuk halaman berikutnya
-                    page_number += 1
-                else:
-                    print(f"[PAGE {page_number}] No more pages. Total coffee shops: {len(coffee_shops)}")
-                    break  # Jika tidak ada halaman berikutnya, hentikan pengulangan
-            else:
-                error_message = f"Google Places API error: {data.get('status')} - {data.get('error_message', 'Unknown error')}"
-                print(error_message)
-                return jsonify({'status': 'error', 'message': error_message}), 400
-
-        return jsonify({'status': 'success', 'data': coffee_shops})
-
-    except Exception as e:
-        error_message = f"Error: {str(e)}"
-        print(error_message)
-        return jsonify({'status': 'error', 'message': error_message}), 500
-
-
-# Flask - Endpoint untuk mengambil detail tempat berdasarkan place_id
-@app.route('/api/coffeeshops/detail/<place_id>', methods=['GET'])
-def get_coffee_shop_detail(place_id):
-    try:
-        # Memanggil fungsi untuk mengambil detail berdasarkan place_id
-        coffee_shop_details = get_place_details(place_id)  # Fungsi ini memanggil Places Details API
-        if coffee_shop_details.get('status') == 'success':
-            return jsonify(coffee_shop_details)
-        else:
-            return jsonify({'status': 'error', 'message': 'Coffee shop details not found'}), 404
-    except Exception as e:
-        error_message = f"Error: {str(e)}"
-        print(error_message)
-        return jsonify({'status': 'error', 'message': error_message}), 500
-def get_place_details(place_id):
-    try:
-        base_url = "https://maps.googleapis.com/maps/api/place/details/json"
-        
-        # Menggunakan place_id untuk mendapatkan detail tempat
-        params = {
-            'place_id': place_id,
-            'fields': 'place_id,name,rating,formatted_phone_number,formatted_address,geometry,photos,reviews,opening_hours,price_level,website,user_ratings_total,business_status',
-            'language': 'id',  # tampilkan data dalam Bahasa Indonesia jika tersedia
-            'reviews_sort': 'newest',  # urutkan ulasan dari yang terbaru (jika tersedia)
-            'key': GOOGLE_PLACES_API_KEY
-        }
-
-        print(f"[DETAIL] Making request to Places Details API for place_id: {place_id}")
-        response = requests.get(base_url, params=params)
-        data = response.json()
-
-        if data.get('status') == 'OK':
-            result = data.get('result', {})
-            
-            # PENTING: Konversi photo_reference menjadi URL foto
-            photo_urls = []
-            if 'photos' in result and len(result['photos']) > 0:
-                print(f"[DETAIL] Found {len(result['photos'])} photos, converting to URLs...")
-                # Ambil hingga 5 foto pertama dengan HD quality
-                for photo in result['photos'][:5]:
-                    photo_reference = photo.get('photo_reference')
-                    if photo_reference:
-                        try:
-                            # HD quality (1200px) untuk detail page
-                            photo_url = get_place_photo(photo_reference, maxwidth=1200)
-                            if photo_url:
-                                photo_urls.append(photo_url)
-                                print(f"[DETAIL] Photo URL added (HD): {photo_url[:50]}...")
-                        except Exception as photo_error:
-                            print(f"[WARNING] Failed to fetch photo: {photo_error}")
-                            pass
-            
-            # Replace photos dengan URL yang sudah dikonversi
-            result['photos'] = photo_urls
-            print(f"[DETAIL] Total photos converted: {len(photo_urls)}")
-            
-            return {
-                'status': 'success',
-                'data': result
-            }
-        else:
-            return {
-                'status': 'error',
-                'message': f"Google Places API error: {data.get('status')}"
-            }
-    except Exception as e:
-        error_message = f"Error: {str(e)}"
-        print(error_message)
-        return {
-            'status': 'error',
-            'message': error_message
-        }
-
-# Session untuk reuse connections (menghindari socket exhaustion)
-photo_session = requests.Session()
-
-# Fungsi untuk mendapatkan foto tempat dari Google Places API
-def get_place_photo(photo_reference, maxwidth=1200):
-    """
-    Get photo URL from Google Places API
-    
-    Args:
-        photo_reference: Photo reference dari Places API
-        maxwidth: Maximum width untuk foto (default 1200 untuk HD quality)
-                  Options: 400 (low), 800 (medium), 1200 (high), 1600 (very high)
-    
-    Returns:
-        URL foto atau None jika gagal
-    """
-    base_url = "https://maps.googleapis.com/maps/api/place/photo"
-    params = {
-        'maxwidth': maxwidth,  # HD quality untuk hero images
-        'photo_reference': photo_reference,
-        'key': GOOGLE_PLACES_API_KEY
-    }
-    try:
-        # Gunakan session untuk reuse connection
-        response = photo_session.get(base_url, params=params, timeout=10)
-        if response.status_code == 200:
-            return response.url  # Kembalikan URL foto
-        else:
-            return None  # Jika gagal, kembalikan None
-    except Exception as e:
-        print(f"[WARNING] Photo fetch error: {e}")
-        return None
 
 # Helper function untuk mapping sinonim keyword (untuk logika relevansi LLM)
 def _get_keyword_synonyms(keyword):
@@ -644,17 +363,36 @@ def _fetch_coffeeshops_with_reviews_from_json(location_str, max_shops=15, keywor
                 shop_reviews = reviews_by_place_id.get(place_id, [])
                 
                 # Cek apakah ada review yang relevan dengan keywords
+                # PENTING: Untuk keyword spesifik seperti musholla, WAJIB ada di review
                 has_relevant_review = False
                 for review in shop_reviews:
                     review_text = (review.get('text', '') or '').strip().lower()
                     if review_text and len(review_text) > 20:
                         # Cek apakah review mengandung minimal salah satu keyword
+                        # Untuk keyword spesifik (musholla, tempat sholat, dll), harus exact match atau sinonim
                         for kw in keywords:
                             kw_lower = kw.lower().strip()
-                            if len(kw_lower) >= 3 and kw_lower in review_text:
-                                has_relevant_review = True
-                                print(f"[JSON+REVIEWS] ✅ Found relevant shop: {shop.get('name', 'Unknown')} (keyword: '{kw}')")
-                                break
+                            if len(kw_lower) >= 3:
+                                # Cek exact match atau substring match
+                                if kw_lower in review_text:
+                                    has_relevant_review = True
+                                    print(f"[JSON+REVIEWS] ✅ Found relevant shop: {shop.get('name', 'Unknown')} (keyword: '{kw}')")
+                                    break
+                                # Cek sinonim untuk keyword spesifik
+                                elif kw_lower in ['musholla', 'mushola', 'tempat sholat', 'ruang sholat', 'tempat ibadah']:
+                                    # Cek sinonim musholla (termasuk variasi dengan "ada", "lokasi", dll)
+                                    musholla_synonyms = ['musholla', 'mushola', 'tempat sholat', 'tempat sholat tersedia', 'ada musholla', 'ruang sholat', 'tempat ibadah', 'lokasi musholla', 'musholla yang', 'musholla nyaman']
+                                    if any(syn in review_text for syn in musholla_synonyms):
+                                        has_relevant_review = True
+                                        print(f"[JSON+REVIEWS] ✅ Found relevant shop: {shop.get('name', 'Unknown')} (keyword: '{kw}' via synonym)")
+                                        break
+                                # Cek jika keyword adalah bagian dari frasa yang lebih panjang (misal: "ada musholla" dalam review)
+                                elif 'musholla' in kw_lower or 'mushola' in kw_lower:
+                                    # Jika keyword mengandung "musholla", cek apakah review mengandung "musholla" atau variasi
+                                    if 'musholla' in review_text or 'mushola' in review_text or 'tempat sholat' in review_text:
+                                        has_relevant_review = True
+                                        print(f"[JSON+REVIEWS] ✅ Found relevant shop: {shop.get('name', 'Unknown')} (keyword: '{kw}' contains musholla)")
+                                        break
                         if has_relevant_review:
                             break
                 
@@ -753,7 +491,13 @@ def _fetch_coffeeshops_with_reviews_from_json(location_str, max_shops=15, keywor
         
         context = "\n".join(context_lines)
         
-        print(f"[JSON+REVIEWS] Context prepared: {len(coffee_shops)} shops with reviews, {len(context)} characters")
+        # Hitung total reviews yang digunakan
+        total_reviews = sum(len(reviews_by_place_id.get(shop.get('place_id', ''), [])) for shop in coffee_shops)
+        
+        print(f"[JSON+REVIEWS] Context prepared: {len(coffee_shops)} shops with reviews, {total_reviews} total reviews, {len(context)} characters")
+        print(f"[JSON+REVIEWS] 📊 SUMMARY: {len(coffee_shops)} coffee shops akan dianalisis oleh LLM")
+        if keywords and len(keywords) > 0:
+            print(f"[JSON+REVIEWS] 📊 Pre-filtered: {len(relevant_shops_sorted)} relevant shops + {len(other_shops_sorted[:other_count])} top-rated shops")
         return context
         
     except Exception as e:
@@ -799,53 +543,154 @@ def llm_analyze():
                 'message': 'Text cannot be empty'
             }), 400
         
-        # Step 1: Extract keywords SEBELUM fetch coffee shops (untuk pre-filtering)
-        # Cek apakah input adalah comma-separated keywords atau natural language
-        if ',' in user_text and len(user_text.split(',')) > 1:
-            # Format: comma-separated keywords
-            raw_keywords = [kw.strip().lower() for kw in user_text.split(',') if kw.strip()]
-        else:
-            # Format: natural language - split menjadi kata-kata untuk filtering
-            # Ambil kata-kata penting dari kalimat (minimal 3 karakter)
+        # Step 1: Ekstraksi keywords dari user input berdasarkan review data
+        # Langkah ini akan menganalisis review data untuk mengekstrak keywords yang relevan
+        print(f"[LLM] Step 1: Extracting keywords from user input based on review data...")
+        
+        # Baca reviews.json untuk context ekstraksi keywords
+        reviews_json_path = os.path.join('frontend-cofind', 'src', 'data', 'reviews.json')
+        reviews_data = {}
+        reviews_context_for_extraction = ""
+        
+        if os.path.exists(reviews_json_path):
+            with open(reviews_json_path, 'r', encoding='utf-8') as f:
+                reviews_data = json.load(f)
+            
+            # Ambil sample reviews untuk context ekstraksi (maksimal 20 review dari berbagai coffee shop)
+            reviews_by_place_id = reviews_data.get('reviews_by_place_id', {})
+            sample_reviews = []
+            for place_id, reviews in list(reviews_by_place_id.items())[:5]:  # Ambil 5 coffee shop pertama
+                sample_reviews.extend(reviews[:4])  # 4 review per coffee shop
+                if len(sample_reviews) >= 20:
+                    break
+            
+            # Buat context untuk ekstraksi keywords
+            reviews_context_for_extraction = "\n".join([
+                f"- {review.get('text', '')}" for review in sample_reviews[:20]
+            ])
+        
+        # Buat prompt untuk ekstraksi keywords berdasarkan review data
+        extraction_prompt = f"""Anda adalah asisten yang ahli dalam menganalisis preferensi user berdasarkan review coffee shop yang tersedia.
+
+REVIEW DATA YANG TERSEDIA (contoh dari berbagai coffee shop):
+{reviews_context_for_extraction[:2000]}
+
+INPUT USER:
+"{user_text}"
+
+Tugas Anda: 
+1. Analisis input user dan identifikasi keywords yang relevan dengan atribut coffee shop (fasilitas, suasana, kebutuhan spesifik)
+2. Cek apakah keywords tersebut ada di review data yang tersedia atau relevan dengan atribut coffee shop yang umum
+3. Hanya ekstrak keywords yang BENAR-BENAR relevan dengan atribut coffee shop yang ada di review data
+4. Abaikan kata-kata yang tidak relevan atau tidak ada di review data (seperti hewan, benda, aktivitas yang tidak berhubungan)
+
+ATURAN:
+- Keywords harus relevan dengan atribut coffee shop yang ada di review data: wifi, wifi bagus, wifi kencang, colokan, colokan banyak, cozy, nyaman, tenang, hangat, musholla, parkir, parkir luas, 24 jam, buka malam, aesthetic, live music, ac, dingin, sejuk, sofa, kursi, belajar, kerja, gaming, ngegame, dll
+- Abaikan kata-kata umum: "saya", "ingin", "mencari", "yang", "untuk", "dan", "atau", "dengan", "ada", "adalah", "ini", "itu", "di", "ke", "dari", "pada", "oleh", "coffee", "shop", "tempat", "cafe"
+- Abaikan kata-kata yang tidak relevan dengan coffee shop: hewan (dinosaurus, musang, kijang, dll), benda yang tidak berhubungan, aktivitas yang tidak relevan
+- Output HANYA keywords yang dipisah koma, tanpa penjelasan
+- Gunakan bahasa Indonesia
+- Maksimal 10 keywords
+- Jika tidak ada keywords yang relevan, output: "TIDAK_ADA_KEYWORDS"
+
+CONTOH:
+Input: "Saya ingin coffee shop yang cozy untuk nugas dengan wifi yang bagus dan banyak colokan"
+Output: cozy, wifi bagus, colokan banyak, belajar
+
+Input: "Tempat yang nyaman dengan musholla dan parkir luas"
+Output: nyaman, musholla, parkir luas
+
+Input: "Coffee shop aesthetic dengan live music dan ruangan dingin"
+Output: aesthetic, live music, ruangan dingin
+
+Input: "Saya butuh tempat yang ada dinosaurus dan musang"
+Output: TIDAK_ADA_KEYWORDS
+
+Sekarang analisis input user dan ekstrak keywords yang relevan:"""
+
+        # Ekstraksi keywords menggunakan LLM
+        extracted_keywords_text = ""
+        try:
+            if hf_client:
+                extraction_response = hf_client.text_generation(
+                    extraction_prompt,
+                    max_new_tokens=100,
+                    temperature=0.3,
+                    return_full_text=False
+                )
+                extracted_keywords_text = extraction_response.strip()
+                # Bersihkan dari format markdown atau karakter aneh
+                extracted_keywords_text = extracted_keywords_text.replace('**', '').replace('*', '').replace('"', '').replace("'", '').strip()
+                print(f"[LLM] Extracted keywords text: {extracted_keywords_text}")
+            else:
+                # Fallback: gunakan metode sederhana
+                words = user_text.lower().split()
+                stop_words = {'saya', 'ingin', 'mencari', 'yang', 'untuk', 'dan', 'atau', 'dengan', 'ada', 'adalah', 'ini', 'itu', 'di', 'ke', 'dari', 'pada', 'oleh', 'coffee', 'shop', 'tempat', 'cafe'}
+                extracted_keywords_text = ', '.join([w for w in words if w not in stop_words and len(w) > 2])
+        except Exception as e:
+            print(f"[LLM] Error extracting keywords: {e}")
+            # Fallback: gunakan metode sederhana
             words = user_text.lower().split()
-            raw_keywords = [w.strip() for w in words if len(w.strip()) >= 3]
+            stop_words = {'saya', 'ingin', 'mencari', 'yang', 'untuk', 'dan', 'atau', 'dengan', 'ada', 'adalah', 'ini', 'itu', 'di', 'ke', 'dari', 'pada', 'oleh', 'coffee', 'shop', 'tempat', 'cafe'}
+            extracted_keywords_text = ', '.join([w for w in words if w not in stop_words and len(w) > 2])
+        
+        # Parse keywords dari hasil ekstraksi
+        if extracted_keywords_text.upper() == "TIDAK_ADA_KEYWORDS" or not extracted_keywords_text:
+            print(f"[LLM] ⚠️ Tidak ada keywords yang relevan ditemukan")
+            return jsonify({
+                'status': 'success',
+                'task': task,
+                'input': user_text,
+                'extracted_keywords': '',
+                'preferences_ai': 'Tidak ada keywords yang relevan dengan preferensi coffee shop',
+                'analysis': 'Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini.',
+                'timestamp': time.time()
+            }), 200
+        
+        # Parse keywords dari hasil ekstraksi
+        keywords = [kw.strip().lower() for kw in extracted_keywords_text.split(',') if kw.strip()]
         
         # Filter keywords yang tidak relevan dengan konteks coffee shop
-        keywords, irrelevant_found = _filter_irrelevant_keywords(raw_keywords)
+        keywords, irrelevant_found = _filter_irrelevant_keywords(keywords)
         
-        # Jika semua keywords tidak relevan, kembalikan error tanpa mengirim ke LLM
-        if not keywords and raw_keywords:
-            irrelevant_str = ', '.join(irrelevant_found) if irrelevant_found else ', '.join(raw_keywords)
+        # Jika semua keywords tidak relevan setelah filtering, kembalikan error
+        if not keywords:
+            print(f"[LLM] ⚠️ Semua keywords tidak relevan setelah filtering")
             return jsonify({
-                'status': 'error',
-                'message': f'Maaf, keywords yang Anda masukkan tidak relevan dengan konteks coffee shop: {irrelevant_str}. Silakan gunakan keywords yang relevan seperti: wifi, cozy, colokan, musholla, live music, dll.'
-            }), 400
+                'status': 'success',
+                'task': task,
+                'input': user_text,
+                'extracted_keywords': ', '.join(irrelevant_found) if irrelevant_found else '',
+                'preferences_ai': 'Tidak ada keywords yang relevan dengan preferensi coffee shop',
+                'analysis': 'Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini.',
+                'timestamp': time.time()
+            }), 200
         
-        # Jika ada keywords yang tidak relevan, modifikasi user_text untuk menghilangkannya
-        filtered_user_text = user_text
-        if irrelevant_found:
-            print(f"[LLM] Warning: Filtered {len(irrelevant_found)} irrelevant keywords: {irrelevant_found}")
-            print(f"[LLM] Continuing with {len(keywords)} relevant keywords: {keywords}")
-            
-            # Untuk natural language, hapus keywords yang tidak relevan dari kalimat
-            if ',' not in user_text or len(user_text.split(',')) <= 1:
-                # Natural language: hapus kata-kata yang tidak relevan
-                words = user_text.split()
-                filtered_words = []
-                for word in words:
-                    word_lower = word.lower().strip()
-                    # Cek apakah kata ini adalah keyword yang tidak relevan
-                    is_irrelevant = False
-                    for irrelevant_kw in irrelevant_found:
-                        if irrelevant_kw in word_lower or word_lower in irrelevant_kw:
-                            is_irrelevant = True
-                            break
-                    if not is_irrelevant:
-                        filtered_words.append(word)
-                filtered_user_text = ' '.join(filtered_words).strip()
-            else:
-                # Comma-separated: hanya ambil keywords yang relevan
-                filtered_user_text = ', '.join(keywords)
+        # Filter "butuh" dan stop words lainnya dari keywords sebelum digunakan
+        # Pastikan hanya keyword yang relevan yang digunakan
+        stop_words_final = {'butuh', 'perlu', 'ingin', 'mau', 'cari', 'mencari', 'ada', 'yang', 'untuk', 'dengan', 'dan', 'atau', 'dari', 'pada', 'oleh', 'saya', 'aku', 'kita', 'kami'}
+        final_keywords = []
+        for kw in keywords:
+            kw_lower = kw.lower().strip()
+            # Jika keyword adalah stop word tunggal, skip
+            if kw_lower in stop_words_final and len(kw.split()) == 1:
+                continue
+            # Jika keyword mengandung stop word sebagai bagian dari frasa (misal: "ada musholla"), pertahankan
+            if len(kw) >= 3:
+                final_keywords.append(kw)
+        # Jika setelah filtering keywords kosong, gunakan keywords asli (untuk safety)
+        if not final_keywords:
+            final_keywords = keywords
+        keywords = final_keywords
+        
+        # Buat preferences_ai untuk ditampilkan di frontend
+        preferences_ai = f"Preferensi berdasarkan analisis AI: {', '.join(keywords)}"
+        print(f"[LLM] ✅ Preferences AI: {preferences_ai}")
+        print(f"[LLM] ✅ Final keywords (after filtering stop words): {keywords}")
+        
+        # Gunakan keywords yang sudah diekstrak untuk analisis selanjutnya
+        # Filtered user text sekarang hanya berisi keywords yang relevan
+        filtered_user_text = ', '.join(keywords)
         
         # Expand keywords dengan sinonim untuk pre-filtering yang lebih baik
         if keywords:
@@ -856,13 +701,22 @@ def llm_analyze():
         
         # Step 2: Fetch coffee shops DENGAN REVIEWS dari file JSON lokal
         # PENTING: Gunakan expanded keywords untuk pre-filtering coffee shops yang relevan
+        # Jika ada keywords spesifik (seperti musholla), prioritaskan coffee shop yang relevan
+        # Kurangi max_shops jika ada keywords untuk mengurangi context size dan menghindari melebihi token limit
+        # Jika ada keywords relevan, prioritaskan hanya coffee shop yang relevan (max 5-8 shops)
+        max_shops_for_context = 8 if keywords and len(keywords) > 0 else 15  # Kurangi jika ada keywords spesifik
         print(f"[LLM] Fetching coffee shops WITH REVIEWS from local JSON files for location: {location}")
-        places_context = _fetch_coffeeshops_with_reviews_from_json(location, max_shops=15, keywords=expanded_keywords_for_filter)
+        print(f"[LLM] Using max_shops={max_shops_for_context} to reduce context size (keywords: {len(keywords) if keywords else 0})")
+        places_context = _fetch_coffeeshops_with_reviews_from_json(location, max_shops=max_shops_for_context, keywords=expanded_keywords_for_filter)
         
         # Debug: Print sample reviews untuk verify data
         print(f"[LLM] Context preview (first 500 chars):")
         print(places_context[:500] if len(places_context) > 500 else places_context)
         print(f"[LLM] Total context length: {len(places_context)} characters")
+        
+        # Hitung jumlah coffee shop yang ada di context
+        shop_count_in_context = len(re.findall(r'^\d+\.\s+', places_context, re.MULTILINE))
+        print(f"[LLM] 📊 Coffee shops dalam context untuk LLM: {shop_count_in_context} shops")
         
         # Log informasi tentang apa yang dikirim ke LLM
         print(f"[LLM] ========== INFORMASI ANALISIS LLM ==========")
@@ -953,9 +807,12 @@ CATATAN: Alamat tidak ada di context data untuk mengurangi token, tapi Anda bisa
 
 🔍 KRITERIA RELEVANSI KETAT:
 - Review HARUS menyebutkan kata kunci atau sinonim/makna yang sangat dekat
+- Untuk keyword SPESIFIK seperti "musholla", review WAJIB menyebutkan musholla atau sinonimnya (tempat sholat, ruang sholat, tempat ibadah, ada musholla, mushola)
+- JANGAN merekomendasikan coffee shop jika review TIDAK menyebutkan keyword spesifik yang diminta user
 - Contoh RELEVAN: 
   * User cari "wifi bagus" → Review: "wifinya kencang" ✅
-  * User cari "musholla" → Review: "ada musholla" atau "tempat sholat tersedia" ✅
+  * User cari "musholla" → Review: "ada musholla" atau "tempat sholat tersedia" atau "musholla yang nyaman" ✅
+  * User cari "musholla" → Review: "tempatnya nyaman" ❌ (TIDAK RELEVAN - tidak menyebutkan musholla)
   * User cari "24 jam" → Review: "buka 24 jam", "buka sampai larut", "larut malam", "buka malam", "buka sampai subuh" ✅
   * User cari "buka malam" → Review: "24 jam", "buka sampai larut", "larut malam", "buka sampai subuh" ✅
   * User cari "cozy" → Review: "nyaman", "hangat", "tenang", "atmosfernya hangat", "suasananya cozy" ✅
@@ -1016,6 +873,9 @@ Output: cozy, wifi kencang, kerja
 Input: "Tempat yang nyaman dengan musholla dan parkir luas"
 Output: nyaman, musholla, parkir luas
 
+Input: "Saya butuh coffee shop yang ada musholla"
+Output: musholla
+
 Input: "Coffee shop aesthetic dengan live music dan ruangan dingin"
 Output: aesthetic, live music, ruangan dingin
 
@@ -1042,11 +902,27 @@ Sekarang pahami maksud user dan ekstrak kata kunci dari kalimat di atas:"""
                     # Split berdasarkan koma dan ambil keywords
                     keywords = [kw.strip().lower() for kw in extracted_text.split(',') if kw.strip()]
                     
+                    # Filter stop words dari keywords yang diekstrak
+                    stop_words_keywords = {'butuh', 'perlu', 'ingin', 'mau', 'cari', 'mencari', 'ada', 'yang', 'untuk', 'dengan', 'dan', 'atau', 'dari', 'pada', 'oleh', 'saya', 'aku', 'kita', 'kami'}
+                    # Filter: hapus stop words tunggal, tapi pertahankan jika menjadi bagian dari keyword multi-word
+                    filtered_extracted_keywords = []
+                    for kw in keywords:
+                        kw_lower = kw.lower().strip()
+                        # Jika keyword adalah stop word tunggal, skip
+                        if kw_lower in stop_words_keywords and len(kw.split()) == 1:
+                            continue
+                        # Jika keyword mengandung stop word sebagai bagian dari frasa (misal: "ada musholla"), pertahankan
+                        if len(kw) >= 3:
+                            filtered_extracted_keywords.append(kw)
+                    keywords = filtered_extracted_keywords
+                    
                     # Jika ekstraksi gagal atau kosong, fallback ke split berdasarkan spasi
                     if not keywords:
                         print(f"[LLM] Keyword extraction returned empty, using fallback")
                         words = user_text.lower().split()
-                        stop_words = {'saya', 'ingin', 'mencari', 'yang', 'untuk', 'dan', 'atau', 'dengan', 'ada', 'adalah', 'ini', 'itu', 'di', 'ke', 'dari', 'pada', 'oleh', 'coffee', 'shop', 'tempat', 'cafe', 'yang', 'dengan', 'untuk'}
+                        stop_words = {'saya', 'ingin', 'mencari', 'yang', 'untuk', 'dan', 'atau', 'dengan', 'adalah', 'ini', 'itu', 'di', 'ke', 'dari', 'pada', 'oleh', 'coffee', 'shop', 'tempat', 'cafe', 'yang', 'dengan', 'untuk'}
+                        # CATATAN: "ada" TIDAK dihapus dari stop_words karena bisa menjadi bagian dari keyword seperti "ada musholla"
+                        # Tapi jika "ada" berdiri sendiri tanpa keyword lain, akan difilter nanti
                         keywords = [w for w in words if w not in stop_words and len(w) > 2]
                     else:
                         print(f"[LLM] Extracted keywords: {keywords}")
@@ -1054,7 +930,7 @@ Sekarang pahami maksud user dan ekstrak kata kunci dari kalimat di atas:"""
                     # Jika hf_client tidak tersedia, gunakan fallback
                     print(f"[LLM] HF client not available, using fallback extraction")
                     words = filtered_user_text.lower().split()
-                    stop_words = {'saya', 'ingin', 'mencari', 'yang', 'untuk', 'dan', 'atau', 'dengan', 'ada', 'adalah', 'ini', 'itu', 'di', 'ke', 'dari', 'pada', 'oleh', 'coffee', 'shop', 'tempat', 'cafe', 'yang', 'dengan', 'untuk'}
+                    stop_words = {'saya', 'ingin', 'mencari', 'yang', 'untuk', 'dan', 'atau', 'dengan', 'ada', 'adalah', 'ini', 'itu', 'di', 'ke', 'dari', 'pada', 'oleh', 'coffee', 'shop', 'tempat', 'cafe', 'yang', 'dengan', 'untuk', 'butuh', 'perlu', 'mau', 'cari'}
                     keywords = [w for w in words if w not in stop_words and len(w) > 2]
             except Exception as e:
                 print(f"[LLM] Error extracting keywords: {e}")
@@ -1105,7 +981,7 @@ Sekarang pahami maksud user dan ekstrak kata kunci dari kalimat di atas:"""
             ]
             
             # Kata-kata umum yang tidak memiliki instruksi spesifik (hanya deskripsi)
-            general_words = ['coffee', 'shop', 'tempat', 'cafe', 'kopi', 'minum', 'makan', 'enak', 'bagus', 'baik', 'saya', 'ingin', 'mencari', 'yang', 'untuk', 'dan', 'atau', 'dengan', 'ada', 'adalah', 'ini', 'itu', 'di', 'ke', 'dari', 'pada', 'oleh']
+            general_words = ['coffee', 'shop', 'tempat', 'cafe', 'kopi', 'minum', 'makan', 'enak', 'bagus', 'baik', 'saya', 'ingin', 'mencari', 'yang', 'untuk', 'dan', 'atau', 'dengan', 'ada', 'adalah', 'ini', 'itu', 'di', 'ke', 'dari', 'pada', 'oleh', 'butuh', 'perlu', 'mau', 'cari']
             
             # Cek apakah minimal salah satu keyword mengandung pattern yang valid
             has_valid_keyword = False
@@ -1203,7 +1079,12 @@ Sekarang pahami maksud user dan ekstrak kata kunci dari kalimat di atas:"""
 - PENTING: Jika user mencari "gaming" atau "ngegame", review yang menyebutkan "wifi bagus", "wifi kencang", "stopkontak banyak", "colokan banyak", "24 jam", "buka malam" TETAP RELEVAN karena gaming membutuhkan fasilitas tersebut
 - Jika user mencari salah satu variasi di atas, review yang menyebutkan variasi lain TETAP RELEVAN dan BOLEH direkomendasikan
 
-Cari coffee shop yang reviewnya BENAR-BENAR menyebutkan kata kunci di atas atau sinonimnya. Jika tidak ada yang sesuai, jawab: "🙏 Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini." Jangan tambahkan penjelasan pembuka atau logika rekomendasi."""
+⚠️ VALIDASI KETAT UNTUK KEYWORD SPESIFIK:
+- Untuk keyword SPESIFIK seperti "musholla", coffee shop HANYA boleh direkomendasikan jika review BENAR-BENAR menyebutkan "musholla", "mushola", "tempat sholat", "ruang sholat", "tempat ibadah", atau "ada musholla"
+- JANGAN merekomendasikan coffee shop jika review TIDAK menyebutkan keyword spesifik yang diminta user
+- Jika user mencari "musholla" dan review hanya menyebutkan "tempatnya nyaman" atau "wifi bagus" TANPA menyebutkan musholla, JANGAN rekomendasikan coffee shop tersebut
+
+Cari coffee shop yang reviewnya BENAR-BENAR menyebutkan kata kunci di atas atau sinonimnya. Jika tidak ada yang sesuai, jawab: "Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini." Jangan tambahkan penjelasan pembuka atau logika rekomendasi."""
         elif task == 'recommend':
             user_content = f"""PREFERENSI SAYA (Natural Language):
 "{filtered_user_text}"
@@ -1420,6 +1301,12 @@ Tugas Anda:
 - Kata kunci "parkiran luas" = "parkir luas" = "parkir mobil nyaman" = "parkir" = "tempat parkir luas"
 - Jika user mencari salah satu variasi di atas, review yang menyebutkan variasi lain TETAP RELEVAN dan BOLEH direkomendasikan
 
+⚠️ PENTING - VALIDASI KETAT UNTUK KEYWORD SPESIFIK:
+- Untuk keyword SPESIFIK seperti "musholla", coffee shop HANYA boleh direkomendasikan jika review BENAR-BENAR menyebutkan "musholla", "mushola", "tempat sholat", "ruang sholat", "tempat ibadah", atau "ada musholla"
+- JANGAN merekomendasikan coffee shop jika review TIDAK menyebutkan keyword spesifik yang diminta user
+- Jika user mencari "musholla" dan review hanya menyebutkan "tempatnya nyaman" atau "wifi bagus" TANPA menyebutkan musholla, JANGAN rekomendasikan coffee shop tersebut
+- Review HARUS menyebutkan keyword spesifik atau sinonimnya secara eksplisit
+
 Cari coffee shop yang reviewnya BENAR-BENAR relevan dengan preferensi yang saya maksud (gunakan pemahaman NLP, bukan hanya keyword matching).
 
 🚨 PENTING - JUMLAH REKOMENDASI:
@@ -1564,8 +1451,6 @@ Jika tidak ada review yang relevan, jawab: "Maaf, tidak ada coffee shop yang ses
         print(f"[LLM] Generated text preview (last 200 chars): {generated_text[-200:]}")
         
         # Validasi dan Post-processing: Pastikan setiap rekomendasi memiliki review
-        import re
-        
         try:
             # Baca data untuk post-processing
             places_json_path = os.path.join('frontend-cofind', 'src', 'data', 'places.json')
@@ -1593,7 +1478,14 @@ Jika tidak ada review yang relevan, jawab: "Maaf, tidak ada coffee shop yang ses
         shop_matches = list(re.finditer(shop_pattern, generated_text))
         num_recommended_shops = len(shop_matches)
         
+        # Hitung jumlah coffee shop yang ada di context (dari places_context yang sudah dibuat sebelumnya)
+        shop_count_in_context = len(re.findall(r'^\d+\.\s+', places_context, re.MULTILINE)) if 'places_context' in locals() else 0
+        
         print(f"[LLM] Validation: Found {num_recommended_shops} recommended shops")
+        # Tampilkan summary analisis LLM
+        print(f"[LLM] 📊 SUMMARY ANALISIS LLM:")
+        print(f"[LLM] 📊   - Coffee shops yang dianalisis oleh LLM: {shop_count_in_context} shops")
+        print(f"[LLM] 📊   - Coffee shops yang direkomendasikan: {num_recommended_shops} shops")
         
         # Process setiap coffee shop untuk memastikan ada review
         if num_recommended_shops > 0:
@@ -1666,7 +1558,10 @@ Jika tidak ada review yang relevan, jawab: "Maaf, tidak ada coffee shop yang ses
                                         review_lower = review_text.lower()
                                         # Cek apakah review mengandung salah satu keyword
                                         is_relevant = False
-                                        for kw in user_keywords:
+                                        # Filter keywords: hapus stop words seperti "butuh", "perlu", dll
+                                        filtered_user_keywords = [kw for kw in user_keywords if kw.lower() not in ['butuh', 'perlu', 'ingin', 'mau', 'cari', 'mencari', 'ada', 'yang', 'untuk', 'dengan', 'dan', 'atau']]
+                                        
+                                        for kw in filtered_user_keywords:
                                             kw_lower = kw.lower().strip()
                                             # Minimal 3 karakter untuk menghindari false positive
                                             if len(kw_lower) >= 3:
@@ -1677,6 +1572,14 @@ Jika tidak ada review yang relevan, jawab: "Maaf, tidak ada coffee shop yang ses
                                                     print(f"[LLM] ✅ Found relevant review for {shop_name}: keyword '{kw}' found in review")
                                                     print(f"[LLM] Review snippet: {review_text[:100]}...")
                                                     break
+                                                # Cek sinonim untuk keyword spesifik seperti musholla
+                                                elif kw_lower in ['musholla', 'mushola', 'tempat sholat', 'ruang sholat', 'tempat ibadah']:
+                                                    musholla_synonyms = ['musholla', 'mushola', 'tempat sholat', 'tempat sholat tersedia', 'ada musholla', 'ruang sholat', 'tempat ibadah']
+                                                    if any(syn in review_lower for syn in musholla_synonyms):
+                                                        is_relevant = True
+                                                        print(f"[LLM] ✅ Found relevant review for {shop_name}: keyword '{kw}' found via synonym")
+                                                        print(f"[LLM] Review snippet: {review_text[:100]}...")
+                                                        break
                                         
                                         if is_relevant:
                                             relevant_reviews_list.append(review)
@@ -1823,17 +1726,47 @@ Jika tidak ada review yang relevan, jawab: "Maaf, tidak ada coffee shop yang ses
                     # PENTING: Cek apakah review BENAR-BENAR relevan dengan keywords user
                     is_relevant = False
                     if user_keywords_for_filter:
-                        # Extract review text dari section
-                        review_match = re.search(r'Berdasarkan Ulasan Pengunjung:\s*"([^"]+)"', shop_section, re.IGNORECASE)
-                        if review_match:
-                            review_text_lower = review_match.group(1).lower()
-                            # Cek apakah review mengandung minimal salah satu keyword
+                        # Extract review text dari section (bisa ada 1 atau 2 review)
+                        review_matches = re.findall(r'Berdasarkan Ulasan Pengunjung:\s*"([^"]+)"', shop_section, re.IGNORECASE)
+                        if review_matches:
+                            # Gabungkan semua review text untuk validasi
+                            all_review_text = ' '.join(review_matches).lower()
+                            
+                            # Filter keywords: hapus stop words seperti "butuh", "perlu", dll
+                            # CATATAN: "ada" TIDAK difilter jika menjadi bagian dari keyword multi-word seperti "ada musholla"
+                            filtered_keywords = []
                             for kw in user_keywords_for_filter:
                                 kw_lower = kw.lower().strip()
-                                if len(kw_lower) >= 3 and kw_lower in review_text_lower:
-                                    is_relevant = True
-                                    print(f"[LLM] ✅ Review is relevant for {shop_name}: keyword '{kw}' found")
-                                    break
+                                # Jika keyword adalah stop word tunggal, skip
+                                if kw_lower in ['butuh', 'perlu', 'ingin', 'mau', 'cari', 'mencari', 'yang', 'untuk', 'dengan', 'dan', 'atau'] and len(kw.split()) == 1:
+                                    continue
+                                # Jika keyword mengandung "ada" sebagai bagian dari frasa (misal: "ada musholla"), pertahankan
+                                if len(kw) >= 3:
+                                    filtered_keywords.append(kw)
+                            
+                            # Cek apakah review mengandung minimal salah satu keyword yang relevan
+                            for kw in filtered_keywords:
+                                kw_lower = kw.lower().strip()
+                                if len(kw_lower) >= 3:
+                                    # Cek exact match atau substring match
+                                    if kw_lower in all_review_text:
+                                        is_relevant = True
+                                        print(f"[LLM] ✅ Review is relevant for {shop_name}: keyword '{kw}' found")
+                                        break
+                                    # Cek sinonim untuk keyword spesifik seperti musholla
+                                    elif kw_lower in ['musholla', 'mushola', 'tempat sholat', 'ruang sholat', 'tempat ibadah']:
+                                        musholla_synonyms = ['musholla', 'mushola', 'tempat sholat', 'tempat sholat tersedia', 'ada musholla', 'ruang sholat', 'tempat ibadah', 'lokasi musholla', 'musholla yang', 'musholla nyaman']
+                                        if any(syn in all_review_text for syn in musholla_synonyms):
+                                            is_relevant = True
+                                            print(f"[LLM] ✅ Review is relevant for {shop_name}: keyword '{kw}' found via synonym")
+                                            break
+                                    # Cek jika keyword adalah bagian dari frasa yang lebih panjang (misal: "ada musholla" dalam review)
+                                    elif 'musholla' in kw_lower or 'mushola' in kw_lower:
+                                        # Jika keyword mengandung "musholla", cek apakah review mengandung "musholla" atau variasi
+                                        if 'musholla' in all_review_text or 'mushola' in all_review_text or 'tempat sholat' in all_review_text:
+                                            is_relevant = True
+                                            print(f"[LLM] ✅ Review is relevant for {shop_name}: keyword '{kw}' contains musholla")
+                                            break
                         else:
                             # Jika tidak bisa extract review text, HAPUS coffee shop (untuk keamanan)
                             is_relevant = False
@@ -1886,11 +1819,20 @@ Jika tidak ada review yang relevan, jawab: "Maaf, tidak ada coffee shop yang ses
             # Fallback ke input asli jika keywords tidak tersedia
             extracted_keywords_display = user_text
         
+        # Pastikan preferences_ai sudah didefinisikan
+        if 'preferences_ai' not in locals():
+            # Fallback jika preferences_ai belum didefinisikan
+            if 'keywords' in locals() and keywords:
+                preferences_ai = f"Preferensi berdasarkan analisis AI: {', '.join(keywords)}"
+            else:
+                preferences_ai = f"Preferensi berdasarkan analisis AI: {extracted_keywords_display}"
+        
         return jsonify({
             'status': 'success',
             'task': task,
             'input': user_text,  # Input asli dari user
             'extracted_keywords': extracted_keywords_display,  # Keywords yang sudah diekstrak oleh LLM
+            'preferences_ai': preferences_ai,  # Preferensi berdasarkan analisis AI
             'analysis': generated_text,
             'timestamp': time.time()
         }), 200
@@ -1898,6 +1840,111 @@ Jika tidak ada review yang relevan, jawab: "Maaf, tidak ada coffee shop yang ses
     except Exception as e:
         import traceback
         error_message = f"LLM Analysis Error: {str(e)}"
+        traceback_str = traceback.format_exc()
+        print(f"[ERROR] {error_message}")
+        print(f"[TRACEBACK]\n{traceback_str}")
+        return jsonify({
+            'status': 'error',
+            'message': error_message,
+            'error_details': traceback_str
+        }), 500
+
+# Endpoint untuk saran keywords umum berdasarkan review data
+@app.route('/api/llm/suggest-keywords', methods=['POST'])
+def suggest_keywords():
+    """
+    Endpoint untuk memberikan saran keywords umum berdasarkan review data
+    Memberikan saran keywords yang sebaiknya digunakan user dalam mencari coffee shop
+    Tidak memerlukan user input, hanya menganalisis review data
+    
+    Request JSON: {} (tidak memerlukan input)
+    """
+    try:
+        if hf_client is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'HF_API_TOKEN tidak dikonfigurasi. LLM suggest keywords endpoint nonaktif.'
+            }), 503
+        
+        # Baca reviews.json untuk context saran keywords
+        reviews_json_path = os.path.join('frontend-cofind', 'src', 'data', 'reviews.json')
+        reviews_data = {}
+        reviews_context_for_suggestion = ""
+        
+        if os.path.exists(reviews_json_path):
+            with open(reviews_json_path, 'r', encoding='utf-8') as f:
+                reviews_data = json.load(f)
+            
+            # Ambil semua reviews untuk analisis yang lebih lengkap
+            reviews_by_place_id = reviews_data.get('reviews_by_place_id', {})
+            all_reviews = []
+            for place_id, reviews in reviews_by_place_id.items():
+                all_reviews.extend(reviews)
+            
+            # Buat context untuk saran keywords (ambil lebih banyak review untuk analisis yang lebih baik)
+            reviews_context_for_suggestion = "\n".join([
+                f"- {review.get('text', '')}" for review in all_reviews[:50]  # Ambil 50 review untuk analisis lebih lengkap
+            ])
+        
+        # Buat prompt untuk saran keywords umum berdasarkan review data
+        suggestion_prompt = f"""Anda adalah asisten yang ahli dalam menganalisis review coffee shop untuk memberikan saran keywords yang sebaiknya digunakan user dalam mencari coffee shop.
+
+REVIEW DATA DARI BERBAGAI COFFEE SHOP:
+{reviews_context_for_suggestion[:3000]}
+
+Tugas Anda: 
+1. Analisis semua review di atas dan identifikasi keywords/atribut yang PALING SERING disebutkan atau PALING PENTING untuk coffee shop
+2. Berikan saran keywords yang sebaiknya digunakan user dalam mencari coffee shop berdasarkan review data
+3. Fokus pada atribut yang paling relevan dan sering disebutkan: fasilitas (wifi, colokan, musholla, parkir), suasana (cozy, nyaman, tenang), kebutuhan spesifik (belajar, kerja, gaming), dll
+4. Output berupa SATU KALIMAT yang berisi saran keywords, format: "Preferensi berdasarkan analisis AI: [keyword1], [keyword2], [keyword3], ..."
+
+ATURAN:
+- Berikan 5-10 keywords yang paling relevan dan sering disebutkan di review
+- Keywords harus relevan dengan atribut coffee shop: wifi, wifi bagus, wifi kencang, colokan, colokan banyak, cozy, nyaman, tenang, hangat, musholla, parkir, parkir luas, 24 jam, buka malam, aesthetic, live music, ac, dingin, sejuk, sofa, kursi, belajar, kerja, gaming, ngegame, dll
+- Output HANYA satu kalimat dengan format: "Preferensi berdasarkan analisis AI: [keywords]"
+- Gunakan bahasa Indonesia
+- Jangan tambahkan penjelasan lain, hanya output kalimat saran
+
+CONTOH OUTPUT:
+"Preferensi berdasarkan analisis AI: wifi kencang, colokan banyak, nyaman, tenang, ruangan dingin, parkir luas, cozy, musholla, belajar, aesthetic"
+
+Sekarang analisis review data dan berikan saran keywords yang sebaiknya digunakan:"""
+
+        # Generate saran keywords menggunakan LLM
+        suggested_text = ""
+        try:
+            if hf_client:
+                suggestion_response = hf_client.text_generation(
+                    suggestion_prompt,
+                    max_new_tokens=150,
+                    temperature=0.3,
+                    return_full_text=False
+                )
+                suggested_text = suggestion_response.strip()
+                # Bersihkan dari format markdown atau karakter aneh
+                suggested_text = suggested_text.replace('**', '').replace('*', '').replace('"', '').replace("'", '').strip()
+                print(f"[LLM] Suggested keywords text: {suggested_text}")
+            else:
+                # Fallback: berikan saran keywords umum
+                suggested_text = "Preferensi berdasarkan analisis AI: wifi kencang, colokan banyak, nyaman, tenang, ruangan dingin, parkir luas, cozy, musholla"
+        except Exception as e:
+            print(f"[LLM] Error suggesting keywords: {e}")
+            # Fallback: berikan saran keywords umum
+            suggested_text = "Preferensi berdasarkan analisis AI: wifi kencang, colokan banyak, nyaman, tenang, ruangan dingin, parkir luas, cozy, musholla"
+        
+        # Pastikan format output sesuai
+        if not suggested_text.startswith("Preferensi berdasarkan analisis AI:"):
+            suggested_text = f"Preferensi berdasarkan analisis AI: {suggested_text}"
+        
+        return jsonify({
+            'status': 'success',
+            'preferences_ai': suggested_text,
+            'keywords': []
+        }), 200
+    
+    except Exception as e:
+        import traceback
+        error_message = f"Extract Keywords Error: {str(e)}"
         traceback_str = traceback.format_exc()
         print(f"[ERROR] {error_message}")
         print(f"[TRACEBACK]\n{traceback_str}")

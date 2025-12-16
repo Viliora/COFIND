@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import reviewsData from '../data/reviews.json';
 import { normalizeAndFilterKeywords, expandKeywordWithSynonyms } from '../utils/keywordMapping';
+import botIcon from '../assets/bot.svg';
 
 const LLMAnalyzer = () => {
   const [input, setInput] = useState('');
@@ -9,6 +10,11 @@ const LLMAnalyzer = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [progress, setProgress] = useState(0);
+  
+  // State untuk keywords analysis
+  const [keywordsAnalysis, setKeywordsAnalysis] = useState(null);
+  const [keywordsLoading, setKeywordsLoading] = useState(false);
+  const [keywordsError, setKeywordsError] = useState(null);
 
   const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
   const FIXED_LOCATION = 'Pontianak'; // Lokasi fixed, tidak bisa diubah user
@@ -284,6 +290,67 @@ const LLMAnalyzer = () => {
     setInput('');
     setResult(null);
     setError(null);
+    setKeywordsAnalysis(null);
+    setKeywordsError(null);
+  };
+
+  // Function untuk fetch keywords suggestions berdasarkan review data
+  const handleExtractKeywords = async () => {
+    setKeywordsLoading(true);
+    setKeywordsError(null);
+    setKeywordsAnalysis(null);
+
+    try {
+      const response = await fetch(`${API_BASE}/api/llm/suggest-keywords`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+
+      // Cek jika response tidak ok sebelum parse JSON
+      if (!response.ok) {
+        let errorMessage = 'Terjadi kesalahan saat menganalisis keywords';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+          
+          if (response.status === 402 || errorData.error_code === 'QUOTA_EXCEEDED') {
+            errorMessage = 'Kuota token LLM telah habis. Silakan cek akun Hugging Face Anda.';
+          } else if (response.status === 429 || errorData.error_code === 'RATE_LIMIT') {
+            errorMessage = 'Terlalu banyak request. Silakan tunggu beberapa saat sebelum mencoba lagi.';
+          } else if (response.status === 401 || errorData.error_code === 'UNAUTHORIZED') {
+            errorMessage = 'Token API Hugging Face tidak valid. Silakan hubungi administrator.';
+          } else if (response.status === 503) {
+            errorMessage = 'Layanan LLM sedang tidak tersedia. Silakan coba lagi nanti.';
+          } else if (response.status === 404) {
+            errorMessage = 'Endpoint tidak ditemukan. Pastikan server backend berjalan.';
+          }
+        } catch {
+          // Jika gagal parse JSON, gunakan status text
+          errorMessage = `Error ${response.status}: ${response.statusText || 'Terjadi kesalahan'}`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      setKeywordsAnalysis(data);
+      setKeywordsLoading(false);
+    } catch (err) {
+      // Handle network errors dan lainnya
+      let errorMessage = 'Gagal mengekstrak keywords';
+      
+      if (err instanceof TypeError && err.message.includes('fetch')) {
+        errorMessage = 'Tidak dapat terhubung ke server. Pastikan backend server berjalan di ' + API_BASE;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setKeywordsError(errorMessage);
+      console.error('Extract Keywords Error:', err);
+      setKeywordsLoading(false);
+    }
   };
 
 
@@ -302,9 +369,55 @@ const LLMAnalyzer = () => {
 
         {/* Input Area - Natural Language atau Keywords */}
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
-            💬 Jelaskan Preferensi Anda (Bahasa Indonesia):
-          </label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium text-gray-900 dark:text-white">
+              💬 Jelaskan Preferensi Anda (Bahasa Indonesia):
+            </label>
+            {/* Button Analisis Keywords */}
+            <button
+              onClick={handleExtractKeywords}
+              disabled={keywordsLoading}
+              className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white text-xs font-medium rounded-lg transition-colors duration-200"
+              title="Dapatkan Saran Keywords Berdasarkan Review Data"
+            >
+              {keywordsLoading ? (
+                <>
+                  <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Menganalisis...</span>
+                </>
+              ) : (
+                <>
+                  <img 
+                    src="https://img.icons8.com/?size=100&id=ETVUfl0Ylh1p&format=png&color=FFFFFF" 
+                    alt="AI Analysis" 
+                    className="w-4 h-4"
+                  />
+                  <span>Analisis Keywords</span>
+                </>
+              )}
+            </button>
+          </div>
+          
+          {/* Keywords Analysis Result */}
+          {keywordsAnalysis && keywordsAnalysis.preferences_ai && (
+            <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <p className="text-sm text-blue-800 dark:text-blue-300 font-medium">
+                {keywordsAnalysis.preferences_ai}
+              </p>
+            </div>
+          )}
+          
+          {keywordsError && (
+            <div className="mb-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <p className="text-sm text-red-700 dark:text-red-300">
+                ❌ {keywordsError}
+              </p>
+            </div>
+          )}
+          
           <div className="relative">
             <textarea
               value={input}
@@ -400,9 +513,11 @@ const LLMAnalyzer = () => {
                 </>
               ) : (
                 <>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                  </svg>
+                  <img 
+                    src={botIcon} 
+                    alt="AI Bot" 
+                    className="w-5 h-5"
+                  />
                   <span>Dapatkan Rekomendasi</span>
                 </>
               )}
@@ -432,12 +547,19 @@ const LLMAnalyzer = () => {
                   Berdasarkan Ulasan Pengunjung
                 </span>
               </div>
-              <p className="text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-zinc-800/50 p-3 rounded-lg">
+              <p className="text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-zinc-800/50 p-3 rounded-lg mb-3">
                 <span className="font-semibold">Preferensi Anda:</span>{' '}
                 <span className="italic">
                   {result.input}
                 </span>
               </p>
+              {result.preferences_ai && (
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-3 rounded-lg">
+                  <p className="text-sm text-blue-800 dark:text-blue-300 font-medium">
+                    {result.preferences_ai}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Coffee Shop Cards */}
