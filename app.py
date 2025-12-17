@@ -507,6 +507,15 @@ def _fetch_coffeeshops_with_reviews_from_json(location_str, max_shops=15, keywor
         print(f"[JSON+REVIEWS] Traceback: {error_detail}")
         return f"Error mengambil data coffee shop dengan review dari JSON: {str(e)}"
 
+# Endpoint untuk cek status LLM availability (lightweight, no token usage)
+@app.route('/api/llm/status', methods=['GET'])
+def llm_status():
+    """Check if LLM is available (HF_API_TOKEN configured)"""
+    return jsonify({
+        'available': hf_client is not None,
+        'message': 'LLM ready' if hf_client else 'HF_API_TOKEN not configured'
+    })
+
 # Endpoint untuk LLM Text Generation & Analysis menggunakan Hugging Face
 @app.route('/api/llm/analyze', methods=['POST'])
 def llm_analyze():
@@ -2262,6 +2271,331 @@ Buat ringkasan SINGKAT (maksimal 1 kalimat, 15-30 kata) yang menonjolkan keunika
             'message': error_message,
             'error_details': traceback_str
         }), 500
+# Path untuk cache sentiment analysis
+SENTIMENT_CACHE_PATH = os.path.join('frontend-cofind', 'src', 'data', 'sentiment_cache.json')
+CACHE_EXPIRY_DAYS = 7  # Cache berlaku 7 hari
+
+def load_sentiment_cache():
+    """Load sentiment cache dari file"""
+    if os.path.exists(SENTIMENT_CACHE_PATH):
+        try:
+            with open(SENTIMENT_CACHE_PATH, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except:
+            return {}
+    return {}
+
+def save_sentiment_cache(cache):
+    """Save sentiment cache ke file"""
+    try:
+        with open(SENTIMENT_CACHE_PATH, 'w', encoding='utf-8') as f:
+            json.dump(cache, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"[CACHE] Error saving cache: {e}")
+
+def is_cache_valid(cache_entry, current_review_count):
+    """Cek apakah cache masih valid"""
+    if not cache_entry:
+        return False
+    
+    # Cek apakah jumlah review berubah
+    cached_review_count = cache_entry.get('review_count', 0)
+    if cached_review_count != current_review_count:
+        print(f"[CACHE] Review count changed: {cached_review_count} -> {current_review_count}")
+        return False
+    
+    # Cek apakah cache sudah expired (> 7 hari)
+    cached_timestamp = cache_entry.get('timestamp', 0)
+    current_time = time.time()
+    cache_age_days = (current_time - cached_timestamp) / (60 * 60 * 24)
+    
+    if cache_age_days > CACHE_EXPIRY_DAYS:
+        print(f"[CACHE] Cache expired: {cache_age_days:.1f} days old")
+        return False
+    
+    return True
+
+# Endpoint untuk analisis sentimen review coffee shop
+@app.route('/api/llm/analyze-sentiment', methods=['POST'])
+def analyze_sentiment():
+    """
+    Endpoint untuk analisis sentimen review coffee shop berdasarkan place_id
+    Menggunakan LLM untuk memahami konteks dan mengekstrak insight terstruktur
+    
+    FITUR CACHING:
+    - Cache hasil analisis selama 7 hari
+    - Auto-refresh jika ada review baru (jumlah review berubah)
+    - Hemat token LLM dengan menghindari request berulang
+    
+    Request JSON:
+    {
+        "place_id": "ChIJ...",
+        "shop_name": "Nama Coffee Shop",
+        "reviews": [...] (optional, jika tidak ada akan dibaca dari reviews.json)
+    }
+    
+    Response JSON:
+    {
+        "status": "success",
+        "data": {
+            "positif": ["WiFi kencang", "Suasana nyaman"],
+            "negatif": ["Parkir terbatas"],
+            "fasilitas": ["WiFi", "AC", "Colokan"],
+            "cocok_untuk": ["Kerja remote", "Belajar"],
+            "ringkasan": "Coffee shop dengan suasana cozy..."
+        },
+        "from_cache": true/false,
+        "cache_age_days": 2.5
+    }
+    """
+    try:
+        data = request.get_json()
+        if not data or 'place_id' not in data:
+            return jsonify({
+                'status': 'error',
+                'message': 'Missing required field: place_id'
+            }), 400
+        
+        place_id = data.get('place_id', '').strip()
+        shop_name = data.get('shop_name', 'Coffee Shop')
+        provided_reviews = data.get('reviews', None)
+        
+        if not place_id:
+            return jsonify({
+                'status': 'error',
+                'message': 'place_id cannot be empty'
+            }), 400
+        
+        # Gunakan reviews dari request atau baca dari file
+        if provided_reviews and len(provided_reviews) > 0:
+            shop_reviews = provided_reviews
+        else:
+            # Baca reviews dari reviews.json
+            reviews_json_path = os.path.join('frontend-cofind', 'src', 'data', 'reviews.json')
+            
+            if os.path.exists(reviews_json_path):
+                with open(reviews_json_path, 'r', encoding='utf-8') as f:
+                    reviews_data = json.load(f)
+                reviews_by_place_id = reviews_data.get('reviews_by_place_id', {})
+                shop_reviews = reviews_by_place_id.get(place_id, [])
+            else:
+                return jsonify({
+                    'status': 'error',
+                    'message': 'File reviews.json tidak ditemukan'
+                }), 404
+        
+        if not shop_reviews or len(shop_reviews) == 0:
+            return jsonify({
+                'status': 'error',
+                'message': 'Tidak ada review untuk coffee shop ini'
+            }), 404
+        
+        current_review_count = len(shop_reviews)
+        
+        # ========== CEK CACHE ==========
+        sentiment_cache = load_sentiment_cache()
+        cache_entry = sentiment_cache.get(place_id)
+        
+        if is_cache_valid(cache_entry, current_review_count):
+            # Return dari cache
+            cache_age_days = (time.time() - cache_entry.get('timestamp', 0)) / (60 * 60 * 24)
+            print(f"[CACHE] HIT for {place_id} (age: {cache_age_days:.1f} days)")
+            return jsonify({
+                'status': 'success',
+                'data': cache_entry.get('data', {}),
+                'from_cache': True,
+                'cache_age_days': round(cache_age_days, 1),
+                'reviews_analyzed': cache_entry.get('review_count', 0)
+            })
+        
+        print(f"[CACHE] MISS for {place_id}, generating new analysis...")
+        
+        # ========== GENERATE DENGAN LLM ==========
+        if hf_client is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'HF_API_TOKEN tidak dikonfigurasi. LLM endpoint nonaktif.'
+            }), 503
+        
+        # Ambil maksimal 10 review untuk context (hemat token)
+        reviews_for_analysis = shop_reviews[:10]
+        
+        # Format reviews untuk context
+        reviews_text = []
+        for review in reviews_for_analysis:
+            if isinstance(review, dict):
+                review_text = review.get('text', '').strip()
+                rating = review.get('rating', 0)
+            else:
+                review_text = str(review).strip()
+                rating = 0
+            
+            if review_text and len(review_text) > 15:
+                reviews_text.append(f"({rating}⭐) {review_text}")
+        
+        if not reviews_text:
+            return jsonify({
+                'status': 'error',
+                'message': 'Tidak ada review yang valid untuk dianalisis'
+            }), 404
+        
+        reviews_context = '\n'.join(reviews_text)
+        
+        # System prompt untuk analisis sentimen terstruktur
+        system_prompt = """Anda adalah asisten analisis review coffee shop. Tugas Anda adalah menganalisis review pengunjung dan mengekstrak insight dalam format JSON yang KETAT.
+
+INSTRUKSI:
+1. Analisis SEMUA review dengan memahami KONTEKS kalimat
+2. Perhatikan negasi (tidak, bukan, belum) yang mengubah makna
+3. Bedakan antara pujian dan kritik berdasarkan konteks
+4. Output HARUS dalam format JSON yang valid
+
+FORMAT OUTPUT (JSON):
+{
+  "positif": ["poin positif 1", "poin positif 2", ...],
+  "negatif": ["poin negatif 1", ...],
+  "fasilitas": ["fasilitas 1", "fasilitas 2", ...],
+  "cocok_untuk": ["aktivitas 1", "aktivitas 2", ...],
+  "ringkasan": "satu kalimat ringkasan 15-25 kata"
+}
+
+ATURAN ANALISIS:
+- positif: Hal-hal yang DIPUJI pengunjung (maks 5 item, singkat 2-4 kata per item)
+- negatif: Hal-hal yang DIKRITIK pengunjung (maks 3 item, singkat 2-4 kata per item). Kosongkan [] jika tidak ada kritik.
+- fasilitas: Fasilitas yang DISEBUTKAN ada (WiFi, AC, colokan, parkir, musholla, toilet, outdoor)
+- cocok_untuk: Aktivitas yang COCOK berdasarkan review (kerja, belajar, meeting, nongkrong, kencan, foto)
+- ringkasan: Satu kalimat yang menggambarkan coffee shop ini
+
+CONTOH ANALISIS KONTEKS:
+- "WiFi tidak kencang" → negatif (ada negasi)
+- "WiFi kencang" → positif
+- "Tempatnya tidak pernah ramai" → positif (tidak ramai = nyaman)
+- "Tempatnya ramai" → negatif (ramai = kurang nyaman)
+
+Output HANYA JSON, tanpa penjelasan tambahan."""
+
+        user_prompt = f"""Analisis review berikut untuk "{shop_name}":
+
+{reviews_context}
+
+Berikan output dalam format JSON sesuai instruksi."""
+
+        print(f"[SENTIMENT] Analyzing sentiment for place_id: {place_id}")
+        print(f"[SENTIMENT] Total reviews: {len(reviews_for_analysis)}")
+        
+        # Call LLM with retry mechanism
+        import time
+        MAX_RETRIES = 3
+        RETRY_DELAY = 2  # seconds
+        
+        generated_text = None
+        last_error = None
+        
+        for attempt in range(MAX_RETRIES):
+            try:
+                response = hf_client.chat.completions.create(
+                    model=HF_MODEL,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    max_tokens=400,  # Cukup untuk JSON output
+                    temperature=0.2,  # Lebih deterministik untuk format JSON
+                    top_p=0.9
+                )
+                generated_text = response.choices[0].message.content.strip()
+                print(f"[SENTIMENT] Raw response: {generated_text[:200]}...")
+                break  # Success, exit retry loop
+                
+            except Exception as api_err:
+                last_error = api_err
+                print(f"[SENTIMENT] Attempt {attempt + 1}/{MAX_RETRIES} failed: {str(api_err)}")
+                if attempt < MAX_RETRIES - 1:
+                    print(f"[SENTIMENT] Retrying in {RETRY_DELAY * (attempt + 1)} seconds...")
+                    time.sleep(RETRY_DELAY * (attempt + 1))
+        
+        if generated_text is None:
+            print(f"[SENTIMENT] All retries failed, last error: {str(last_error)}")
+            error_str = str(last_error).lower()
+            
+            # Cek apakah error karena kuota habis (402)
+            if "402" in error_str or "quota" in error_str or "payment" in error_str or "limit" in error_str:
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Kuota LLM gratis sudah habis. Silakan upgrade akun HuggingFace.',
+                    'error_code': 'QUOTA_EXCEEDED'
+                }), 402
+            
+            return jsonify({
+                'status': 'error',
+                'message': f'LLM API tidak tersedia: {str(last_error)}'
+            }), 503
+        
+        # Parse JSON response
+        try:
+            # Coba ekstrak JSON dari response
+            json_match = re.search(r'\{[\s\S]*\}', generated_text)
+            if json_match:
+                result = json.loads(json_match.group())
+            else:
+                raise ValueError("No JSON found in response")
+            
+            # Validasi dan sanitasi hasil
+            sanitized_result = {
+                'positif': result.get('positif', [])[:5] if isinstance(result.get('positif'), list) else [],
+                'negatif': result.get('negatif', [])[:3] if isinstance(result.get('negatif'), list) else [],
+                'fasilitas': result.get('fasilitas', [])[:6] if isinstance(result.get('fasilitas'), list) else [],
+                'cocok_untuk': result.get('cocok_untuk', [])[:4] if isinstance(result.get('cocok_untuk'), list) else [],
+                'ringkasan': str(result.get('ringkasan', ''))[:200] if result.get('ringkasan') else ''
+            }
+            
+            print(f"[SENTIMENT] Parsed result: {sanitized_result}")
+            
+            # ========== SAVE TO CACHE ==========
+            sentiment_cache[place_id] = {
+                'data': sanitized_result,
+                'timestamp': time.time(),
+                'review_count': current_review_count,
+                'shop_name': shop_name
+            }
+            save_sentiment_cache(sentiment_cache)
+            print(f"[CACHE] Saved analysis for {place_id} ({current_review_count} reviews)")
+            
+            return jsonify({
+                'status': 'success',
+                'data': sanitized_result,
+                'from_cache': False,
+                'reviews_analyzed': len(reviews_for_analysis)
+            })
+            
+        except (json.JSONDecodeError, ValueError) as parse_err:
+            print(f"[SENTIMENT] JSON parse error: {parse_err}")
+            print(f"[SENTIMENT] Raw text was: {generated_text}")
+            
+            # Fallback: coba ekstrak informasi secara manual
+            fallback_result = {
+                'positif': [],
+                'negatif': [],
+                'fasilitas': [],
+                'cocok_untuk': [],
+                'ringkasan': generated_text[:150] if len(generated_text) > 0 else ''
+            }
+            
+            return jsonify({
+                'status': 'partial',
+                'message': 'Parsing JSON gagal, menggunakan fallback',
+                'data': fallback_result
+            })
+            
+    except Exception as e:
+        print(f"[SENTIMENT] Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
 
 if __name__ == '__main__':
     # Jalankan app secara langsung untuk pengembangan

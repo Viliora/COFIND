@@ -13,6 +13,9 @@
     "open:backend": "start http://localhost:5000"
   },
   "dependencies": {
+    "@supabase/auth-ui-react": "^0.4.7",
+    "@supabase/auth-ui-shared": "^0.1.8",
+    "@supabase/supabase-js": "^2.88.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^7.9.3",

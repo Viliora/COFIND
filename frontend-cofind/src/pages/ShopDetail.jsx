@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import OptimizedImage from '../components/OptimizedImage';
+import SmartReviewSummary from '../components/SmartReviewSummary';
+import ReviewForm from '../components/ReviewForm';
+import ReviewList from '../components/ReviewList';
 import localPlacesData from '../data/places.json';
 import localReviewsData from '../data/reviews.json';
 import { getCoffeeShopImage } from '../utils/coffeeShopImages';
@@ -21,6 +24,7 @@ function ShopDetail() {
   const [isFavorite, setIsFavorite] = useState(false);
   const [isWantToVisit, setIsWantToVisit] = useState(false);
   const [notification, setNotification] = useState(null);
+  const [newReview, setNewReview] = useState(null); // For triggering ReviewList update
 
   useEffect(() => {
     const loadShop = async () => {
@@ -317,6 +321,17 @@ function ShopDetail() {
         </div>
       </div>
 
+      {/* Smart Review Summary - AI Analysis */}
+      {reviews && reviews.length >= 3 && (
+        <div className="mt-6 sm:mt-8">
+          <SmartReviewSummary 
+            shopName={shop.name}
+            placeId={shop.place_id}
+            reviews={reviews}
+          />
+        </div>
+      )}
+
       {/* Static Map */}
       <div className="mt-6 sm:mt-8">
         <div className="bg-white dark:bg-zinc-800 p-4 sm:p-6 rounded-xl shadow border border-gray-200 dark:border-zinc-700">
@@ -394,59 +409,24 @@ function ShopDetail() {
         </div>
       </div>
 
-      {/* Box Komentar / Reviews */}
-      <div className="mt-6 sm:mt-8">
-        <div className="bg-white dark:bg-zinc-800 p-4 sm:p-6 rounded-xl shadow border border-gray-200 dark:border-zinc-700">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-              Komentar Pengunjung
-            </h2>
-            {Array.isArray(reviews) && reviews.length > 0 && (
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                Menampilkan {reviews.length} dari {reviews.length} komentar
-              </span>
-            )}
-          </div>
+      {/* Reviews Section */}
+      <div className="mt-6 sm:mt-8 space-y-6">
+        {/* Review Form */}
+        <ReviewForm 
+          placeId={shop.place_id}
+          shopName={shop.name}
+          onReviewSubmitted={(review) => setNewReview(review)}
+        />
 
-          {/* Bila ada reviews dari Google Places */}
-          {Array.isArray(reviews) && reviews.length > 0 ? (
-            <ul className="space-y-4">
-              {reviews.map((rev, idx) => (
-                <li key={idx} className="border-b last:border-b-0 border-gray-100 dark:border-zinc-700 pb-4">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-indigo-700 dark:text-indigo-300 font-semibold">
-                      {(rev.author_name || '?').slice(0,1).toUpperCase()}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <p className="font-semibold text-gray-900 dark:text-gray-100">{rev.author_name || 'Anonim'}</p>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">{rev.relative_time_description || ''}</span>
-                      </div>
-                      {typeof rev.rating === 'number' && (
-                        <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-0.5">{"⭐".repeat(Math.round(rev.rating))} <span className="text-xs text-gray-500 dark:text-gray-400">({rev.rating})</span></p>
-                      )}
-                      <p className="text-sm text-gray-700 dark:text-gray-300 mt-2 whitespace-pre-line">{rev.text || ''}</p>
-                      {rev.author_url && (
-                        <a
-                          href={rev.author_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-block mt-2 text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
-                        >
-                          Lihat profil di Google
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Belum ada komentar yang tersedia.
-              {!USE_API && ' Aktifkan API untuk menampilkan komentar dari Google Places.'}
-            </p>
-          )}
+        {/* Review List */}
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4">
+            Review Pengunjung
+          </h2>
+          <ReviewList 
+            placeId={shop.place_id}
+            newReview={newReview}
+          />
         </div>
       </div>
 
