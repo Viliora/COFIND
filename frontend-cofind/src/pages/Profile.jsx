@@ -234,18 +234,6 @@ const Profile = () => {
                     placeholder="Nama Lengkap Anda"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={user?.email || ''}
-                    disabled
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-zinc-600 bg-gray-100 dark:bg-zinc-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
-                  />
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Email tidak dapat diubah</p>
-                </div>
                 <div className="flex gap-3 pt-4">
                   <button
                     type="button"
@@ -277,10 +265,7 @@ const Profile = () => {
                   {profile?.full_name || profile?.username || 'User'}
                 </h1>
                 <p className="text-gray-600 dark:text-gray-400">
-                  @{profile?.username || user?.email?.split('@')[0]}
-                </p>
-                <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
-                  {user?.email}
+                  @{profile?.username || 'user'}
                 </p>
 
                 {/* Stats */}
@@ -311,7 +296,24 @@ const Profile = () => {
                     Edit Profil
                   </button>
                   <button
-                    onClick={signOut}
+                    onClick={async () => {
+                      try {
+                        const result = await signOut();
+                        if (result?.error) {
+                          console.error('[Profile] Error signing out:', result.error);
+                        } else {
+                          console.log('[Profile] Sign out successful');
+                        }
+                        // Wait a bit to ensure all state is cleared
+                        await new Promise(resolve => setTimeout(resolve, 300));
+                        // Navigate to home page after logout
+                        window.location.href = '/';
+                      } catch (error) {
+                        console.error('[Profile] Error during logout:', error);
+                        // Navigate to home even if there's an error
+                        window.location.href = '/';
+                      }
+                    }}
                     className="w-full py-3 px-4 border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center justify-center gap-2"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

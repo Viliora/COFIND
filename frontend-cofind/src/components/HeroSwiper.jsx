@@ -180,6 +180,7 @@ const HeroSwiper = ({ coffeeShops }) => {
         .hero-swiper .swiper-button-prev {
           color: white;
           background: transparent;
+          -webkit-backdrop-filter: none;
           backdrop-filter: none;
           width: 50px;
           height: 50px;

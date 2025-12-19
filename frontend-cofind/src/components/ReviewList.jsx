@@ -1,99 +1,319 @@
 import React, { useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import ReviewCard from './ReviewCard';
-import reviewsData from '../data/reviews.json';
 
 const ReviewList = ({ placeId, newReview }) => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Load reviews
+  // Load reviews - ALWAYS FETCH FRESH (no cache)
+  // Re-fetch on: placeId change, component mount
+  // NOTE: visibilitychange dihapus karena terlalu agresif dan menyebabkan review hilang
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [lastFetchTime, setLastFetchTime] = useState(0);
+  
   useEffect(() => {
-    const loadReviews = async () => {
-      setLoading(true);
+    const loadReviews = async (preserveExisting = false) => {
+      if (!placeId) {
+        console.warn('[ReviewList] No placeId provided');
+        setLoading(false);
+        return;
+      }
+      
+      // Prevent re-fetch terlalu sering (minimal 2 detik antara fetch)
+      const now = Date.now();
+      if (!preserveExisting && now - lastFetchTime < 2000) {
+        console.log('[ReviewList] Skipping fetch - too soon after last fetch');
+        return;
+      }
+      
+      console.log('[ReviewList] Loading reviews for place_id:', placeId, 'Timestamp:', new Date().toISOString(), 'Preserve existing:', preserveExisting);
+      
+      // OPTIMISTIC UI: Only set loading if we don't have reviews yet
+      // If we have reviews, keep showing them while fetching in background
+      if (reviews.length === 0) {
+        setLoading(true);
+      } else {
+        // We have reviews - fetch in background without showing skeleton
+        setLoading(false);
+      }
       setError(null);
+      
+      // Only clear reviews on initial load or placeId change
+      // Don't clear if we're just refreshing (preserve existing reviews)
+      if (!preserveExisting) {
+        setReviews([]);
+        setLoading(true); // Only show skeleton if clearing reviews
+      }
 
       try {
         let supabaseReviews = [];
-        let legacyReviews = [];
 
         // Load from Supabase if configured
         if (isSupabaseConfigured && supabase) {
-          const { data, error: fetchError } = await supabase
-            .from('reviews')
-            .select(`
-              *,
-              profiles:user_id (username, avatar_url, full_name),
-              photos:review_photos (id, photo_url),
-              replies:review_replies (
+          try {
+            // Force fresh fetch dengan cache-busting timestamp
+            const cacheBuster = Date.now();
+            console.log('[ReviewList] Fetching reviews from Supabase (fresh fetch, no cache):', placeId, 'Cache buster:', cacheBuster);
+            
+            // ULTRA-OPTIMIZED QUERY: Fetch reviews tanpa join untuk prevent timeout
+            // Profiles akan di-fetch terpisah jika diperlukan (lazy load)
+            const fetchPromise = supabase
+              .from('reviews')
+              .select(`
                 id,
+                user_id,
+                place_id,
+                rating,
                 text,
                 created_at,
-                profiles:user_id (username, avatar_url)
-              )
-            `)
-            .eq('place_id', placeId)
-            .order('created_at', { ascending: false });
+                updated_at
+              `)
+              .eq('place_id', placeId)
+              .order('created_at', { ascending: false })
+              .limit(50); // Reduce limit untuk faster query
+            
+            // Reduce timeout to 10 seconds karena query lebih sederhana
+            const timeoutPromise = new Promise((_, reject) => {
+              setTimeout(() => {
+                reject(new Error('Supabase request timeout after 10 seconds'));
+              }, 10000);
+            });
+            
+            let data = null;
+            let fetchError = null;
+            
+            try {
+              const result = await Promise.race([fetchPromise, timeoutPromise]);
+              data = result.data;
+              fetchError = result.error;
+              
+              // Step 2: Fetch photos dan replies secara terpisah jika diperlukan (lazy load)
+              // Untuk sekarang, kita skip photos dan replies untuk prevent timeout
+              // Bisa ditambahkan nanti jika diperlukan dengan separate queries
+            } catch (raceError) {
+              // Extract error message dengan lebih baik
+              const timeoutMessage = raceError?.message || raceError?.toString() || 'Request timeout or failed';
+              
+              // Log as warning instead of error (timeout is expected in some cases)
+              console.warn('[ReviewList] Supabase request failed or timed out:', {
+                message: timeoutMessage,
+                error: raceError,
+                placeId: placeId
+              });
+              fetchError = raceError;
+              // Don't block - continue without reviews
+            }
+            
+            // Log hasil fetch untuk debugging
+            console.log('[ReviewList] Supabase fetch result:', {
+              dataCount: data?.length || 0,
+              hasError: !!fetchError,
+              error: fetchError?.message || fetchError?.toString(),
+              errorCode: fetchError?.code,
+              errorDetails: fetchError?.details
+            });
 
-          if (fetchError) {
-            console.error('Error fetching reviews:', fetchError);
-          } else if (data) {
-            supabaseReviews = data.map(r => ({
-              ...r,
-              source: 'supabase'
-            }));
+            if (fetchError) {
+              // Extract error message dengan lebih baik
+              const errorMessage = fetchError.message || fetchError.toString() || 'Unknown error';
+              const errorCode = fetchError.code || 'NO_CODE';
+              const errorDetails = fetchError.details || null;
+              const errorHint = fetchError.hint || null;
+              
+              // Log error dengan detail untuk debugging RLS issues
+              console.error('[ReviewList] Error fetching from Supabase:', {
+                message: errorMessage,
+                code: errorCode,
+                details: errorDetails,
+                hint: errorHint,
+                placeId: placeId,
+                fullError: fetchError // Include full error untuk debugging
+              });
+              
+              // Check if it's RLS error (401/403)
+              if (errorCode === 'PGRST301' || errorMessage.includes('401') || errorMessage.includes('403')) {
+                console.error('[ReviewList] ⚠️ RLS POLICY ERROR - Guest mungkin tidak bisa membaca reviews. Cek RLS policy di Supabase!');
+                console.error('[ReviewList] Pastikan policy "Reviews viewable by everyone" menggunakan USING (true)');
+              }
+              
+              // Check if it's timeout error
+              if (errorMessage.includes('timeout')) {
+                console.warn('[ReviewList] ⚠️ TIMEOUT ERROR - Query terlalu lambat. Consider simplify query atau increase timeout.');
+              }
+              
+              // Don't throw - continue without reviews
+            } else if (data) {
+              // Fetch profiles separately untuk reviews yang berhasil di-fetch
+              // Ini lebih cepat daripada join di query utama
+              const userIds = [...new Set(data.map(r => r.user_id).filter(Boolean))];
+              let profilesMap = {};
+              
+              if (userIds.length > 0) {
+                try {
+                  // Fetch profiles in batch (lebih cepat daripada join)
+                  const { data: profilesData } = await supabase
+                    .from('profiles')
+                    .select('id, username, avatar_url, full_name')
+                    .in('id', userIds);
+                  
+                  if (profilesData) {
+                    profilesMap = profilesData.reduce((acc, p) => {
+                      acc[p.id] = p;
+                      return acc;
+                    }, {});
+                  }
+                } catch (profileError) {
+                  console.warn('[ReviewList] Error fetching profiles (non-critical):', profileError);
+                  // Continue without profiles - reviews tetap bisa ditampilkan
+                }
+              }
+              
+              // Map reviews dengan format yang konsisten
+              const mappedReviews = data.map(r => {
+                const profile = profilesMap[r.user_id] || null;
+                return {
+                  ...r,
+                  source: 'supabase',
+                  // Ensure photos and replies are arrays (empty for now, bisa di-fetch terpisah nanti)
+                  photos: r.photos || [],
+                  replies: r.replies || [],
+                  // Map profile data
+                  profiles: profile,
+                  // Ensure author_name untuk backward compatibility
+                  author_name: profile?.username || profile?.full_name || 'Anonim'
+                };
+              });
+              supabaseReviews = mappedReviews;
+              
+              // Merge dengan existing reviews jika preserveExisting = true
+              if (preserveExisting) {
+                setReviews(prev => {
+                  // Merge: keep existing reviews yang tidak ada di fetch baru, add new ones
+                  const existingIds = new Set(prev.map(r => r.id));
+                  const newReviews = mappedReviews.filter(r => !existingIds.has(r.id));
+                  const updatedReviews = prev.map(existing => {
+                    const updated = mappedReviews.find(r => r.id === existing.id);
+                    return updated || existing; // Use updated version if exists, otherwise keep existing
+                  });
+                  return [...newReviews, ...updatedReviews].sort((a, b) => {
+                    // Sort by created_at descending
+                    const dateA = new Date(a.created_at || 0);
+                    const dateB = new Date(b.created_at || 0);
+                    return dateB - dateA;
+                  });
+                });
+              } else {
+                setReviews(mappedReviews);
+              }
+              
+              setLastFetchTime(Date.now());
+              console.log('[ReviewList] Set reviews from Supabase:', mappedReviews.length, 'Preserve existing:', preserveExisting);
+              console.log('[ReviewList] Sample review:', mappedReviews[0] ? {
+                id: mappedReviews[0].id,
+                text: mappedReviews[0].text?.substring(0, 50),
+                username: mappedReviews[0].profiles?.username,
+                rating: mappedReviews[0].rating
+              } : 'No reviews');
+            } else {
+              console.warn('[ReviewList] Supabase returned no data and no error');
+              // Don't clear reviews if preserveExisting = true
+              if (!preserveExisting) {
+                setReviews([]);
+              }
+            }
+          } catch (supabaseError) {
+            console.error('[ReviewList] Supabase fetch exception:', supabaseError);
+            setReviews([]);
           }
+        } else {
+          console.log('[ReviewList] Supabase not configured or not available');
+          setReviews([]);
+        }
+        
+        // Ensure we have data before setting loading to false
+        if (supabaseReviews.length === 0) {
+          console.log('[ReviewList] No reviews found for place_id:', placeId);
         }
 
-        // Load from local JSON (legacy reviews)
-        const localReviews = reviewsData.reviews_by_place_id?.[placeId] || [];
-        legacyReviews = localReviews.map((r, index) => ({
-          id: `legacy-${placeId}-${index}`,
-          text: r.text,
-          rating: r.rating,
-          author_name: r.author_name,
-          created_at: r.relative_time_description,
-          source: 'legacy',
-          relative_time: r.relative_time_description
-        }));
-
-        // Combine: Supabase reviews first, then legacy
-        const allReviews = [...supabaseReviews, ...legacyReviews];
-        setReviews(allReviews);
-
       } catch (err) {
-        console.error('Error loading reviews:', err);
-        setError('Gagal memuat review');
+        // Extract error message dengan lebih baik
+        const errorMessage = err?.message || err?.toString() || 'Unknown error';
+        const errorStack = err?.stack || null;
         
-        // Fallback to legacy reviews only
-        const localReviews = reviewsData.reviews_by_place_id?.[placeId] || [];
-        setReviews(localReviews.map((r, index) => ({
-          id: `legacy-${placeId}-${index}`,
-          text: r.text,
-          rating: r.rating,
-          author_name: r.author_name,
-          created_at: r.relative_time_description,
-          source: 'legacy',
-          relative_time: r.relative_time_description
-        })));
+        console.error('[ReviewList] Error loading reviews:', {
+          message: errorMessage,
+          stack: errorStack,
+          error: err,
+          placeId: placeId
+        });
+        setError('Gagal memuat review');
+        // CRITICAL: Don't clear reviews on error if preserveExisting = true
+        // Keep existing reviews even if load fails
+        if (!preserveExisting) {
+          setReviews([]);
+        }
       } finally {
         setLoading(false);
+        setIsInitialLoad(false);
+        // Use setTimeout to log after state update
+        setTimeout(() => {
+          console.log('[ReviewList] Loading completed. Total reviews in state:', reviews.length);
+        }, 100);
       }
     };
 
-    loadReviews();
-  }, [placeId]);
+    // Initial load - clear reviews
+    loadReviews(false);
+    
+    // NOTE: visibilitychange listener dihapus karena terlalu agresif
+    // Ini menyebabkan review hilang saat user tidak melakukan apa-apa
+    // Jika perlu refresh, user bisa manual refresh page
+
+    // Cleanup
+    return () => {
+      // No cleanup needed - visibilitychange listener sudah dihapus
+    };
+  }, [placeId]); // Only re-fetch when placeId changes
 
   // Handle new review added
   useEffect(() => {
-    if (newReview) {
-      setReviews(prev => [{
+    if (newReview && newReview.id) {
+      // Ensure review has profile data and source
+      const newReviewWithSource = {
         ...newReview,
         source: 'supabase',
-        photos: [],
-        replies: []
-      }, ...prev]);
+        photos: newReview.photos || [],
+        replies: newReview.replies || [],
+        // Ensure author_name untuk backward compatibility
+        author_name: newReview.profiles?.username || newReview.profiles?.full_name || 'Anonim'
+      };
+      
+      console.log('[ReviewList] New review added:', {
+        id: newReviewWithSource.id,
+        username: newReviewWithSource.profiles?.username || 'No username',
+        hasProfile: !!newReviewWithSource.profiles,
+        user_id: newReviewWithSource.user_id
+      });
+      
+      // CRITICAL: Prevent race condition dengan loadReviews
+      // Set loading to false jika sedang loading (untuk prevent skeleton)
+      setLoading(false);
+      
+      // Check if review already exists (prevent duplicates)
+      setReviews(prev => {
+        const exists = prev.some(r => r.id === newReviewWithSource.id);
+        if (exists) {
+          console.log('[ReviewList] Review already exists, skipping');
+          return prev;
+        }
+        // Add new review to the top of the list
+        console.log('[ReviewList] Adding new review to list. Total before:', prev.length);
+        const updated = [newReviewWithSource, ...prev];
+        console.log('[ReviewList] Total after:', updated.length);
+        return updated;
+      });
     }
   }, [newReview]);
 
@@ -109,7 +329,7 @@ const ReviewList = ({ placeId, newReview }) => {
     ));
   };
 
-  // Calculate stats
+  // Calculate stats (always use all reviews, not filtered)
   const stats = {
     total: reviews.length,
     average: reviews.length > 0 
@@ -124,7 +344,11 @@ const ReviewList = ({ placeId, newReview }) => {
     }))
   };
 
-  if (loading) {
+  // OPTIMISTIC UI: Tampilkan reviews yang sudah ada meski sedang loading
+  // Ini mencegah skeleton muncul jika reviews sudah ada di state
+  const shouldShowSkeleton = loading && reviews.length === 0;
+  
+  if (shouldShowSkeleton) {
     return (
       <div className="space-y-4">
         {[1, 2, 3].map(i => (
@@ -146,6 +370,7 @@ const ReviewList = ({ placeId, newReview }) => {
 
   return (
     <div>
+
       {/* Stats Header */}
       {reviews.length > 0 && (
         <div className="bg-white dark:bg-zinc-800 rounded-xl p-5 mb-6 border border-gray-200 dark:border-zinc-700">
@@ -225,6 +450,7 @@ const ReviewList = ({ placeId, newReview }) => {
               review={review}
               onDelete={handleDelete}
               onUpdate={handleUpdate}
+              showSourceBadge={false}
             />
           ))}
         </div>

@@ -64,13 +64,11 @@ const CoffeeShopCard = ({ shop }) => {
     const photoUrl = getCoffeeShopImage(shop.place_id || shop.name);
 
     return (
-        <div 
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 overflow-hidden group w-full relative"
+        <div className="relative w-full">
+        <Link
+            to={`/shop/${shop.place_id}`}
+            className="block bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 overflow-hidden group w-full"
             style={{ pointerEvents: isModalOpen ? 'none' : 'auto' }}
-        >
-            <Link 
-                to={`/shop/${shop.place_id}`} 
-                className="block"
                 onClick={(e) => {
                     // Prevent navigation if modal is open
                     if (isModalOpen) {
@@ -94,23 +92,11 @@ const CoffeeShopCard = ({ shop }) => {
                         </div>
                     )}
                 </div>
-            </Link>
             
             <div className="p-4">
-                <Link 
-                    to={`/shop/${shop.place_id}`}
-                    onClick={(e) => {
-                        // Prevent navigation if modal is open
-                        if (isModalOpen) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                        }
-                    }}
-                >
                     <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors">
                         {shop.name}
                     </h2>
-                </Link>
                 
                 <div className="flex items-center gap-2 mb-3">
                     {statusInfo && (
@@ -161,51 +147,34 @@ const CoffeeShopCard = ({ shop }) => {
                             </span>
                         ))}
                     </div>
-                    <div className="flex items-center gap-2 relative">
-                        {/* AI Analysis Button */}
+                    <div className="text-indigo-500 group-hover:translate-x-1 transition-transform inline-flex items-center">
+                        View Details
+                        <svg className="w-4 h-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </Link>
+        
+        {/* AI Analysis Button - Outside Link to avoid nesting */}
                         <button
                             ref={aiButtonRef}
                             onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                e.nativeEvent?.stopImmediatePropagation?.();
                                 setIsModalOpen(true);
-                                return false;
                             }}
-                            onMouseDown={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                            }}
-                            className="p-0 bg-transparent hover:bg-transparent flex items-center justify-center group/ai relative z-10"
+            className="absolute top-2 left-2 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-colors z-20"
                             title="Analisis AI"
                             type="button"
                         >
                             <img 
                                 src="https://img.icons8.com/?size=100&id=ETVUfl0Ylh1p&format=png&color=000000" 
                                 alt="AI Analysis" 
-                                className="w-6 h-6 group-hover/ai:scale-110 transition-transform object-contain pointer-events-none"
+                className="w-5 h-5 object-contain pointer-events-none"
                             />
                         </button>
-                        {/* View Details Link */}
-                        <Link
-                            to={`/shop/${shop.place_id}`}
-                            className="text-indigo-500 group-hover:translate-x-1 transition-transform inline-flex items-center"
-                            onClick={(e) => {
-                                // Prevent navigation if modal is open
-                                if (isModalOpen) {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                }
-                            }}
-                        >
-                            View Details
-                            <svg className="w-4 h-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                            </svg>
-                        </Link>
-                    </div>
-                </div>
-            </div>
             
             {/* LLM Analysis Modal */}
             <LLMAnalysisModal

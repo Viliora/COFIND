@@ -105,7 +105,7 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
     setLoading(true);
 
     try {
-      // Insert review
+      // Insert review with profile data included
       const { data: reviewData, error: reviewError } = await supabase
         .from('reviews')
         .insert({
@@ -114,7 +114,17 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
           rating,
           text: text.trim()
         })
-        .select()
+        .select(`
+          *,
+          profiles:user_id (username, avatar_url, full_name),
+          photos:review_photos (id, photo_url),
+          replies:review_replies (
+            id,
+            text,
+            created_at,
+            profiles:user_id (username, avatar_url)
+          )
+        `)
         .single();
 
       if (reviewError) {
@@ -125,18 +135,28 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
 
       // Upload photos if any
       if (photos.length > 0) {
-        const photoUrls = await uploadPhotos(reviewData.id);
+        try {
+          const photoUrls = await uploadPhotos(reviewData.id);
 
-        // Insert photo records
-        if (photoUrls.length > 0) {
-          const photoRecords = photoUrls.map(url => ({
-            review_id: reviewData.id,
-            photo_url: url
-          }));
+          // Insert photo records
+          if (photoUrls.length > 0) {
+            const photoRecords = photoUrls.map(url => ({
+              review_id: reviewData.id,
+              photo_url: url
+            }));
 
-          await supabase
-            .from('review_photos')
-            .insert(photoRecords);
+            const { error: photoError } = await supabase
+              .from('review_photos')
+              .insert(photoRecords);
+            
+            if (photoError) {
+              console.error('[ReviewForm] Error inserting photo records:', photoError);
+              // Don't fail the whole review submission if photos fail
+            }
+          }
+        } catch (photoErr) {
+          console.error('[ReviewForm] Error uploading photos:', photoErr);
+          // Don't fail the whole review submission if photos fail
         }
       }
 
@@ -180,6 +200,15 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
           </p>
           <Link
             to="/login"
+            state={{
+              from: {
+                pathname: `/shop/${placeId}`,
+                search: '?scrollToReview=true'
+              },
+              placeId: placeId,
+              shopName: shopName,
+              scrollToReview: true
+            }}
             className="inline-flex items-center gap-2 px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

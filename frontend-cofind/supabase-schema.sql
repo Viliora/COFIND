@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   username TEXT UNIQUE,
   full_name TEXT,
   avatar_url TEXT,
+  role TEXT DEFAULT 'user' CHECK (role IN ('user', 'admin')),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

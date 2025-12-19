@@ -23,10 +23,17 @@ export default defineConfig({
     },
   },
   build: {
-    // Memastikan service worker di-copy ke build output
+    // Add cache busting untuk static assets
     rollupOptions: {
-      // Service worker di public/ akan otomatis di-copy
+      output: {
+        // Add hash to filenames untuk cache busting
+        // Ini memastikan file baru selalu ter-load, bukan dari cache
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
+      },
     },
+    // Service worker di public/ akan otomatis di-copy ke build output
   },
   // Public dir berisi file yang akan di-copy ke root output
   publicDir: 'public',

@@ -1,5 +1,6 @@
 // src/components/SmartReviewSummary.jsx
 import React, { useState, useEffect } from 'react';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
@@ -13,12 +14,51 @@ let llmStatusPromise = null; // Untuk mencegah race condition
  * dengan pemahaman konteks yang lebih baik (mengenali negasi, dll)
  * + Fallback ke client-side extraction jika LLM gagal
  */
-const SmartReviewSummary = ({ shopName, placeId, reviews }) => {
+const SmartReviewSummary = ({ shopName, placeId, reviews: propReviews }) => {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isExpanded, setIsExpanded] = useState(true);
   const [cacheInfo, setCacheInfo] = useState(null); // Info tentang cache
+  const [reviews, setReviews] = useState(propReviews || []); // Reviews dari props atau fetch dari Supabase
+
+  // Fetch reviews dari Supabase jika tidak ada di props
+  useEffect(() => {
+    if (!placeId || !isSupabaseConfigured || !supabase) {
+      return;
+    }
+
+    // Jika reviews sudah ada di props, gunakan itu
+    if (propReviews && propReviews.length > 0) {
+      setReviews(propReviews);
+      return;
+    }
+
+    // Fetch reviews dari Supabase
+    const fetchReviews = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('reviews')
+          .select('text, rating')
+          .eq('place_id', placeId)
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        if (error) {
+          console.warn('[SmartReviewSummary] Error fetching reviews:', error);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          setReviews(data);
+        }
+      } catch (err) {
+        console.warn('[SmartReviewSummary] Exception fetching reviews:', err);
+      }
+    };
+
+    fetchReviews();
+  }, [placeId, propReviews, isSupabaseConfigured]);
 
   // Fallback: Client-side keyword extraction (digunakan jika LLM gagal)
   const extractInsightsLocally = (reviewsList) => {
@@ -127,9 +167,14 @@ const SmartReviewSummary = ({ shopName, placeId, reviews }) => {
         return;
       }
 
-      // LLM tersedia, coba request
+      // LLM tersedia, coba request dengan timeout untuk prevent hanging
       try {
+        // Add timeout untuk prevent hanging (10 seconds)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        
         const response = await fetch(`${API_BASE}/api/llm/analyze-sentiment`, {
+          signal: controller.signal,
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -143,9 +188,16 @@ const SmartReviewSummary = ({ shopName, placeId, reviews }) => {
             }))
           }),
         });
+        
+        clearTimeout(timeoutId); // Clear timeout jika request berhasil
 
-        // Jika 402 (kuota habis), 500, atau 503 (LLM tidak tersedia), gunakan fallback
+        // Jika 402 (kuota habis/payment required), 500, atau 503 (LLM tidak tersedia), gunakan fallback
+        // 402 adalah expected error (quota habis), jangan log sebagai error
         if (response.status === 402 || response.status === 500 || response.status === 503) {
+          if (response.status === 402) {
+            // 402 adalah expected - quota habis atau payment required, gunakan fallback tanpa error
+            console.log('[SmartReviewSummary] LLM quota exceeded or payment required (402) - using fallback');
+          }
           llmStatusCache = false; // Mark LLM as unavailable
           const fallbackResult = extractInsightsLocally(reviews);
           if (isMounted && fallbackResult && (fallbackResult.positif.length > 0 || fallbackResult.fasilitas.length > 0)) {
@@ -185,7 +237,13 @@ const SmartReviewSummary = ({ shopName, placeId, reviews }) => {
         }
         
         // Response tidak valid, gunakan fallback
-      } catch {
+      } catch (error) {
+        // Handle timeout atau network error dengan graceful fallback
+        if (error.name === 'AbortError') {
+          console.log('[SmartReviewSummary] Request timeout - using fallback');
+        } else {
+          console.warn('[SmartReviewSummary] Error:', error.message || error);
+        }
         // Network error, gunakan fallback
       }
       
@@ -203,6 +261,13 @@ const SmartReviewSummary = ({ shopName, placeId, reviews }) => {
       isMounted = false; // Cleanup
     };
   }, [shopName, placeId, reviews]);
+  
+  // Update reviews jika propReviews berubah
+  useEffect(() => {
+    if (propReviews && propReviews.length > 0) {
+      setReviews(propReviews);
+    }
+  }, [propReviews]);
 
   // Jika reviews kurang dari 3, tampilkan pesan
   if (!reviews || reviews.length < 3) {

@@ -108,6 +108,13 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Text size adjust for better mobile compatibility */
+html,
+:host {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%; /* Chrome 54+, Edge 79+, Firefox */
+}
+
 html, body, #root {
   @apply min-h-screen bg-gray-50 dark:bg-zinc-900 w-full;
 }
@@ -145,4 +152,22 @@ html, body {
 
 .animate-fadeIn {
   animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Backdrop filter support for Safari */
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .backdrop-blur-sm {
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+  }
+  
+  .backdrop-blur-md {
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+  
+  .backdrop-blur-lg {
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+  }
 }

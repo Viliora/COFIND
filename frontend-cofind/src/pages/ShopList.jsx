@@ -7,7 +7,7 @@ import { fetchWithDevCache, isDevelopmentMode } from '../utils/devCache';
 import { getRecentlyViewedWithDetails } from '../utils/recentlyViewed';
 import heroBgImage from '../assets/1R modern cafe 1.5.jpg';
 import localPlacesData from '../data/places.json';
-import localReviewsData from '../data/reviews.json';
+// Reviews sekarang hanya dari Supabase, tidak perlu import reviews.json
 
 // Konfigurasi API (optional - bisa di-set via environment variable)
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
@@ -279,56 +279,20 @@ export default function ShopList() {
     });
   };
 
-  // Filter coffee shops berdasarkan selected pills (menggunakan reviews)
-  // AND Logic: Coffee shop harus memiliki SEMUA preferensi yang dipilih
+  // Filter coffee shops berdasarkan selected pills
+  // NOTE: Filtering berdasarkan reviews sekarang tidak tersedia karena reviews hanya dari Supabase
+  // Filtering akan menggunakan data dari places.json (amenities/features) jika tersedia
+  // Atau bisa diimplementasikan dengan fetch reviews dari Supabase untuk filtering (future enhancement)
   const filterShopsByPills = (shops) => {
     if (selectedPills.length === 0) {
       return shops;
     }
 
-    const reviewsByPlaceId = localReviewsData?.reviews_by_place_id || {};
-    
-    // Mapping sinonim untuk matching yang lebih baik
-    const synonymMap = {
-      'cozy': ['cozy', 'nyaman', 'hangat', 'tenang', 'santai', 'atmosfernya hangat', 'suasananya cozy'],
-      'belajar': ['belajar', 'ruang belajar', 'kerja', 'wfc', 'ngerjain tugas', 'cocok buat belajar', 'enak buat kerja'],
-      'wifi stabil': ['wifi', 'wifi bagus', 'wifi kencang', 'wifi stabil', 'koneksi internet lancar', 'internet kencang'],
-      'stopkontak': ['stopkontak', 'colokan', 'colokan banyak', 'terminal listrik', 'colokan di setiap meja'],
-      'musholla': ['musholla', 'tempat sholat', 'tempat sholat tersedia', 'ada musholla', 'ruang sholat'],
-      'sofa': ['sofa', 'kursi nyaman', 'kursi empuk', 'ruas sofa', 'kursi cukup nyaman'],
-      'dingin': ['dingin', 'ruangan dingin', 'ac', 'sejuk', 'adem', 'ruangan sejuk', 'ruangan adem'],
-      'aesthetic': ['aesthetic', 'estetik', 'kekinian', 'desain', 'dekor', 'instagramable'],
-      'live music': ['live music', 'musik', 'akustik', 'pertunjukan live music', 'musiknya santai', 'musiknya tenang'],
-      'parkiran luas': ['parkir', 'parkiran luas', 'parkir luas', 'parkir mobil nyaman', 'tempat parkir luas'],
-      '24 jam': ['24 jam', 'buka 24 jam', 'buka sampai larut', 'larut malam', 'buka malam', 'buka sampai subuh'],
-    };
-    
-    return shops.filter(shop => {
-      if (!shop.place_id) return false;
-      
-      const shopReviews = reviewsByPlaceId[shop.place_id] || [];
-      if (shopReviews.length === 0) return false;
-      
-      // Gabungkan semua review text menjadi satu untuk pencarian yang lebih komprehensif
-      const allReviewText = shopReviews
-        .map(review => (review.text || '').toLowerCase())
-        .filter(text => text.length >= 20)
-        .join(' ');
-      
-      if (allReviewText.length === 0) return false;
-      
-      // AND Logic: Cek apakah SEMUA pill yang dipilih terpenuhi
-      // Setiap pill harus ada di review (tidak harus di review yang sama)
-      const allPillsMatched = selectedPills.every(pillValue => {
-        const pillLower = pillValue.toLowerCase();
-        const synonyms = synonymMap[pillLower] || [pillLower];
-        
-        // Cek apakah salah satu sinonim ada di review text
-        return synonyms.some(synonym => allReviewText.includes(synonym));
-      });
-      
-      return allPillsMatched;
-    });
+    // TODO: Implement filtering dengan fetch reviews dari Supabase jika diperlukan
+    // Untuk sekarang, return semua shops jika ada pill yang dipilih
+    // (atau bisa filter berdasarkan amenities di places.json jika ada)
+    console.log('[ShopList] Pill filtering tidak tersedia - reviews sekarang hanya dari Supabase');
+    return shops;
   };
 
   // Filter berdasarkan search, kategori, dan pills
@@ -502,9 +466,8 @@ export default function ShopList() {
                 style={{ paddingLeft: '16px', paddingRight: '16px' }}
               >
                 {featuredShops.map((shop, index) => (
-                  <Link
+                  <div
                     key={shop.place_id}
-                    to={`/shop/${shop.place_id}`}
                     className="relative block hover:shadow-2xl transition duration-300 w-[240px] sm:w-[280px] md:w-[300px] shrink-0 snap-start group overflow-hidden"
                   >
                     <div className="absolute top-2 left-2 z-20 bg-gradient-to-r from-yellow-400 to-orange-500 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shadow-lg">
@@ -513,7 +476,7 @@ export default function ShopList() {
                     <div className="relative w-full h-full">
                       <CoffeeShopCard shop={shop} />
                     </div>
-                  </Link>
+                  </div>
                 ))}
               </div>
             </div>
@@ -573,15 +536,14 @@ export default function ShopList() {
             <div className="relative">
               <div className="flex gap-4 overflow-x-auto scroll-smooth pb-4 snap-x snap-mandatory">
                 {topRatedShops.map((shop) => (
-                  <Link
+                  <div
                     key={shop.place_id}
-                    to={`/shop/${shop.place_id}`}
                     className="relative block hover:shadow-2xl transition duration-300 w-[240px] sm:w-[280px] md:w-[300px] shrink-0 snap-start group"
                   >
                     <div className="relative">
                       <CoffeeShopCard shop={shop} />
                     </div>
-                  </Link>
+                  </div>
                 ))}
               </div>
             </div>
@@ -604,15 +566,14 @@ export default function ShopList() {
             <div className="relative">
               <div className="flex gap-4 overflow-x-auto scroll-smooth pb-4 snap-x snap-mandatory">
                 {newestShops.map((shop) => (
-                  <Link
+                  <div
                     key={shop.place_id}
-                    to={`/shop/${shop.place_id}`}
                     className="relative block hover:shadow-2xl transition duration-300 w-[240px] sm:w-[280px] md:w-[300px] shrink-0 snap-start group"
                   >
                     <div className="relative">
                       <CoffeeShopCard shop={shop} />
                     </div>
-                  </Link>
+                  </div>
                 ))}
               </div>
             </div>
@@ -634,13 +595,9 @@ export default function ShopList() {
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
               {recentlyViewedShops.map((shop) => (
-                <Link
-                  key={shop.place_id}
-                  to={`/shop/${shop.place_id}`}
-                  className="block hover:shadow-2xl transition duration-300"
-                >
+                <div key={shop.place_id} className="block hover:shadow-2xl transition duration-300">
                   <CoffeeShopCard shop={shop} />
-                </Link>
+                </div>
               ))}
             </div>
           </div>

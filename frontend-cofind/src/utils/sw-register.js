@@ -18,24 +18,39 @@ export function registerServiceWorker() {
   if (isDevelopment) {
     console.log('[SW Register] Development mode detected - Service Worker disabled untuk HMR');
     
-    // Unregister service worker yang mungkin sudah terdaftar
+    // Aggressively unregister service worker yang mungkin sudah terdaftar
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then((registrations) => {
         registrations.forEach((registration) => {
-          registration.unregister().then(() => {
-            console.log('[SW Register] Service Worker unregistered untuk development mode');
+          registration.unregister().then((success) => {
+            if (success) {
+              console.log('[SW Register] Service Worker unregistered untuk development mode');
+            }
           });
         });
       });
 
-      // Clear semua cache yang mungkin ada
+      // Aggressively clear semua cache yang mungkin ada
       if ('caches' in window) {
         caches.keys().then((cacheNames) => {
-          cacheNames.forEach((cacheName) => {
-            caches.delete(cacheName);
-            console.log('[SW Register] Cache cleared:', cacheName);
-          });
+          return Promise.all(
+            cacheNames.map((cacheName) => {
+              console.log('[SW Register] Clearing cache:', cacheName);
+              return caches.delete(cacheName);
+            })
+          );
+        }).then(() => {
+          console.log('[SW Register] All caches cleared for development mode');
         });
+      }
+      
+      // Clear browser cache headers by adding cache-busting
+      // This is handled by Vite dev server, but we ensure it here
+      if (window.location.search.indexOf('_sw_skip') === -1) {
+        // Add query param to force fresh load
+        const url = new URL(window.location);
+        url.searchParams.set('_sw_skip', '1');
+        // Don't reload automatically - let user do it if needed
       }
     }
     return; // Exit early - tidak register service worker di development

@@ -3,25 +3,11 @@
  * TIDAK PERLU LLM - menggunakan rule-based content filtering
  */
 
-import localReviewsData from '../data/reviews.json';
+// Reviews sekarang hanya dari Supabase, tidak perlu import reviews.json
 import { filterStopWords, normalizeWord } from './keywordMapping';
 
-/**
- * Ekstrak konteks review (full text) untuk similarity matching
- * @param {Array} reviews - Array of reviews
- * @returns {string} Combined review text (lowercase, cleaned)
- */
-function extractReviewContext(reviews) {
-  if (!reviews || reviews.length === 0) return '';
-  
-  // Gabungkan semua review text
-  const allTexts = reviews
-    .map(r => (r.text || '').trim())
-    .filter(text => text.length >= 20) // Minimal 20 karakter
-    .map(text => text.toLowerCase());
-  
-  return allTexts.join(' ');
-}
+// extractReviewContext tidak digunakan lagi karena reviews sekarang hanya dari Supabase
+// Gunakan nama dan address shop sebagai context untuk similarity matching
 
 /**
  * Ekstrak keywords penting dari review context
@@ -165,17 +151,18 @@ export function getPersonalizedRecommendations(favoriteShops, allShops, options 
     return [];
   }
   
-  const reviewsByPlaceId = localReviewsData?.reviews_by_place_id || {};
+  // Reviews sekarang hanya dari Supabase
+  // TODO: Fetch reviews dari Supabase untuk personalized recommendations jika diperlukan
+  // Untuk sekarang, gunakan hanya data dari places.json (amenities/features)
   
-  // Ekstrak konteks review dari semua favorit (gabungkan semua review text)
+  // Ekstrak konteks dari favorite shops (menggunakan data shop, bukan reviews)
   const favoriteReviewContexts = [];
   const favoriteLocations = [];
   
   favoriteShops.forEach(fav => {
-    const reviews = reviewsByPlaceId[fav.place_id] || [];
-    const context = extractReviewContext(reviews);
-    
-    if (context) {
+    // Gunakan nama dan address sebagai context (bukan reviews)
+    const context = `${fav.name || ''} ${fav.address || ''}`.toLowerCase();
+    if (context.trim()) {
       favoriteReviewContexts.push(context);
     }
     
@@ -213,8 +200,9 @@ export function getPersonalizedRecommendations(favoriteShops, allShops, options 
       return true;
     })
     .map(shop => {
-      const reviews = reviewsByPlaceId[shop.place_id] || [];
-      const shopContext = extractReviewContext(reviews);
+      // Reviews sekarang hanya dari Supabase
+      // Gunakan nama dan address sebagai context (bukan reviews)
+      const shopContext = `${shop.name || ''} ${shop.address || ''}`.toLowerCase();
       
       // Calculate similarity score berdasarkan konteks review
       const contextSimilarity = calculateContextSimilarity(combinedFavoriteContext, shopContext);

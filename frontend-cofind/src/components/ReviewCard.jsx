@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
-const ReviewCard = ({ review, onDelete, onUpdate }) => {
+const ReviewCard = ({ review, onDelete, onUpdate, showSourceBadge = false }) => {
   const { user, isAuthenticated } = useAuth();
   const [showPhotos, setShowPhotos] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
@@ -12,15 +12,40 @@ const ReviewCard = ({ review, onDelete, onUpdate }) => {
   const [reportReason, setReportReason] = useState('');
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [editText, setEditText] = useState(review.text);
-  const [editRating, setEditRating] = useState(review.rating);
+  const [editText, setEditText] = useState(review.text || '');
+  const [editRating, setEditRating] = useState(review.rating || 0);
+  const [editError, setEditError] = useState('');
 
   const isOwner = user?.id === review.user_id;
-  const timeAgo = getTimeAgo(review.created_at);
+  const timeAgo = getTimeAgo(review.created_at, review.relative_time);
+
+  // Handle edit click - reset state saat mulai edit
+  const handleEditClick = () => {
+    setEditText(review.text || '');
+    setEditRating(review.rating || 0);
+    setEditError('');
+    setIsEditing(true);
+  };
 
   // Format time ago
-  function getTimeAgo(dateString) {
+  function getTimeAgo(dateString, relativeTime) {
+    // If legacy review has relative_time, use it directly
+    if (relativeTime && typeof relativeTime === 'string') {
+      return relativeTime;
+    }
+    
+    // Try to parse date string
+    if (!dateString) return 'Tidak diketahui';
+    
     const date = new Date(dateString);
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      // If invalid date, try to use relative_time if available
+      if (relativeTime) return relativeTime;
+      return 'Tidak diketahui';
+    }
+    
     const now = new Date();
     const diffInSeconds = Math.floor((now - date) / 1000);
 
@@ -34,21 +59,84 @@ const ReviewCard = ({ review, onDelete, onUpdate }) => {
 
   // Handle edit submit
   const handleEditSubmit = async () => {
-    if (!editText.trim()) return;
+    if (!editText.trim()) {
+      alert('Review tidak boleh kosong');
+      return;
+    }
+    
     setLoading(true);
 
     try {
-      const { error } = await supabase
+      // Update review di Supabase
+      const { data: updatedReview, error } = await supabase
         .from('reviews')
-        .update({ text: editText.trim(), rating: editRating, updated_at: new Date().toISOString() })
-        .eq('id', review.id);
+        .update({ 
+          text: editText.trim(), 
+          rating: editRating, 
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', review.id)
+        .select(`
+          id,
+          user_id,
+          place_id,
+          rating,
+          text,
+          created_at,
+          updated_at
+        `)
+        .single();
 
-      if (!error) {
+      if (error) {
+        console.error('[ReviewCard] Error updating review:', error);
+        alert('Gagal menyimpan perubahan: ' + (error.message || 'Unknown error'));
+        setLoading(false);
+        return;
+      }
+
+      if (updatedReview) {
+        // Fetch profile data untuk updated review
+        let profileData = review.profiles; // Keep existing profile data
+        
+        if (updatedReview.user_id) {
+          try {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('id, username, avatar_url, full_name')
+              .eq('id', updatedReview.user_id)
+              .single();
+            
+            if (profile) {
+              profileData = profile;
+            }
+          } catch (profileError) {
+            console.warn('[ReviewCard] Error fetching profile (non-critical):', profileError);
+            // Keep existing profile data if fetch fails
+          }
+        }
+
+        // Prepare updated review dengan semua data yang diperlukan
+        const finalUpdatedReview = {
+          ...review, // Keep existing data (photos, replies, etc.)
+          ...updatedReview, // Override with updated data
+          profiles: profileData,
+          author_name: profileData?.username || profileData?.full_name || 'Anonim',
+          source: review.source || 'supabase'
+        };
+
+        // Update local state
         setIsEditing(false);
-        if (onUpdate) onUpdate({ ...review, text: editText.trim(), rating: editRating });
+        
+        // Call onUpdate dengan data lengkap
+        if (onUpdate) {
+          onUpdate(finalUpdatedReview);
+          console.log('[ReviewCard] Review updated successfully:', finalUpdatedReview.id);
+        }
       }
     } catch (err) {
-      console.error('Edit error:', err);
+      console.error('[ReviewCard] Exception updating review:', err);
+      const errorMessage = err.message || 'Unknown error';
+      setEditError('Gagal menyimpan perubahan: ' + errorMessage);
     } finally {
       setLoading(false);
     }
@@ -154,10 +242,21 @@ const ReviewCard = ({ review, onDelete, onUpdate }) => {
 
         {/* Info */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2">
-            <h4 className="font-semibold text-gray-900 dark:text-white truncate">
-              {review.profiles?.username || review.author_name || 'Anonim'}
-            </h4>
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h4 className="font-semibold text-gray-900 dark:text-white truncate">
+                {review.profiles?.username || review.author_name || 'Anonim'}
+              </h4>
+              {showSourceBadge && review.source && (
+                <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
+                  review.source === 'legacy'
+                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                    : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                }`}>
+                  {review.source === 'legacy' ? 'Google Review' : 'Review Pengguna'}
+                </span>
+              )}
+            </div>
             <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
               {timeAgo}
             </span>
@@ -195,25 +294,34 @@ const ReviewCard = ({ review, onDelete, onUpdate }) => {
         <div className="mb-3">
           <textarea
             value={editText}
-            onChange={(e) => setEditText(e.target.value)}
+            onChange={(e) => {
+              setEditText(e.target.value);
+              setEditError(''); // Clear error saat user mengetik
+            }}
             rows={3}
             className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-gray-900 dark:text-white text-sm resize-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+            placeholder="Tulis review Anda..."
           />
+          {editError && (
+            <p className="text-sm text-red-600 dark:text-red-400 mt-1">{editError}</p>
+          )}
           <div className="flex gap-2 mt-2">
             <button
               onClick={handleEditSubmit}
-              disabled={loading}
-              className="px-3 py-1.5 bg-amber-600 text-white text-sm rounded-lg hover:bg-amber-700 disabled:opacity-50"
+              disabled={loading || !editText.trim()}
+              className="px-3 py-1.5 bg-amber-600 text-white text-sm rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Simpan
+              {loading ? 'Menyimpan...' : 'Simpan'}
             </button>
             <button
               onClick={() => {
                 setIsEditing(false);
-                setEditText(review.text);
-                setEditRating(review.rating);
+                setEditText(review.text || '');
+                setEditRating(review.rating || 0);
+                setEditError('');
               }}
-              className="px-3 py-1.5 border border-gray-300 dark:border-zinc-600 text-gray-700 dark:text-gray-300 text-sm rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-700"
+              disabled={loading}
+              className="px-3 py-1.5 border border-gray-300 dark:border-zinc-600 text-gray-700 dark:text-gray-300 text-sm rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-700 disabled:opacity-50"
             >
               Batal
             </button>
@@ -281,11 +389,11 @@ const ReviewCard = ({ review, onDelete, onUpdate }) => {
           )}
         </div>
 
-        {/* Owner Actions */}
-        {isOwner && !isEditing && (
+        {/* Owner Actions - Hanya tampil jika user authenticated DAN adalah owner */}
+        {isAuthenticated && isOwner && !isEditing && (
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setIsEditing(true)}
+              onClick={handleEditClick}
               className="text-sm text-gray-600 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-500 flex items-center gap-1"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

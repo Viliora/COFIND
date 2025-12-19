@@ -1,9 +1,10 @@
 // Service Worker untuk Cofind dengan Optimized Caching Strategy
-const CACHE_VERSION = 'cofind-v2';
-const CACHE_SHELL = 'cofind-shell-v2';      // Navbar, Footer, App.jsx, CSS
-const CACHE_STATIC = 'cofind-static-v2';    // Images, fonts, dll
-const CACHE_CONTENT = 'cofind-content-v2';  // API responses, dynamic content
-const CACHE_PAGES = 'cofind-pages-v2';      // HTML pages
+// UPDATE CACHE VERSION SETIAP KALI ADA PERUBAHAN PENTING
+const CACHE_VERSION = 'cofind-v5'; // Updated untuk fix HTML page caching (login page issue)
+const CACHE_SHELL = 'cofind-shell-v5';      // Navbar, Footer, App.jsx, CSS
+const CACHE_STATIC = 'cofind-static-v5';    // Images, fonts, dll
+const CACHE_CONTENT = 'cofind-content-v5';  // API responses, dynamic content (DISABLED)
+// CACHE_PAGES dihapus - HTML pages tidak di-cache untuk prevent stale pages
 
 // Application Shell Assets - di-cache pertama kali dan jarang update
 const SHELL_ASSETS = [
@@ -68,12 +69,12 @@ self.addEventListener('activate', (event) => {
     CACHE_SHELL,
     CACHE_STATIC,
     CACHE_CONTENT,
-    CACHE_PAGES,
+    // CACHE_PAGES dihapus - HTML pages tidak di-cache
   ];
   
   event.waitUntil(
     Promise.all([
-      // Hapus cache lama
+      // Hapus cache lama - AGGRESSIVE CLEANUP
       caches.keys()
         .then((cacheNames) => {
           return Promise.all(
@@ -81,6 +82,11 @@ self.addEventListener('activate', (event) => {
               // Hapus cache lama yang bukan bagian dari versi ini
               if (cacheName.startsWith('cofind-') && !validCaches.includes(cacheName)) {
                 console.log('[Service Worker] Removing old cache:', cacheName);
+                return caches.delete(cacheName);
+              }
+              // Hapus cache dengan version lama (v1, v2, v3, v4, dll jika bukan v5)
+              if (cacheName.startsWith('cofind-') && !cacheName.includes('v5')) {
+                console.log('[Service Worker] Removing old version cache:', cacheName);
                 return caches.delete(cacheName);
               }
               // Skip cache yang bukan cofind- atau cache valid untuk versi ini
@@ -259,20 +265,27 @@ self.addEventListener('fetch', (event) => {
   }
   
   // Routing berdasarkan tipe request
+  // PRIORITY: API requests (Supabase, backend) - NEVER CACHE
+  if (isAPIRequest(request)) {
+    // NETWORK ONLY untuk API requests - NO CACHING
+    // Ini termasuk Supabase API, backend API, dll
+    event.respondWith(networkOnlyStrategy(request));
+    return; // Exit early - jangan process lebih lanjut
+  }
+  
+  // Static assets dan shell - boleh cache
   if (isShellAsset(request)) {
     // CACHE FIRST untuk shell (Navbar, Footer, App.jsx, CSS)
     event.respondWith(cacheFirstStrategy(request, CACHE_SHELL));
   } else if (isStaticAsset(request)) {
     // CACHE FIRST untuk static assets (images, fonts)
     event.respondWith(cacheFirstStrategy(request, CACHE_STATIC));
-  } else if (isAPIRequest(request)) {
-    // NETWORK ONLY untuk API requests - NO CACHING
-    event.respondWith(networkOnlyStrategy(request));
   } else if (isHTMLRequest(request)) {
-    // NETWORK FIRST untuk HTML pages
-    event.respondWith(networkFirstStrategy(request, CACHE_PAGES));
+    // NETWORK ONLY untuk HTML pages - TIDAK DI-CACHE untuk prevent stale pages
+    // Ini memastikan /login dan semua routes selalu fresh
+    event.respondWith(networkOnlyStrategyForHTML(request));
   } else {
-    // Default: NETWORK FIRST
+    // Default: NETWORK FIRST (untuk dynamic content)
     event.respondWith(networkFirstStrategy(request, CACHE_CONTENT));
   }
 });
@@ -315,14 +328,128 @@ async function cacheFirstStrategy(request, cacheName) {
   }
 }
 
+// NETWORK ONLY FOR HTML: Always fetch HTML pages from network, no caching
+// Ini memastikan routes seperti /login selalu fresh dan tidak stale
+async function networkOnlyStrategyForHTML(request) {
+  try {
+    console.log('[Service Worker] Network Only (HTML) - Fetching from network (NO CACHE):', request.url);
+    
+    // Create new request with aggressive cache-busting headers
+    const cacheBustingHeaders = new Headers(request.headers);
+    cacheBustingHeaders.set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+    cacheBustingHeaders.set('Pragma', 'no-cache');
+    cacheBustingHeaders.set('Expires', '0');
+    cacheBustingHeaders.set('If-Modified-Since', '0'); // Prevent 304 responses
+    cacheBustingHeaders.set('If-None-Match', '*'); // Prevent 304 responses
+    
+    // Add cache-busting query parameter untuk HTML pages
+    const url = new URL(request.url);
+    url.searchParams.set('_html_t', Date.now().toString()); // HTML timestamp
+    
+    const cacheBustingRequest = new Request(url.toString(), {
+      method: request.method,
+      headers: cacheBustingHeaders,
+      body: request.body,
+      mode: request.mode,
+      credentials: request.credentials,
+      cache: 'no-store', // Force no cache
+      redirect: request.redirect
+    });
+    
+    const networkResponse = await fetch(cacheBustingRequest, {
+      cache: 'no-store', // Double ensure no cache
+      headers: cacheBustingHeaders
+    });
+    
+    if (networkResponse && networkResponse.ok) {
+      // Create new response with no-cache headers
+      const responseHeaders = new Headers(networkResponse.headers);
+      responseHeaders.set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+      responseHeaders.set('Pragma', 'no-cache');
+      responseHeaders.set('Expires', '0');
+      
+      const noCacheResponse = new Response(networkResponse.body, {
+        status: networkResponse.status,
+        statusText: networkResponse.statusText,
+        headers: responseHeaders
+      });
+      
+      // CRITICAL: Don't cache HTML pages - always fetch fresh
+      return noCacheResponse;
+    }
+    
+    throw new Error('Network response not OK');
+  } catch (error) {
+    console.error('[Service Worker] Network Only (HTML) - Failed:', request.url, error);
+    
+    // Return error response - jangan fallback ke cache untuk HTML
+    return new Response(
+      '<!DOCTYPE html><html><head><title>Network Error</title></head><body><h1>Network Error</h1><p>Unable to load page. Please check your connection.</p><script>setTimeout(() => window.location.reload(), 2000);</script></body></html>',
+      {
+        status: 503,
+        statusText: 'Service Unavailable',
+        headers: { 
+          'Content-Type': 'text/html',
+          'Cache-Control': 'no-cache'
+        }
+      }
+    );
+  }
+}
+
 // NETWORK ONLY: Always fetch from network, no caching (for API requests)
 async function networkOnlyStrategy(request) {
   try {
-    console.log('[Service Worker] Network Only - Fetching from network:', request.url);
-    const networkResponse = await fetch(request);
+    console.log('[Service Worker] Network Only - Fetching from network (NO CACHE):', request.url);
+    
+    // Check if this is a Supabase request
+    const url = new URL(request.url);
+    const isSupabaseRequest = url.hostname.includes('supabase.co') || url.hostname.includes('supabase');
+    
+    // Add cache-busting query parameter to URL (only for non-Supabase requests)
+    // CRITICAL: Jangan tambahkan query parameter untuk Supabase (akan menyebabkan "failed to parse filter")
+    if (!isSupabaseRequest) {
+      url.searchParams.set('_sw_t', Date.now().toString()); // Service Worker timestamp
+    }
+    
+    // Create new request with cache-busting headers
+    const cacheBustingHeaders = new Headers(request.headers);
+    cacheBustingHeaders.set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+    cacheBustingHeaders.set('Pragma', 'no-cache');
+    cacheBustingHeaders.set('Expires', '0');
+    cacheBustingHeaders.set('If-Modified-Since', '0'); // Prevent 304 responses
+    cacheBustingHeaders.set('If-None-Match', '*'); // Prevent 304 responses
+    
+    const cacheBustingRequest = new Request(isSupabaseRequest ? request.url : url.toString(), {
+      method: request.method,
+      headers: cacheBustingHeaders,
+      body: request.body,
+      mode: request.mode,
+      credentials: request.credentials,
+      cache: 'no-store', // Force no cache
+      redirect: request.redirect
+    });
+    
+    const networkResponse = await fetch(cacheBustingRequest, {
+      cache: 'no-store', // Double ensure no cache
+      headers: cacheBustingHeaders
+    });
     
     if (networkResponse && networkResponse.ok) {
-      return networkResponse;
+      // Create new response with no-cache headers
+      const responseHeaders = new Headers(networkResponse.headers);
+      responseHeaders.set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+      responseHeaders.set('Pragma', 'no-cache');
+      responseHeaders.set('Expires', '0');
+      
+      const noCacheResponse = new Response(networkResponse.body, {
+        status: networkResponse.status,
+        statusText: networkResponse.statusText,
+        headers: responseHeaders
+      });
+      
+      // CRITICAL: Don't cache this response
+      return noCacheResponse;
     }
     
     throw new Error('Network response not OK');
@@ -437,8 +564,24 @@ function isStaticAsset(request) {
 
 function isAPIRequest(request) {
   const url = new URL(request.url);
-  return url.pathname.startsWith('/api/') ||
-         url.hostname !== self.location.hostname;
+  
+  // Backend API requests
+  if (url.pathname.startsWith('/api/')) {
+    return true;
+  }
+  
+  // Supabase API requests - NEVER CACHE
+  if (url.hostname.includes('supabase.co') || 
+      url.hostname.includes('supabase')) {
+    return true;
+  }
+  
+  // External API requests
+  if (url.hostname !== self.location.hostname) {
+    return true;
+  }
+  
+  return false;
 }
 
 function isHTMLRequest(request) {

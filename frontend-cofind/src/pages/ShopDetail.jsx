@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import OptimizedImage from '../components/OptimizedImage';
 import SmartReviewSummary from '../components/SmartReviewSummary';
 import ReviewForm from '../components/ReviewForm';
 import ReviewList from '../components/ReviewList';
 import localPlacesData from '../data/places.json';
-import localReviewsData from '../data/reviews.json';
 import { getCoffeeShopImage } from '../utils/coffeeShopImages';
 import { addToRecentlyViewed } from '../utils/recentlyViewed';
 
@@ -17,6 +18,9 @@ const MIN_REVIEWS = 15; // Maksimal jumlah reviews yang ditampilkan
 
 function ShopDetail() {
   const { id } = useParams();  // id akan mengambil place_id
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
   const [shop, setShop] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -24,7 +28,43 @@ function ShopDetail() {
   const [isFavorite, setIsFavorite] = useState(false);
   const [isWantToVisit, setIsWantToVisit] = useState(false);
   const [notification, setNotification] = useState(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null); // 'favorite' or 'wantToVisit'
   const [newReview, setNewReview] = useState(null); // For triggering ReviewList update
+  const reviewFormRef = useRef(null); // Ref untuk scroll ke review form
+
+  // Handle scroll to review form setelah login
+  useEffect(() => {
+    // Check if user just logged in and should scroll to review form
+    const shouldScrollToReview = location.state?.scrollToReview || 
+                                  new URLSearchParams(location.search).get('scrollToReview') === 'true';
+    
+    if (shouldScrollToReview && isAuthenticated && shop && !isLoading && reviewFormRef.current) {
+      // Wait a bit for page to fully render, then scroll
+      const scrollTimeout = setTimeout(() => {
+        if (reviewFormRef.current) {
+          // Calculate offset untuk navbar (jika ada)
+          const navbarHeight = 60; // Approximate navbar height
+          const elementPosition = reviewFormRef.current.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.pageYOffset - navbarHeight;
+          
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+          });
+          
+          console.log('[ShopDetail] Scrolled to review form after login');
+          
+          // Clear the state to prevent re-scrolling on refresh
+          if (location.state?.scrollToReview) {
+            window.history.replaceState({}, '', location.pathname);
+          }
+        }
+      }, 800); // Increased timeout untuk memastikan semua content ter-render
+      
+      return () => clearTimeout(scrollTimeout);
+    }
+  }, [isAuthenticated, shop, isLoading, location]);
 
   useEffect(() => {
     const loadShop = async () => {
@@ -58,13 +98,9 @@ function ShopDetail() {
               // Simpan ke recently viewed
               addToRecentlyViewed(normalized);
               
-              // Ambil reviews dari file reviews.json terpisah berdasarkan place_id
-              const reviewsForShop = localReviewsData?.reviews_by_place_id?.[id] || [];
-              const localReviews = Array.isArray(reviewsForShop) 
-                ? reviewsForShop.slice(0, MIN_REVIEWS)
-                : [];
-              console.log('[ShopDetail] Loaded reviews from reviews.json:', localReviews.length);
-              setReviews(localReviews);
+              // Reviews sekarang hanya dari Supabase (via ReviewList component)
+              // Tidak perlu load dari reviews.json lagi
+              setReviews([]);
               setIsLoading(false);
               return;
             } else {
@@ -140,58 +176,192 @@ function ShopDetail() {
     loadShop();
   }, [id]);
 
-  // Check if shop is favorited or in want-to-visit
+  // Check if shop is favorited or in want-to-visit (from Supabase or localStorage)
   useEffect(() => {
-    if (id) {
-      const favorites = JSON.parse(localStorage.getItem('favoriteShops') || '[]');
-      setIsFavorite(favorites.includes(id));
+    const checkFavoriteStatus = async () => {
+      if (!id) return;
       
-      const wantToVisit = JSON.parse(localStorage.getItem('wantToVisitShops') || '[]');
-      setIsWantToVisit(wantToVisit.includes(id));
-    }
-  }, [id]);
-
-  const toggleFavorite = () => {
-    try {
-      const favorites = JSON.parse(localStorage.getItem('favoriteShops') || '[]');
-      if (isFavorite) {
-        // Remove from favorites
-        const updated = favorites.filter(fav => fav !== id);
-        localStorage.setItem('favoriteShops', JSON.stringify(updated));
-        setNotification({ type: 'removed', message: 'Dihapus dari favorit' });
-      } else {
-        // Add to favorites
-        if (!favorites.includes(id)) {
-          favorites.push(id);
-          localStorage.setItem('favoriteShops', JSON.stringify(favorites));
+      // If user is authenticated and Supabase is configured, check from Supabase
+      if (isAuthenticated && user?.id && isSupabaseConfigured && supabase) {
+        try {
+          // Check favorite
+          const { data: favoriteData, error: favoriteError } = await supabase
+            .from('favorites')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('place_id', id)
+            .maybeSingle();
+          
+          if (!favoriteError && favoriteData) {
+            setIsFavorite(true);
+          } else {
+            setIsFavorite(false);
+          }
+          
+          // Check want to visit
+          const { data: wantToVisitData, error: wantToVisitError } = await supabase
+            .from('want_to_visit')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('place_id', id)
+            .maybeSingle();
+          
+          if (!wantToVisitError && wantToVisitData) {
+            setIsWantToVisit(true);
+          } else {
+            setIsWantToVisit(false);
+          }
+        } catch (err) {
+          console.error('[ShopDetail] Error checking favorite/want to visit status:', err);
+          // Fallback to localStorage
+          const favorites = JSON.parse(localStorage.getItem('favoriteShops') || '[]');
+          setIsFavorite(favorites.includes(id));
+          
+          const wantToVisit = JSON.parse(localStorage.getItem('wantToVisitShops') || '[]');
+          setIsWantToVisit(wantToVisit.includes(id));
         }
-        setNotification({ type: 'added', message: 'Ditambahkan ke favorit!' });
+      } else {
+        // Guest mode: use localStorage
+        const favorites = JSON.parse(localStorage.getItem('favoriteShops') || '[]');
+        setIsFavorite(favorites.includes(id));
+        
+        const wantToVisit = JSON.parse(localStorage.getItem('wantToVisitShops') || '[]');
+        setIsWantToVisit(wantToVisit.includes(id));
       }
-      setIsFavorite(!isFavorite);
+    };
+    
+    checkFavoriteStatus();
+  }, [id, isAuthenticated, user?.id]);
+
+  const toggleFavorite = async () => {
+    // If guest, show login modal
+    if (!isAuthenticated || !user?.id) {
+      setPendingAction('favorite');
+      setShowLoginModal(true);
+      return;
+    }
+    
+    try {
+      // If user is authenticated and Supabase is configured, save to Supabase
+      if (isSupabaseConfigured && supabase) {
+        if (isFavorite) {
+          // Remove from favorites in Supabase
+          const { error } = await supabase
+            .from('favorites')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('place_id', id);
+          
+          if (error) {
+            console.error('[ShopDetail] Error removing favorite:', error);
+            setNotification({ type: 'error', message: 'Gagal menghapus dari favorit' });
+            return;
+          }
+          
+          setNotification({ type: 'removed', message: 'Dihapus dari favorit' });
+        } else {
+          // Add to favorites in Supabase
+          const { error } = await supabase
+            .from('favorites')
+            .insert({ user_id: user.id, place_id: id });
+          
+          if (error) {
+            console.error('[ShopDetail] Error adding favorite:', error);
+            setNotification({ type: 'error', message: 'Gagal menambahkan ke favorit' });
+            return;
+          }
+          
+          setNotification({ type: 'added', message: 'Ditambahkan ke favorit!' });
+        }
+        
+        setIsFavorite(!isFavorite);
+      } else {
+        // Guest mode: use localStorage
+        const favorites = JSON.parse(localStorage.getItem('favoriteShops') || '[]');
+        if (isFavorite) {
+          // Remove from favorites
+          const updated = favorites.filter(fav => fav !== id);
+          localStorage.setItem('favoriteShops', JSON.stringify(updated));
+          setNotification({ type: 'removed', message: 'Dihapus dari favorit' });
+        } else {
+          // Add to favorites
+          if (!favorites.includes(id)) {
+            favorites.push(id);
+            localStorage.setItem('favoriteShops', JSON.stringify(favorites));
+          }
+          setNotification({ type: 'added', message: 'Ditambahkan ke favorit!' });
+        }
+        setIsFavorite(!isFavorite);
+      }
     } catch (err) {
-      console.error('Error toggling favorite:', err);
+      console.error('[ShopDetail] Error toggling favorite:', err);
+      setNotification({ type: 'error', message: 'Terjadi kesalahan saat mengubah favorit' });
     }
   };
 
-  const toggleWantToVisit = () => {
+  const toggleWantToVisit = async () => {
+    // If guest, show login modal
+    if (!isAuthenticated || !user?.id) {
+      setPendingAction('wantToVisit');
+      setShowLoginModal(true);
+      return;
+    }
+    
     try {
-      const wantToVisit = JSON.parse(localStorage.getItem('wantToVisitShops') || '[]');
-      if (isWantToVisit) {
-        // Remove from want-to-visit
-        const updated = wantToVisit.filter(item => item !== id);
-        localStorage.setItem('wantToVisitShops', JSON.stringify(updated));
-        setNotification({ type: 'removed', message: 'Dihapus dari want to visit' });
-      } else {
-        // Add to want-to-visit
-        if (!wantToVisit.includes(id)) {
-          wantToVisit.push(id);
-          localStorage.setItem('wantToVisitShops', JSON.stringify(wantToVisit));
+      // If user is authenticated and Supabase is configured, save to Supabase
+      if (isSupabaseConfigured && supabase) {
+        if (isWantToVisit) {
+          // Remove from want to visit in Supabase
+          const { error } = await supabase
+            .from('want_to_visit')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('place_id', id);
+          
+          if (error) {
+            console.error('[ShopDetail] Error removing want to visit:', error);
+            setNotification({ type: 'error', message: 'Gagal menghapus dari want to visit' });
+            return;
+          }
+          
+          setNotification({ type: 'removed', message: 'Dihapus dari want to visit' });
+        } else {
+          // Add to want to visit in Supabase
+          const { error } = await supabase
+            .from('want_to_visit')
+            .insert({ user_id: user.id, place_id: id });
+          
+          if (error) {
+            console.error('[ShopDetail] Error adding want to visit:', error);
+            setNotification({ type: 'error', message: 'Gagal menambahkan ke want to visit' });
+            return;
+          }
+          
+          setNotification({ type: 'added', message: 'Ditambahkan ke want to visit!' });
         }
-        setNotification({ type: 'added', message: 'Ditambahkan ke want to visit!' });
+        
+        setIsWantToVisit(!isWantToVisit);
+      } else {
+        // Guest mode: use localStorage
+        const wantToVisit = JSON.parse(localStorage.getItem('wantToVisitShops') || '[]');
+        if (isWantToVisit) {
+          // Remove from want-to-visit
+          const updated = wantToVisit.filter(item => item !== id);
+          localStorage.setItem('wantToVisitShops', JSON.stringify(updated));
+          setNotification({ type: 'removed', message: 'Dihapus dari want to visit' });
+        } else {
+          // Add to want-to-visit
+          if (!wantToVisit.includes(id)) {
+            wantToVisit.push(id);
+            localStorage.setItem('wantToVisitShops', JSON.stringify(wantToVisit));
+          }
+          setNotification({ type: 'added', message: 'Ditambahkan ke want to visit!' });
+        }
+        setIsWantToVisit(!isWantToVisit);
       }
-      setIsWantToVisit(!isWantToVisit);
     } catch (err) {
-      console.error('Error toggling want to visit:', err);
+      console.error('[ShopDetail] Error toggling want to visit:', err);
+      setNotification({ type: 'error', message: 'Terjadi kesalahan saat mengubah want to visit' });
     }
   };
 
@@ -322,12 +492,12 @@ function ShopDetail() {
       </div>
 
       {/* Smart Review Summary - AI Analysis */}
-      {reviews && reviews.length >= 3 && (
+      {/* Reviews sekarang hanya dari Supabase, SmartReviewSummary akan fetch sendiri */}
+      {shop?.place_id && (
         <div className="mt-6 sm:mt-8">
           <SmartReviewSummary 
             shopName={shop.name}
             placeId={shop.place_id}
-            reviews={reviews}
           />
         </div>
       )}
@@ -412,25 +582,32 @@ function ShopDetail() {
       {/* Reviews Section */}
       <div className="mt-6 sm:mt-8 space-y-6">
         {/* Review Form */}
-        <ReviewForm 
-          placeId={shop.place_id}
-          shopName={shop.name}
-          onReviewSubmitted={(review) => setNewReview(review)}
-        />
-
-        {/* Review List */}
-        <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4">
-            Review Pengunjung
-          </h2>
-          <ReviewList 
+        <div ref={reviewFormRef}>
+          <ReviewForm 
             placeId={shop.place_id}
-            newReview={newReview}
+            shopName={shop.name}
+            onReviewSubmitted={(review) => {
+              console.log('[ShopDetail] Review submitted:', review);
+              setNewReview(review);
+            }}
           />
         </div>
+
+        {/* Review List - Only render if shop and place_id are loaded */}
+        {shop?.place_id && (
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4">
+              Review Pengunjung
+            </h2>
+            <ReviewList 
+              placeId={shop.place_id}
+              newReview={newReview}
+            />
+          </div>
+        )}
       </div>
 
-      {/* Floating Action Buttons - pojok kanan bawah */}
+      {/* Floating Action Buttons - pojok kanan bawah (untuk semua user, termasuk guest) */}
       <div className="fixed bottom-8 right-8 flex flex-col gap-4 z-40">
         {/* Want to Visit Button */}
         <button
@@ -550,6 +727,48 @@ function ShopDetail() {
           </svg>
         </button>
       </div>
+
+      {/* Login Modal untuk Guest */}
+      {showLoginModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-zinc-800 rounded-xl p-6 max-w-md w-full shadow-2xl">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+              Login Diperlukan
+            </h3>
+            <p className="text-gray-700 dark:text-gray-300 mb-6">
+              Untuk {pendingAction === 'favorite' ? 'menambahkan ke favorit' : 'menambahkan ke want to visit'}, 
+              Anda perlu login terlebih dahulu. Apakah Anda ingin login sekarang?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowLoginModal(false);
+                  setPendingAction(null);
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-zinc-700 rounded-lg hover:bg-gray-200 dark:hover:bg-zinc-600 transition-colors"
+              >
+                Tidak
+              </button>
+              <button
+                onClick={() => {
+                  setShowLoginModal(false);
+                  setPendingAction(null);
+                  // Navigate to login dengan state untuk redirect kembali
+                  navigate('/login', { 
+                    state: { 
+                      redirectTo: `/shop/${id}`,
+                      scrollToReview: false
+                    } 
+                  });
+                }}
+                className="px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition-colors"
+              >
+                Ya, Login
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

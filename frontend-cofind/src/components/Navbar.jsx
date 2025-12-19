@@ -4,19 +4,41 @@ import cofindImg from '../assets/cofind.svg?url';
 import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
-  const { user, profile, isAuthenticated, signOut, isSupabaseConfigured } = useAuth();
+  const { user, profile, isAuthenticated, isAdmin, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [collectionDropdownOpen, setCollectionDropdownOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
   // Sync search query with URL params
   useEffect(() => {
     const query = searchParams.get('search') || '';
     setSearchQuery(query);
   }, [searchParams]);
+
+  // Close user dropdown when route changes
+  useEffect(() => {
+    setUserDropdownOpen(false);
+  }, [location.pathname]);
+
+  // Close user dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userDropdownOpen && !event.target.closest('.user-dropdown-container')) {
+        setUserDropdownOpen(false);
+      }
+    };
+
+    if (userDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [userDropdownOpen]);
 
   // Handle search submission
   const handleSearch = (e) => {
@@ -289,42 +311,87 @@ const Navbar = () => {
             {/* User Auth Button - Desktop */}
             <div className="hidden md:block">
               {isAuthenticated ? (
-                <div className="relative group">
-                  <button className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors">
+                <div className="relative user-dropdown-container">
+                  <button 
+                    onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
+                  >
                     <div className="w-7 h-7 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center text-white text-sm font-semibold">
                       {profile?.username?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
                     </div>
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300 max-w-24 truncate">
                       {profile?.username || user?.email?.split('@')[0] || 'User'}
                     </span>
-                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg 
+                      className={`w-4 h-4 text-gray-500 transition-transform ${userDropdownOpen ? 'rotate-180' : ''}`} 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </button>
                   {/* Dropdown */}
-                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-zinc-800 rounded-lg shadow-lg border border-gray-200 dark:border-zinc-700 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                    <Link
-                      to="/profile"
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-700"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                      Profil Saya
-                    </Link>
-                    <button
-                      onClick={async () => {
-                        await signOut();
-                        navigate('/');
-                      }}
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-zinc-700 w-full text-left"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                      </svg>
-                      Keluar
-                    </button>
-                  </div>
+                  {userDropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-zinc-800 rounded-lg shadow-lg border border-gray-200 dark:border-zinc-700 py-2 z-50">
+                      <Link
+                        to="/profile"
+                        onClick={() => setUserDropdownOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-700"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        Profil Saya
+                      </Link>
+                      {isAdmin && (
+                        <Link
+                          to="/admin"
+                          onClick={() => setUserDropdownOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-purple-600 dark:text-purple-400 hover:bg-gray-100 dark:hover:bg-zinc-700"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                          </svg>
+                          Admin Panel
+                        </Link>
+                      )}
+                      <button
+                        onClick={async () => {
+                          setUserDropdownOpen(false);
+                          try {
+                            console.log('[Navbar] Logging out...');
+                            
+                            // Sign out and wait for completion
+                            const result = await signOut();
+                            
+                            if (result?.error) {
+                              console.error('[Navbar] Error signing out:', result.error);
+                            } else {
+                              console.log('[Navbar] Sign out successful');
+                            }
+                            
+                            // Wait a bit longer to ensure all state is cleared
+                            await new Promise(resolve => setTimeout(resolve, 300));
+                            
+                            // Force reload to ensure clean state (most reliable way)
+                            console.log('[Navbar] Reloading page to ensure guest mode...');
+                            window.location.href = '/';
+                          } catch (error) {
+                            console.error('[Navbar] Error during logout:', error);
+                            // Force reload even if there's an error
+                            window.location.href = '/';
+                          }
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-zinc-700 w-full text-left"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        Keluar
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <Link
@@ -460,11 +527,44 @@ const Navbar = () => {
                       </div>
                       Profil Saya
                     </Link>
+                    {isAdmin && (
+                      <Link
+                        to="/admin"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-300"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                        Admin Panel
+                      </Link>
+                    )}
                     <button
                       onClick={async () => {
-                        await signOut();
                         setMobileMenuOpen(false);
-                        navigate('/');
+                        try {
+                          console.log('[Navbar] Logging out...');
+                          
+                          // Sign out and wait for completion
+                          const result = await signOut();
+                          
+                          if (result?.error) {
+                            console.error('[Navbar] Error signing out:', result.error);
+                          } else {
+                            console.log('[Navbar] Sign out successful');
+                          }
+                          
+                          // Wait a bit to ensure all state is cleared
+                          await new Promise(resolve => setTimeout(resolve, 300));
+                          
+                          // Navigate to home page after logout
+                          console.log('[Navbar] Navigating to home page after logout...');
+                          navigate('/');
+                        } catch (error) {
+                          console.error('[Navbar] Error during logout:', error);
+                          // Navigate to home even if there's an error
+                          navigate('/');
+                        }
                       }}
                       className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 w-full text-left transition-all duration-300"
                     >
