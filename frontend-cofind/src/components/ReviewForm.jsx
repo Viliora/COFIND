@@ -63,24 +63,38 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
     const uploadedUrls = [];
 
     for (const photo of photos) {
-      const fileExt = photo.name.split('.').pop();
-      const fileName = `${reviewId}-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `reviews/${fileName}`;
+      try {
+        const fileExt = photo.name.split('.').pop();
+        const fileName = `${reviewId}-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        // CRITICAL: Path structure must be: reviews/{userId}/{filename}
+        // This matches the RLS policy for review photos
+        const filePath = `reviews/${user.id}/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('review-photos')
-        .upload(filePath, photo);
+        console.log('[ReviewForm] Uploading photo to:', filePath);
 
-      if (uploadError) {
-        console.error('Upload error:', uploadError);
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('review-photos')
+          .upload(filePath, photo, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (uploadError) {
+          console.error('[ReviewForm] Photo upload error:', uploadError);
+          continue; // Skip this photo, continue with others
+        }
+
+        console.log('[ReviewForm] Photo uploaded successfully:', uploadData);
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('review-photos')
+          .getPublicUrl(filePath);
+
+        uploadedUrls.push(publicUrl);
+      } catch (error) {
+        console.error('[ReviewForm] Exception uploading photo:', error);
         continue;
       }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('review-photos')
-        .getPublicUrl(filePath);
-
-      uploadedUrls.push(publicUrl);
     }
 
     return uploadedUrls;
@@ -105,8 +119,12 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
     setLoading(true);
 
     try {
-      // Insert review with profile data included
-      const { data: reviewData, error: reviewError } = await supabase
+      // OPTIMIZED: Insert review dengan query sederhana (hanya profile, tanpa photos/replies)
+      // Photos dan replies akan di-fetch lazy atau via real-time untuk prevent timeout
+      const insertStartTime = Date.now();
+      
+      // Step 1: Insert review dengan minimal select (hanya basic fields + profile)
+      const insertPromise = supabase
         .from('reviews')
         .insert({
           user_id: user.id,
@@ -115,25 +133,46 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
           text: text.trim()
         })
         .select(`
-          *,
-          profiles:user_id (username, avatar_url, full_name),
-          photos:review_photos (id, photo_url),
-          replies:review_replies (
-            id,
-            text,
-            created_at,
-            profiles:user_id (username, avatar_url)
-          )
+          id,
+          user_id,
+          place_id,
+          rating,
+          text,
+          created_at,
+          updated_at,
+          profiles:user_id (username, avatar_url, full_name)
         `)
         .single();
+      
+      // Add timeout untuk insert query (8 detik - lebih pendek dari fetch query)
+      const insertTimeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Insert review timeout after 8 seconds')), 8000);
+      });
+      
+      const { data: reviewData, error: reviewError } = await Promise.race([
+        insertPromise,
+        insertTimeoutPromise
+      ]);
+      
+      const insertDuration = Date.now() - insertStartTime;
+      console.log(`[ReviewForm] ⚡ Review inserted in ${insertDuration}ms`);
 
       if (reviewError) {
+        console.error('[ReviewForm] ❌ Error inserting review:', reviewError);
         setError('Gagal menyimpan review: ' + reviewError.message);
         setLoading(false);
         return;
       }
+      
+      // Ensure reviewData has required structure untuk optimistic update
+      if (!reviewData) {
+        setError('Gagal mendapatkan data review setelah insert');
+        setLoading(false);
+        return;
+      }
 
-      // Upload photos if any
+      // Upload photos if any (OPTIONAL - tidak wajib)
+      let uploadedPhotos = [];
       if (photos.length > 0) {
         try {
           const photoUrls = await uploadPhotos(reviewData.id);
@@ -145,13 +184,17 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
               photo_url: url
             }));
 
-            const { error: photoError } = await supabase
+            const { data: insertedPhotos, error: photoError } = await supabase
               .from('review_photos')
-              .insert(photoRecords);
+              .insert(photoRecords)
+              .select('id, review_id, photo_url');
             
             if (photoError) {
               console.error('[ReviewForm] Error inserting photo records:', photoError);
               // Don't fail the whole review submission if photos fail
+            } else if (insertedPhotos) {
+              uploadedPhotos = insertedPhotos;
+              console.log(`[ReviewForm] ✅ ${insertedPhotos.length} photos uploaded and saved`);
             }
           }
         } catch (photoErr) {
@@ -161,15 +204,31 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
       }
 
       setSuccess('Review berhasil dikirim!');
-      setRating(0);
-      setText('');
-      setPhotos([]);
-      setPhotoPreviews([]);
-
-      // Callback to parent
+      
+      // Prepare review data untuk optimistic update
+      // Include photos yang sudah di-upload
+      const reviewDataForCallback = {
+        ...reviewData,
+        photos: uploadedPhotos, // Include uploaded photos
+        replies: [], // Empty - akan di-fetch via real-time atau refetch
+        source: 'supabase'
+      };
+      
+      // Callback to parent IMMEDIATELY untuk optimistic UI update
+      // This ensures instant feedback tanpa menunggu fetch
       if (onReviewSubmitted) {
-        onReviewSubmitted(reviewData);
+        console.log('[ReviewForm] ✅ Review submitted, calling onReviewSubmitted callback immediately');
+        onReviewSubmitted(reviewDataForCallback);
       }
+      
+      // Clear form after callback (slight delay untuk smooth UX)
+      setTimeout(() => {
+        setRating(0);
+        setText('');
+        setPhotos([]);
+        setPhotoPreviews.forEach(url => URL.revokeObjectURL(url));
+        setPhotoPreviews([]);
+      }, 100);
 
     } catch (err) {
       setError('Terjadi kesalahan. Silakan coba lagi.');
@@ -261,8 +320,8 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
                 <svg
                   className={`w-8 h-8 ${
                     star <= (hoverRating || rating)
-                      ? 'text-amber-400 fill-current'
-                      : 'text-gray-300 dark:text-zinc-600'
+                      ? 'text-amber-500 fill-current'
+                      : 'text-gray-400 dark:text-gray-500'
                   }`}
                   fill="none"
                   stroke="currentColor"
@@ -292,6 +351,7 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
             className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
             placeholder="Bagikan pengalaman Anda di coffee shop ini..."
             required
+            minLength={1}
           />
         </div>
 

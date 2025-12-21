@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase, isSupabaseConfigured, getUserProfile } from '../lib/supabase';
 import { migrateLocalStorageToSupabase } from '../utils/migrateFavorites';
+import { logAuthError } from '../utils/authDebug';
+import { trackError, trackAuthIssue } from '../utils/errorTracker';
+import { performFullCleanup, validateSupabaseSession } from '../utils/storageCleanup';
 
 const AuthContext = createContext({});
 
@@ -81,9 +84,14 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('[Auth] Error fetching profile:', error);
       
+      // Track error
+      logAuthError(error, { userId, action: 'fetchProfile' });
+      trackError(error, { userId, action: 'fetchProfile' });
+      
       // Check if it's a 401 (RLS issue) vs other error
       if (error?.code === 'PGRST301' || error?.message?.includes('401') || error?.message?.includes('permission denied')) {
         console.warn('[Auth] RLS permission issue - profile might exist but not accessible');
+        trackAuthIssue('RLS_PERMISSION_DENIED', { userId, error: error.message });
         // Don't clear session for RLS issues - might be temporary
         setProfile(null);
         return null;
@@ -107,10 +115,79 @@ export const AuthProvider = ({ children }) => {
     // Get initial session
     const initAuth = async () => {
       try {
-        // PRIORITY 0: Detect if this is a new browser session (browser was closed)
+        // PRIORITY -1: Perform automatic cleanup of stale/corrupted data
+        // This prevents app malfunction from old/corrupted localStorage data
+        console.log('[Auth] 🧹 Running automatic storage cleanup...');
+        await performFullCleanup(supabase);
+        console.log('[Auth] ✅ Storage cleanup complete');
+        
+        // CRITICAL: Handle case where localStorage might be cleared (clear site data)
+        // Wrap localStorage access in try-catch to prevent errors
+        let userLoggedOut = false;
+        try {
+          userLoggedOut = localStorage.getItem('cofind_user_logged_out') === 'true';
+        } catch (e) {
+          console.warn('[Auth] localStorage not accessible (might be cleared):', e);
+          // If localStorage is not accessible, assume guest mode
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
+          setInitialized(true);
+          return;
+        }
+        
+        // PRIORITY 0: Check logout flag FIRST (before anything else)
+        // This prevents any session restore if user explicitly logged out
+        
+        if (userLoggedOut) {
+          // User explicitly logged out - FORCE clear session and don't restore
+          console.log('[Auth] Logout flag detected FIRST - forcing guest mode (before any session check)');
+          
+          // Aggressively clear Supabase session
+          if (supabase) {
+            try {
+              await supabase.auth.signOut({ scope: 'global' });
+            } catch (signOutError) {
+              console.warn('[Auth] Error during forced signOut:', signOutError);
+            }
+          }
+          
+          // Clear ALL localStorage keys (complete wipe)
+          try {
+            localStorage.clear();
+            console.log('[Auth] ✅ localStorage cleared completely (logout flag detected)');
+          } catch (e) {
+            console.warn('[Auth] ⚠️ Error clearing localStorage:', e);
+          }
+          
+          // Clear sessionStorage
+          try {
+            sessionStorage.clear();
+            console.log('[Auth] ✅ sessionStorage cleared completely');
+          } catch (e) {
+            console.warn('[Auth] ⚠️ Error clearing sessionStorage:', e);
+          }
+          
+          // Set state to guest mode
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
+          setInitialized(true);
+          console.log('[Auth] Guest mode enforced - logout flag detected');
+          return; // CRITICAL: Exit early, don't check for session
+        }
+        
+        // PRIORITY 1: Detect if this is a new browser session (browser was closed)
         // We use sessionStorage as a flag to detect browser close vs tab close
         // sessionStorage is cleared when browser is closed, but persists across tab close
-        const isNewBrowserSession = typeof window !== 'undefined' && !sessionStorage.getItem('cofind_browser_session');
+        let isNewBrowserSession = false;
+        try {
+          isNewBrowserSession = typeof window !== 'undefined' && !sessionStorage.getItem('cofind_browser_session');
+        } catch (e) {
+          console.warn('[Auth] sessionStorage not accessible (might be cleared):', e);
+          // If sessionStorage is not accessible, assume new session
+          isNewBrowserSession = true;
+        }
         
         if (isNewBrowserSession) {
           // This is a new browser session (browser was closed and reopened)
@@ -129,21 +206,13 @@ export const AuthProvider = ({ children }) => {
             }
           }
           
-          // Clear all Supabase-related storage
-          const allKeys = [];
-          for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key) {
-              if (key.includes('supabase') || 
-                  key.includes('sb-') || 
-                  key.match(/auth-token/i) ||
-                  key.match(/^sb-[a-z0-9-]+-auth-token$/i) ||
-                  key.startsWith('supabase.auth.')) {
-                allKeys.push(key);
-              }
-            }
+          // Clear ALL localStorage keys (complete wipe)
+          try {
+            localStorage.clear();
+            console.log('[Auth] ✅ localStorage cleared completely (new browser session)');
+          } catch (e) {
+            console.warn('[Auth] ⚠️ Error clearing localStorage:', e);
           }
-          allKeys.forEach(key => localStorage.removeItem(key));
           
           // Set browser session flag (this will persist across tab close, but clear on browser close)
           sessionStorage.setItem('cofind_browser_session', 'true');
@@ -161,49 +230,6 @@ export const AuthProvider = ({ children }) => {
           console.log('[Auth] Existing browser session - session will persist (tab was closed)');
         }
         
-        // PRIORITY 1: Check if user explicitly logged out (flag set by signOut)
-        const userLoggedOut = localStorage.getItem('cofind_user_logged_out') === 'true';
-        
-        if (userLoggedOut) {
-          // User explicitly logged out - FORCE clear session and don't restore
-          console.log('[Auth] User logged out flag detected - forcing guest mode');
-          
-          // Aggressively clear Supabase session
-          try {
-            await supabase.auth.signOut({ scope: 'global' });
-          } catch (signOutError) {
-            console.warn('[Auth] Error during forced signOut:', signOutError);
-          }
-          
-          // Clear all Supabase-related storage (but preserve logout flag)
-          const logoutFlag = 'true';
-          const allKeys = [];
-          for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && key !== 'cofind_user_logged_out') {
-              if (key.includes('supabase') || 
-                  key.includes('sb-') || 
-                  key.match(/auth-token/i) ||
-                  key.match(/^sb-[a-z0-9-]+-auth-token$/i)) {
-                allKeys.push(key);
-              }
-            }
-          }
-          allKeys.forEach(key => localStorage.removeItem(key));
-          sessionStorage.clear();
-          
-          // Restore logout flag
-          localStorage.setItem('cofind_user_logged_out', 'true');
-          
-          // Set state to guest mode
-          setUser(null);
-          setProfile(null);
-          setLoading(false);
-          setInitialized(true);
-          console.log('[Auth] Guest mode enforced - session cleared');
-          return; // CRITICAL: Exit early, don't check for session
-        }
-        
         // PRIORITY 2: Check if auto-login should be disabled (for development/testing)
         const disableAutoLogin = import.meta.env.VITE_DISABLE_AUTO_LOGIN === 'true';
         
@@ -219,6 +245,18 @@ export const AuthProvider = ({ children }) => {
         }
         
         // PRIORITY 3: Normal behavior: restore session if exists AND no logout flag
+        // CRITICAL: Triple-check logout flag BEFORE getting session (redundancy for safety)
+        // This prevents race condition where session is restored before logout flag is checked
+        const stillLoggedOut = localStorage.getItem('cofind_user_logged_out') === 'true';
+        if (stillLoggedOut) {
+          console.log('[Auth] Logout flag detected before getSession - skipping session restore');
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
+          setInitialized(true);
+          return; // Exit early, don't get session
+        }
+        
         // CRITICAL: Always try to restore session on page load/refresh
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
@@ -314,22 +352,74 @@ export const AuthProvider = ({ children }) => {
           return;
         }
         
-        // CRITICAL: Don't skip INITIAL_SESSION - it's important for page refresh
+        // CRITICAL: Check logout flag FIRST for INITIAL_SESSION
         // INITIAL_SESSION is fired when Supabase restores session from storage
-        // We need to handle it to ensure session persists after refresh
-        // Only skip if we're still in the middle of initAuth (very short window)
-        if (event === 'INITIAL_SESSION' && !initAuthCompleted) {
-          // Wait a bit and then process INITIAL_SESSION
-          setTimeout(() => {
-            if (session?.user && !localStorage.getItem('cofind_user_logged_out')) {
-              console.log('[Auth] Processing INITIAL_SESSION after delay');
-              setUser(session.user);
-              fetchProfile(session.user.id).catch(err => {
-                console.warn('[Auth] Error fetching profile in delayed INITIAL_SESSION:', err);
-              });
+        // We MUST check logout flag BEFORE restoring session
+        if (event === 'INITIAL_SESSION') {
+          let userLoggedOut = false;
+          try {
+            userLoggedOut = localStorage.getItem('cofind_user_logged_out') === 'true';
+          } catch (e) {
+            console.warn('[Auth] localStorage not accessible in INITIAL_SESSION:', e);
+            // If localStorage is not accessible, assume guest mode
+            setUser(null);
+            setProfile(null);
+            return;
+          }
+          
+          if (userLoggedOut) {
+            // Logout flag is set - DO NOT restore session
+            console.log('[Auth] INITIAL_SESSION blocked - logout flag is set');
+            setUser(null);
+            setProfile(null);
+            
+            // Force sign out if session exists
+            if (session?.user) {
+              console.log('[Auth] Forcing signOut for INITIAL_SESSION with logout flag');
+              try {
+                await supabase.auth.signOut({ scope: 'global' });
+                // Clear ALL localStorage keys (complete wipe)
+                try {
+                  localStorage.clear();
+                  console.log('[Auth] ✅ localStorage cleared completely (INITIAL_SESSION blocked)');
+                } catch (e) {
+                  console.warn('[Auth] ⚠️ Error clearing localStorage:', e);
+                }
+                
+                // Clear sessionStorage
+                try {
+                  sessionStorage.clear();
+                  console.log('[Auth] ✅ sessionStorage cleared completely');
+                } catch (e) {
+                  console.warn('[Auth] ⚠️ Error clearing sessionStorage:', e);
+                }
+              } catch (e) {
+                console.warn('[Auth] Error signing out in INITIAL_SESSION:', e);
+              }
             }
-          }, 500);
-          return; // Skip immediate processing, but schedule delayed processing
+            return; // CRITICAL: Exit early, don't restore session
+          }
+          
+          // No logout flag - process INITIAL_SESSION normally
+          if (!initAuthCompleted) {
+            // Wait a bit and then process INITIAL_SESSION
+            setTimeout(() => {
+              // Double-check logout flag hasn't been set during delay
+              const stillLoggedOut = localStorage.getItem('cofind_user_logged_out') === 'true';
+              if (session?.user && !stillLoggedOut) {
+                console.log('[Auth] Processing INITIAL_SESSION after delay');
+                setUser(session.user);
+                fetchProfile(session.user.id).catch(err => {
+                  console.warn('[Auth] Error fetching profile in delayed INITIAL_SESSION:', err);
+                });
+              } else if (stillLoggedOut) {
+                console.log('[Auth] INITIAL_SESSION cancelled - logout flag set during delay');
+                setUser(null);
+                setProfile(null);
+              }
+            }, 500);
+            return; // Skip immediate processing, but schedule delayed processing
+          }
         }
         
         isProcessingAuthChange = true;
@@ -395,21 +485,21 @@ export const AuthProvider = ({ children }) => {
                 try {
                   await supabase.auth.signOut({ scope: 'global' });
                   // Clear storage again after signOut
-                  const allKeys = [];
-                  for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (key && key !== 'cofind_user_logged_out') {
-                      if (key.includes('supabase') || 
-                          key.includes('sb-') || 
-                          key.match(/auth-token/i) ||
-                          key.match(/^sb-[a-z0-9-]+-auth-token$/i)) {
-                        allKeys.push(key);
-                      }
-                    }
+                  // Clear ALL localStorage keys (complete wipe)
+                  try {
+                    localStorage.clear();
+                    console.log('[Auth] ✅ localStorage cleared completely (auth change with logout flag)');
+                  } catch (e) {
+                    console.warn('[Auth] ⚠️ Error clearing localStorage:', e);
                   }
-                  allKeys.forEach(key => localStorage.removeItem(key));
-                  sessionStorage.clear();
-                  localStorage.setItem('cofind_user_logged_out', 'true');
+                  
+                  // Clear sessionStorage
+                  try {
+                    sessionStorage.clear();
+                    console.log('[Auth] ✅ sessionStorage cleared completely');
+                  } catch (e) {
+                    console.warn('[Auth] ⚠️ Error clearing sessionStorage:', e);
+                  }
                 } catch (signOutError) {
                   console.warn('[Auth] Error signing out during auth change:', signOutError);
                 }
@@ -662,37 +752,94 @@ export const AuthProvider = ({ children }) => {
         console.error('[Auth] Supabase signOut error:', signOutError);
       }
       
-      // CRITICAL: Aggressively clear ALL Supabase-related storage
-      // This ensures no session data remains
-      const allKeys = [];
+      // CRITICAL: Clear all auth-related cache first
+      try {
+        const { clearAuthCache: clearDevAuthCache } = await import('../utils/devCache');
+        clearDevAuthCache();
+      } catch (e) {
+        console.warn('[Auth] Error clearing dev auth cache:', e);
+      }
+      
+      try {
+        const { clearAuthCache: clearAPIAuthCache } = await import('../utils/apiCache');
+        await clearAPIAuthCache();
+      } catch (e) {
+        console.warn('[Auth] Error clearing API auth cache:', e);
+      }
+      
+      // CRITICAL: Clear ALL keys in localStorage (complete wipe)
+      // User requested ALL keys to be cleared on logout
+      console.log('[Auth] Clearing ALL localStorage keys...');
+      
+      // Get all keys first to avoid iteration issues
+      const allLocalStorageKeys = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key !== 'cofind_user_logged_out') {
-          // Remove ALL Supabase-related keys
-          if (key.includes('supabase') || 
-              key.includes('sb-') || 
-              key.match(/auth-token/i) ||
-              key.match(/^sb-[a-z0-9-]+-auth-token$/i) ||
-              key.startsWith('supabase.auth.')) {
-            allKeys.push(key);
-          }
+        if (key) {
+          allLocalStorageKeys.push(key);
         }
       }
       
-      // Remove all Supabase keys
-      allKeys.forEach(key => {
+      // Remove ALL keys (no exceptions)
+      console.log(`[Auth] Removing ${allLocalStorageKeys.length} keys from localStorage:`, allLocalStorageKeys);
+      allLocalStorageKeys.forEach(key => {
         try {
           localStorage.removeItem(key);
+          console.log('[Auth] ✅ Removed key:', key);
         } catch (e) {
-          console.warn('[Auth] Error removing key:', key, e);
+          console.warn('[Auth] ⚠️ Error removing key:', key, e);
         }
       });
       
-      // Clear sessionStorage completely
+      // Also call clear() as backup to ensure everything is removed
       try {
-        sessionStorage.clear();
+        localStorage.clear();
+        console.log('[Auth] ✅ localStorage.clear() called as backup');
       } catch (e) {
-        console.warn('[Auth] Error clearing sessionStorage:', e);
+        console.warn('[Auth] ⚠️ Error calling localStorage.clear():', e);
+      }
+      
+      // CRITICAL: Also clear Supabase's internal storage if accessible
+      // Supabase SDK might store session in a different format
+      try {
+        // Try to access Supabase's storage directly and clear it
+        if (supabase && supabase.auth) {
+          // Force clear by calling signOut multiple times
+          await supabase.auth.signOut({ scope: 'global' });
+          // Wait a bit and try again
+          await new Promise(resolve => setTimeout(resolve, 100));
+          await supabase.auth.signOut({ scope: 'global' });
+        }
+      } catch (e) {
+        console.warn('[Auth] Error clearing Supabase internal storage:', e);
+      }
+      
+      // Clear sessionStorage completely (including browser_session flag)
+      try {
+        // Get all sessionStorage keys first
+        const sessionKeysToRemove = [];
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const key = sessionStorage.key(i);
+          if (key) {
+            sessionKeysToRemove.push(key);
+          }
+        }
+        
+        // Remove all sessionStorage keys
+        sessionKeysToRemove.forEach(key => {
+          try {
+            sessionStorage.removeItem(key);
+            console.log('[Auth] ✅ Removed sessionStorage key:', key);
+          } catch (e) {
+            console.warn('[Auth] ⚠️ Error removing sessionStorage key:', key, e);
+          }
+        });
+        
+        // Also call clear() as backup
+        sessionStorage.clear();
+        console.log('[Auth] ✅ sessionStorage cleared completely');
+      } catch (e) {
+        console.warn('[Auth] ⚠️ Error clearing sessionStorage:', e);
       }
       
       // CRITICAL: Force clear any remaining Supabase session
@@ -707,10 +854,63 @@ export const AuthProvider = ({ children }) => {
         console.warn('[Auth] Error checking session after signOut:', sessionCheckError);
       }
       
-      // Restore logout flag (must be last)
-      localStorage.setItem('cofind_user_logged_out', 'true');
+      // CRITICAL: Final verification - check if ANY keys remain
+      // Multiple attempts to ensure complete cleanup
+      let attempts = 0;
+      const maxAttempts = 3;
       
-      console.log('[Auth] Sign out complete - flag set, storage cleared, guest mode enforced');
+      while (attempts < maxAttempts) {
+        const remainingKeys = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key) {
+            remainingKeys.push(key);
+          }
+        }
+        
+        if (remainingKeys.length === 0) {
+          console.log('[Auth] ✅ localStorage is completely empty after', attempts + 1, 'attempt(s)');
+          break;
+        }
+        
+        console.warn(`[Auth] ⚠️ Attempt ${attempts + 1}: ${remainingKeys.length} keys still remain:`, remainingKeys);
+        
+        // Force remove ALL remaining keys
+        remainingKeys.forEach(key => {
+          try {
+            localStorage.removeItem(key);
+            console.log('[Auth] ✅ Force removed remaining key:', key);
+          } catch (e) {
+            console.warn('[Auth] ⚠️ Error force removing key:', key, e);
+          }
+        });
+        
+        // Final clear as backup
+        try {
+          localStorage.clear();
+          console.log(`[Auth] ✅ localStorage.clear() called (attempt ${attempts + 1})`);
+        } catch (e) {
+          console.warn('[Auth] ⚠️ Error in localStorage.clear():', e);
+        }
+        
+        attempts++;
+      }
+      
+      // Final verification
+      const finalKeys = Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i)).filter(Boolean);
+      if (finalKeys.length === 0) {
+        console.log('[Auth] ✅ Sign out complete - localStorage is completely empty');
+      } else {
+        console.error('[Auth] ❌ localStorage still has keys after all attempts:', finalKeys);
+        // Last resort - try clear one more time
+        try {
+          localStorage.clear();
+          console.log('[Auth] ✅ Last resort: localStorage.clear() executed');
+        } catch (e) {
+          console.error('[Auth] ❌ Failed to clear localStorage even in last resort:', e);
+        }
+      }
+      
       return { error: signOutError };
     } catch (error) {
       console.error('[Auth] Sign out exception:', error);
@@ -722,35 +922,52 @@ export const AuthProvider = ({ children }) => {
       // Ensure logout flag is set
       localStorage.setItem('cofind_user_logged_out', 'true');
       
-      // Try to clear storage anyway (but preserve logout flag)
+      // Try to clear storage anyway - clear EVERYTHING
       try {
-        const logoutFlag = localStorage.getItem('cofind_user_logged_out');
-        
-        // Clear all Supabase keys
+        // Clear ALL localStorage keys (no exceptions)
         const allKeys = [];
         for (let i = 0; i < localStorage.length; i++) {
           const key = localStorage.key(i);
-          if (key && key !== 'cofind_user_logged_out') {
-            if (key.includes('supabase') || 
-                key.includes('sb-') || 
-                key.match(/auth-token/i) ||
-                key.match(/^sb-[a-z0-9-]+-auth-token$/i) ||
-                key.startsWith('supabase.auth.')) {
-              allKeys.push(key);
-            }
+          if (key) {
+            allKeys.push(key);
           }
         }
-        allKeys.forEach(key => localStorage.removeItem(key));
-        sessionStorage.clear();
         
-        // Restore logout flag
-        if (logoutFlag === 'true') {
-          localStorage.setItem('cofind_user_logged_out', 'true');
+        console.log(`[Auth] Error recovery: Removing ALL ${allKeys.length} keys from localStorage`);
+        allKeys.forEach(key => {
+          try {
+            localStorage.removeItem(key);
+            console.log('[Auth] ✅ Removed key in error recovery:', key);
+          } catch (e) {
+            console.warn('[Auth] ⚠️ Error removing key in error recovery:', key, e);
+          }
+        });
+        
+        // Final clear as backup
+        try {
+          localStorage.clear();
+          console.log('[Auth] ✅ localStorage.clear() called in error recovery');
+        } catch (e) {
+          console.warn('[Auth] ⚠️ Error calling localStorage.clear() in error recovery:', e);
+        }
+        
+        // Clear sessionStorage
+        try {
+          sessionStorage.clear();
+          console.log('[Auth] ✅ sessionStorage cleared in error recovery');
+        } catch (e) {
+          console.warn('[Auth] ⚠️ Error clearing sessionStorage in error recovery:', e);
         }
       } catch (e) {
         console.error('[Auth] Error clearing all storage:', e);
-        // Still set the flag
-        localStorage.setItem('cofind_user_logged_out', 'true');
+        // Final attempt - clear everything
+        try {
+          localStorage.clear();
+          sessionStorage.clear();
+          console.log('[Auth] ✅ Final attempt: localStorage and sessionStorage cleared');
+        } catch (finalError) {
+          console.error('[Auth] ❌ Failed to clear storage even in final attempt:', finalError);
+        }
       }
       
       return { error };

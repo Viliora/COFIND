@@ -353,7 +353,7 @@ const Login = () => {
 
                 {/* Remember Me & Forgot Password (only for login) */}
                 {mode === 'login' && (
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
@@ -363,17 +363,6 @@ const Login = () => {
                       />
                       <span className="text-sm text-white">Remember Me</span>
                     </label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMode('forgot');
-                        setError('');
-                        setSuccess('');
-                      }}
-                      className="text-sm text-white hover:text-orange-400 transition-colors"
-                    >
-                      Lost your password?
-                    </button>
                   </div>
                 )}
 

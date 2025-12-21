@@ -38,23 +38,10 @@ h1 {
   line-height: 1.1;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+/* Button base styles - only apply to buttons without custom classes */
+button:not([class*="rounded-"]) {
+  /* Don't override Tailwind's rounded-* classes */
+  border-radius: 0.5rem; /* 8px - default rounded-lg */
 }
 
 /* Layout container: constrain width and center content on large screens */
@@ -170,4 +157,144 @@ html, body {
     -webkit-backdrop-filter: blur(16px);
     backdrop-filter: blur(16px);
   }
+}
+
+/* ============================================
+   CROSS-BROWSER FIXES
+   Ensure consistent rendering across browsers
+   ============================================ */
+
+/* SVG rendering fixes for Edge, Chrome, Firefox, Safari */
+svg {
+  /* Ensure SVG renders properly in all browsers */
+  display: inline-block;
+  vertical-align: middle;
+  
+  /* Fix SVG scaling issues in IE/Edge */
+  overflow: visible;
+  
+  /* Improve SVG rendering quality */
+  shape-rendering: geometricPrecision;
+  
+  /* Ensure currentColor works consistently */
+  color: inherit;
+}
+
+/* Star rating icons - ensure fill/stroke work consistently */
+svg path[d*="M11.049"] {
+  /* Star icon path - ensure proper rendering */
+  vector-effect: non-scaling-stroke;
+}
+
+/* Button consistency across browsers */
+button, 
+input[type="button"],
+input[type="submit"],
+input[type="reset"] {
+  /* Remove default button styling in all browsers */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  
+  /* Ensure box-sizing is consistent */
+  box-sizing: border-box;
+  
+  /* Preserve rounded corners by default */
+  border-radius: 0.5rem; /* 8px - matches Tailwind's rounded-lg */
+}
+
+/* Input field consistency */
+input,
+textarea,
+select {
+  /* Remove default styling */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  
+  /* Fix input zoom on iOS */
+  font-size: 16px;
+  
+  /* Consistent box model */
+  box-sizing: border-box;
+}
+
+/* Focus outline consistency */
+*:focus-visible {
+  outline: 2px solid rgb(251 191 36); /* amber-400 */
+  outline-offset: 2px;
+}
+
+/* Remove autofill background color in Chrome/Edge */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px white inset;
+  -webkit-text-fill-color: inherit;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Dark mode autofill */
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus,
+.dark textarea:-webkit-autofill,
+.dark textarea:-webkit-autofill:hover,
+.dark textarea:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px rgb(39 39 42) inset; /* zinc-800 */
+  -webkit-text-fill-color: rgb(250 250 250); /* zinc-50 */
+}
+
+/* Flexbox fixes for IE11/Edge legacy */
+.flex {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+}
+
+/* Grid fixes for older browsers */
+@supports not (display: grid) {
+  .grid {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -ms-flex-wrap: wrap;
+    flex-wrap: wrap;
+  }
+}
+
+/* Transition/animation prefixes for older browsers */
+/* Removed global transition on all elements - causes performance issues */
+
+/* Ensure transform works in all browsers */
+.transform,
+.transition-transform {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* Image rendering fixes */
+img {
+  /* Better image quality in Edge/IE */
+  -ms-interpolation-mode: bicubic;
+  
+  /* Prevent image dragging */
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
+}
+
+/* User select fixes */
+.select-none {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }

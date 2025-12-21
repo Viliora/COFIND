@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
@@ -15,9 +15,25 @@ const ReviewCard = ({ review, onDelete, onUpdate, showSourceBadge = false }) => 
   const [editText, setEditText] = useState(review.text || '');
   const [editRating, setEditRating] = useState(review.rating || 0);
   const [editError, setEditError] = useState('');
+  const [success, setSuccess] = useState('');
+  
+  // State untuk edit/delete replies
+  const [editingReplyId, setEditingReplyId] = useState(null);
+  const [editReplyText, setEditReplyText] = useState('');
+  const [replyError, setReplyError] = useState('');
 
   const isOwner = user?.id === review.user_id;
   const timeAgo = getTimeAgo(review.created_at, review.relative_time);
+  
+  // Debug logging untuk photos dan replies
+  useEffect(() => {
+    if (review.photos && review.photos.length > 0) {
+      console.log(`[ReviewCard] Review ${review.id} has ${review.photos.length} photos:`, review.photos);
+    }
+    if (review.replies && review.replies.length > 0) {
+      console.log(`[ReviewCard] Review ${review.id} has ${review.replies.length} replies:`, review.replies);
+    }
+  }, [review.id, review.photos, review.replies]);
 
   // Handle edit click - reset state saat mulai edit
   const handleEditClick = () => {
@@ -67,8 +83,10 @@ const ReviewCard = ({ review, onDelete, onUpdate, showSourceBadge = false }) => 
     setLoading(true);
 
     try {
-      // Update review di Supabase
-      const { data: updatedReview, error } = await supabase
+      const editStartTime = Date.now();
+      
+      // OPTIMIZED: Update review dengan timeout handling
+      const updatePromise = supabase
         .from('reviews')
         .update({ 
           text: editText.trim(), 
@@ -86,31 +104,58 @@ const ReviewCard = ({ review, onDelete, onUpdate, showSourceBadge = false }) => 
           updated_at
         `)
         .single();
+      
+      // Add timeout untuk update query (8 detik)
+      const updateTimeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Update review timeout after 8 seconds')), 8000);
+      });
+      
+      const { data: updatedReview, error } = await Promise.race([
+        updatePromise,
+        updateTimeoutPromise
+      ]);
+      
+      const editDuration = Date.now() - editStartTime;
+      console.log(`[ReviewCard] ⚡ Review updated in ${editDuration}ms`);
 
       if (error) {
-        console.error('[ReviewCard] Error updating review:', error);
-        alert('Gagal menyimpan perubahan: ' + (error.message || 'Unknown error'));
+        console.error('[ReviewCard] ❌ Error updating review:', error);
+        const errorMessage = error.message || 'Unknown error';
+        if (errorMessage.includes('timeout')) {
+          alert('Timeout saat menyimpan perubahan. Silakan coba lagi.');
+        } else {
+          alert('Gagal menyimpan perubahan: ' + errorMessage);
+        }
         setLoading(false);
         return;
       }
 
       if (updatedReview) {
-        // Fetch profile data untuk updated review
+        // Fetch profile data untuk updated review (dengan timeout)
         let profileData = review.profiles; // Keep existing profile data
         
         if (updatedReview.user_id) {
           try {
-            const { data: profile } = await supabase
+            const profilePromise = supabase
               .from('profiles')
               .select('id, username, avatar_url, full_name')
               .eq('id', updatedReview.user_id)
               .single();
             
+            const profileTimeoutPromise = new Promise((_, reject) => {
+              setTimeout(() => reject(new Error('Profile fetch timeout')), 5000);
+            });
+            
+            const { data: profile } = await Promise.race([
+              profilePromise,
+              profileTimeoutPromise
+            ]);
+            
             if (profile) {
               profileData = profile;
             }
           } catch (profileError) {
-            console.warn('[ReviewCard] Error fetching profile (non-critical):', profileError);
+            console.warn('[ReviewCard] ⚠️ Error fetching profile (non-critical):', profileError?.message || profileError);
             // Keep existing profile data if fetch fails
           }
         }
@@ -127,11 +172,20 @@ const ReviewCard = ({ review, onDelete, onUpdate, showSourceBadge = false }) => 
         // Update local state
         setIsEditing(false);
         
-        // Call onUpdate dengan data lengkap
+        // Call onUpdate dengan data lengkap untuk update state di parent
         if (onUpdate) {
           onUpdate(finalUpdatedReview);
           console.log('[ReviewCard] Review updated successfully:', finalUpdatedReview.id);
         }
+
+        // Show success message
+        setSuccess('Review berhasil diperbarui!');
+        console.log('[ReviewCard] Review updated in database:', finalUpdatedReview.id);
+        
+        // CRITICAL: Don't reload page - use optimistic update instead
+        // onUpdate callback will trigger refresh in ReviewList
+        // This is much faster and provides better UX
+        console.log('[ReviewCard] Review updated - triggering refresh via onUpdate callback');
       }
     } catch (err) {
       console.error('[ReviewCard] Exception updating review:', err);
@@ -169,7 +223,10 @@ const ReviewCard = ({ review, onDelete, onUpdate, showSourceBadge = false }) => 
     setLoading(true);
 
     try {
-      const { data, error } = await supabase
+      const replyStartTime = Date.now();
+      
+      // OPTIMIZED: Insert reply dengan timeout handling
+      const insertPromise = supabase
         .from('review_replies')
         .insert({
           review_id: review.id,
@@ -177,19 +234,199 @@ const ReviewCard = ({ review, onDelete, onUpdate, showSourceBadge = false }) => 
           text: replyText.trim()
         })
         .select(`
-          *,
+          id,
+          review_id,
+          user_id,
+          text,
+          created_at,
           profiles:user_id (username, avatar_url)
         `)
         .single();
+      
+      // Add timeout untuk reply insert (6 detik - lebih pendek dari review insert)
+      const insertTimeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Insert reply timeout after 6 seconds')), 6000);
+      });
+      
+      const { data, error } = await Promise.race([
+        insertPromise,
+        insertTimeoutPromise
+      ]);
+      
+      const replyDuration = Date.now() - replyStartTime;
+      console.log(`[ReviewCard] ⚡ Reply inserted in ${replyDuration}ms`);
 
-      if (!error) {
+      if (!error && data) {
         setReplyText('');
         setShowReplyForm(false);
-        // Update local replies
+        // OPTIMISTIC UPDATE: Update local replies immediately
         review.replies = [...(review.replies || []), data];
+        
+        // Trigger parent update untuk sync dengan ReviewList
+        if (onUpdate) {
+          onUpdate({
+            ...review,
+            replies: [...(review.replies || []), data]
+          });
+        }
+        
+        console.log('[ReviewCard] ✅ Reply added successfully, optimistic update applied');
+      } else if (error) {
+        console.error('[ReviewCard] ❌ Error inserting reply:', error);
+        alert('Gagal menambahkan reply: ' + (error.message || 'Unknown error'));
       }
     } catch (err) {
-      console.error('Reply error:', err);
+      console.error('[ReviewCard] ❌ Exception inserting reply:', err);
+      const errorMessage = err.message || 'Unknown error';
+      if (errorMessage.includes('timeout')) {
+        alert('Timeout saat menambahkan reply. Silakan coba lagi.');
+      } else {
+        alert('Gagal menambahkan reply: ' + errorMessage);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle edit reply - start edit mode
+  const handleEditReply = (reply) => {
+    setEditingReplyId(reply.id);
+    setEditReplyText(reply.text);
+    setReplyError('');
+  };
+
+  // Handle update reply - save edited reply
+  const handleUpdateReply = async (replyId) => {
+    if (!editReplyText.trim()) {
+      setReplyError('Balasan tidak boleh kosong');
+      return;
+    }
+
+    setLoading(true);
+    setReplyError('');
+
+    try {
+      const updateStartTime = Date.now();
+      
+      // Update reply dengan timeout handling
+      const updatePromise = supabase
+        .from('review_replies')
+        .update({ 
+          text: editReplyText.trim()
+          // Note: updated_at will be auto-updated by database trigger (if exists)
+        })
+        .eq('id', replyId)
+        .eq('user_id', user.id) // Ensure user owns this reply
+        .select(`
+          id,
+          review_id,
+          user_id,
+          text,
+          created_at,
+          profiles:user_id (username, avatar_url, full_name)
+        `)
+        .single();
+      
+      const updateTimeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Update reply timeout after 6 seconds')), 6000);
+      });
+      
+      const { data, error } = await Promise.race([
+        updatePromise,
+        updateTimeoutPromise
+      ]);
+      
+      const updateDuration = Date.now() - updateStartTime;
+      console.log(`[ReviewCard] ⚡ Reply updated in ${updateDuration}ms`);
+
+      if (!error && data) {
+        // OPTIMISTIC UPDATE: Update local replies immediately
+        review.replies = review.replies.map(r => 
+          r.id === replyId ? { ...r, ...data } : r
+        );
+        
+        // Trigger parent update
+        if (onUpdate) {
+          onUpdate({
+            ...review,
+            replies: review.replies
+          });
+        }
+        
+        setEditingReplyId(null);
+        setEditReplyText('');
+        console.log('[ReviewCard] ✅ Reply updated successfully');
+      } else if (error) {
+        console.error('[ReviewCard] ❌ Error updating reply:', error);
+        setReplyError('Gagal mengupdate balasan: ' + (error.message || 'Unknown error'));
+      }
+    } catch (err) {
+      console.error('[ReviewCard] ❌ Exception updating reply:', err);
+      const errorMessage = err.message || 'Unknown error';
+      if (errorMessage.includes('timeout')) {
+        setReplyError('Timeout saat mengupdate balasan. Silakan coba lagi.');
+      } else {
+        setReplyError('Gagal mengupdate balasan: ' + errorMessage);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle delete reply
+  const handleDeleteReply = async (replyId) => {
+    if (!window.confirm('Hapus balasan ini?')) return;
+
+    setLoading(true);
+    setReplyError('');
+
+    try {
+      const deleteStartTime = Date.now();
+      
+      // Delete reply dengan timeout handling
+      const deletePromise = supabase
+        .from('review_replies')
+        .delete()
+        .eq('id', replyId)
+        .eq('user_id', user.id); // Ensure user owns this reply
+      
+      const deleteTimeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Delete reply timeout after 6 seconds')), 6000);
+      });
+      
+      const { error } = await Promise.race([
+        deletePromise,
+        deleteTimeoutPromise
+      ]);
+      
+      const deleteDuration = Date.now() - deleteStartTime;
+      console.log(`[ReviewCard] ⚡ Reply deleted in ${deleteDuration}ms`);
+
+      if (!error) {
+        // OPTIMISTIC UPDATE: Remove reply from local state immediately
+        review.replies = review.replies.filter(r => r.id !== replyId);
+        
+        // Trigger parent update
+        if (onUpdate) {
+          onUpdate({
+            ...review,
+            replies: review.replies
+          });
+        }
+        
+        console.log('[ReviewCard] ✅ Reply deleted successfully');
+      } else {
+        console.error('[ReviewCard] ❌ Error deleting reply:', error);
+        alert('Gagal menghapus balasan: ' + (error.message || 'Unknown error'));
+      }
+    } catch (err) {
+      console.error('[ReviewCard] ❌ Exception deleting reply:', err);
+      const errorMessage = err.message || 'Unknown error';
+      if (errorMessage.includes('timeout')) {
+        alert('Timeout saat menghapus balasan. Silakan coba lagi.');
+      } else {
+        alert('Gagal menghapus balasan: ' + errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -269,8 +506,8 @@ const ReviewCard = ({ review, onDelete, onUpdate, showSourceBadge = false }) => 
                 key={star}
                 className={`w-4 h-4 ${
                   star <= (isEditing ? editRating : review.rating)
-                    ? 'text-amber-400 fill-current'
-                    : 'text-gray-300 dark:text-zinc-600'
+                    ? 'text-amber-500 fill-current'
+                    : 'text-gray-400 dark:text-gray-500'
                 } ${isEditing ? 'cursor-pointer' : ''}`}
                 onClick={() => isEditing && setEditRating(star)}
                 fill="none"
@@ -305,6 +542,9 @@ const ReviewCard = ({ review, onDelete, onUpdate, showSourceBadge = false }) => 
           {editError && (
             <p className="text-sm text-red-600 dark:text-red-400 mt-1">{editError}</p>
           )}
+          {success && (
+            <p className="text-sm text-green-600 dark:text-green-400 mt-1">{success}</p>
+          )}
           <div className="flex gap-2 mt-2">
             <button
               onClick={handleEditSubmit}
@@ -333,23 +573,39 @@ const ReviewCard = ({ review, onDelete, onUpdate, showSourceBadge = false }) => 
         </p>
       )}
 
-      {/* Photos */}
-      {review.photos && review.photos.length > 0 && (
+      {/* Photos - CRITICAL: Always show if photos exist */}
+      {review.photos && Array.isArray(review.photos) && review.photos.length > 0 && (
         <div className="mb-3">
           <div className="flex flex-wrap gap-2">
-            {review.photos.slice(0, showPhotos ? undefined : 3).map((photo, index) => (
-              <button
-                key={photo.id || index}
-                onClick={() => setSelectedPhoto(photo.photo_url)}
-                className="relative"
-              >
-                <img
-                  src={photo.photo_url}
-                  alt={`Review photo ${index + 1}`}
-                  className="w-20 h-20 object-cover rounded-lg border border-gray-200 dark:border-zinc-600 hover:opacity-90 transition-opacity"
-                />
-              </button>
-            ))}
+            {review.photos.slice(0, showPhotos ? undefined : 3).map((photo, index) => {
+              // Handle both object format {id, photo_url} and string format
+              const photoUrl = typeof photo === 'string' ? photo : (photo?.photo_url || photo?.url);
+              const photoId = photo?.id || index;
+              
+              if (!photoUrl) {
+                console.warn('[ReviewCard] Photo missing URL:', photo);
+                return null;
+              }
+              
+              return (
+                <button
+                  key={photoId}
+                  onClick={() => setSelectedPhoto(photoUrl)}
+                  className="relative group"
+                >
+                  <img
+                    src={photoUrl}
+                    alt={`Review photo ${index + 1}`}
+                    className="w-20 h-20 object-cover rounded-lg border border-gray-200 dark:border-zinc-600 hover:opacity-90 transition-opacity cursor-pointer"
+                    onError={(e) => {
+                      console.error('[ReviewCard] Failed to load photo:', photoUrl);
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 rounded-lg transition-opacity" />
+                </button>
+              );
+            })}
             {!showPhotos && review.photos.length > 3 && (
               <button
                 onClick={() => setShowPhotos(true)}
@@ -363,7 +619,7 @@ const ReviewCard = ({ review, onDelete, onUpdate, showSourceBadge = false }) => 
       )}
 
       {/* Actions */}
-      <div className="flex items-center justify-between border-t border-gray-100 dark:border-zinc-700 pt-3">
+      <div className="flex items-center justify-between border-t border-gray-200 dark:border-zinc-600 pt-3">
         <div className="flex items-center gap-3">
           {isAuthenticated && !isOwner && (
             <>
@@ -415,22 +671,115 @@ const ReviewCard = ({ review, onDelete, onUpdate, showSourceBadge = false }) => 
         )}
       </div>
 
-      {/* Replies */}
-      {review.replies && review.replies.length > 0 && (
-        <div className="mt-4 space-y-3 pl-4 border-l-2 border-gray-200 dark:border-zinc-700">
-          {review.replies.map((reply) => (
-            <div key={reply.id} className="text-sm">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="font-medium text-gray-900 dark:text-white">
-                  {reply.profiles?.username || 'User'}
-                </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  {getTimeAgo(reply.created_at)}
-                </span>
+      {/* Replies - CRITICAL: Always show if replies exist */}
+      {review.replies && Array.isArray(review.replies) && review.replies.length > 0 && (
+        <div className="mt-4 space-y-3 pl-4 border-l-2 border-amber-200 dark:border-amber-800">
+          <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
+            {review.replies.length} {review.replies.length === 1 ? 'Balasan' : 'Balasan'}
+          </div>
+          {review.replies.map((reply) => {
+            if (!reply || !reply.id) {
+              console.warn('[ReviewCard] Invalid reply data:', reply);
+              return null;
+            }
+            
+            const isReplyOwner = user?.id === reply.user_id;
+            const isEditingThisReply = editingReplyId === reply.id;
+            
+            return (
+              <div key={reply.id} className="text-sm bg-gray-100 dark:bg-zinc-700/70 rounded-lg p-3">
+                {isEditingThisReply ? (
+                  // EDIT MODE
+                  <div className="space-y-2">
+                    <textarea
+                      value={editReplyText}
+                      onChange={(e) => setEditReplyText(e.target.value)}
+                      rows={2}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-gray-900 dark:text-white text-sm resize-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    />
+                    {replyError && (
+                      <p className="text-xs text-red-600 dark:text-red-400">{replyError}</p>
+                    )}
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => {
+                          setEditingReplyId(null);
+                          setEditReplyText('');
+                          setReplyError('');
+                        }}
+                        disabled={loading}
+                        className="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-50"
+                      >
+                        Batal
+                      </button>
+                      <button
+                        onClick={() => handleUpdateReply(reply.id)}
+                        disabled={loading || !editReplyText.trim()}
+                        className="px-3 py-1.5 bg-amber-600 text-white text-xs rounded-lg hover:bg-amber-700 disabled:opacity-50"
+                      >
+                        {loading ? 'Menyimpan...' : 'Simpan'}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  // VIEW MODE
+                  <>
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <div className="flex items-center gap-2">
+                        {/* Reply Avatar */}
+                        <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-200 dark:bg-zinc-700 flex-shrink-0">
+                          {reply.profiles?.avatar_url ? (
+                            <img 
+                              src={reply.profiles.avatar_url} 
+                              alt={reply.profiles.username} 
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-semibold">
+                              {reply.profiles?.username?.[0]?.toUpperCase() || 'U'}
+                            </div>
+                          )}
+                        </div>
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          {reply.profiles?.username || reply.profiles?.full_name || 'User'}
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {getTimeAgo(reply.created_at)}
+                        </span>
+                      </div>
+                      
+                      {/* Edit/Delete Buttons - Only show for reply owner */}
+                      {isReplyOwner && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleEditReply(reply)}
+                            disabled={loading}
+                            className="p-1 text-gray-500 hover:text-amber-600 dark:text-gray-400 dark:hover:text-amber-500 disabled:opacity-50"
+                            title="Edit balasan"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteReply(reply.id)}
+                            disabled={loading}
+                            className="p-1 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-500 disabled:opacity-50"
+                            title="Hapus balasan"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-gray-700 dark:text-gray-300 ml-8">{reply.text}</p>
+                  </>
+                )}
               </div>
-              <p className="text-gray-700 dark:text-gray-300">{reply.text}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

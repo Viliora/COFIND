@@ -6,6 +6,21 @@ const API_CACHE_STORE = 'userData'; // Gunakan userData store untuk cache API
 const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 jam dalam milliseconds
 
 /**
+ * Check if URL is auth-related and should not be cached
+ */
+function isAuthRelated(url) {
+  if (!url) return false;
+  const lowerUrl = url.toLowerCase();
+  return lowerUrl.includes('/auth/') ||
+         lowerUrl.includes('/session') ||
+         lowerUrl.includes('/profile') ||
+         lowerUrl.includes('/user') ||
+         lowerUrl.includes('supabase.co/auth/') ||
+         lowerUrl.includes('supabase.co/rest/v1/profiles') ||
+         (lowerUrl.includes('supabase.co/rest/v1/reviews') && lowerUrl.includes('user_id'));
+}
+
+/**
  * Initialize API Cache Database
  */
 export async function initAPICache() {
@@ -31,12 +46,39 @@ function isCacheValid(cachedData) {
  * Fetch data from API dengan caching strategy
  * Strategy: Network First dengan fallback ke cache
  * 
+ * CRITICAL: Auth-related requests are NEVER cached
+ * 
  * @param {string} apiUrl - URL API endpoint
  * @param {Object} options - Fetch options (method, headers, body, dll)
  * @returns {Promise<Object>} - Data dari API atau cache
  */
 export async function fetchWithCache(apiUrl, options = {}) {
   try {
+    // CRITICAL: Never cache auth-related requests - always fetch fresh
+    if (isAuthRelated(apiUrl)) {
+      console.log('[API Cache] Auth-related request - fetching fresh (NO CACHE):', apiUrl);
+      
+      const response = await fetch(apiUrl, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+          ...options.headers,
+        },
+        cache: 'no-store', // Force no cache
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('[API Cache] Auth data fetched (NOT cached):', apiUrl);
+      return { data, fromCache: false };
+    }
+
     console.log('[API Cache] Fetching from network:', apiUrl);
     
     // 1. Coba fetch dari network dulu (timeout 10 detik untuk data besar)
@@ -58,7 +100,7 @@ export async function fetchWithCache(apiUrl, options = {}) {
     if (networkResponse && networkResponse.ok) {
       const data = await networkResponse.json();
       
-      // 2. Simpan ke cache untuk next time
+      // 2. Simpan ke cache untuk next time (only if not auth-related)
       await cacheAPIData(apiUrl, data);
       
       // 3. Simpan ke Cache API juga (untuk service worker)
@@ -80,9 +122,16 @@ export async function fetchWithCache(apiUrl, options = {}) {
       url: apiUrl,
       type: networkError.name
     });
+    
+    // CRITICAL: Never fallback to cache for auth-related requests
+    if (isAuthRelated(apiUrl)) {
+      console.log('[API Cache] Auth-related request failed - no cache fallback');
+      throw networkError;
+    }
+    
     console.log('[API Cache] Trying cache fallback...');
     
-    // 3. Fallback ke cache jika network gagal
+    // 3. Fallback ke cache jika network gagal (only for non-auth requests)
     const cachedData = await getCachedData(apiUrl);
     
     if (cachedData && isCacheValid(cachedData)) {
@@ -109,9 +158,16 @@ export async function fetchWithCache(apiUrl, options = {}) {
 
 /**
  * Cache API data ke IndexedDB
+ * CRITICAL: Never cache auth-related data
  */
 async function cacheAPIData(apiUrl, data) {
   try {
+    // CRITICAL: Never cache auth-related requests
+    if (isAuthRelated(apiUrl)) {
+      console.log('[API Cache] SKIP CACHE (auth-related):', apiUrl);
+      return;
+    }
+
     await initAPICache();
     
     const cacheEntry = {
@@ -215,6 +271,44 @@ export async function clearAPICache() {
     console.log('[API Cache] All cache cleared');
   } catch (error) {
     console.error('[API Cache] Error clearing cache:', error);
+  }
+}
+
+/**
+ * Clear all auth-related cache entries
+ * CRITICAL: Call this on logout or auth state changes
+ */
+export async function clearAuthCache() {
+  try {
+    await initAPICache();
+    
+    // Clear from IndexedDB
+    const allCached = await getFromDB(API_CACHE_STORE);
+    if (Array.isArray(allCached)) {
+      for (const entry of allCached) {
+        if (entry && entry.url && isAuthRelated(entry.url)) {
+          const { deleteFromDB } = await import('./indexedDB');
+          await deleteFromDB(API_CACHE_STORE, entry.key);
+          console.log('[API Cache] Removed auth cache from IndexedDB:', entry.url);
+        }
+      }
+    }
+    
+    // Clear from Cache API
+    if ('caches' in window) {
+      const cache = await caches.open('cofind-content-v2');
+      const keys = await cache.keys();
+      for (const key of keys) {
+        if (isAuthRelated(key.url)) {
+          await cache.delete(key);
+          console.log('[API Cache] Removed auth cache from Cache API:', key.url);
+        }
+      }
+    }
+    
+    console.log('[API Cache] Auth cache cleared');
+  } catch (error) {
+    console.error('[API Cache] Error clearing auth cache:', error);
   }
 }
 

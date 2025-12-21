@@ -154,11 +154,16 @@ console.warn = (...args) => {
 // Daftarkan Service Worker
 registerServiceWorker();
 
+// Import ErrorBoundary
+import ErrorBoundary from './components/ErrorBoundary';
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    {/* Menggunakan BrowserRouter untuk mengaktifkan routing */}
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
+    <ErrorBoundary>
+      {/* Menggunakan BrowserRouter untuk mengaktifkan routing */}
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </ErrorBoundary>
   </React.StrictMode>,
 );

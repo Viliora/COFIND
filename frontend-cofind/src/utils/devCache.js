@@ -37,10 +37,31 @@ function isCacheValid(cacheEntry) {
 }
 
 /**
+ * Check if URL is auth-related and should not be cached
+ */
+function isAuthRelated(url) {
+  if (!url) return false;
+  const lowerUrl = url.toLowerCase();
+  return lowerUrl.includes('/auth/') ||
+         lowerUrl.includes('/session') ||
+         lowerUrl.includes('/profile') ||
+         lowerUrl.includes('/user') ||
+         lowerUrl.includes('supabase.co/auth/') ||
+         lowerUrl.includes('supabase.co/rest/v1/profiles') ||
+         lowerUrl.includes('supabase.co/rest/v1/reviews') && lowerUrl.includes('user_id');
+}
+
+/**
  * Get from memory cache first, then localStorage
  */
 export function getFromDevCache(url) {
   try {
+    // CRITICAL: Never cache auth-related requests
+    if (isAuthRelated(url)) {
+      console.log('[Dev Cache] SKIP CACHE (auth-related):', url);
+      return null;
+    }
+
     // 1. Check memory cache first (fastest)
     if (memoryCache.has(url)) {
       const cached = memoryCache.get(url);
@@ -81,6 +102,12 @@ export function getFromDevCache(url) {
  */
 export function saveToDevCache(url, data) {
   try {
+    // CRITICAL: Never cache auth-related requests
+    if (isAuthRelated(url)) {
+      console.log('[Dev Cache] SKIP SAVE (auth-related):', url);
+      return;
+    }
+
     const cacheEntry = {
       data,
       timestamp: Date.now(),
@@ -123,14 +150,62 @@ export function clearDevCache() {
 }
 
 /**
+ * Clear all auth-related cache entries
+ * CRITICAL: Call this on logout or auth state changes
+ */
+export function clearAuthCache() {
+  try {
+    // Clear from memory cache
+    const memoryKeys = Array.from(memoryCache.keys());
+    memoryKeys.forEach(url => {
+      if (isAuthRelated(url)) {
+        memoryCache.delete(url);
+        console.log('[Dev Cache] Removed auth cache from memory:', url);
+      }
+    });
+
+    // Clear from localStorage
+    const keys = Object.keys(localStorage);
+    keys.forEach(key => {
+      if (key.startsWith(DEV_CACHE_PREFIX)) {
+        try {
+          const stored = localStorage.getItem(key);
+          if (stored) {
+            const cached = JSON.parse(stored);
+            if (cached.url && isAuthRelated(cached.url)) {
+              localStorage.removeItem(key);
+              console.log('[Dev Cache] Removed auth cache from localStorage:', cached.url);
+            }
+          }
+        } catch (e) {
+          // Ignore parse errors
+        }
+      }
+    });
+
+    console.log('[Dev Cache] Auth cache cleared');
+  } catch (error) {
+    console.error('[Dev Cache] Error clearing auth cache:', error);
+  }
+}
+
+/**
  * Fetch with cache and request deduplication
  * STALE-WHILE-REVALIDATE strategy:
  * - Return cached data immediately if available
  * - Fetch fresh data in background
  * - Update cache and notify when fresh data arrives
+ * 
+ * CRITICAL: Auth-related requests are NEVER cached
  */
 export async function fetchWithDevCache(url, options = {}) {
   try {
+    // CRITICAL: Never cache auth-related requests - always fetch fresh
+    if (isAuthRelated(url)) {
+      console.log('[Dev Cache] Auth-related request - fetching fresh (NO CACHE):', url);
+      return await fetchFreshData(url, options);
+    }
+
     // 1. Check cache first (STALE-WHILE-REVALIDATE)
     const cachedData = getFromDevCache(url);
     
@@ -177,6 +252,12 @@ async function fetchFreshData(url, options = {}) {
         ...options,
         headers: {
           'Content-Type': 'application/json',
+          // CRITICAL: Add no-cache headers for auth-related requests
+          ...(isAuthRelated(url) ? {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          } : {}),
           ...options.headers,
         },
       });
@@ -187,10 +268,10 @@ async function fetchFreshData(url, options = {}) {
 
       const data = await response.json();
       
-      // Save to cache
+      // Save to cache (will skip if auth-related)
       saveToDevCache(url, data);
       
-      console.log('[Dev Cache] Fresh data fetched and cached');
+      console.log('[Dev Cache] Fresh data fetched', isAuthRelated(url) ? '(NOT cached - auth-related)' : 'and cached');
       
       return { data, fromCache: false, stale: false };
     } finally {
@@ -232,6 +313,7 @@ export function getDevCacheInfo() {
 if (isDevelopmentMode()) {
   window.__cofindDevCache = {
     clear: clearDevCache,
+    clearAuth: clearAuthCache,
     info: getDevCacheInfo,
     get: getFromDevCache,
     save: saveToDevCache

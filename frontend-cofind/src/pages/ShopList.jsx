@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import CoffeeShopCard from '../components/CoffeeShopCard';
 import HeroSwiper from '../components/HeroSwiper';
 import { preloadFeaturedImages } from '../utils/imagePreloader';
@@ -655,13 +655,12 @@ export default function ShopList() {
         {!error && filteredShops.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
             {filteredShops.map((shop) => (
-              <Link
+              <div
                 key={shop.place_id}
-                to={`/shop/${shop.place_id}`}
                 className="block hover:shadow-2xl transition duration-300"
               >
                 <CoffeeShopCard shop={shop} />
-              </Link>
+              </div>
             ))}
           </div>
         )}

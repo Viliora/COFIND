@@ -360,27 +360,69 @@ const Navbar = () => {
                         onClick={async () => {
                           setUserDropdownOpen(false);
                           try {
-                            console.log('[Navbar] Logging out...');
+                            console.log('[Navbar] Logging out - force clearing all storage...');
                             
-                            // Sign out and wait for completion
-                            const result = await signOut();
-                            
-                            if (result?.error) {
-                              console.error('[Navbar] Error signing out:', result.error);
-                            } else {
-                              console.log('[Navbar] Sign out successful');
+                            // CRITICAL: Force clear ALL storage FIRST before signOut
+                            try {
+                              // Clear ALL localStorage keys
+                              localStorage.clear();
+                              console.log('[Navbar] ✅ localStorage cleared');
+                              
+                              // Clear ALL sessionStorage keys
+                              sessionStorage.clear();
+                              console.log('[Navbar] ✅ sessionStorage cleared');
+                              
+                              // Also try to clear IndexedDB if accessible
+                              if ('indexedDB' in window) {
+                                try {
+                                  const databases = await indexedDB.databases();
+                                  await Promise.all(
+                                    databases.map(db => {
+                                      if (db.name) {
+                                        return new Promise((resolve, reject) => {
+                                          const deleteReq = indexedDB.deleteDatabase(db.name);
+                                          deleteReq.onsuccess = () => resolve();
+                                          deleteReq.onerror = () => reject(deleteReq.error);
+                                          deleteReq.onblocked = () => resolve(); // Continue even if blocked
+                                        });
+                                      }
+                                    })
+                                  );
+                                  console.log('[Navbar] ✅ IndexedDB cleared');
+                                } catch (idbError) {
+                                  console.warn('[Navbar] ⚠️ Error clearing IndexedDB:', idbError);
+                                }
+                              }
+                            } catch (clearError) {
+                              console.error('[Navbar] ⚠️ Error clearing storage:', clearError);
                             }
                             
-                            // Wait a bit longer to ensure all state is cleared
-                            await new Promise(resolve => setTimeout(resolve, 300));
+                            // Sign out from Supabase (for server-side cleanup)
+                            try {
+                              const result = await signOut();
+                              if (result?.error) {
+                                console.error('[Navbar] Error signing out:', result.error);
+                              } else {
+                                console.log('[Navbar] Sign out successful');
+                              }
+                            } catch (signOutError) {
+                              console.warn('[Navbar] ⚠️ Error during signOut (non-critical):', signOutError);
+                            }
                             
-                            // Force reload to ensure clean state (most reliable way)
-                            console.log('[Navbar] Reloading page to ensure guest mode...');
-                            window.location.href = '/';
+                            // Navigate to login page after logout
+                            console.log('[Navbar] ✅ All storage cleared, navigating to login...');
+                            navigate('/login');
                           } catch (error) {
                             console.error('[Navbar] Error during logout:', error);
-                            // Force reload even if there's an error
-                            window.location.href = '/';
+                            // Force clear storage and navigate even if there's an error
+                            try {
+                              localStorage.clear();
+                              sessionStorage.clear();
+                              console.log('[Navbar] ✅ Emergency: Storage cleared, navigating to login...');
+                            } catch (e) {
+                              console.error('[Navbar] ❌ Failed to clear storage:', e);
+                            }
+                            navigate('/login');
                           }
                         }}
                         className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-zinc-700 w-full text-left"
@@ -543,27 +585,71 @@ const Navbar = () => {
                       onClick={async () => {
                         setMobileMenuOpen(false);
                         try {
-                          console.log('[Navbar] Logging out...');
+                          console.log('[Navbar] Logging out - force clearing all storage...');
                           
-                          // Sign out and wait for completion
-                          const result = await signOut();
-                          
-                          if (result?.error) {
-                            console.error('[Navbar] Error signing out:', result.error);
-                          } else {
-                            console.log('[Navbar] Sign out successful');
+                          // CRITICAL: Force clear ALL storage FIRST before signOut
+                          try {
+                            // Clear ALL localStorage keys
+                            localStorage.clear();
+                            console.log('[Navbar] ✅ localStorage cleared');
+                            
+                            // Clear ALL sessionStorage keys
+                            sessionStorage.clear();
+                            console.log('[Navbar] ✅ sessionStorage cleared');
+                            
+                            // Also try to clear IndexedDB if accessible
+                            if ('indexedDB' in window) {
+                              try {
+                                const databases = await indexedDB.databases();
+                                await Promise.all(
+                                  databases.map(db => {
+                                    if (db.name) {
+                                      return new Promise((resolve, reject) => {
+                                        const deleteReq = indexedDB.deleteDatabase(db.name);
+                                        deleteReq.onsuccess = () => resolve();
+                                        deleteReq.onerror = () => reject(deleteReq.error);
+                                        deleteReq.onblocked = () => resolve(); // Continue even if blocked
+                                      });
+                                    }
+                                  })
+                                );
+                                console.log('[Navbar] ✅ IndexedDB cleared');
+                              } catch (idbError) {
+                                console.warn('[Navbar] ⚠️ Error clearing IndexedDB:', idbError);
+                              }
+                            }
+                          } catch (clearError) {
+                            console.error('[Navbar] ⚠️ Error clearing storage:', clearError);
                           }
                           
-                          // Wait a bit to ensure all state is cleared
-                          await new Promise(resolve => setTimeout(resolve, 300));
+                          // Sign out from Supabase (for server-side cleanup)
+                          try {
+                            const result = await signOut();
+                            if (result?.error) {
+                              console.error('[Navbar] Error signing out:', result.error);
+                            } else {
+                              console.log('[Navbar] Sign out successful');
+                            }
+                          } catch (signOutError) {
+                            console.warn('[Navbar] ⚠️ Error during signOut (non-critical):', signOutError);
+                          }
                           
-                          // Navigate to home page after logout
-                          console.log('[Navbar] Navigating to home page after logout...');
-                          navigate('/');
+                          // Navigate to login page after logout
+                          console.log('[Navbar Mobile] ✅ All storage cleared, navigating to login...');
+                          setMobileMenuOpen(false); // Close mobile menu
+                          navigate('/login');
                         } catch (error) {
-                          console.error('[Navbar] Error during logout:', error);
-                          // Navigate to home even if there's an error
-                          navigate('/');
+                          console.error('[Navbar Mobile] Error during logout:', error);
+                          // Force clear storage and navigate even if there's an error
+                          try {
+                            localStorage.clear();
+                            sessionStorage.clear();
+                            console.log('[Navbar Mobile] ✅ Emergency: Storage cleared, navigating to login...');
+                          } catch (e) {
+                            console.error('[Navbar Mobile] ❌ Failed to clear storage:', e);
+                          }
+                          setMobileMenuOpen(false); // Close mobile menu
+                          navigate('/login');
                         }
                       }}
                       className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 w-full text-left transition-all duration-300"
