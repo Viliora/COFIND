@@ -3,6 +3,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import reviewsData from '../data/reviews.json';
 
 const LLMAnalysisModal = ({ isOpen, onClose, shop, buttonRef }) => {
+  // 🛑 DISABLED: LLM Analysis temporarily disabled to save tokens
+  // TODO: Re-enable when needed by removing this early return
+  return null;
+  
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);

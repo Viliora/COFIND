@@ -119,6 +119,30 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
     setLoading(true);
 
     try {
+      // VALIDATION: Check jumlah reviews user untuk coffee shop ini
+      console.log(`[ReviewForm] Checking review count for user ${user.id} at place ${placeId}`);
+      const { count, error: countError } = await supabase
+        .from('reviews')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('place_id', placeId);
+
+      if (countError) {
+        console.error('[ReviewForm] Error checking review count:', countError);
+        setError('Gagal memeriksa jumlah review. Silakan coba lagi.');
+        setLoading(false);
+        return;
+      }
+
+      console.log(`[ReviewForm] User has ${count} existing reviews for this place`);
+
+      // Check if user sudah mencapai limit 3 reviews
+      if (count >= 3) {
+        setError(`Anda sudah mencapai batas maksimal 3 review untuk ${shopName}. Silakan edit atau hapus review lama jika ingin membuat review baru.`);
+        setLoading(false);
+        return;
+      }
+
       // OPTIMIZED: Insert review dengan query sederhana (hanya profile, tanpa photos/replies)
       // Photos dan replies akan di-fetch lazy atau via real-time untuk prevent timeout
       const insertStartTime = Date.now();

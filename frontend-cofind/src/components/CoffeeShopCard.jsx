@@ -157,32 +157,38 @@ const CoffeeShopCard = ({ shop }) => {
             </div>
         </Link>
         
-        {/* AI Analysis Button - Outside Link to avoid nesting */}
-                        <button
-                            ref={aiButtonRef}
-                            onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setIsModalOpen(true);
-                            }}
-            className="absolute top-2 left-2 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-colors z-20"
-                            title="Analisis AI"
-                            type="button"
-                        >
-                            <img 
-                                src="https://img.icons8.com/?size=100&id=ETVUfl0Ylh1p&format=png&color=000000" 
-                                alt="AI Analysis" 
-                className="w-5 h-5 object-contain pointer-events-none"
-                            />
-                        </button>
-            
-            {/* LLM Analysis Modal */}
-            <LLMAnalysisModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                shop={shop}
-                buttonRef={aiButtonRef}
-            />
+        {/* 🛑 DISABLED: AI Analysis Button temporarily hidden to save tokens */}
+        {/* TODO: Re-enable by uncommenting this block */}
+        {false && (
+            <>
+                {/* AI Analysis Button - Outside Link to avoid nesting */}
+                <button
+                    ref={aiButtonRef}
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setIsModalOpen(true);
+                    }}
+                    className="absolute top-2 left-2 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-colors z-20"
+                    title="Analisis AI"
+                    type="button"
+                >
+                    <img 
+                        src="https://img.icons8.com/?size=100&id=ETVUfl0Ylh1p&format=png&color=000000" 
+                        alt="AI Analysis" 
+                        className="w-5 h-5 object-contain pointer-events-none"
+                    />
+                </button>
+                
+                {/* LLM Analysis Modal */}
+                <LLMAnalysisModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    shop={shop}
+                    buttonRef={aiButtonRef}
+                />
+            </>
+        )}
         </div>
     );
 }

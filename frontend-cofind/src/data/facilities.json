@@ -1,0 +1,951 @@
+{
+  "facilities_by_place_id": {
+    "ChIJDcJgropZHS4RKuh8s52jy9U": {
+      "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+      "name": "2818 Coffee Roasters",
+      "facilities": {
+        "accessibility": {
+          "wheelchair_accessible_entrance": false,
+          "wheelchair_accessible_parking": false
+        },
+        "business_identity": {
+          "women_owned": true
+        },
+        "service_options": {
+          "takeaway": true,
+          "dine_in": true
+        },
+        "highlights": {
+          "good_coffee": true,
+          "good_desserts": true,
+          "good_tea_selection": true
+        },
+        "popular_for": {
+          "solo_dining": true,
+          "good_for_working_on_laptop": true
+        },
+        "offerings": {
+          "quick_bite": true,
+          "coffee": true
+        },
+        "dining_options": {
+          "dessert": true
+        },
+        "amenities": {
+          "toilet": true
+        },
+        "atmosphere": [
+          "nyaman",
+          "santai",
+          "tenang",
+          "trendi"
+        ],
+        "crowd": [
+          "berkelompok",
+          "mahasiswa"
+        ],
+        "payments": {
+          "debit_card": true,
+          "credit_card": true,
+          "nfc_mobile_payments": true
+        },
+        "parking": {
+          "parking_difficulty": "agak_sulit",
+          "paid_street_parking": true,
+          "paid_parking_lot": true
+        },
+        "meta": {
+          "source": "google_maps_copy_element",
+          "last_updated": "2025-12-22"
+        }
+      }
+    },
+    "ChIJPa6swGtZHS4RrbIlRvgBgok": {
+      "place_id": "ChIJPa6swGtZHS4RrbIlRvgBgok",
+      "name": "5 CM Coffee and Eatery",
+      "facilities": {
+        "accessibility": {
+          "wheelchair_accessible_seating": true,
+          "wheelchair_accessible_parking": true,
+          "wheelchair_accessible_toilet": true,
+          "wheelchair_accessible_entrance": false
+        },
+        "service_options": {
+          "outdoor_seating": true,
+          "contactless_delivery": true,
+          "delivery": true,
+          "takeaway": true,
+          "dine_in": true
+        },
+        "highlights": {
+          "good_coffee": true,
+          "sports": true,
+          "good_tea_selection": true
+        },
+        "popular_for": {
+          "breakfast": true,
+          "dinner": true,
+          "solo_dining": true,
+          "good_for_working_on_laptop": true
+        },
+        "offerings": {
+          "quick_bite": true,
+          "late_night_food": true,
+          "coffee": true
+        },
+        "dining_options": {
+          "breakfast": true,
+          "brunch": true,
+          "lunch": true,
+          "dinner": true,
+          "seating": true,
+          "table_service": true
+        },
+        "amenities": {
+          "toilet": true,
+          "gender_neutral_toilet": true,
+          "wifi": true,
+          "free_wifi": true
+        },
+        "atmosphere": [
+          "nyaman",
+          "santai",
+          "tenang",
+          "trendi"
+        ],
+        "crowd": [
+          "berkelompok",
+          "mahasiswa",
+          "ramah_keluarga",
+          "turis"
+        ],
+        "planning": {
+          "accepts_reservations": true,
+          "usually_has_wait": true
+        },
+        "payments": {
+          "credit_card": true,
+          "food_vouchers": true,
+          "nfc_mobile_payments": true
+        },
+        "children": {
+          "kids_menu": true
+        },
+        "parking": {
+          "parking_available": true,
+          "paid_street_parking": true,
+          "paid_parking_lot": true
+        },
+        "meta": {
+          "source": "google_maps_copy_element",
+          "last_updated": "2025-12-22"
+        }
+      }
+    },
+    "ChIJhx6zl0BZHS4RGNla_oPoIJ0": {
+      "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+      "name": "Haruna Cafe",
+      "facilities": {
+        "accessibility": {
+          "wheelchair_accessible_seating": false,
+          "wheelchair_accessible_entrance": false,
+          "wheelchair_accessible_parking": false
+        },
+        "service_options": {
+          "outdoor_seating": true,
+          "contactless_delivery": true,
+          "delivery": true,
+          "takeaway": true,
+          "dine_in": true
+        },
+        "highlights": {
+          "good_coffee": true,
+          "good_desserts": true,
+          "good_tea_selection": true
+        },
+        "popular_for": {
+          "breakfast": true,
+          "lunch": true,
+          "dinner": true,
+          "solo_dining": true,
+          "good_for_working_on_laptop": true
+        },
+        "offerings": {
+          "quick_bite": true,
+          "coffee": true
+        },
+        "dining_options": {
+          "breakfast": true,
+          "brunch": true,
+          "lunch": true,
+          "dinner": true,
+          "dessert": true,
+          "seating": true,
+          "table_service": true
+        },
+        "amenities": {
+          "toilet": true
+        },
+        "atmosphere": [
+          "nyaman",
+          "santai",
+          "trendi"
+        ],
+        "crowd": [
+          "berkelompok",
+          "mahasiswa",
+          "turis"
+        ],
+        "planning": {
+          "accepts_reservations": true
+        },
+        "payments": {
+          "debit_card": true,
+          "credit_card": true,
+          "nfc_mobile_payments": true
+        },
+        "children": {
+          "good_for_kids": true
+        },
+        "parking": {
+          "parking_available": true,
+          "paid_street_parking": true,
+          "paid_parking_lot": true
+        },
+        "meta": {
+          "source": "google_maps_copy_element",
+          "last_updated": "2025-12-22"
+        }
+      }
+    },
+    "ChIJC3_RpddZHS4RMiDp7-6TemY": {
+      "place_id": "ChIJC3_RpddZHS4RMiDp7-6TemY",
+      "name": "Rumah Kita Coffee & Eatery",
+      "facilities": {
+        "service_options": {
+          "outdoor_seating": true,
+          "delivery": true,
+          "takeaway": true,
+          "dine_in": true
+        },
+        "highlights": {
+          "good_coffee": true,
+          "good_desserts": true,
+          "good_tea_selection": true
+        },
+        "popular_for": {
+          "lunch": true,
+          "solo_dining": true,
+          "good_for_working_on_laptop": true
+        },
+        "offerings": {
+          "quick_bite": true,
+          "coffee": true
+        },
+        "dining_options": {
+          "breakfast": true,
+          "lunch": true,
+          "dinner": true,
+          "dessert": true,
+          "seating": true,
+          "table_service": true
+        },
+        "amenities": {
+          "toilet": true,
+          "wifi": true,
+          "free_wifi": true
+        },
+        "atmosphere": [
+          "nyaman",
+          "santai",
+          "tenang",
+          "trendi"
+        ],
+        "crowd": [
+          "berkelompok",
+          "mahasiswa",
+          "ramah_keluarga"
+        ],
+        "planning": {
+          "accepts_reservations": true
+        },
+        "payments": {
+          "debit_card": true,
+          "credit_card": true,
+          "nfc_mobile_payments": true
+        },
+        "children": {
+          "good_for_kids": true,
+          "high_chairs": true
+        },
+        "parking": {
+          "parking_available": true,
+          "paid_parking_lot": true
+        },
+        "pets": {
+          "dogs_allowed": true,
+          "dogs_allowed_outdoor": true
+        },
+        "meta": {
+          "source": "google_maps_copy_element",
+          "last_updated": "2025-12-22"
+        }
+      }
+    },
+    "ChIJpVctpWBZHS4RdUbSlT-pSl8": {
+      "place_id": "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+      "name": "CW Coffee Tanjung Raya",
+      "facilities": {
+        "accessibility": {
+          "wheelchair_accessible_seating": false,
+          "wheelchair_accessible_entrance": false,
+          "wheelchair_accessible_parking": false
+        },
+        "service_options": {
+          "outdoor_seating": true,
+          "contactless_delivery": true,
+          "delivery": true,
+          "takeaway": true,
+          "dine_in": true
+        },
+        "highlights": {
+          "good_coffee": true,
+          "good_desserts": true,
+          "good_tea_selection": true
+        },
+        "popular_for": {
+          "lunch": true,
+          "dinner": true,
+          "solo_dining": true,
+          "good_for_working_on_laptop": true
+        },
+        "offerings": {
+          "quick_bite": true,
+          "late_night_food": true,
+          "coffee": true
+        },
+        "dining_options": {
+          "brunch": true,
+          "lunch": true,
+          "dinner": true,
+          "dessert": true,
+          "seating": true,
+          "table_service": true
+        },
+        "amenities": {
+          "toilet": true
+        },
+        "atmosphere": [
+          "nyaman",
+          "santai",
+          "trendi"
+        ],
+        "crowd": [
+          "berkelompok",
+          "mahasiswa",
+          "turis"
+        ],
+        "planning": {
+          "accepts_reservations": true,
+          "usually_has_wait": true
+        },
+        "payments": {
+          "debit_card": true,
+          "credit_card": true,
+          "nfc_mobile_payments": true
+        },
+        "parking": {
+          "parking_available": true,
+          "paid_parking_lot": true
+        },
+        "meta": {
+          "source": "google_maps_copy_element",
+          "last_updated": "2025-12-22"
+        }
+      }
+    },
+    "ChIJBVWfsoFZHS4Rakb44yanMjs": {
+      "place_id": "ChIJBVWfsoFZHS4Rakb44yanMjs",
+      "name": "Osamu Coffee",
+      "facilities": {
+        "service_options": {
+          "outdoor_seating": true,
+          "contactless_delivery": true,
+          "delivery": true,
+          "takeaway": true,
+          "dine_in": true
+        },
+        "highlights": {
+          "good_coffee": true,
+          "good_tea_selection": true
+        },
+        "offerings": {
+          "alcohol": true,
+          "coffee": true
+        },
+        "dining_options": {
+          "breakfast": true,
+          "lunch": true,
+          "dinner": true,
+          "seating": true,
+          "table_service": true
+        },
+        "amenities": {
+          "bar": true,
+          "toilet": true,
+          "wifi": true,
+          "free_wifi": true
+        },
+        "atmosphere": [
+          "nyaman",
+          "santai",
+          "tenang",
+          "trendi"
+        ],
+        "crowd": [
+          "berkelompok",
+          "mahasiswa",
+          "ramah_keluarga",
+          "turis"
+        ],
+        "planning": {
+          "accepts_reservations": true
+        },
+        "payments": {
+          "debit_card": true,
+          "nfc_mobile_payments": true
+        },
+        "children": {
+          "good_for_kids": true
+        },
+        "parking": {
+          "parking_available": true,
+          "free_parking_lot": true
+        },
+        "meta": {
+          "source": "google_maps_copy_element",
+          "last_updated": "2025-12-22"
+        }
+      }
+    },
+    "ChIJ71m2hZZZHS4RrOgKJYP_7zw": {
+      "place_id": "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+      "name": "NUTRICULA COFFEE",
+      "facilities": {
+        "service_options": {
+          "outdoor_seating": true,
+          "takeaway": true,
+          "dine_in": true
+        },
+        "highlights": {
+          "good_coffee": true,
+          "good_tea_selection": true
+        },
+        "popular_for": {
+          "good_for_working_on_laptop": true
+        },
+        "offerings": {
+          "coffee": true
+        },
+        "dining_options": {
+          "seating": true,
+          "table_service": true
+        },
+        "amenities": {
+          "toilet": true
+        },
+        "atmosphere": [
+          "nyaman",
+          "santai",
+          "tenang",
+          "trendi"
+        ],
+        "crowd": [
+          "berkelompok",
+          "mahasiswa",
+          "turis"
+        ],
+        "payments": {
+          "debit_card": true,
+          "credit_card": true,
+          "nfc_mobile_payments": true
+        },
+        "parking": {
+          "parking_available": true,
+          "paid_parking_lot": true
+        },
+        "pets": {
+          "dogs_allowed_outdoor": true
+        },
+        "meta": {
+          "source": "google_maps_copy_element",
+          "last_updated": "2025-12-22"
+        }
+      }
+    },
+    "ChIJE8-LfABZHS4R_MsSOwiHNL8": {
+      "place_id": "ChIJE8-LfABZHS4R_MsSOwiHNL8",
+      "name": "Seremoni Coffee",
+      "facilities": {
+        "service_options": {
+          "outdoor_seating": true,
+          "takeaway": true,
+          "dine_in": true
+        },
+        "highlights": {
+          "good_coffee": true,
+          "good_tea_selection": true
+        },
+        "popular_for": {
+          "solo_dining": true,
+          "good_for_working_on_laptop": true
+        },
+        "offerings": {
+          "coffee": true
+        },
+        "dining_options": {
+          "seating": true
+        },
+        "amenities": {
+          "toilet": true
+        },
+        "atmosphere": [
+          "nyaman",
+          "santai",
+          "tenang",
+          "trendi"
+        ],
+        "crowd": [
+          "berkelompok",
+          "mahasiswa",
+          "turis"
+        ],
+        "payments": {
+          "debit_card": true,
+          "nfc_mobile_payments": true
+        },
+        "meta": {
+          "source": "google_maps_copy_element",
+          "last_updated": "2025-12-22"
+        }
+      }
+    },
+    "ChIJIRuUuwNZHS4RrhnXINPqQQ4": {
+      "place_id": "ChIJIRuUuwNZHS4RrhnXINPqQQ4",
+      "name": "Sidedoors Coffee Shop",
+      "facilities": {
+        "accessibility": {
+          "wheelchair_accessible_seating": false,
+          "wheelchair_accessible_parking": false
+        },
+        "service_options": {
+          "outdoor_seating": true,
+          "takeaway": true,
+          "dine_in": true
+        },
+        "highlights": {
+          "good_coffee": true,
+          "good_desserts": true,
+          "good_tea_selection": true
+        },
+        "popular_for": {
+          "lunch": true,
+          "dinner": true,
+          "solo_dining": true,
+          "good_for_working_on_laptop": true
+        },
+        "offerings": {
+          "quick_bite": true,
+          "coffee": true
+        },
+        "dining_options": {
+          "brunch": true,
+          "lunch": true,
+          "dinner": true,
+          "dessert": true,
+          "seating": true,
+          "table_service": true
+        },
+        "amenities": {
+          "toilet": true
+        },
+        "atmosphere": [
+          "nyaman",
+          "romantis",
+          "santai",
+          "tenang",
+          "trendi"
+        ],
+        "crowd": [
+          "berkelompok",
+          "mahasiswa",
+          "turis"
+        ],
+        "planning": {
+          "reservation_recommended_for_brunch": true,
+          "accepts_reservations": true
+        },
+        "payments": {
+          "debit_card": true,
+          "credit_card": true,
+          "nfc_mobile_payments": true
+        },
+        "children": {
+          "good_for_kids": true,
+          "kids_menu": true
+        },
+        "parking": {
+          "parking_available": true,
+          "paid_street_parking": true,
+          "paid_parking_lot": true,
+          "free_parking_lot": true
+        },
+        "meta": {
+          "source": "google_maps_copy_element",
+          "last_updated": "2025-12-22"
+        }
+      }
+    },
+    "ChIJ4U6K9hdZHS4RKE7QPIKbn4Y": {
+      "place_id": "ChIJ4U6K9hdZHS4RKE7QPIKbn4Y",
+      "name": "Heim Coffee",
+      "facilities": {
+        "accessibility": {
+          "wheelchair_accessible_seating": false
+        },
+        "service_options": {
+          "outdoor_seating": true,
+          "takeaway": true,
+          "dine_in": true
+        },
+        "highlights": {
+          "good_coffee": true,
+          "good_desserts": true,
+          "good_tea_selection": true
+        },
+        "popular_for": {
+          "solo_dining": true,
+          "good_for_working_on_laptop": true
+        },
+        "offerings": {
+          "quick_bite": true,
+          "coffee": true
+        },
+        "dining_options": {
+          "breakfast": true,
+          "brunch": true,
+          "dessert": true,
+          "seating": true,
+          "table_service": true
+        },
+        "amenities": {
+          "toilet": true
+        },
+        "atmosphere": [
+          "nyaman",
+          "santai",
+          "tenang",
+          "trendi"
+        ],
+        "crowd": [
+          "berkelompok",
+          "mahasiswa"
+        ],
+        "planning": {
+          "accepts_reservations": true
+        },
+        "payments": {
+          "debit_card": true,
+          "credit_card": true,
+          "nfc_mobile_payments": true
+        },
+        "parking": {
+          "parking_available": true,
+          "paid_parking_lot": true
+        },
+        "meta": {
+          "source": "google_maps_copy_element",
+          "last_updated": "2025-12-22"
+        }
+      }
+    },
+    "ChIJG-xwV2ZZHS4R0WyGi5bbvoM": {
+      "place_id": "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+      "name": "Disela Coffee & Roastery",
+      "facilities": {
+        "service_options": {
+          "outdoor_seating": true,
+          "takeaway": true,
+          "dine_in": true
+        },
+        "highlights": {
+          "good_coffee": true,
+          "good_tea_selection": true
+        },
+        "popular_for": {
+          "good_for_working_on_laptop": true
+        },
+        "offerings": {
+          "coffee": true
+        },
+        "dining_options": {
+          "breakfast": true,
+          "seating": true,
+          "table_service": true
+        },
+        "amenities": {
+          "toilet": true
+        },
+        "atmosphere": [
+          "nyaman",
+          "santai",
+          "tenang",
+          "trendi"
+        ],
+        "crowd": [
+          "berkelompok",
+          "mahasiswa"
+        ],
+        "payments": {
+          "debit_card": true,
+          "nfc_mobile_payments": true
+        },
+        "meta": {
+          "source": "google_maps_copy_element",
+          "last_updated": "2025-12-22"
+        }
+      }
+    },
+    "ChIJKX36yixZHS4ROQfX-hNWhj0": {
+      "place_id": "ChIJKX36yixZHS4ROQfX-hNWhj0",
+      "name": "Aming Coffee Siantan",
+      "facilities": {
+        "accessibility": {
+          "wheelchair_accessible_toilet": true,
+          "wheelchair_accessible_seating": false
+        },
+        "service_options": {
+          "outdoor_seating": true,
+          "contactless_delivery": true,
+          "delivery": true,
+          "takeaway": true,
+          "dine_in": true
+        },
+        "highlights": {
+          "good_coffee": true,
+          "good_desserts": true,
+          "live_music": true,
+          "sports": true,
+          "live_performances": true,
+          "good_tea_selection": true
+        },
+        "popular_for": {
+          "breakfast": true,
+          "lunch": true,
+          "dinner": true,
+          "solo_dining": true,
+          "good_for_working_on_laptop": true
+        },
+        "offerings": {
+          "quick_bite": true,
+          "late_night_food": true,
+          "coffee": true
+        },
+        "dining_options": {
+          "breakfast": true,
+          "brunch": true,
+          "lunch": true,
+          "dinner": true,
+          "dessert": true,
+          "seating": true,
+          "table_service": true
+        },
+        "amenities": {
+          "toilet": true
+        },
+        "atmosphere": [
+          "nyaman",
+          "santai",
+          "trendi"
+        ],
+        "crowd": [
+          "berkelompok",
+          "mahasiswa",
+          "turis"
+        ],
+        "planning": {
+          "accepts_reservations": true
+        },
+        "payments": {
+          "debit_card": true,
+          "credit_card": true,
+          "nfc_mobile_payments": true
+        },
+        "children": {
+          "good_for_kids": true,
+          "kids_menu": true
+        },
+        "parking": {
+          "parking_available": true,
+          "paid_street_parking": true,
+          "paid_parking_lot": true
+        },
+        "meta": {
+          "source": "google_maps_copy_element",
+          "last_updated": "2025-12-22"
+        }
+      }
+    },
+    "ChIJyRLXBlJYHS4RWNj0yvAvSAQ": {
+      "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+      "name": "Aming Coffee",
+      "facilities": {
+        "accessibility": {
+          "wheelchair_accessible_seating": true,
+          "wheelchair_accessible_entrance": false,
+          "wheelchair_accessible_parking": false
+        },
+        "service_options": {
+          "outdoor_seating": true,
+          "contactless_delivery": true,
+          "delivery": true,
+          "takeaway": true,
+          "dine_in": true
+        },
+        "highlights": {
+          "good_coffee": true,
+          "good_desserts": true,
+          "sports": true,
+          "good_tea_selection": true
+        },
+        "popular_for": {
+          "breakfast": true,
+          "lunch": true,
+          "good_for_working_on_laptop": true
+        },
+        "offerings": {
+          "quick_bite": true,
+          "late_night_food": true,
+          "coffee": true
+        },
+        "dining_options": {
+          "breakfast": true,
+          "brunch": true,
+          "lunch": true,
+          "dessert": true,
+          "seating": true,
+          "table_service": true
+        },
+        "amenities": {
+          "toilet": true
+        },
+        "atmosphere": [
+          "nyaman",
+          "santai",
+          "trendi"
+        ],
+        "crowd": [
+          "berkelompok",
+          "mahasiswa",
+          "turis"
+        ],
+        "planning": {
+          "accepts_reservations": true,
+          "usually_has_wait": true
+        },
+        "payments": {
+          "debit_card": true,
+          "credit_card": true
+        },
+        "parking": {
+          "paid_street_parking": true
+        },
+        "meta": {
+          "source": "google_maps_copy_element",
+          "last_updated": "2025-12-22"
+        }
+      }
+    },
+    "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4": {
+      "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+      "name": "Aming Coffee Podomoro",
+      "facilities": {
+        "accessibility": {
+          "wheelchair_accessible_toilet": true,
+          "wheelchair_accessible_seating": false
+        },
+        "service_options": {
+          "outdoor_seating": true,
+          "contactless_delivery": true,
+          "delivery": true,
+          "takeaway": true,
+          "dine_in": true
+        },
+        "highlights": {
+          "good_coffee": true,
+          "good_desserts": true,
+          "live_music": true,
+          "sports": true,
+          "live_performances": true,
+          "good_tea_selection": true
+        },
+        "popular_for": {
+          "breakfast": true,
+          "lunch": true,
+          "dinner": true,
+          "solo_dining": true,
+          "good_for_working_on_laptop": true
+        },
+        "offerings": {
+          "quick_bite": true,
+          "late_night_food": true,
+          "coffee": true,
+          "private_dining_room": true
+        },
+        "dining_options": {
+          "breakfast": true,
+          "brunch": true,
+          "lunch": true,
+          "dinner": true,
+          "dessert": true,
+          "seating": true,
+          "table_service": true
+        },
+        "amenities": {
+          "toilet": true
+        },
+        "atmosphere": [
+          "nyaman",
+          "santai",
+          "tenang",
+          "trendi"
+        ],
+        "crowd": [
+          "berkelompok",
+          "mahasiswa",
+          "turis"
+        ],
+        "planning": {
+          "accepts_reservations": true,
+          "usually_has_wait": true
+        },
+        "payments": {
+          "debit_card": true,
+          "credit_card": true,
+          "nfc_mobile_payments": true
+        },
+        "parking": {
+          "parking_available": true,
+          "paid_street_parking": true,
+          "paid_parking_lot": true
+        },
+        "meta": {
+          "source": "google_maps",
+          "notes": {
+            "wheelchair_accessible_seating": "Tidak memiliki kursi khusus pengguna kursi roda"
+          }
+        }
+      }
+    }
+  }
+}

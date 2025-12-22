@@ -15,6 +15,10 @@ let llmStatusPromise = null; // Untuk mencegah race condition
  * + Fallback ke client-side extraction jika LLM gagal
  */
 const SmartReviewSummary = ({ shopName, placeId, reviews: propReviews }) => {
+  // 🛑 DISABLED: LLM Analysis temporarily disabled to save tokens
+  // TODO: Re-enable when needed by removing this early return
+  return null;
+  
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
