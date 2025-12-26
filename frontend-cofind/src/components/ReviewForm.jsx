@@ -8,103 +8,21 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [text, setText] = useState('');
-  const [photos, setPhotos] = useState([]);
-  const [photoPreviews, setPhotoPreviews] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const MAX_PHOTOS = 5;
-  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-
-  // Handle photo selection
-  const handlePhotoChange = (e) => {
-    const files = Array.from(e.target.files);
-    
-    // Check total count
-    if (photos.length + files.length > MAX_PHOTOS) {
-      setError(`Maksimal ${MAX_PHOTOS} foto`);
-      return;
-    }
-
-    // Validate each file
-    const validFiles = [];
-    const previews = [];
-
-    for (const file of files) {
-      if (file.size > MAX_FILE_SIZE) {
-        setError(`File ${file.name} terlalu besar (maksimal 5MB)`);
-        continue;
-      }
-      if (!file.type.startsWith('image/')) {
-        setError(`File ${file.name} bukan gambar`);
-        continue;
-      }
-      validFiles.push(file);
-      previews.push(URL.createObjectURL(file));
-    }
-
-    setPhotos([...photos, ...validFiles]);
-    setPhotoPreviews([...photoPreviews, ...previews]);
-    setError('');
-  };
-
-  // Remove photo
-  const removePhoto = (index) => {
-    const newPhotos = photos.filter((_, i) => i !== index);
-    const newPreviews = photoPreviews.filter((_, i) => i !== index);
-    URL.revokeObjectURL(photoPreviews[index]);
-    setPhotos(newPhotos);
-    setPhotoPreviews(newPreviews);
-  };
-
-  // Upload photos to Supabase Storage
-  const uploadPhotos = async (reviewId) => {
-    const uploadedUrls = [];
-
-    for (const photo of photos) {
-      try {
-        const fileExt = photo.name.split('.').pop();
-        const fileName = `${reviewId}-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-        // CRITICAL: Path structure must be: reviews/{userId}/{filename}
-        // This matches the RLS policy for review photos
-        const filePath = `reviews/${user.id}/${fileName}`;
-
-        console.log('[ReviewForm] Uploading photo to:', filePath);
-
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('review-photos')
-          .upload(filePath, photo, {
-            cacheControl: '3600',
-            upsert: false
-          });
-
-        if (uploadError) {
-          console.error('[ReviewForm] Photo upload error:', uploadError);
-          continue; // Skip this photo, continue with others
-        }
-
-        console.log('[ReviewForm] Photo uploaded successfully:', uploadData);
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('review-photos')
-          .getPublicUrl(filePath);
-
-        uploadedUrls.push(publicUrl);
-      } catch (error) {
-        console.error('[ReviewForm] Exception uploading photo:', error);
-        continue;
-      }
-    }
-
-    return uploadedUrls;
-  };
-
-  // Submit review
+  // Submit review - FIXED dengan error handling yang lebih baik
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
+
+    // Validasi user masih terautentikasi
+    if (!user?.id) {
+      setError('Sesi Anda telah berakhir. Silakan login kembali.');
+      return;
+    }
 
     if (!rating) {
       setError('Silakan beri rating');
@@ -116,11 +34,17 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
       return;
     }
 
+    if (!placeId) {
+      setError('ID tempat tidak valid');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // VALIDATION: Check jumlah reviews user untuk coffee shop ini
-      console.log(`[ReviewForm] Checking review count for user ${user.id} at place ${placeId}`);
+      console.log(`[ReviewForm] Starting review submission for user ${user.id} at place ${placeId}`);
+      
+      // Check jumlah reviews user untuk coffee shop ini
       const { count, error: countError } = await supabase
         .from('reviews')
         .select('*', { count: 'exact', head: true })
@@ -134,21 +58,18 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
         return;
       }
 
-      console.log(`[ReviewForm] User has ${count} existing reviews for this place`);
+      console.log(`[ReviewForm] User has ${count || 0} existing reviews for this place`);
 
       // Check if user sudah mencapai limit 3 reviews
-      if (count >= 3) {
+      if (count && count >= 3) {
         setError(`Anda sudah mencapai batas maksimal 3 review untuk ${shopName}. Silakan edit atau hapus review lama jika ingin membuat review baru.`);
         setLoading(false);
         return;
       }
 
-      // OPTIMIZED: Insert review dengan query sederhana (hanya profile, tanpa photos/replies)
-      // Photos dan replies akan di-fetch lazy atau via real-time untuk prevent timeout
-      const insertStartTime = Date.now();
-      
-      // Step 1: Insert review dengan minimal select (hanya basic fields + profile)
-      const insertPromise = supabase
+      // Insert review
+      console.log('[ReviewForm] Inserting review...');
+      const { data: reviewData, error: reviewError } = await supabase
         .from('reviews')
         .insert({
           user_id: user.id,
@@ -167,105 +88,85 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
           profiles:user_id (username, avatar_url, full_name)
         `)
         .single();
-      
-      // Add timeout untuk insert query (8 detik - lebih pendek dari fetch query)
-      const insertTimeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Insert review timeout after 8 seconds')), 8000);
-      });
-      
-      const { data: reviewData, error: reviewError } = await Promise.race([
-        insertPromise,
-        insertTimeoutPromise
-      ]);
-      
-      const insertDuration = Date.now() - insertStartTime;
-      console.log(`[ReviewForm] ⚡ Review inserted in ${insertDuration}ms`);
 
       if (reviewError) {
         console.error('[ReviewForm] ❌ Error inserting review:', reviewError);
-        setError('Gagal menyimpan review: ' + reviewError.message);
+        console.error('[ReviewForm] Error details:', {
+          message: reviewError.message,
+          code: reviewError.code,
+          details: reviewError.details,
+          hint: reviewError.hint
+        });
+        
+        if (reviewError.message?.includes('violates row-level security') || reviewError.code === '42501') {
+          setError('Anda tidak memiliki izin untuk mengirim review. Pastikan Anda sudah login dan coba lagi.');
+        } else if (reviewError.message?.includes('duplicate key') || reviewError.code === '23505') {
+          setError('Review ini sudah ada. Silakan refresh halaman.');
+        } else if (reviewError.message?.includes('null value') || reviewError.code === '23502') {
+          setError('Data review tidak lengkap. Silakan coba lagi.');
+        } else {
+          setError('Gagal menyimpan review: ' + (reviewError.message || 'Unknown error'));
+        }
         setLoading(false);
         return;
       }
       
-      // Ensure reviewData has required structure untuk optimistic update
-      if (!reviewData) {
-        setError('Gagal mendapatkan data review setelah insert');
+      if (!reviewData || !reviewData.id) {
+        console.error('[ReviewForm] ❌ No review data returned after insert');
+        setError('Gagal mendapatkan data review setelah insert. Silakan refresh halaman dan coba lagi.');
         setLoading(false);
         return;
       }
 
-      // Upload photos if any (OPTIONAL - tidak wajib)
-      let uploadedPhotos = [];
-      if (photos.length > 0) {
-        try {
-          const photoUrls = await uploadPhotos(reviewData.id);
-
-          // Insert photo records
-          if (photoUrls.length > 0) {
-            const photoRecords = photoUrls.map(url => ({
-              review_id: reviewData.id,
-              photo_url: url
-            }));
-
-            const { data: insertedPhotos, error: photoError } = await supabase
-              .from('review_photos')
-              .insert(photoRecords)
-              .select('id, review_id, photo_url');
-            
-            if (photoError) {
-              console.error('[ReviewForm] Error inserting photo records:', photoError);
-              // Don't fail the whole review submission if photos fail
-            } else if (insertedPhotos) {
-              uploadedPhotos = insertedPhotos;
-              console.log(`[ReviewForm] ✅ ${insertedPhotos.length} photos uploaded and saved`);
-            }
-          }
-        } catch (photoErr) {
-          console.error('[ReviewForm] Error uploading photos:', photoErr);
-          // Don't fail the whole review submission if photos fail
-        }
-      }
-
+      console.log('[ReviewForm] ✅ Review inserted successfully with ID:', reviewData.id);
+      console.log('[ReviewForm] Review data:', reviewData);
+      
+      // Set success message (tidak akan hilang sampai user clear form)
       setSuccess('Review berhasil dikirim!');
       
-      // Prepare review data untuk optimistic update
-      // Include photos yang sudah di-upload
-      const reviewDataForCallback = {
-        ...reviewData,
-        photos: uploadedPhotos, // Include uploaded photos
-        replies: [], // Empty - akan di-fetch via real-time atau refetch
-        source: 'supabase'
-      };
-      
-      // Callback to parent IMMEDIATELY untuk optimistic UI update
-      // This ensures instant feedback tanpa menunggu fetch
+      // Callback to parent untuk update UI - PASTIKAN dipanggil
       if (onReviewSubmitted) {
-        console.log('[ReviewForm] ✅ Review submitted, calling onReviewSubmitted callback immediately');
-        onReviewSubmitted(reviewDataForCallback);
+        console.log('[ReviewForm] Calling onReviewSubmitted callback with:', reviewData);
+        try {
+          onReviewSubmitted({
+            ...reviewData,
+            source: 'supabase'
+          });
+          console.log('[ReviewForm] ✅ Callback executed successfully');
+        } catch (callbackError) {
+          console.error('[ReviewForm] Error in callback:', callbackError);
+          // Jangan gagalkan submit jika callback error
+        }
+      } else {
+        console.warn('[ReviewForm] ⚠️ onReviewSubmitted callback not provided');
       }
       
-      // Clear form after callback (slight delay untuk smooth UX)
+      // Clear form setelah delay kecil (biarkan user lihat success message)
       setTimeout(() => {
         setRating(0);
         setText('');
-        setPhotos([]);
-        setPhotoPreviews.forEach(url => URL.revokeObjectURL(url));
-        setPhotoPreviews([]);
-      }, 100);
+        // Jangan clear success message - biarkan user lihat
+      }, 2000);
 
     } catch (err) {
-      setError('Terjadi kesalahan. Silakan coba lagi.');
+      console.error('[ReviewForm] ❌ Submit exception:', err);
+      console.error('[ReviewForm] Exception details:', {
+        message: err.message,
+        stack: err.stack,
+        name: err.name
+      });
+      setError('Terjadi kesalahan saat mengirim review: ' + (err.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
   };
 
-  // Show login prompt if not authenticated
+  // Show nothing if Supabase not configured
   if (!isSupabaseConfigured) {
     return null;
   }
 
+  // Show login prompt if not authenticated
   if (!isAuthenticated) {
     return (
       <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 p-6 rounded-xl border border-amber-200 dark:border-amber-800">
@@ -313,7 +214,7 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
         Tulis Review
       </h3>
 
-      {/* Messages */}
+      {/* Messages - Success message tidak akan hilang sampai form di-clear */}
       {error && (
         <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
           <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
@@ -321,7 +222,7 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
       )}
       {success && (
         <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-          <p className="text-sm text-green-700 dark:text-green-300">{success}</p>
+          <p className="text-sm text-green-700 dark:text-green-300 font-medium">{success}</p>
         </div>
       )}
 
@@ -336,7 +237,10 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
               <button
                 key={star}
                 type="button"
-                onClick={() => setRating(star)}
+                onClick={() => {
+                  setRating(star);
+                  setSuccess(''); // Clear success saat user ubah rating
+                }}
                 onMouseEnter={() => setHoverRating(star)}
                 onMouseLeave={() => setHoverRating(0)}
                 className="p-1 transition-transform hover:scale-110"
@@ -370,63 +274,16 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
           </label>
           <textarea
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              setText(e.target.value);
+              setSuccess(''); // Clear success saat user ketik
+            }}
             rows={4}
             className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
             placeholder="Bagikan pengalaman Anda di coffee shop ini..."
             required
             minLength={1}
           />
-        </div>
-
-        {/* Photo Upload */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Foto (Opsional, maks {MAX_PHOTOS})
-          </label>
-          
-          {/* Photo Previews */}
-          {photoPreviews.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-3">
-              {photoPreviews.map((preview, index) => (
-                <div key={index} className="relative">
-                  <img
-                    src={preview}
-                    alt={`Preview ${index + 1}`}
-                    className="w-20 h-20 object-cover rounded-lg border border-gray-200 dark:border-zinc-600"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removePhoto(index)}
-                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Upload Button */}
-          {photos.length < MAX_PHOTOS && (
-            <label className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 dark:border-zinc-600 rounded-lg cursor-pointer hover:border-amber-500 dark:hover:border-amber-500 transition-colors">
-              <svg className="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                Tambah Foto
-              </span>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handlePhotoChange}
-                className="hidden"
-              />
-            </label>
-          )}
         </div>
 
         {/* Submit Button */}

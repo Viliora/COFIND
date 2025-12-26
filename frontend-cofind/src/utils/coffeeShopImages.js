@@ -1,19 +1,19 @@
 // Utility untuk assign foto coffee shop dari asset lokal
-import coffeeshop1 from '../assets/coffeeshop_1.jpg';
-import coffeeshop2 from '../assets/coffeeshop_2.jpg';
-import coffeeshop3 from '../assets/coffeeshop_3.jpg';
-import coffeeshop4 from '../assets/coffeeshop_4.jpg';
-import coffeeshop5 from '../assets/coffeeshop_5.jpg';
-import coffeeshop6 from '../assets/coffeeshop_6.jpg';
-import coffeeshop7 from '../assets/coffeeshop_7.jpg';
-import coffeeshop8 from '../assets/coffeeshop_8.jpg';
-import coffeeshop9 from '../assets/coffeeshop_9.jpg';
-import coffeeshop10 from '../assets/coffeeshop_10.jpg';
-import coffeeshop11 from '../assets/coffeeshop_11.jpg';
-import coffeeshop12 from '../assets/coffeeshop_12.jpg';
-import coffeeshop13 from '../assets/coffeeshop_13.jpg';
-import coffeeshop14 from '../assets/coffeeshop_14.jpg';
-import coffeeshop15 from '../assets/coffeeshop_15.jpg';
+import coffeeshop1 from '../assets/coffeeshop_1.webp';
+import coffeeshop2 from '../assets/coffeeshop_2.webp';
+import coffeeshop3 from '../assets/coffeeshop_3.webp';
+import coffeeshop4 from '../assets/coffeeshop_4.webp';
+import coffeeshop5 from '../assets/coffeeshop_5.webp';
+import coffeeshop6 from '../assets/coffeeshop_6.webp';
+import coffeeshop7 from '../assets/coffeeshop_7.webp';
+import coffeeshop8 from '../assets/coffeeshop_8.webp';
+import coffeeshop9 from '../assets/coffeeshop_9.webp';
+import coffeeshop10 from '../assets/coffeeshop_10.webp';
+import coffeeshop11 from '../assets/coffeeshop_11.webp';
+import coffeeshop12 from '../assets/coffeeshop_12.webp';
+import coffeeshop13 from '../assets/coffeeshop_13.webp';
+import coffeeshop14 from '../assets/coffeeshop_14.webp';
+import coffeeshop15 from '../assets/coffeeshop_15.webp';
 
 import localPlacesData from '../data/places.json';
 

@@ -1,13 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
-const ReviewCard = ({ review, onDelete, onUpdate, showSourceBadge = false }) => {
+const ReviewCard = ({ review, onDelete, onUpdate }) => {
   const { user, isAuthenticated } = useAuth();
-  const [showPhotos, setShowPhotos] = useState(false);
-  const [selectedPhoto, setSelectedPhoto] = useState(null);
-  const [showReportModal, setShowReportModal] = useState(false);
-  const [reportReason, setReportReason] = useState('');
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(review.text || '');
@@ -17,37 +13,27 @@ const ReviewCard = ({ review, onDelete, onUpdate, showSourceBadge = false }) => 
 
   const isOwner = user?.id === review.user_id;
   const timeAgo = getTimeAgo(review.created_at, review.relative_time);
-  
-  // Debug logging untuk photos
-  useEffect(() => {
-    if (review.photos && review.photos.length > 0) {
-      console.log(`[ReviewCard] Review ${review.id} has ${review.photos.length} photos:`, review.photos);
-    }
-  }, [review.id, review.photos]);
 
-  // Handle edit click - reset state saat mulai edit
+  // Handle edit click
   const handleEditClick = () => {
     setEditText(review.text || '');
     setEditRating(review.rating || 0);
     setEditError('');
+    setSuccess('');
     setIsEditing(true);
   };
 
   // Format time ago
   function getTimeAgo(dateString, relativeTime) {
-    // If legacy review has relative_time, use it directly
     if (relativeTime && typeof relativeTime === 'string') {
       return relativeTime;
     }
     
-    // Try to parse date string
     if (!dateString) return 'Tidak diketahui';
     
     const date = new Date(dateString);
     
-    // Check if date is valid
     if (isNaN(date.getTime())) {
-      // If invalid date, try to use relative_time if available
       if (relativeTime) return relativeTime;
       return 'Tidak diketahui';
     }
@@ -63,20 +49,26 @@ const ReviewCard = ({ review, onDelete, onUpdate, showSourceBadge = false }) => 
     return date.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
   }
 
-  // Handle edit submit
+  // Handle edit submit - FIXED: Better error handling dan callback
   const handleEditSubmit = async () => {
     if (!editText.trim()) {
-      alert('Review tidak boleh kosong');
+      setEditError('Review tidak boleh kosong');
+      return;
+    }
+    
+    if (!user?.id) {
+      setEditError('Sesi Anda telah berakhir. Silakan login kembali.');
       return;
     }
     
     setLoading(true);
+    setEditError('');
+    setSuccess('');
 
     try {
-      const editStartTime = Date.now();
+      console.log('[ReviewCard] Updating review:', review.id);
       
-      // OPTIMIZED: Update review dengan timeout handling
-      const updatePromise = supabase
+      const { data: updatedReview, error } = await supabase
         .from('reviews')
         .update({ 
           text: editText.trim(), 
@@ -84,6 +76,7 @@ const ReviewCard = ({ review, onDelete, onUpdate, showSourceBadge = false }) => 
           updated_at: new Date().toISOString() 
         })
         .eq('id', review.id)
+        .eq('user_id', user.id)
         .select(`
           id,
           user_id,
@@ -91,144 +84,97 @@ const ReviewCard = ({ review, onDelete, onUpdate, showSourceBadge = false }) => 
           rating,
           text,
           created_at,
-          updated_at
+          updated_at,
+          profiles:user_id (username, avatar_url, full_name)
         `)
         .single();
-      
-      // Add timeout untuk update query (8 detik)
-      const updateTimeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Update review timeout after 8 seconds')), 8000);
-      });
-      
-      const { data: updatedReview, error } = await Promise.race([
-        updatePromise,
-        updateTimeoutPromise
-      ]);
-      
-      const editDuration = Date.now() - editStartTime;
-      console.log(`[ReviewCard] ⚡ Review updated in ${editDuration}ms`);
 
       if (error) {
         console.error('[ReviewCard] ❌ Error updating review:', error);
-        const errorMessage = error.message || 'Unknown error';
-        if (errorMessage.includes('timeout')) {
-          alert('Timeout saat menyimpan perubahan. Silakan coba lagi.');
-        } else {
-          alert('Gagal menyimpan perubahan: ' + errorMessage);
-        }
+        setEditError('Gagal menyimpan perubahan: ' + (error.message || 'Unknown error'));
         setLoading(false);
         return;
       }
 
-      if (updatedReview) {
-        // Fetch profile data untuk updated review (dengan timeout)
-        let profileData = review.profiles; // Keep existing profile data
-        
-        if (updatedReview.user_id) {
-          try {
-            const profilePromise = supabase
-              .from('profiles')
-              .select('id, username, avatar_url, full_name')
-              .eq('id', updatedReview.user_id)
-              .single();
-            
-            const profileTimeoutPromise = new Promise((_, reject) => {
-              setTimeout(() => reject(new Error('Profile fetch timeout')), 5000);
-            });
-            
-            const { data: profile } = await Promise.race([
-              profilePromise,
-              profileTimeoutPromise
-            ]);
-            
-            if (profile) {
-              profileData = profile;
-            }
-          } catch (profileError) {
-            console.warn('[ReviewCard] ⚠️ Error fetching profile (non-critical):', profileError?.message || profileError);
-            // Keep existing profile data if fetch fails
-          }
-        }
-
-        // Prepare updated review dengan semua data yang diperlukan
-        const finalUpdatedReview = {
-          ...review, // Keep existing data (photos, replies, etc.)
-          ...updatedReview, // Override with updated data
-          profiles: profileData,
-          author_name: profileData?.username || profileData?.full_name || 'Anonim',
-          source: review.source || 'supabase'
-        };
-
-        // Update local state
-        setIsEditing(false);
-        
-        // Call onUpdate dengan data lengkap untuk update state di parent
-        if (onUpdate) {
-          onUpdate(finalUpdatedReview);
-          console.log('[ReviewCard] Review updated successfully:', finalUpdatedReview.id);
-        }
-
-        // Show success message
-        setSuccess('Review berhasil diperbarui!');
-        console.log('[ReviewCard] Review updated in database:', finalUpdatedReview.id);
-        
-        // CRITICAL: Don't reload page - use optimistic update instead
-        // onUpdate callback will trigger refresh in ReviewList
-        // This is much faster and provides better UX
-        console.log('[ReviewCard] Review updated - triggering refresh via onUpdate callback');
+      if (!updatedReview || !updatedReview.id) {
+        console.error('[ReviewCard] ❌ No data returned after update');
+        setEditError('Gagal mendapatkan data review setelah update.');
+        setLoading(false);
+        return;
       }
+
+      console.log('[ReviewCard] ✅ Review updated successfully:', updatedReview.id);
+      
+      setIsEditing(false);
+      setSuccess('Review berhasil diperbarui!');
+      
+      // Callback to parent dengan data lengkap
+      if (onUpdate) {
+        try {
+          onUpdate({
+            ...review,
+            ...updatedReview,
+            profiles: updatedReview.profiles || review.profiles
+          });
+          console.log('[ReviewCard] ✅ onUpdate callback executed');
+        } catch (callbackError) {
+          console.error('[ReviewCard] Error in onUpdate callback:', callbackError);
+        }
+      }
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(''), 3000);
+      
     } catch (err) {
-      console.error('[ReviewCard] Exception updating review:', err);
-      const errorMessage = err.message || 'Unknown error';
-      setEditError('Gagal menyimpan perubahan: ' + errorMessage);
+      console.error('[ReviewCard] ❌ Exception updating review:', err);
+      setEditError('Gagal menyimpan perubahan: ' + (err.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle delete
+  // Handle delete - FIXED: Better error handling dan callback
   const handleDelete = async () => {
     if (!confirm('Apakah Anda yakin ingin menghapus review ini?')) return;
+    
+    if (!user?.id) {
+      alert('Sesi Anda telah berakhir. Silakan login kembali.');
+      return;
+    }
+    
     setLoading(true);
 
     try {
+      console.log('[ReviewCard] Deleting review:', review.id);
+      
       const { error } = await supabase
         .from('reviews')
         .delete()
-        .eq('id', review.id);
+        .eq('id', review.id)
+        .eq('user_id', user.id);
 
-      if (!error && onDelete) {
-        onDelete(review.id);
+      if (error) {
+        console.error('[ReviewCard] ❌ Delete error:', error);
+        alert('Gagal menghapus review: ' + (error.message || 'Unknown error'));
+        setLoading(false);
+        return;
       }
-    } catch (err) {
-      console.error('Delete error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
-
-  // Handle report submit
-  const handleReportSubmit = async () => {
-    if (!reportReason.trim() || !supabase) return;
-    setLoading(true);
-
-    try {
-      const { error } = await supabase
-        .from('review_reports')
-        .insert({
-          review_id: review.id,
-          reporter_id: user.id,
-          reason: reportReason.trim()
-        });
-
-      if (!error) {
-        setReportReason('');
-        setShowReportModal(false);
-        alert('Laporan terkirim. Terima kasih!');
+      console.log('[ReviewCard] ✅ Review deleted successfully');
+      
+      // Callback to parent - PASTIKAN dipanggil
+      if (onDelete) {
+        try {
+          onDelete(review.id);
+          console.log('[ReviewCard] ✅ onDelete callback executed');
+        } catch (callbackError) {
+          console.error('[ReviewCard] Error in onDelete callback:', callbackError);
+        }
       }
+      
     } catch (err) {
-      console.error('Report error:', err);
+      console.error('[ReviewCard] ❌ Delete exception:', err);
+      alert('Terjadi kesalahan saat menghapus review: ' + (err.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -256,20 +202,9 @@ const ReviewCard = ({ review, onDelete, onUpdate, showSourceBadge = false }) => 
         {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h4 className="font-semibold text-gray-900 dark:text-white truncate">
-                {review.profiles?.username || review.author_name || 'Anonim'}
-              </h4>
-              {showSourceBadge && review.source && (
-                <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
-                  review.source === 'legacy'
-                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                    : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
-                }`}>
-                  {review.source === 'legacy' ? 'Google Review' : 'Review Pengguna'}
-                </span>
-              )}
-            </div>
+            <h4 className="font-semibold text-gray-900 dark:text-white truncate">
+              {review.profiles?.username || review.author_name || 'Anonim'}
+            </h4>
             <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
               {timeAgo}
             </span>
@@ -284,7 +219,7 @@ const ReviewCard = ({ review, onDelete, onUpdate, showSourceBadge = false }) => 
                   star <= (isEditing ? editRating : review.rating)
                     ? 'text-amber-500 fill-current'
                     : 'text-gray-400 dark:text-gray-500'
-                } ${isEditing ? 'cursor-pointer' : ''}`}
+                } ${isEditing ? 'cursor-pointer hover:scale-110 transition-transform' : ''}`}
                 onClick={() => isEditing && setEditRating(star)}
                 fill="none"
                 stroke="currentColor"
@@ -309,7 +244,7 @@ const ReviewCard = ({ review, onDelete, onUpdate, showSourceBadge = false }) => 
             value={editText}
             onChange={(e) => {
               setEditText(e.target.value);
-              setEditError(''); // Clear error saat user mengetik
+              setEditError('');
             }}
             rows={3}
             className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-gray-900 dark:text-white text-sm resize-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
@@ -335,6 +270,7 @@ const ReviewCard = ({ review, onDelete, onUpdate, showSourceBadge = false }) => 
                 setEditText(review.text || '');
                 setEditRating(review.rating || 0);
                 setEditError('');
+                setSuccess('');
               }}
               disabled={loading}
               className="px-3 py-1.5 border border-gray-300 dark:border-zinc-600 text-gray-700 dark:text-gray-300 text-sm rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-700 disabled:opacity-50"
@@ -344,155 +280,48 @@ const ReviewCard = ({ review, onDelete, onUpdate, showSourceBadge = false }) => 
           </div>
         </div>
       ) : (
-        <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed mb-3">
-          {review.text}
-        </p>
-      )}
-
-      {/* Photos - CRITICAL: Always show if photos exist */}
-      {review.photos && Array.isArray(review.photos) && review.photos.length > 0 && (
-        <div className="mb-3">
-          <div className="flex flex-wrap gap-2">
-            {review.photos.slice(0, showPhotos ? undefined : 3).map((photo, index) => {
-              // Handle both object format {id, photo_url} and string format
-              const photoUrl = typeof photo === 'string' ? photo : (photo?.photo_url || photo?.url);
-              const photoId = photo?.id || index;
-              
-              if (!photoUrl) {
-                console.warn('[ReviewCard] Photo missing URL:', photo);
-                return null;
-              }
-              
-              return (
-                <button
-                  key={photoId}
-                  onClick={() => setSelectedPhoto(photoUrl)}
-                  className="relative group"
-                >
-                  <img
-                    src={photoUrl}
-                    alt={`Review photo ${index + 1}`}
-                    className="w-20 h-20 object-cover rounded-lg border border-gray-200 dark:border-zinc-600 hover:opacity-90 transition-opacity cursor-pointer"
-                    onError={(e) => {
-                      console.error('[ReviewCard] Failed to load photo:', photoUrl);
-                      e.target.style.display = 'none';
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 rounded-lg transition-opacity" />
-                </button>
-              );
-            })}
-            {!showPhotos && review.photos.length > 3 && (
-              <button
-                onClick={() => setShowPhotos(true)}
-                className="w-20 h-20 rounded-lg bg-gray-100 dark:bg-zinc-700 flex items-center justify-center text-sm font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-zinc-600 transition-colors"
-              >
-                +{review.photos.length - 3}
-              </button>
-            )}
-          </div>
-        </div>
+        <>
+          <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed mb-3">
+            {review.text}
+          </p>
+          {success && (
+            <p className="text-sm text-green-600 dark:text-green-400 mb-3">{success}</p>
+          )}
+        </>
       )}
 
       {/* Actions */}
-      <div className="flex items-center justify-between border-t border-gray-200 dark:border-zinc-600 pt-3">
-        <div className="flex items-center gap-3">
-          {isAuthenticated && !isOwner && (
-            <button
-              onClick={() => setShowReportModal(true)}
-              className="text-sm text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-500 flex items-center gap-1"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              Laporkan
-            </button>
-          )}
-        </div>
-
-        {/* Owner Actions - Hanya tampil jika user authenticated DAN adalah owner */}
-        {isAuthenticated && isOwner && !isEditing && (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleEditClick}
-              className="text-sm text-gray-600 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-500 flex items-center gap-1"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-              Edit
-            </button>
-            <button
-              onClick={handleDelete}
-              disabled={loading}
-              className="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 flex items-center gap-1"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-              Hapus
-            </button>
-          </div>
-        )}
-      </div>
-
-
-      {/* Report Modal */}
-      {showReportModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-zinc-800 rounded-xl p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Laporkan Review
-            </h3>
-            <textarea
-              value={reportReason}
-              onChange={(e) => setReportReason(e.target.value)}
-              rows={3}
-              placeholder="Jelaskan alasan pelaporan..."
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-gray-900 dark:text-white text-sm resize-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-            />
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                onClick={() => {
-                  setShowReportModal(false);
-                  setReportReason('');
-                }}
-                className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-              >
-                Batal
-              </button>
-              <button
-                onClick={handleReportSubmit}
-                disabled={loading || !reportReason.trim()}
-                className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 disabled:opacity-50"
-              >
-                Kirim Laporan
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Photo Lightbox */}
-      {selectedPhoto && (
-        <div 
-          className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4"
-          onClick={() => setSelectedPhoto(null)}
-        >
+      {isAuthenticated && isOwner && !isEditing && (
+        <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-200 dark:border-zinc-600">
           <button
-            className="absolute top-4 right-4 text-white hover:text-gray-300"
-            onClick={() => setSelectedPhoto(null)}
+            onClick={handleEditClick}
+            disabled={loading}
+            className="text-sm text-gray-600 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-500 flex items-center gap-1 disabled:opacity-50"
           >
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
+            Edit
           </button>
-          <img
-            src={selectedPhoto}
-            alt="Full size"
-            className="max-w-full max-h-full object-contain"
-            onClick={(e) => e.stopPropagation()}
-          />
+          <button
+            onClick={handleDelete}
+            disabled={loading}
+            className="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 flex items-center gap-1 disabled:opacity-50"
+          >
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                <span>Menghapus...</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Hapus
+              </>
+            )}
+          </button>
         </div>
       )}
     </div>

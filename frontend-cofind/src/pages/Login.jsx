@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import coffeeshopBg from '../assets/coffeeshop_2.jpg';
+import coffeeshopBg from '../assets/coffeeshop_2.webp';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -326,7 +326,7 @@ const Login = () => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="w-full px-4 py-3 bg-white/90 text-gray-900 rounded-lg border border-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-                      placeholder="••••••••"
+                      placeholder="Kata Sandi"
                       required
                       minLength={6}
                     />
