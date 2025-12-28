@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import cofindImg from '../assets/cofind.svg?url';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/authContext';
+import { AuthProvider } from "../context/authContext";
 
 const Navbar = () => {
   const { user, profile, isAuthenticated, isAdmin, signOut } = useAuth();

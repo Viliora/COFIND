@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/authContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import CoffeeShopCard from '../components/CoffeeShopCard';
 import localPlacesData from '../data/places.json';
+import { AuthProvider } from "../context/authContext";
+
 // CoffeeShopCard sudah menggunakan getCoffeeShopImage berdasarkan place_id, jadi tidak perlu set photos
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
@@ -15,11 +17,8 @@ const WantToVisit = () => {
   const [wantToVisitShops, setWantToVisitShops] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    loadWantToVisit();
-  }, [isAuthenticated, user?.id]); // Re-load when auth state changes
-
-  const loadWantToVisit = async () => {
+  // ✅ OPTIMIZED: Wrapped dengan useCallback untuk mencegah re-creation setiap render
+  const loadWantToVisit = useCallback(async () => {
     try {
       setIsLoading(true);
       
@@ -132,7 +131,12 @@ const WantToVisit = () => {
       console.error('[WantToVisit] Error loading want-to-visit:', err);
       setIsLoading(false);
     }
-  };
+  }, [isAuthenticated, user?.id, supabase, isSupabaseConfigured]); // ✅ Dependencies yang benar
+
+  // ✅ OPTIMIZED: useEffect dengan dependency array yang benar
+  useEffect(() => {
+    loadWantToVisit();
+  }, [loadWantToVisit]); // ✅ Sekarang aman karena fungsi sudah di-wrap dengan useCallback
 
   if (isLoading) {
     return (

@@ -353,3 +353,6 @@ SELECT * FROM pg_policies WHERE tablename = 'reviews';
 - `database/FIX_RLS_PUBLIC_READ.sql` (new file)
 
 
+
+
+

@@ -13,6 +13,8 @@ const CoffeeShopCard = ({ shop }) => {
     const aiButtonRef = useRef(null);
 
     // Fetch review summary saat component mount
+    // ✅ OPTIMIZED: Depend pada place_id dan shop.name karena getReviewSummary menggunakan shopName
+    // untuk payload API dan pembersihan teks (meskipun fetch saat ini dikomentari)
     useEffect(() => {
         if (shop.place_id) {
             setIsLoadingSummary(true);
@@ -26,7 +28,7 @@ const CoffeeShopCard = ({ shop }) => {
                     setIsLoadingSummary(false);
                 });
         }
-    }, [shop.place_id, shop.name]);
+    }, [shop.place_id, shop.name]); // ✅ place_id dan shop.name diperlukan karena shopName digunakan dalam getReviewSummary
 
     // Fungsi untuk mendapatkan warna placeholder berdasarkan nama shop
     const getPlaceholderColor = (shopName) => {
