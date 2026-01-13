@@ -16,6 +16,7 @@ export async function getReviewSummary(placeId, shopName = 'Coffee Shop') {
   if (!placeId) {
     return null;
   }
+  void shopName;
 
   // Cek cache dulu
   const cacheKey = `${CACHE_KEY_PREFIX}${placeId}`;

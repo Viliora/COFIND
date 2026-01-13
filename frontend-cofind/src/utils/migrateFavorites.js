@@ -46,7 +46,7 @@ export const migrateLocalStorageToSupabase = async (userId) => {
           } else {
             results.favorites.migrated++;
           }
-        } catch (err) {
+        } catch {
           results.favorites.errors++;
         }
       }
@@ -75,7 +75,7 @@ export const migrateLocalStorageToSupabase = async (userId) => {
           } else {
             results.wantToVisit.migrated++;
           }
-        } catch (err) {
+        } catch {
           results.wantToVisit.errors++;
         }
       }

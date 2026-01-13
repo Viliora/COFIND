@@ -1,21 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/authContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import OptimizedImage from '../components/OptimizedImage';
-import SmartReviewSummary from '../components/SmartReviewSummary';
 import FacilitiesTab from '../components/FacilitiesTab';
 import ReviewForm from '../components/ReviewForm';
 import ReviewList from '../components/ReviewList';
-import localPlacesData from '../data/places.json';
 import facilitiesData from '../data/facilities.json';
-import { getCoffeeShopImage } from '../utils/coffeeShopImages';
 import { addToRecentlyViewed } from '../utils/recentlyViewed';
+import { getCoffeeShopImage } from '../utils/coffeeShopImages'; // Fallback untuk local assets
+import { getValidPhotoUrl, isValidPhotoUrl } from '../utils/photoUrlHelper';
 
-// Konfigurasi API (mengikuti ShopList)
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
-const USE_API = import.meta.env.VITE_USE_API === 'true';
-const USE_LOCAL_DATA = true; // Set true untuk menggunakan data lokal JSON
+// Using Supabase only - photos stored in Supabase Storage
 const MIN_REVIEWS = 15; // Maksimal jumlah reviews yang ditampilkan
 
 function ShopDetail() {
@@ -26,13 +22,13 @@ function ShopDetail() {
   const [shop, setShop] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [reviews, setReviews] = useState([]);
   const [isFavorite, setIsFavorite] = useState(false);
   const [isWantToVisit, setIsWantToVisit] = useState(false);
   const [notification, setNotification] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [pendingAction, setPendingAction] = useState(null); // 'favorite' or 'wantToVisit'
   const [newReview, setNewReview] = useState(null); // For triggering ReviewList update
+  const [mapError, setMapError] = useState(false); // Track map load errors
   const reviewFormRef = useRef(null); // Ref untuk scroll ke review form
 
   // Handle scroll to review form setelah login
@@ -74,59 +70,62 @@ function ShopDetail() {
         setIsLoading(true);
         setError(null);
 
-        // Prioritaskan data lokal jika USE_LOCAL_DATA aktif
-        if (USE_LOCAL_DATA) {
-          console.log('[ShopDetail] Using local JSON data for place_id:', id);
-          
-          if (localPlacesData && localPlacesData.data && Array.isArray(localPlacesData.data)) {
-            const foundShop = localPlacesData.data.find(shop => shop.place_id === id);
-            
-            if (foundShop) {
-              console.log('[ShopDetail] Found shop in local data:', foundShop.name);
-              const normalized = {
-                place_id: foundShop.place_id,
-                name: foundShop.name,
-                address: foundShop.address,
-                rating: foundShop.rating,
-                price_level: foundShop.price_level,
-                user_ratings_total: foundShop.user_ratings_total,
-                location: foundShop.location,
-                photos: Array.isArray(foundShop.photos) ? foundShop.photos : [],
-                business_status: foundShop.business_status,
-                map_embed_url: foundShop.map_embed_url || null,
-              };
-              setShop(normalized);
-              
-              // Simpan ke recently viewed
-              addToRecentlyViewed(normalized);
-              
-              // Reviews sekarang hanya dari Supabase (via ReviewList component)
-              // Tidak perlu load dari reviews.json lagi
-              setReviews([]);
-              setIsLoading(false);
-              return;
-            } else {
-              throw new Error('Coffee shop tidak ditemukan dalam data lokal.');
-            }
-          } else {
-            throw new Error('Format data lokal tidak valid.');
+        // ✅ NEW: Fetch from Supabase places table
+        if (isSupabaseConfigured && supabase) {
+          console.log('[ShopDetail] Fetching from Supabase places table:', id);
+
+          const { data: shopData, error: shopError } = await supabase
+            .from('places')
+            .select('*')
+            .eq('place_id', id)
+            .single();
+
+          if (shopError) {
+            console.error('[ShopDetail] Supabase error:', shopError);
+            throw new Error('Coffee shop tidak ditemukan di database.');
+          }
+
+          if (shopData) {
+            console.log('[ShopDetail] Found shop in Supabase:', shopData.name);
+
+            // Normalize data structure
+            const normalized = {
+              place_id: shopData.place_id,
+              name: shopData.name,
+              address: shopData.address,
+              rating: shopData.rating,
+              price_level: shopData.price_level,
+              user_ratings_total: shopData.user_ratings_total,
+              location: shopData.location,
+              photos: [], // Places table doesn't have photos, can be added later
+              business_status: shopData.business_status,
+              map_embed_url: shopData.map_embed_url,
+            };
+
+            setShop(normalized);
+
+            // Simpan ke recently viewed
+            addToRecentlyViewed(normalized);
+
+            setIsLoading(false);
+            return;
           }
         }
 
-        // Direct API call without caching
+        // Fallback to API if Supabase fails
         if (USE_API) {
           try {
             const detailUrl = `${API_BASE}/api/coffeeshops/detail/${id}`;
-            console.log('[ShopDetail] Fetching from API:', detailUrl);
-            
+            console.log('[ShopDetail] Fallback: Fetching from API:', detailUrl);
+
             const response = await fetch(detailUrl);
-            
+
             if (!response.ok) {
               throw new Error(`API returned status ${response.status}`);
             }
-            
+
             const payload = await response.json();
-            
+
             if (payload?.status === 'success' && payload?.data) {
               const detail = payload.data;
               // Normalisasi sebagian field agar konsisten dengan list
@@ -144,33 +143,24 @@ function ShopDetail() {
                   : [],
               };
               setShop(normalized);
-              
+
               // Simpan ke recently viewed
               addToRecentlyViewed(normalized);
-              
-              // Hanya tampilkan komentar yang punya teks, dan batasi maksimal 10 reviews
-              const reviewsWithText = Array.isArray(detail.reviews)
-                ? detail.reviews
-                    .filter((r) => (r?.text || '').trim().length > 0)
-                    .slice(0, MIN_REVIEWS)
-                : [];
-              setReviews(reviewsWithText);
+
               setIsLoading(false);
               return;
             }
           } catch (apiErr) {
             console.error('[ShopDetail] Failed to load from API:', apiErr?.message);
-            throw new Error(`Unable to load coffee shop details. Please ensure the backend is running and you have internet connection.`);
           }
         }
 
-        // If API is disabled, show error
-        throw new Error(`API is disabled. Please enable it to view shop details.`);
+        // If all methods fail
+        throw new Error('Tidak dapat memuat detail coffee shop. Pastikan koneksi internet dan konfigurasi database sudah benar.');
       } catch (err) {
         console.error("Load Error:", err);
         setError(err.message || 'Gagal memuat detail toko');
         setShop(null);
-        setReviews([]);
         setIsLoading(false);
       }
     };
@@ -416,11 +406,13 @@ function ShopDetail() {
         </Link>
       </div>
       <div className="bg-white dark:bg-zinc-800 p-4 sm:p-6 md:p-8 rounded-xl shadow-2xl border border-gray-200 dark:border-zinc-700">
-        {/* Foto Coffee Shop - dengan optimasi loading */}
+        {/* Foto Coffee Shop - dari Supabase Storage dengan fallback ke local assets */}
         <div className="mb-6 rounded-xl overflow-hidden shadow-lg">
           <div className="w-full h-56 sm:h-64 md:h-80">
             <OptimizedImage
-              src={getCoffeeShopImage(shop.place_id || shop.name)}
+              src={isValidPhotoUrl(getValidPhotoUrl(shop.photo_url, shop.place_id))
+                ? getValidPhotoUrl(shop.photo_url, shop.place_id)
+                : getCoffeeShopImage(shop.place_id || shop.name)}
               alt={shop.name}
               className="w-full h-full object-cover"
               fallbackColor={(() => {
@@ -493,16 +485,6 @@ function ShopDetail() {
         </div>
       </div>
 
-      {/* Smart Review Summary - AI Analysis */}
-      {/* Reviews sekarang hanya dari Supabase, SmartReviewSummary akan fetch sendiri */}
-      {shop?.place_id && (
-        <div className="mt-6 sm:mt-8">
-          <SmartReviewSummary 
-            shopName={shop.name}
-            placeId={shop.place_id}
-          />
-        </div>
-      )}
 
       {/* Facilities Section */}
       {shop?.place_id && facilitiesData?.facilities_by_place_id?.[shop.place_id] && (
@@ -530,36 +512,23 @@ function ShopDetail() {
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4">
             📍 Lokasi
           </h2>
-          {/* Prioritaskan iframe embed jika tersedia */}
-          {shop.map_embed_url ? (
+          
+          {/* Coba tampilkan embed maps, jika error tampilkan fallback */}
+          {shop.map_embed_url && !mapError ? (
             <div className="rounded-lg overflow-hidden">
               <iframe
                 src={shop.map_embed_url}
                 width="100%"
-                height="320"
-                style={{ border: 0 }}
+                height="400"
+                style={{ border: 0, borderRadius: '0.5rem' }}
                 allowFullScreen=""
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
-                className="w-full h-64 sm:h-80 rounded-lg"
-                title={`Peta lokasi ${shop.name}`}
-              />
-              {shop.location && (
-                <div className="mt-3 flex justify-center">
-                  <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${shop.location.lat},${shop.location.lng}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition shadow-md"
-                  >
-                    <svg className="w-4 h-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" stroke="currentColor" viewBox="0 0 24 24">
-                      <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                      <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    </svg>
-                    Buka di Google Maps
-                  </a>
-                </div>
-              )}
+                onError={() => {
+                  console.warn('[ShopDetail] Map embed failed, showing fallback');
+                  setMapError(true);
+                }}
+              ></iframe>
             </div>
           ) : shop.location ? (
             <div className="rounded-lg overflow-hidden">
@@ -594,8 +563,8 @@ function ShopDetail() {
               })()}
             </div>
           ) : (
-            <div className="w-full h-64 sm:h-80 bg-gray-200 dark:bg-zinc-700 rounded-lg flex items-center justify-center">
-              <p className="text-gray-600 dark:text-gray-400">Lokasi tidak tersedia</p>
+            <div className="w-full h-64 sm:h-80 bg-gray-100 dark:bg-zinc-700 rounded-lg flex items-center justify-center">
+              <p className="text-gray-500 dark:text-gray-400">Lokasi tidak tersedia</p>
             </div>
           )}
         </div>

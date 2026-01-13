@@ -37,8 +37,8 @@ export function cleanupStaleData() {
               cleanedCount++;
             }
           }
-        } catch (e) {
-          // Bukan cache dengan timestamp
+        } catch {
+          void 0;
         }
       }
     }
@@ -68,7 +68,7 @@ export function checkAppVersion() {
     }
 
     return false;
-  } catch (error) {
+  } catch {
     return false;
   }
 }
@@ -97,7 +97,7 @@ export function cleanupCorruptedData() {
         if (value.startsWith('{') || value.startsWith('[')) {
           JSON.parse(value);
         }
-      } catch (e) {
+      } catch {
         // JSON corrupt, hapus
         localStorage.removeItem(key);
       }
@@ -130,7 +130,7 @@ export async function validateSupabaseSession(supabase) {
     }
 
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 }

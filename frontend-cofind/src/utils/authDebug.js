@@ -198,14 +198,11 @@ export const triggerBug = async (bugType) => {
   console.group(`🐛 Triggering Bug: ${bugType}`);
   
   switch (bugType) {
-    case 'auto-login':
-      // Simulate auto-login after logout
+    case 'auto-login': {
       console.log('1. Setting logout flag...');
       localStorage.setItem('cofind_user_logged_out', 'true');
-      
       console.log('2. Waiting 1 second...');
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
       console.log('3. Checking if session still exists...');
       if (supabase) {
         const { data: { session } } = await supabase.auth.getSession();
@@ -217,26 +214,24 @@ export const triggerBug = async (bugType) => {
         }
       }
       break;
+    }
 
-    case 'session-restore':
-      // Test session restore after hard reload
+    case 'session-restore': {
       console.log('1. Saving current state...');
       const currentState = await checkAuthState();
-      
       console.log('2. Simulating hard reload...');
       console.log('   (In real scenario, user would do Ctrl+Shift+R)');
       console.log('   Current logout flag:', currentState.localStorage.logoutFlag);
       console.log('   Current session:', currentState.supabaseSession);
-      
       break;
+    }
 
-    case 'timeout':
-      // Simulate timeout
+    case 'timeout': {
       console.log('1. Testing Supabase connection...');
       if (supabase) {
         const startTime = Date.now();
         try {
-          const { data, error } = await Promise.race([
+          const { error } = await Promise.race([
             supabase.auth.getSession(),
             new Promise((_, reject) => 
               setTimeout(() => reject(new Error('Timeout after 5s')), 5000)
@@ -252,15 +247,14 @@ export const triggerBug = async (bugType) => {
         }
       }
       break;
+    }
 
-    case 'storage-conflict':
-      // Test storage conflicts
+    case 'storage-conflict': {
       console.log('1. Checking for storage conflicts...');
       const supabaseKeys = Object.keys(localStorage).filter(k => 
         k.includes('supabase') || k.includes('sb-')
       );
       const logoutFlag = localStorage.getItem('cofind_user_logged_out');
-      
       if (supabaseKeys.length > 0 && logoutFlag === 'true') {
         console.warn('⚠️ CONFLICT DETECTED: Supabase keys exist but logout flag is set!');
         console.log('Supabase Keys:', supabaseKeys);
@@ -269,6 +263,7 @@ export const triggerBug = async (bugType) => {
         console.log('✅ No storage conflicts detected');
       }
       break;
+    }
 
     default:
       console.warn('Unknown bug type:', bugType);

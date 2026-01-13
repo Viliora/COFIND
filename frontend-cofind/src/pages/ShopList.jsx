@@ -3,19 +3,18 @@ import { useSearchParams } from 'react-router-dom';
 import CoffeeShopCard from '../components/CoffeeShopCard';
 import HeroSwiper from '../components/HeroSwiper';
 import { preloadFeaturedImages } from '../utils/imagePreloader';
-import { fetchWithDevCache, isDevelopmentMode } from '../utils/devCache';
 import { getRecentlyViewedWithDetails } from '../utils/recentlyViewed';
 import heroBgImage from '../assets/1R modern cafe 1.5.jpg';
-import localPlacesData from '../data/places.json';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { useAuth } from '../context/authContext';
 // Reviews sekarang hanya dari Supabase, tidak perlu import reviews.json
 
-// Konfigurasi API (optional - bisa di-set via environment variable)
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
-const USE_API = import.meta.env.VITE_USE_API === 'true'; // Set VITE_USE_API=true untuk enable API
-const USE_LOCAL_DATA = true; // Set true untuk menggunakan data lokal JSON
+// Konfigurasi - menggunakan Supabase only
+const USE_LOCAL_DATA = false; // Set false untuk menggunakan Supabase database
 
 export default function ShopList() {
   const [searchParams] = useSearchParams();
+  const { loading: authLoading } = useAuth();
   const [coffeeShops, setCoffeeShops] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -24,6 +23,7 @@ export default function ShopList() {
   const [activeFilter] = useState('all'); // Filter state (default: all, tidak ada UI untuk mengubahnya)
   const [selectedPills, setSelectedPills] = useState([]); // Selected quick recommendation pills (max 3)
   const featuredScrollRef = useRef(null);
+  const hasLoadedRef = useRef(false); // Track if we've already loaded data
 
   // Update search term from URL params
   useEffect(() => {
@@ -63,84 +63,59 @@ export default function ShopList() {
       try {
         setError(null);
         
-        // Prioritaskan data lokal jika USE_LOCAL_DATA aktif
-        if (USE_LOCAL_DATA) {
-          console.log('[ShopList] Using local JSON data...');
-          if (localPlacesData && localPlacesData.data && Array.isArray(localPlacesData.data)) {
-            console.log('[ShopList] Loaded from local JSON:', localPlacesData.data.length, 'shops');
-            setCoffeeShops(localPlacesData.data);
-            setIsLoading(false);
-            return;
-          } else {
-            throw new Error('Local data format is invalid');
-          }
+        // Guard: hanya load sekali
+        if (hasLoadedRef.current) {
+          console.log('[ShopList] Already loaded, skipping');
+          return;
         }
         
-        if (USE_API && isOnline) {
-          try {
-            const apiUrl = `${API_BASE}/api/search/coffeeshops?lat=-0.026330&lng=109.342506`;
-            console.log('[ShopList] Loading coffee shops...');
-            
-            // Use dev cache in development mode for instant loading
-            if (isDevelopmentMode()) {
-              console.log('[ShopList] Development mode - using optimized cache');
-              
-              const result = await fetchWithDevCache(apiUrl);
-              
-              if (result.data && result.data.data && Array.isArray(result.data.data)) {
-                console.log('[ShopList] Loaded:', result.data.data.length, 'shops', 
-                           result.fromCache ? '(from cache)' : '(fresh)');
-                
-                setCoffeeShops(result.data.data);
-                
-                // If data is from cache (stale), keep loading indicator briefly
-                // Fresh data will update in background
-                if (result.stale) {
-                  console.log('[ShopList] Showing cached data, fetching fresh in background...');
-                  // Set loading to false immediately to show cached data
-                  setIsLoading(false);
-                } else {
-                  setIsLoading(false);
-                }
-                return;
-              }
-            } else {
-              // Production mode - direct fetch without dev cache
-              console.log('[ShopList] Production mode - direct API call');
-              setIsLoading(true);
-              
-              const response = await fetch(apiUrl);
-              
-              if (!response.ok) {
-                throw new Error(`API returned status ${response.status}`);
-              }
-              
-              const result = await response.json();
-              
-              if (result.data && Array.isArray(result.data) && result.data.length > 0) {
-                console.log('[ShopList] Loaded from API:', result.data.length, 'shops');
-                setCoffeeShops(result.data);
-                setIsLoading(false);
-                return;
-              }
-            }
-          } catch (apiError) {
-            console.error('[ShopList] API fetch failed:', apiError.message);
-            throw new Error('Unable to load coffee shops. Please check your internet connection and ensure the backend is running.');
-          }
-        } else {
-          throw new Error('API is disabled or you are offline. Please check your connection.');
+        // Wait untuk auth selesai (loading = false berarti selesai, bisa session valid atau tidak)
+        if (authLoading) {
+          console.log('[ShopList] Waiting for auth to complete...');
+          return;
         }
+        
+        // Check if Supabase is configured
+        if (!isSupabaseConfigured || !supabase) {
+          throw new Error('Supabase is not configured. Please check your environment variables.');
+        }
+        
+        console.log('[ShopList] Loading coffee shops from Supabase...');
+        hasLoadedRef.current = true; // Mark as loaded
+        
+        // Fetch all places from Supabase
+        const { data: places, error: supabaseError } = await supabase
+          .from('places')
+          .select('*')
+          .order('rating', { ascending: false });
+        
+        if (supabaseError) {
+          console.error('[ShopList] Supabase error:', supabaseError);
+          throw new Error(`Failed to load places: ${supabaseError.message}`);
+        }
+        
+        if (!places || places.length === 0) {
+          console.warn('[ShopList] No places found in database');
+          setCoffeeShops([]);
+          setIsLoading(false);
+          return;
+        }
+        
+        console.log('[ShopList] Loaded from Supabase:', places.length, 'shops');
+        setCoffeeShops(places);
+        setIsLoading(false);
+        
       } catch (err) {
         console.error("Error loading data:", err);
         setError(err.message || "Failed to load coffee shop data");
         setCoffeeShops([]);
         setIsLoading(false);
+        hasLoadedRef.current = true;
       }
     };
 
     loadShops();
-  }, [isOnline]); // Re-run saat online status berubah
+  }, [authLoading]); // Hanya trigger saat authLoading berubah (dari true ke false)
 
   // Dapatkan Featured Coffee Shops (Top 5 berdasarkan scoring) - menggunakan useMemo untuk optimasi
   const featuredShops = useMemo(() => {
@@ -342,9 +317,9 @@ export default function ShopList() {
         <div className="mt-4 flex justify-center">
           <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-indigo-600"></div>
         </div>
-        {isDevelopmentMode() && (
+        {import.meta.env.DEV && (
           <p className="mt-4 text-sm text-gray-500">
-            💡 Development mode: Data akan di-cache untuk 5 menit
+            💡 Development mode: Data fetched fresh from Supabase (caching disabled)
           </p>
         )}
       </div>

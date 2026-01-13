@@ -1,15 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/authContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import CoffeeShopCard from '../components/CoffeeShopCard';
 import { getPersonalizedRecommendations } from '../utils/personalizedRecommendations';
-import localPlacesData from '../data/places.json';
-// CoffeeShopCard sudah menggunakan getCoffeeShopImage berdasarkan place_id, jadi tidak perlu set photos
-
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
-const USE_API = import.meta.env.VITE_USE_API === 'true';
-const USE_LOCAL_DATA = true; // Set true untuk menggunakan data lokal JSON
+// Using Supabase only
+const USE_LOCAL_DATA = false; // Set false untuk menggunakan Supabase database
 
 const Favorite = () => {
   const { isAuthenticated, user } = useAuth();
@@ -17,37 +13,33 @@ const Favorite = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [allShops, setAllShops] = useState([]); // Semua coffee shops untuk recommendations
 
-  useEffect(() => {
-    loadFavorites();
-    loadAllShops();
-  }, [isAuthenticated, user?.id]); // Re-load when auth state changes
-
   // Load semua coffee shops untuk recommendations
-  const loadAllShops = async () => {
+  const loadAllShops = useCallback(async () => {
     try {
-      if (USE_LOCAL_DATA) {
-        if (localPlacesData && localPlacesData.data && Array.isArray(localPlacesData.data)) {
-          setAllShops(localPlacesData.data);
-          return;
-        }
+      if (!isSupabaseConfigured) {
+        console.error('[Favorite] Supabase not configured');
+        return;
       }
       
-      if (USE_API) {
-        const apiUrl = `${API_BASE}/api/search/coffeeshops?lat=-0.026330&lng=109.342506`;
-        const response = await fetch(apiUrl);
-        if (response.ok) {
-          const result = await response.json();
-          if (result.data && Array.isArray(result.data)) {
-            setAllShops(result.data);
-          }
-        }
+      const { data: places, error } = await supabase
+        .from('places')
+        .select('*')
+        .order('rating', { ascending: false });
+      
+      if (error) {
+        console.error('[Favorite] Error loading places:', error);
+        return;
+      }
+      
+      if (places && Array.isArray(places)) {
+        setAllShops(places);
       }
     } catch (error) {
       console.error('[Favorite] Error loading all shops:', error);
     }
-  };
+  }, []);
 
-  const loadFavorites = async () => {
+  const loadFavorites = useCallback(async () => {
     try {
       setIsLoading(true);
       
@@ -86,82 +78,66 @@ const Favorite = () => {
         return;
       }
 
-      // Load full shop data for each favorite
+      // Load full shop data for each favorite from Supabase
       let shops = [];
 
-      // Prioritaskan data lokal jika USE_LOCAL_DATA aktif
-      if (USE_LOCAL_DATA) {
-        console.log('[Favorite] Using local JSON data...');
-        if (localPlacesData && localPlacesData.data && Array.isArray(localPlacesData.data)) {
-          for (const placeId of favoritePlaceIds) {
-            const foundShop = localPlacesData.data.find(shop => shop.place_id === placeId);
-            if (foundShop) {
-              console.log(`[Favorite] Found shop in local data: ${foundShop.name}`);
-              shops.push({
-                place_id: foundShop.place_id,
-                name: foundShop.name,
-                address: foundShop.address,
-                vicinity: foundShop.address,
-                rating: foundShop.rating,
-                user_ratings_total: foundShop.user_ratings_total,
-                location: foundShop.location,
-                business_status: foundShop.business_status,
-                price_level: foundShop.price_level,
-                // photos tidak perlu di-set karena CoffeeShopCard menggunakan getCoffeeShopImage(place_id)
-              });
-            }
-          }
-          console.log(`[Favorite] Total shops loaded from local data: ${shops.length}`);
-          setFavoriteShops(shops);
-          setIsLoading(false);
-          return;
-        }
+      if (!isSupabaseConfigured) {
+        console.error('[Favorite] Supabase not configured');
+        setFavoriteShops([]);
+        setIsLoading(false);
+        return;
       }
 
-      if (USE_API) {
-        // Try to get details from backend for each favorite
-        for (const placeId of favoritePlaceIds) {
-          try {
-            console.log(`[Favorite] Fetching details for place_id: ${placeId}`);
-            const response = await fetch(`${API_BASE}/api/coffeeshops/detail/${placeId}`);
-            const data = await response.json();
-            
-            console.log(`[Favorite] Response for ${placeId}:`, data);
-            
-            if (data.status === 'success' && data.data) {
-              const detail = data.data;
-              
-              const shop = {
-                place_id: placeId,
-                name: detail.name,
-                address: detail.formatted_address,
-                vicinity: detail.formatted_address,
-                rating: detail.rating,
-                user_ratings_total: detail.user_ratings_total,
-                location: detail.geometry?.location,
-                business_status: detail.business_status,
-                price_level: detail.price_level,
-                // photos tidak perlu di-set karena CoffeeShopCard menggunakan getCoffeeShopImage(place_id)
-              };
-              
-              console.log(`[Favorite] Shop data prepared:`, shop);
-              shops.push(shop);
-            }
-          } catch (err) {
-            console.error(`[Favorite] Error loading favorite ${placeId}:`, err);
-          }
-        }
+      console.log('[Favorite] Loading shop details from Supabase...');
+
+      // Fetch all places that match the favorite place_ids
+      const { data: places, error } = await supabase
+        .from('places')
+        .select('*')
+        .in('place_id', favoritePlaceIds);
+
+      if (error) {
+        console.error('[Favorite] Error fetching places from Supabase:', error);
+        setFavoriteShops([]);
+        setIsLoading(false);
+        return;
       }
-      
+
+      if (places && Array.isArray(places)) {
+        shops = places.map(place => ({
+          place_id: place.place_id,
+          name: place.name,
+          address: place.address,
+          vicinity: place.address,
+          rating: place.rating,
+          user_ratings_total: place.user_ratings_total,
+          location: place.location,
+          business_status: place.business_status,
+          price_level: place.price_level,
+          // photos tidak perlu di-set karena CoffeeShopCard menggunakan getCoffeeShopImage(place_id)
+        }));
+
+        console.log(`[Favorite] Total shops loaded from Supabase: ${shops.length}`);
+        setFavoriteShops(shops);
+        setIsLoading(false);
+      } else {
+        setFavoriteShops([]);
+        setIsLoading(false);
+      }
+
       console.log(`[Favorite] Total shops loaded: ${shops.length}`);
-
       setFavoriteShops(shops);
       setIsLoading(false);
     } catch (err) {
       console.error('Error loading favorites:', err);
       setIsLoading(false);
     }
-  };
+  }, [isAuthenticated, user?.id, isSupabaseConfigured, supabase]);
+
+  useEffect(() => {
+    loadFavorites();
+    loadAllShops();
+  }, [isAuthenticated, user?.id, loadFavorites, loadAllShops]);
 
   // Generate Personalized Recommendations berdasarkan favorit
   const personalizedRecommendations = useMemo(() => {
@@ -312,4 +288,3 @@ const Favorite = () => {
 };
 
 export default Favorite;
-

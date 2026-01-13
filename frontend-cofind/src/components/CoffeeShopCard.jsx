@@ -1,20 +1,37 @@
 // src/components/CoffeeShopCard.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import OptimizedImage from './OptimizedImage';
-import { getCoffeeShopImage } from '../utils/coffeeShopImages';
+import { getCoffeeShopImage } from '../utils/coffeeShopImages'; // Fallback untuk local assets
+import { getValidPhotoUrl, isValidPhotoUrl } from '../utils/photoUrlHelper';
 import { getReviewSummary } from '../utils/reviewSummary';
-import LLMAnalysisModal from './LLMAnalysisModal';
+ 
 
 const CoffeeShopCard = ({ shop }) => {
     const [reviewSummary, setReviewSummary] = useState(null);
     const [isLoadingSummary, setIsLoadingSummary] = useState(false);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const aiButtonRef = useRef(null);
+    const [isModalOpen] = useState(false);
+    const [photoUrl, setPhotoUrl] = useState(null);
+    const [useFallback, setUseFallback] = useState(false);
+
+    // Initialize photo URL
+    useEffect(() => {
+      if (!shop.place_id) return;
+      
+      // Try Supabase URL first
+      const validPhotoUrl = getValidPhotoUrl(shop.photo_url, shop.place_id);
+      
+      if (isValidPhotoUrl(validPhotoUrl)) {
+        setPhotoUrl(validPhotoUrl);
+        setUseFallback(false);
+      } else {
+        // Use local asset fallback immediately if Supabase URL invalid
+        setPhotoUrl(getCoffeeShopImage(shop.place_id || shop.name));
+        setUseFallback(true);
+      }
+    }, [shop.photo_url, shop.place_id, shop.name]);
 
     // Fetch review summary saat component mount
-    // ✅ OPTIMIZED: Depend pada place_id dan shop.name karena getReviewSummary menggunakan shopName
-    // untuk payload API dan pembersihan teks (meskipun fetch saat ini dikomentari)
     useEffect(() => {
         if (shop.place_id) {
             setIsLoadingSummary(true);
@@ -28,7 +45,16 @@ const CoffeeShopCard = ({ shop }) => {
                     setIsLoadingSummary(false);
                 });
         }
-    }, [shop.place_id, shop.name]); // ✅ place_id dan shop.name diperlukan karena shopName digunakan dalam getReviewSummary
+    }, [shop.place_id, shop.name]);
+
+    // Handle image load error - fallback to local asset
+    const handleImageError = () => {
+      if (!useFallback) {
+        console.log(`[CoffeeShopCard] Supabase URL failed for ${shop.name}, falling back to local asset`);
+        setPhotoUrl(getCoffeeShopImage(shop.place_id || shop.name));
+        setUseFallback(true);
+      }
+    };
 
     // Fungsi untuk mendapatkan warna placeholder berdasarkan nama shop
     const getPlaceholderColor = (shopName) => {
@@ -60,10 +86,12 @@ const CoffeeShopCard = ({ shop }) => {
     };
 
     const statusInfo = formatStatus(shop.business_status);
-    
-    // Selalu gunakan foto dari asset lokal berdasarkan place_id untuk konsistensi
-    // Setiap coffee shop akan mendapat foto yang sama di semua halaman
-    const photoUrl = getCoffeeShopImage(shop.place_id || shop.name);
+
+    // Ensure place_id exists
+    if (!shop.place_id) {
+      console.warn('[CoffeeShopCard] Missing place_id for shop:', shop.name);
+      return null;
+    }
 
     return (
         <div className="relative w-full">
@@ -85,7 +113,7 @@ const CoffeeShopCard = ({ shop }) => {
                         alt={shop.name}
                         className="w-full h-full object-cover transform group-hover:scale-105 transition duration-300"
                         fallbackColor={getPlaceholderColor(shop.name)}
-                        shopName={shop.name}
+                        onError={handleImageError}
                     />
                     {shop.rating && (
                         <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full flex items-center shadow-lg z-10">
@@ -114,6 +142,11 @@ const CoffeeShopCard = ({ shop }) => {
                 </div>
                 
                 {/* Review Summary */}
+                {isLoadingSummary && !reviewSummary && (
+                    <div className="mb-3">
+                        <div className="h-4 bg-gray-100 dark:bg-gray-700 rounded animate-pulse w-3/4"></div>
+                    </div>
+                )}
                 {reviewSummary && (
                     <div className="mb-3 flex items-start gap-2">
                         <svg 
@@ -159,38 +192,7 @@ const CoffeeShopCard = ({ shop }) => {
             </div>
         </Link>
         
-        {/* 🛑 DISABLED: AI Analysis Button temporarily hidden to save tokens */}
-        {/* TODO: Re-enable by uncommenting this block */}
-        {false && (
-            <>
-                {/* AI Analysis Button - Outside Link to avoid nesting */}
-                <button
-                    ref={aiButtonRef}
-                    onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setIsModalOpen(true);
-                    }}
-                    className="absolute top-2 left-2 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-colors z-20"
-                    title="Analisis AI"
-                    type="button"
-                >
-                    <img 
-                        src="https://img.icons8.com/?size=100&id=ETVUfl0Ylh1p&format=png&color=000000" 
-                        alt="AI Analysis" 
-                        className="w-5 h-5 object-contain pointer-events-none"
-                    />
-                </button>
-                
-                {/* LLM Analysis Modal */}
-                <LLMAnalysisModal
-                    isOpen={isModalOpen}
-                    onClose={() => setIsModalOpen(false)}
-                    shop={shop}
-                    buttonRef={aiButtonRef}
-                />
-            </>
-        )}
+        {/* AI Analysis disabled */}
         </div>
     );
 }

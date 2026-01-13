@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/authContext';
 import { supabase, updateUserProfile } from '../lib/supabase';
 import { emergencyCleanup, getStorageInfo } from '../utils/storageCleanup';
 
@@ -32,6 +32,13 @@ const Profile = () => {
       setFullName(profile.full_name || '');
     }
   }, [profile]);
+
+  // Refresh profile if not loaded
+  useEffect(() => {
+    if (user && !profile) {
+      refreshProfile();
+    }
+  }, [user, profile, refreshProfile]);
 
   // Load user stats
   useEffect(() => {
@@ -96,7 +103,7 @@ const Profile = () => {
         await refreshProfile();
         setIsEditing(false);
       }
-    } catch (err) {
+    } catch {
       setError('Terjadi kesalahan. Silakan coba lagi.');
     } finally {
       setLoading(false);

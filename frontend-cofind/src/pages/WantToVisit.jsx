@@ -3,14 +3,8 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/authContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import CoffeeShopCard from '../components/CoffeeShopCard';
-import localPlacesData from '../data/places.json';
-import { AuthProvider } from "../context/authContext";
-
-// CoffeeShopCard sudah menggunakan getCoffeeShopImage berdasarkan place_id, jadi tidak perlu set photos
-
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
-const USE_API = import.meta.env.VITE_USE_API === 'true';
-const USE_LOCAL_DATA = true; // Set true untuk menggunakan data lokal JSON
+// Using Supabase only
+const USE_LOCAL_DATA = false; // Set false untuk menggunakan Supabase database
 
 const WantToVisit = () => {
   const { isAuthenticated, user } = useAuth();
@@ -57,71 +51,51 @@ const WantToVisit = () => {
         return;
       }
 
-      // Load full shop data for each want-to-visit
+      // Load full shop data for each want-to-visit from Supabase
       let shops = [];
 
-      // Prioritaskan data lokal jika USE_LOCAL_DATA aktif
-      if (USE_LOCAL_DATA) {
-        console.log('[WantToVisit] Using local JSON data...');
-        if (localPlacesData && localPlacesData.data && Array.isArray(localPlacesData.data)) {
-          for (const placeId of wantToVisitPlaceIds) {
-            const foundShop = localPlacesData.data.find(shop => shop.place_id === placeId);
-            if (foundShop) {
-              console.log(`[WantToVisit] Found shop in local data: ${foundShop.name}`);
-              shops.push({
-                place_id: foundShop.place_id,
-                name: foundShop.name,
-                address: foundShop.address,
-                vicinity: foundShop.address,
-                rating: foundShop.rating,
-                user_ratings_total: foundShop.user_ratings_total,
-                location: foundShop.location,
-                business_status: foundShop.business_status,
-                price_level: foundShop.price_level,
-                // photos tidak perlu di-set karena CoffeeShopCard menggunakan getCoffeeShopImage(place_id)
-              });
-            }
-          }
-          console.log(`[WantToVisit] Total shops loaded from local data: ${shops.length}`);
-          setWantToVisitShops(shops);
-          setIsLoading(false);
-          return;
-        }
+      if (!isSupabaseConfigured) {
+        console.error('[WantToVisit] Supabase not configured');
+        setWantToVisitShops([]);
+        setIsLoading(false);
+        return;
       }
 
-      if (USE_API) {
-        // Try to get details from backend for each want-to-visit
-        for (const placeId of wantToVisitPlaceIds) {
-          try {
-            console.log(`[WantToVisit] Fetching details for place_id: ${placeId}`);
-            const response = await fetch(`${API_BASE}/api/coffeeshops/detail/${placeId}`);
-            const data = await response.json();
-            
-            console.log(`[WantToVisit] Response for ${placeId}:`, data);
-            
-            if (data.status === 'success' && data.data) {
-              const detail = data.data;
-              
-              const shop = {
-                place_id: placeId,
-                name: detail.name,
-                address: detail.formatted_address,
-                vicinity: detail.formatted_address,
-                rating: detail.rating,
-                user_ratings_total: detail.user_ratings_total,
-                location: detail.geometry?.location,
-                business_status: detail.business_status,
-                price_level: detail.price_level,
-                // photos tidak perlu di-set karena CoffeeShopCard menggunakan getCoffeeShopImage(place_id)
-              };
-              
-              console.log(`[WantToVisit] Shop data prepared:`, shop);
-              shops.push(shop);
-            }
-          } catch (err) {
-            console.error(`[WantToVisit] Error loading want-to-visit ${placeId}:`, err);
-          }
-        }
+      console.log('[WantToVisit] Loading shop details from Supabase...');
+      
+      // Fetch all places that match the want-to-visit place_ids
+      const { data: places, error } = await supabase
+        .from('places')
+        .select('*')
+        .in('place_id', wantToVisitPlaceIds);
+      
+      if (error) {
+        console.error('[WantToVisit] Error fetching places from Supabase:', error);
+        setWantToVisitShops([]);
+        setIsLoading(false);
+        return;
+      }
+      
+      if (places && Array.isArray(places)) {
+        shops = places.map(place => ({
+          place_id: place.place_id,
+          name: place.name,
+          address: place.address,
+          vicinity: place.address,
+          rating: place.rating,
+          user_ratings_total: place.user_ratings_total,
+          location: place.location,
+          business_status: place.business_status,
+          price_level: place.price_level,
+          // photos tidak perlu di-set karena CoffeeShopCard menggunakan getCoffeeShopImage(place_id)
+        }));
+        
+        console.log(`[WantToVisit] Total shops loaded from Supabase: ${shops.length}`);
+        setWantToVisitShops(shops);
+        setIsLoading(false);
+      } else {
+        setWantToVisitShops([]);
+        setIsLoading(false);
       }
       
       console.log(`[WantToVisit] Total shops loaded: ${shops.length}`);
@@ -239,4 +213,3 @@ const WantToVisit = () => {
 };
 
 export default WantToVisit;
-

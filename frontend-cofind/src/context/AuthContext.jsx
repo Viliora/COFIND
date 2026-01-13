@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
-import { supabase, isSupabaseConfigured, getUserProfile } from '../lib/supabase';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { supabase, isSupabaseConfigured, getUserProfile, validateSession, clearSupabaseSession } from '../lib/supabase';
 import { migrateLocalStorageToSupabase } from '../utils/migrateFavorites';
+import { AuthContext } from './authContext';
 
 // =====================================================
 // AUTH CONTEXT - FINAL STABLE VERSION
@@ -11,18 +12,6 @@ import { migrateLocalStorageToSupabase } from '../utils/migrateFavorites';
 // - Error handling yang lebih baik
 // - Cleanup yang proper
 // =====================================================
-
-const AuthContext = createContext(null);
-
-// Hook untuk menggunakan Auth context
-// HARUS didefinisikan setelah createContext
-function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === null) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-}
 
 // Auth Provider Component
 function AuthProvider({ children }) {
@@ -36,20 +25,25 @@ function AuthProvider({ children }) {
   const isProcessingRef = useRef(false);
   const currentUserIdRef = useRef(null);
   const initAttemptRef = useRef(0);
+  const pendingAuthEventRef = useRef(null);
 
   // Fetch user profile dengan error handling
   const fetchProfile = useCallback(async (userId) => {
     if (!supabase || !userId || !isMountedRef.current) {
+      console.log('[Auth] fetchProfile skipped:', { supabase: !!supabase, userId, mounted: isMountedRef.current });
       return null;
     }
     
     try {
+      console.log('[Auth] Fetching profile for userId:', userId);
       const profileData = await getUserProfile(userId);
+      console.log('[Auth] Profile data:', profileData);
       
       if (!isMountedRef.current) return null;
       
       if (!profileData) {
         // Profile tidak ditemukan, coba buat
+        console.log('[Auth] Profile not found, creating new profile');
         const { data: { user: authUser } } = await supabase.auth.getUser();
         
         if (authUser && isMountedRef.current) {
@@ -69,8 +63,11 @@ function AuthProvider({ children }) {
             .single();
           
           if (!createError && newProfile && isMountedRef.current) {
+            console.log('[Auth] New profile created:', newProfile);
             setProfile(newProfile);
             return newProfile;
+          } else {
+            console.error('[Auth] Error creating profile:', createError);
           }
         }
         
@@ -81,6 +78,7 @@ function AuthProvider({ children }) {
       }
       
       if (isMountedRef.current) {
+        console.log('[Auth] Setting existing profile:', profileData);
         setProfile(profileData);
       }
       return profileData;
@@ -102,6 +100,49 @@ function AuthProvider({ children }) {
     setUser(newUser);
   }, []);
 
+  const handleAuthEvent = useCallback(async (event, session) => {
+    if (!isMountedRef.current) return;
+    
+    console.log('[Auth] Handling auth event:', event, !!session?.user, 'Processing:', isProcessingRef.current);
+    
+    if (isProcessingRef.current) {
+      console.log('[Auth] Queuing auth event (already processing)');
+      pendingAuthEventRef.current = { event, session };
+      return;
+    }
+    
+    isProcessingRef.current = true;
+    try {
+      setLoading(false);
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
+        console.log('[Auth] Setting user and fetching profile');
+        setUserSafe(session.user);
+        await fetchProfile(session.user.id);
+        console.log('[Auth] Profile fetched');
+        migrateLocalStorageToSupabase(session.user.id).catch(() => {});
+      } else if (event === 'SIGNED_OUT') {
+        setUserSafe(null);
+        setProfile(null);
+      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+        if (currentUserIdRef.current !== session.user.id) {
+          setUserSafe(session.user);
+        }
+        await fetchProfile(session.user.id);
+      } else if (event === 'USER_UPDATED' && session?.user) {
+        setUser(session.user);
+      }
+    } catch {
+      void 0;
+    } finally {
+      isProcessingRef.current = false;
+      const pending = pendingAuthEventRef.current;
+      pendingAuthEventRef.current = null;
+      if (pending && isMountedRef.current) {
+        await handleAuthEvent(pending.event, pending.session);
+      }
+    }
+  }, [fetchProfile, setUserSafe]);
+
   // Initialize auth state
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -116,30 +157,36 @@ function AuthProvider({ children }) {
     
     const initAuth = async () => {
       try {
-        // Cek session yang ada
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
         // Guard: cek apakah masih valid
         if (!isMountedRef.current || currentAttempt !== initAttemptRef.current) {
           return;
         }
         
-        if (error) {
-          console.warn('[Auth] Error getting session:', error.message);
+        console.log('[Auth] Initializing auth, validating session...');
+        
+        // Validate session with token expiry check
+        const validation = await validateSession();
+        
+        if (!isMountedRef.current || currentAttempt !== initAttemptRef.current) {
+          return;
         }
         
-        if (session?.user) {
-          console.log('[Auth] Session ditemukan');
-          setUserSafe(session.user);
-          await fetchProfile(session.user.id);
+        if (validation.valid && validation.user) {
+          console.log('[Auth] Valid session found, user:', validation.user.id);
+          setUserSafe(validation.user);
+          await fetchProfile(validation.user.id);
         } else {
-          console.log('[Auth] Tidak ada session');
+          console.log('[Auth] No valid session found:', validation.error);
+          // Clear any stale session data
+          await clearSupabaseSession();
           setUserSafe(null);
           setProfile(null);
         }
       } catch (error) {
         console.error('[Auth] Error initializing:', error);
         if (isMountedRef.current && currentAttempt === initAttemptRef.current) {
+          // Clear stale data on error
+          await clearSupabaseSession();
           setUserSafe(null);
           setProfile(null);
         }
@@ -154,68 +201,63 @@ function AuthProvider({ children }) {
     initAuth();
 
     // Listen untuk auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        // Guard: cek mounted
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (isMountedRef.current) setInitialized(true);
+      await handleAuthEvent(event, session);
+    });
+
+    const onVisibility = async () => {
+      if (!isMountedRef.current) return;
+      if (document.visibilityState !== 'visible') return;
+      
+      console.log('[Auth] Tab became visible, validating session...');
+      setLoading(true); // Start loading before validation
+      try {
+        // Validate session instead of just getting it
+        const validation = await validateSession();
+        
         if (!isMountedRef.current) return;
         
-        // Cegah processing ganda
-        if (isProcessingRef.current) {
-          return;
+        if (validation.valid && validation.user) {
+          console.log('[Auth] Valid session found, user:', validation.user.id);
+          // Only update if user actually changed
+          if (currentUserIdRef.current !== validation.user.id) {
+            console.log('[Auth] User changed, updating state');
+            setUserSafe(validation.user);
+            await fetchProfile(validation.user.id);
+          } else {
+            console.log('[Auth] Same user, just refreshing profile');
+            await fetchProfile(validation.user.id);
+          }
+        } else {
+          console.log('[Auth] Session invalid or expired, clearing state');
+          // Clear stale session
+          await clearSupabaseSession();
+          setUserSafe(null);
+          setProfile(null);
         }
-        
-        isProcessingRef.current = true;
-        
-        try {
-          console.log('[Auth] Event:', event);
-          
-          if (event === 'SIGNED_IN' && session?.user) {
-            // User baru login
-            setUserSafe(session.user);
-            await fetchProfile(session.user.id);
-            
-            // Migrate data dari localStorage (non-blocking)
-            migrateLocalStorageToSupabase(session.user.id).catch(err => {
-              console.warn('[Auth] Migration error:', err);
-            });
-          } 
-          else if (event === 'SIGNED_OUT') {
-            setUserSafe(null);
-            setProfile(null);
-          }
-          else if (event === 'TOKEN_REFRESHED' && session?.user) {
-            // Token direfresh, update user jika berbeda
-            if (currentUserIdRef.current !== session.user.id) {
-              setUserSafe(session.user);
-              await fetchProfile(session.user.id);
-            }
-          }
-          else if (event === 'INITIAL_SESSION') {
-            // Session awal - hanya process jika belum ada user
-            if (session?.user && !currentUserIdRef.current) {
-              setUserSafe(session.user);
-              await fetchProfile(session.user.id);
-            }
-          }
-          else if (event === 'USER_UPDATED' && session?.user) {
-            setUser(session.user);
-          }
-        } catch (error) {
-          console.error('[Auth] Error handling event:', error);
-        } finally {
-          isProcessingRef.current = false;
-          if (isMountedRef.current) {
-            setLoading(false);
-          }
+      } catch (error) {
+        console.error('[Auth] Error in visibility change handler:', error);
+        // Clear stale data on error
+        await clearSupabaseSession();
+        setUserSafe(null);
+        setProfile(null);
+      } finally {
+        if (isMountedRef.current) {
+          setLoading(false);
+          setInitialized(true);
         }
       }
-    );
+    };
+
+    document.addEventListener('visibilitychange', onVisibility);
 
     return () => {
       isMountedRef.current = false;
       subscription?.unsubscribe();
+      document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [fetchProfile, setUserSafe]);
+  }, [fetchProfile, setUserSafe, handleAuthEvent]);
 
   // Helper: Generate email dari username
   const usernameToEmail = useCallback((username) => {
@@ -320,26 +362,25 @@ function AuthProvider({ children }) {
     }
   }, [usernameToEmail]);
 
-  // Sign out - STABLE VERSION
+  // Sign out - COMPREHENSIVE VERSION with proper session clearing
   const signOut = useCallback(async () => {
     if (!supabase) return { error: { message: 'Supabase tidak dikonfigurasi' } };
     
-    console.log('[Auth] Memulai sign out...');
+    console.log('[Auth] Starting comprehensive sign out...');
     
     try {
-      // Clear state dulu untuk UX yang responsif
+      // Step 1: Clear React state immediately for responsive UX
       currentUserIdRef.current = null;
       setUser(null);
       setProfile(null);
+      console.log('[Auth] ✅ Cleared React state');
       
-      // Sign out dari Supabase
-      const { error } = await supabase.auth.signOut();
+      // Step 2: Clear Supabase session (sign out + clear tokens)
+      console.log('[Auth] Clearing Supabase session...');
+      await clearSupabaseSession();
+      console.log('[Auth] ✅ Cleared Supabase session');
       
-      if (error) {
-        console.error('[Auth] Sign out error:', error);
-      }
-      
-      // Clear cache yang relevan (non-blocking)
+      // Step 3: Clear ALL app-related storage keys
       try {
         const keysToRemove = [];
         for (let i = 0; i < localStorage.length; i++) {
@@ -347,9 +388,11 @@ function AuthProvider({ children }) {
           if (key && (
             key.includes('supabase') ||
             key.includes('sb-') ||
-            key.startsWith('cofind_favorites_') ||
-            key.startsWith('cofind_want_to_visit_') ||
-            key.startsWith('cache_')
+            key.startsWith('cofind_') ||
+            key.startsWith('cache_') ||
+            key.startsWith('favorites_') ||
+            key.startsWith('review_') ||
+            key === 'SUPABASE_AUTH_TOKEN'
           )) {
             keysToRemove.push(key);
           }
@@ -359,19 +402,43 @@ function AuthProvider({ children }) {
           try {
             localStorage.removeItem(key);
           } catch (e) {
-            // Ignore
+            console.warn(`[Auth] Failed to remove key ${key}:`, e);
           }
         });
         
-        console.log('[Auth] Sign out complete');
-      } catch (e) {
-        // Ignore cache clearing errors
+        console.log(`[Auth] ✅ Cleared ${keysToRemove.length} localStorage keys`);
+      } catch (error) {
+        console.warn('[Auth] Error clearing localStorage:', error);
       }
       
-      return { error };
+      // Step 4: Clear sessionStorage
+      try {
+        sessionStorage.clear();
+        console.log('[Auth] ✅ Cleared sessionStorage');
+      } catch (error) {
+        console.warn('[Auth] Error clearing sessionStorage:', error);
+      }
+      
+      // Step 5: Clear IndexedDB
+      if ('indexedDB' in window) {
+        try {
+          const databases = await indexedDB.databases?.() || [];
+          for (const db of databases) {
+            if (db.name) {
+              indexedDB.deleteDatabase(db.name);
+            }
+          }
+          console.log('[Auth] ✅ Cleared IndexedDB');
+        } catch (error) {
+          console.warn('[Auth] Error clearing IndexedDB:', error);
+        }
+      }
+      
+      console.log('[Auth] ✅ Sign out complete');
+      return { error: null };
     } catch (error) {
-      console.error('[Auth] Sign out exception:', error);
-      // Tetap clear state
+      console.error('[Auth] Unexpected error during sign out:', error);
+      // Even if there's an error, ensure state is cleared
       currentUserIdRef.current = null;
       setUser(null);
       setProfile(null);
@@ -440,5 +507,4 @@ function AuthProvider({ children }) {
   );
 }
 
-// Export named exports only (untuk Fast Refresh compatibility)
-export { AuthContext, AuthProvider, useAuth };
+export { AuthProvider };

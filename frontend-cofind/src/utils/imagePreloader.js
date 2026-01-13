@@ -49,7 +49,7 @@ export const preloadImages = async (srcArray, onProgress = null) => {
 
   const promises = validSrcs.map(async (src) => {
     try {
-      const result = await preloadImage(src);
+      await preloadImage(src);
       loadedCount++;
       
       if (onProgress) {

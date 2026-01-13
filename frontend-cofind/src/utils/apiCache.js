@@ -237,7 +237,6 @@ export async function clearExpiredCache() {
   try {
     await initAPICache();
     const allCached = await getFromDB(API_CACHE_STORE);
-    const now = Date.now();
     
     if (!Array.isArray(allCached)) return;
     

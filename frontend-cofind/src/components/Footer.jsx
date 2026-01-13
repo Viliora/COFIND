@@ -1,6 +1,5 @@
 // src/components/Footer.jsx
 import React from 'react';
-import cofindImg from '../assets/cofind.svg?url';
 
 const Footer = () => {
   return (

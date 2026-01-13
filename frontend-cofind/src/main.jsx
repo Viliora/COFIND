@@ -7,6 +7,18 @@ import { BrowserRouter } from 'react-router-dom';
 import { registerServiceWorker } from './utils/sw-register';
 import ErrorBoundary from './components/ErrorBoundary';
 
+// Suppress React DevTools warning
+if (process.env.NODE_ENV === 'development') {
+  console.info = (function(original) {
+    return function(...args) {
+      if (typeof args[0] === 'string' && args[0].includes('React DevTools')) {
+        return; // Suppress React DevTools warning
+      }
+      return original.apply(console, args);
+    };
+  })(console.info);
+}
+
 // Register Service Worker
 registerServiceWorker();
 

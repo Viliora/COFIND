@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/authContext';
 import { supabase } from '../lib/supabase';
 import { Link } from 'react-router-dom';
 
 const Admin = () => {
-  const { user, profile, isAdmin } = useAuth();
+  const { profile, isAdmin } = useAuth();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalUsers: 0,

@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { useAuth } from '../context/AuthContext';
+import { supabase, isSupabaseConfigured, validateSession } from '../lib/supabase';
+import { useAuth } from '../context/authContext';
 import ReviewCard from './ReviewCard';
 
 /**
  * ReviewList Component - COMPLETE FIX VERSION
- * 
+ *
  * FIXES:
  * ✅ Removed isMountedRef guard (causes deadlock)
  * ✅ Always reset loading in all paths
@@ -14,7 +14,7 @@ import ReviewCard from './ReviewCard';
  * ✅ Optimistic updates dengan fallback refetch
  */
 const ReviewList = ({ placeId, newReview }) => {
-  const { initialized: authInitialized } = useAuth();
+  const { initialized: authInitialized, user, isAuthenticated } = useAuth();
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -25,16 +25,21 @@ const ReviewList = ({ placeId, newReview }) => {
   const currentPlaceIdRef = useRef(null);
   const channelRef = useRef(null);
   
-  // Fetch reviews - FIXED: No guards, always reset loading
+  // Debug auth state changes
+  useEffect(() => {
+    console.log('[ReviewList] Auth state changed:', { 
+      authInitialized, 
+      isAuthenticated, 
+      userId: user?.id,
+      placeId 
+    });
+  }, [authInitialized, isAuthenticated, user?.id, placeId]);
+  
+  // Fetch reviews - FIXED: With local fallback AND session validation
   const fetchReviews = useCallback(async (showLoading = false) => {
     if (!placeId) {
       setLoading(false);
       return { success: false, reason: 'no_place_id' };
-    }
-    
-    if (!isSupabaseConfigured || !supabase) {
-      setLoading(false);
-      return { success: false, reason: 'not_configured' };
     }
     
     // Hanya abort jika placeId berubah
@@ -57,54 +62,68 @@ const ReviewList = ({ placeId, newReview }) => {
     console.log(`[ReviewList] Fetching reviews for: ${placeId}`);
     
     try {
-      const { data: reviewsData, error: reviewsError } = await supabase
-        .from('reviews')
-        .select(`
-          id,
-          user_id,
-          place_id,
-          rating,
-          text,
-          created_at,
-          updated_at,
-          profiles:user_id (username, avatar_url, full_name)
-        `)
-        .eq('place_id', placeId)
-        .order('created_at', { ascending: false })
-        .limit(50)
-        .abortSignal(abortControllerRef.current.signal);
-      
-      // Check if fetch is still relevant
-      if (currentFetchCount !== fetchCountRef.current) {
-        return { success: false, reason: 'outdated' };
-      }
-      
-      if (reviewsError) {
-        if (reviewsError.message?.includes('abort') || reviewsError.name === 'AbortError') {
-          return { success: false, reason: 'aborted' };
+      // Try Supabase first if configured (works for both authenticated and guest users)
+      if (isSupabaseConfigured && supabase) {
+        // VALIDATE SESSION BEFORE FETCHING
+        const validation = await validateSession();
+        if (!validation.valid) {
+          console.warn('[ReviewList] Session invalid, but continuing with public data fetch');
         }
-        console.error('[ReviewList] Error:', reviewsError);
-        throw reviewsError;
-      }
-      
-      if (!reviewsData || reviewsData.length === 0) {
-        console.log('[ReviewList] No reviews found');
+        
+        const { data: reviewsData, error: reviewsError } = await supabase
+          .from('reviews')
+          .select(`
+            id,
+            user_id,
+            place_id,
+            rating,
+            text,
+            created_at,
+            updated_at,
+            profiles:user_id (username, avatar_url, full_name)
+          `)
+          .eq('place_id', placeId)
+          .order('created_at', { ascending: false })
+          .limit(50)
+          .abortSignal(abortControllerRef.current.signal);
+        
+        // Check if fetch is still relevant
+        if (currentFetchCount !== fetchCountRef.current) {
+          return { success: false, reason: 'outdated' };
+        }
+        
+        if (reviewsError) {
+          if (reviewsError.message?.includes('abort') || reviewsError.name === 'AbortError') {
+            return { success: false, reason: 'aborted' };
+          }
+          console.error('[ReviewList] Supabase error:', reviewsError);
+          throw reviewsError;
+        }
+        
+        if (reviewsData && reviewsData.length > 0) {
+          const mappedReviews = reviewsData.map(r => ({
+            ...r,
+            source: 'supabase'
+          }));
+          
+          console.log(`[ReviewList] ✅ Loaded ${mappedReviews.length} reviews from Supabase`);
+          setReviews(mappedReviews);
+          setError(null);
+          return { success: true, count: mappedReviews.length };
+        }
+        
+        // No reviews in Supabase
+        console.log('[ReviewList] No reviews found in Supabase');
         setReviews([]);
         setError(null);
         return { success: true, count: 0 };
+        
+      } else {
+        console.log('[ReviewList] Supabase not configured');
+        setReviews([]);
+        setError('Database tidak dikonfigurasi');
+        return { success: false, reason: 'not_configured' };
       }
-      
-      const mappedReviews = reviewsData.map(r => ({
-        ...r,
-        source: 'supabase'
-      }));
-      
-      console.log(`[ReviewList] ✅ Loaded ${mappedReviews.length} reviews`);
-      setReviews(mappedReviews);
-      setError(null);
-      
-      return { success: true, count: mappedReviews.length };
-      
     } catch (err) {
       if (currentFetchCount !== fetchCountRef.current) {
         return { success: false, reason: 'outdated' };
@@ -114,13 +133,15 @@ const ReviewList = ({ placeId, newReview }) => {
         return { success: false, reason: 'aborted' };
       }
       
-      console.error('[ReviewList] Fetch error:', err.message || err);
+      console.error('[ReviewList] Fetch failed:', err.message);
+      setReviews([]);
+      setError('Gagal memuat reviews dari database');
       return { success: false, reason: 'error', error: err };
     } finally {
       // PASTIKAN loading selalu di-reset
       setLoading(false);
     }
-  }, [placeId]);
+  }, [placeId, isAuthenticated, user]);
   
   // Initial fetch - Wait for auth ready
   useEffect(() => {
@@ -129,9 +150,15 @@ const ReviewList = ({ placeId, newReview }) => {
       return;
     }
     
-    if (!authInitialized) {
+    // Wait for auth to initialize before fetching from Supabase
+    if (!authInitialized && (isSupabaseConfigured && supabase)) {
       console.log('[ReviewList] Waiting for auth to initialize...');
       return;
+    }
+    
+    // Note: We don't clear reviews here anymore - let fetchReviews handle the logic
+    if (!isAuthenticated || !user) {
+      console.log('[ReviewList] User not authenticated, reviews will be fetched from public data', { isAuthenticated, userId: user?.id });
     }
     
     fetchCountRef.current = 0;
@@ -161,11 +188,22 @@ const ReviewList = ({ placeId, newReview }) => {
     return () => {
       // Cleanup: Jangan abort, biarkan fetch selesai
     };
-  }, [placeId, fetchReviews, authInitialized]);
+  }, [placeId, fetchReviews, authInitialized, user?.id, isAuthenticated]);
   
-  // Real-time subscription - FIXED: Better handling
+  // Real-time subscription - Only when authenticated
   useEffect(() => {
-    if (!isSupabaseConfigured || !supabase || !placeId || !authInitialized) return;
+    if (!isSupabaseConfigured || !supabase || !placeId || !authInitialized || !isAuthenticated || !user) {
+      // Clean up subscription if not authenticated
+      if (channelRef.current) {
+        try {
+          supabase.removeChannel(channelRef.current);
+          channelRef.current = null;
+        } catch {
+          // Ignore
+        }
+      }
+      return;
+    }
     
     console.log('[ReviewList] Setting up real-time subscription');
     
@@ -243,7 +281,7 @@ const ReviewList = ({ placeId, newReview }) => {
         }
       }
     };
-  }, [placeId, fetchReviews, authInitialized]);
+  }, [placeId, fetchReviews, authInitialized, user?.id, isAuthenticated]);
   
   // Handle new review from prop
   useEffect(() => {

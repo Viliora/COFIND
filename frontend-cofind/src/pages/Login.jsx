@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import coffeeshopBg from '../assets/coffeeshop_2.webp';
+import { useAuth } from '../context/authContext';
+import coffeeshopBg from '../assets/sign_page.webp';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -20,6 +20,15 @@ const Login = () => {
 
   // Redirect if already logged in
   useEffect(() => {
+    console.log('[Login] isAuthenticated changed:', isAuthenticated, 'isSubmitting:', isSubmitting);
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    console.log('[Login] isSubmitting changed:', isSubmitting);
+  }, [isSubmitting]);
+
+  useEffect(() => {
+    console.log('[Login] useEffect check:', { isAuthenticated, isSubmitting, location: location.state });
     if (isAuthenticated && !isSubmitting) {
       // Check if there's redirect info from ReviewForm
       const redirectState = location.state;
@@ -106,10 +115,14 @@ const Login = () => {
         
         const { error } = await signIn(username.trim(), password);
         if (error) {
+          console.error('[Login] Sign in error:', error);
           setError(error.message);
+          setIsSubmitting(false);
         } else {
-          // Success - redirect will be handled by useEffect
+          // Success - redirect will be handled by useEffect with debounce
+          console.log('[Login] Sign in successful, setting success message');
           setSuccess('Login berhasil! Mengarahkan...');
+          // Don't set isSubmitting to false - let the redirect handle it
         }
       } else if (mode === 'register') {
         if (!username.trim()) {
@@ -171,6 +184,7 @@ const Login = () => {
           } else {
             // Auto-login successful - redirect will be handled by useEffect
             setSuccess('Registrasi dan login berhasil! Mengarahkan...');
+            setIsSubmitting(false);
           }
         }
       } else if (mode === 'forgot') {

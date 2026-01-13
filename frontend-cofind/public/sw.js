@@ -234,7 +234,6 @@ function getCacheName(type) {
     case 'shell': return CACHE_SHELL;
     case 'static': return CACHE_STATIC;
     case 'content': return CACHE_CONTENT;
-    case 'pages': return CACHE_PAGES;
     default: return CACHE_CONTENT;
   }
 }
@@ -406,32 +405,34 @@ async function networkOnlyStrategy(request) {
     const url = new URL(request.url);
     const isSupabaseRequest = url.hostname.includes('supabase.co') || url.hostname.includes('supabase');
     
-    // Add cache-busting query parameter to URL (only for non-Supabase requests)
-    // CRITICAL: Jangan tambahkan query parameter untuk Supabase (akan menyebabkan "failed to parse filter")
-    if (!isSupabaseRequest) {
-      url.searchParams.set('_sw_t', Date.now().toString()); // Service Worker timestamp
+    if (isSupabaseRequest) {
+      const networkResponse = await fetch(request);
+      if (networkResponse && networkResponse.ok) {
+        return networkResponse;
+      }
+      throw new Error('Network response not OK');
     }
     
-    // Create new request with cache-busting headers
+    url.searchParams.set('_sw_t', Date.now().toString());
     const cacheBustingHeaders = new Headers(request.headers);
     cacheBustingHeaders.set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
     cacheBustingHeaders.set('Pragma', 'no-cache');
     cacheBustingHeaders.set('Expires', '0');
-    cacheBustingHeaders.set('If-Modified-Since', '0'); // Prevent 304 responses
-    cacheBustingHeaders.set('If-None-Match', '*'); // Prevent 304 responses
+    cacheBustingHeaders.set('If-Modified-Since', '0');
+    cacheBustingHeaders.set('If-None-Match', '*');
     
-    const cacheBustingRequest = new Request(isSupabaseRequest ? request.url : url.toString(), {
+    const cacheBustingRequest = new Request(url.toString(), {
       method: request.method,
       headers: cacheBustingHeaders,
       body: request.body,
       mode: request.mode,
       credentials: request.credentials,
-      cache: 'no-store', // Force no cache
+      cache: 'no-store',
       redirect: request.redirect
     });
     
     const networkResponse = await fetch(cacheBustingRequest, {
-      cache: 'no-store', // Double ensure no cache
+      cache: 'no-store',
       headers: cacheBustingHeaders
     });
     

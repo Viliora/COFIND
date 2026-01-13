@@ -11,14 +11,17 @@ import 'swiper/css/navigation';
 import 'swiper/css/effect-fade';
 
 import OptimizedImage from './OptimizedImage';
-import { getCoffeeShopImage } from '../utils/coffeeShopImages';
+import { getCoffeeShopImage } from '../utils/coffeeShopImages'; // Fallback untuk local assets
+import { getValidPhotoUrl, isValidPhotoUrl } from '../utils/photoUrlHelper';
 
 const HeroSwiper = ({ coffeeShops }) => {
   const [featuredShops, setFeaturedShops] = useState([]);
+  const [photoUrls, setPhotoUrls] = useState({}); // Track photo URLs per place_id
+  const [useFallback, setUseFallback] = useState({}); // Track which shops use fallback
 
   useEffect(() => {
     if (coffeeShops && coffeeShops.length > 0) {
-      // Ambil coffee shops dengan rating tinggi dan assign foto dari asset berdasarkan place_id
+      // Ambil coffee shops dengan rating tinggi
       const shopsWithPhotos = coffeeShops
         .filter(shop => shop.rating >= 4.0)
         .sort((a, b) => {
@@ -27,28 +30,47 @@ const HeroSwiper = ({ coffeeShops }) => {
           const scoreB = (b.rating || 0) * 0.6 + ((b.user_ratings_total || 0) / 1000) * 0.4;
           return scoreB - scoreA;
         })
-        .slice(0, 5) // Ambil maksimal 5 coffee shop terbaik untuk hero swiper
-        .map((shop) => ({
-          ...shop,
-          photos: [getCoffeeShopImage(shop.place_id || shop.name)] // Gunakan foto konsisten berdasarkan place_id
-        }));
+        .slice(0, 5); // Ambil maksimal 5 coffee shop terbaik untuk hero swiper
 
       setFeaturedShops(shopsWithPhotos);
 
-      // Preload semua 5 slide karena jumlahnya sedikit dan semuanya akan ditampilkan
-      const slidesToPreload = 5;
-      shopsWithPhotos.slice(0, slidesToPreload).forEach((shop) => {
-        if (shop.photos && shop.photos[0]) {
-          const link = document.createElement('link');
-          link.rel = 'preload';
-          link.as = 'image';
-          link.href = shop.photos[0];
-          link.fetchPriority = 'high';
-          document.head.appendChild(link);
+      // Initialize photo URLs untuk semua shops
+      const urlsMap = {};
+      const fallbackMap = {};
+      
+      shopsWithPhotos.forEach((shop) => {
+        // Get valid photo URL - replace template if needed
+        const validPhotoUrl = getValidPhotoUrl(shop.photo_url, shop.place_id);
+        
+        if (isValidPhotoUrl(validPhotoUrl)) {
+          urlsMap[shop.place_id] = validPhotoUrl;
+          fallbackMap[shop.place_id] = false;
+        } else {
+          // Use local asset immediately if Supabase URL invalid
+          urlsMap[shop.place_id] = getCoffeeShopImage(shop.place_id || shop.name);
+          fallbackMap[shop.place_id] = true;
         }
       });
+      
+      setPhotoUrls(urlsMap);
+      setUseFallback(fallbackMap);
     }
   }, [coffeeShops]);
+
+  // Handle image load error - fallback to local asset
+  const handleImageError = (placeId, shopName) => {
+    setUseFallback(prev => {
+      if (!prev[placeId]) { // Only fallback once
+        console.log(`[HeroSwiper] Supabase URL failed for ${shopName}, falling back to local asset`);
+        setPhotoUrls(urls => ({
+          ...urls,
+          [placeId]: getCoffeeShopImage(placeId || shopName)
+        }));
+        return { ...prev, [placeId]: true };
+      }
+      return prev;
+    });
+  };
 
   if (featuredShops.length === 0) {
     return null; // Jangan tampilkan jika tidak ada data
@@ -76,13 +98,22 @@ const HeroSwiper = ({ coffeeShops }) => {
         speed={800}
         className="hero-swiper"
       >
-        {featuredShops.map((shop) => (
+        {featuredShops.map((shop) => {
+          // Defensive: ensure place_id exists before rendering
+          if (!shop.place_id || !shop.name) {
+            console.warn('[HeroSwiper] Invalid shop data, skipping:', shop);
+            return null;
+          }
+
+          const photoUrl = photoUrls[shop.place_id] || getCoffeeShopImage(shop.place_id);
+
+          return (
           <SwiperSlide key={shop.place_id}>
             <Link to={`/shop/${shop.place_id}`} className="block relative group">
               <div className="relative w-full h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] overflow-hidden">
-                {/* Image */}
+                {/* Image - dari Supabase Storage dengan fallback ke local assets */}
                 <OptimizedImage
-                  src={shop.photos[0]}
+                  src={photoUrl}
                   alt={shop.name}
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   fallbackColor={(() => {
@@ -92,6 +123,7 @@ const HeroSwiper = ({ coffeeShops }) => {
                   })()}
                   shopName={shop.name}
                   isHero={true}
+                  onError={() => handleImageError(shop.place_id, shop.name)}
                 />
 
                 {/* Gradient Overlay */}
@@ -143,7 +175,8 @@ const HeroSwiper = ({ coffeeShops }) => {
               </div>
             </Link>
           </SwiperSlide>
-        ))}
+          );
+        })}
       </Swiper>
 
       {/* Custom Styles */}

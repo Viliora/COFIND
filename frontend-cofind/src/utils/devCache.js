@@ -177,8 +177,8 @@ export function clearAuthCache() {
               console.log('[Dev Cache] Removed auth cache from localStorage:', cached.url);
             }
           }
-        } catch (e) {
-          // Ignore parse errors
+        } catch {
+          void 0;
         }
       }
     });
@@ -196,35 +196,14 @@ export function clearAuthCache() {
  * - Fetch fresh data in background
  * - Update cache and notify when fresh data arrives
  * 
- * CRITICAL: Auth-related requests are NEVER cached
+ * CRITICAL: Cache is DISABLED for now to fix auth/profile issues
+ * All requests fetch fresh data from network only
  */
 export async function fetchWithDevCache(url, options = {}) {
   try {
-    // CRITICAL: Never cache auth-related requests - always fetch fresh
-    if (isAuthRelated(url)) {
-      console.log('[Dev Cache] Auth-related request - fetching fresh (NO CACHE):', url);
-      return await fetchFreshData(url, options);
-    }
-
-    // 1. Check cache first (STALE-WHILE-REVALIDATE)
-    const cachedData = getFromDevCache(url);
-    
-    if (cachedData) {
-      console.log('[Dev Cache] Returning cached data, fetching fresh in background...');
-      
-      // Return cached data immediately
-      const cachedResult = { data: cachedData, fromCache: true, stale: true };
-      
-      // Fetch fresh data in background (non-blocking)
-      fetchFreshData(url, options).catch(err => {
-        console.warn('[Dev Cache] Background fetch failed:', err.message);
-      });
-      
-      return cachedResult;
-    }
-
-    // 2. No cache - fetch fresh data (blocking)
-    console.log('[Dev Cache] No cache, fetching fresh data...');
+    // DISABLED: All caching disabled due to auth/profile sync issues
+    // Always fetch fresh data from network
+    console.log('[Dev Cache] CACHING DISABLED - fetching fresh from network:', url);
     return await fetchFreshData(url, options);
 
   } catch (error) {

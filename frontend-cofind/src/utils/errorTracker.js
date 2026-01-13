@@ -49,7 +49,7 @@ export const trackTimeout = (url, duration, context = {}) => {
     url,
     duration,
     context,
-    url: window.location.href
+    pageUrl: window.location.href
   };
 
   errorTracker.timeouts.push(entry);

@@ -1,19 +1,42 @@
 // src/App.jsx
-import React from 'react';
+import React, { useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import ShopList from './pages/ShopList';
-import ShopDetail from './pages/ShopDetail';
-import Favorite from './pages/Favorite';
-import WantToVisit from './pages/WantToVisit';
-import About from './pages/About';
-import Login from './pages/Login';
-import Profile from './pages/Profile';
-import Admin from './pages/Admin';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
+
+// Lazy load page components for code splitting
+// This reduces initial bundle size and improves FCP/LCP
+const ShopList = lazy(() => import('./pages/ShopList'));
+const ShopDetail = lazy(() => import('./pages/ShopDetail'));
+const Favorite = lazy(() => import('./pages/Favorite'));
+const WantToVisit = lazy(() => import('./pages/WantToVisit'));
+const About = lazy(() => import('./pages/About'));
+const Login = lazy(() => import('./pages/Login'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Admin = lazy(() => import('./pages/Admin'));
+const AdminPhotoUpdate = lazy(() => import('./pages/AdminPhotoUpdate'));
+
+// Load diagnostic dan fix tools untuk photo URL
+import './utils/diagnosticPhotoUrl';
+import './utils/fixPhotoUrl';
+
+/**
+ * Loading fallback component - ditampilkan saat page sedang di-load
+ * Minimal styling untuk tidak menambah weight
+ */
+function PageLoadingFallback() {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">Loading...</p>
+      </div>
+    </div>
+  );
+}
 
 function AppContent() {
   const location = useLocation();
@@ -33,17 +56,19 @@ function AppContent() {
         style={isLoginPage ? { width: '100vw', height: '100vh', minHeight: '100vh' } : {}}
       > 
         <Routes>
-          <Route path="/" element={<ShopList />} /> 
-          <Route path="/shop/:id" element={<ShopDetail />} />
-          <Route path="/favorite" element={<Favorite />} />
-          <Route path="/want-to-visit" element={<WantToVisit />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/login" element={<Login />} />
+          <Route path="/" element={<Suspense fallback={<PageLoadingFallback />}><ShopList /></Suspense>} /> 
+          <Route path="/shop/:id" element={<Suspense fallback={<PageLoadingFallback />}><ShopDetail /></Suspense>} />
+          <Route path="/favorite" element={<Suspense fallback={<PageLoadingFallback />}><Favorite /></Suspense>} />
+          <Route path="/want-to-visit" element={<Suspense fallback={<PageLoadingFallback />}><WantToVisit /></Suspense>} />
+          <Route path="/about" element={<Suspense fallback={<PageLoadingFallback />}><About /></Suspense>} />
+          <Route path="/login" element={<Suspense fallback={<PageLoadingFallback />}><Login /></Suspense>} />
           <Route 
             path="/profile" 
             element={
               <ProtectedRoute>
-                <Profile />
+                <Suspense fallback={<PageLoadingFallback />}>
+                  <Profile />
+                </Suspense>
               </ProtectedRoute>
             } 
           />
@@ -51,7 +76,19 @@ function AppContent() {
             path="/admin" 
             element={
               <AdminRoute>
-                <Admin />
+                <Suspense fallback={<PageLoadingFallback />}>
+                  <Admin />
+                </Suspense>
+              </AdminRoute>
+            } 
+          />
+          <Route 
+            path="/admin/photo-update" 
+            element={
+              <AdminRoute>
+                <Suspense fallback={<PageLoadingFallback />}>
+                  <AdminPhotoUpdate />
+                </Suspense>
               </AdminRoute>
             } 
           />

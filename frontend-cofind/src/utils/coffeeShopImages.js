@@ -1,88 +1,75 @@
 // Utility untuk assign foto coffee shop dari asset lokal
-import coffeeshop1 from '../assets/coffeeshop_1.webp';
-import coffeeshop2 from '../assets/coffeeshop_2.webp';
-import coffeeshop3 from '../assets/coffeeshop_3.webp';
-import coffeeshop4 from '../assets/coffeeshop_4.webp';
-import coffeeshop5 from '../assets/coffeeshop_5.webp';
-import coffeeshop6 from '../assets/coffeeshop_6.webp';
-import coffeeshop7 from '../assets/coffeeshop_7.webp';
-import coffeeshop8 from '../assets/coffeeshop_8.webp';
-import coffeeshop9 from '../assets/coffeeshop_9.webp';
-import coffeeshop10 from '../assets/coffeeshop_10.webp';
-import coffeeshop11 from '../assets/coffeeshop_11.webp';
-import coffeeshop12 from '../assets/coffeeshop_12.webp';
-import coffeeshop13 from '../assets/coffeeshop_13.webp';
-import coffeeshop14 from '../assets/coffeeshop_14.webp';
-import coffeeshop15 from '../assets/coffeeshop_15.webp';
+// Fallback untuk photo_url dari Supabase jika tidak tersedia
 
-import localPlacesData from '../data/places.json';
+import photo1 from '../assets/ChIJ9RWUkaZZHS4RYeuZOYAMQ-4.webp';
+import photo2 from '../assets/ChIJDcJgropZHS4RKuh8s52jy9U.webp';
+import photo3 from '../assets/ChIJ6fOdOEBZHS4RcV3VfZzhYx0.webp';
+import photo4 from '../assets/ChIJBVWfsoFZHS4Rakb44yanMjs.webp';
+import photo5 from '../assets/ChIJhx6zl0BZHS4RGNla_oPoIJ0.webp';
+import photo6 from '../assets/ChIJyRLXBlJYHS4RWNj0yvAvSAQ.webp';
+import photo7 from '../assets/ChIJG-xwV2ZZHS4R0WyGi5bbvoM.webp';
+import photo8 from '../assets/ChIJPa6swGtZHS4RrbIlRvgBgok.webp';
+import photo9 from '../assets/ChIJC3_RpddZHS4RMiDp7-6TemY.webp';
+import photo10 from '../assets/ChIJE8-LfABZHS4R_MsSOwiHNL8.webp';
+import photo11 from '../assets/ChIJKX36yixZHS4ROQfX-hNWhj0.webp';
+import photo12 from '../assets/ChIJIRuUuwNZHS4RrhnXINPqQQ4.webp';
+import photo13 from '../assets/ChIJ4U6K9hdZHS4RKE7QPIKbn4Y.webp';
+import photo14 from '../assets/ChIJ71m2hZZZHS4RrOgKJYP_7zw.webp';
+import photo15 from '../assets/ChIJpVctpWBZHS4RdUbSlT-pSl8.webp';
 
 const coffeeShopImages = [
-  coffeeshop1,
-  coffeeshop2,
-  coffeeshop3,
-  coffeeshop4,
-  coffeeshop5,
-  coffeeshop6,
-  coffeeshop7,
-  coffeeshop8,
-  coffeeshop9,
-  coffeeshop10,
-  coffeeshop11,
-  coffeeshop12,
-  coffeeshop13,
-  coffeeshop14,
-  coffeeshop15,
+  photo1,
+  photo2,
+  photo3,
+  photo4,
+  photo5,
+  photo6,
+  photo7,
+  photo8,
+  photo9,
+  photo10,
+  photo11,
+  photo12,
+  photo13,
+  photo14,
+  photo15,
 ];
 
-// Mapping place_id ke index di places.json untuk konsistensi
-let placeIdToIndexMap = null;
-
-const getPlaceIdToIndexMap = () => {
-  if (placeIdToIndexMap === null) {
-    placeIdToIndexMap = {};
-    if (localPlacesData && localPlacesData.data && Array.isArray(localPlacesData.data)) {
-      localPlacesData.data.forEach((shop, index) => {
-        if (shop.place_id) {
-          placeIdToIndexMap[shop.place_id] = index;
-        }
-      });
-    }
-  }
-  return placeIdToIndexMap;
-};
-
 /**
- * Mendapatkan foto coffee shop berdasarkan place_id atau index
- * Setiap coffee shop mendapat foto yang berbeda berdasarkan urutan di places.json
- * @param {string|number} identifier - place_id atau index coffee shop
- * @returns {string} URL foto coffee shop
+ * Mendapatkan foto coffee shop fallback dari local assets
+ * Digunakan sebagai fallback jika photo_url dari Supabase tidak tersedia
+ * @param {string|number} identifier - place_id atau nama coffee shop
+ * @returns {string} URL foto coffee shop dari local assets
  */
 export const getCoffeeShopImage = (identifier) => {
+  // Handle missing identifier - return first image as default
+  if (!identifier || (typeof identifier === 'string' && identifier.trim() === '')) {
+    console.warn('[getCoffeeShopImage] Missing or empty identifier, using default image');
+    return coffeeShopImages[0]; // Default to first image
+  }
+
   let imageIndex = 0;
-  
+
   if (typeof identifier === 'string') {
-    // Jika identifier adalah place_id, cari index-nya di places.json
-    const map = getPlaceIdToIndexMap();
-    const shopIndex = map[identifier];
+    // For place_id, use first 8 characters and convert to number
+    // place_id format: ChIJ9RWUkaZZHS4RYeuZOYAMQ-4
+    // Extract hex-like characters and mod with array length
+    const placeIdPrefix = identifier.substring(0, 8); // "ChIJ9RWU"
+    let hash = 0;
     
-    if (shopIndex !== undefined) {
-      // Gunakan index dari places.json untuk konsistensi
-      imageIndex = shopIndex % coffeeShopImages.length;
-    } else {
-      // Fallback: hash place_id jika tidak ditemukan di places.json
-      let hash = 0;
-      for (let i = 0; i < identifier.length; i++) {
-        hash = ((hash << 5) - hash) + identifier.charCodeAt(i);
-        hash = hash & hash;
-      }
-      imageIndex = Math.abs(hash) % coffeeShopImages.length;
+    for (let i = 0; i < placeIdPrefix.length; i++) {
+      const code = placeIdPrefix.charCodeAt(i);
+      hash = ((hash << 5) - hash) + code;
+      hash = hash & hash; // Convert to 32bit integer
     }
+    
+    imageIndex = Math.abs(hash) % coffeeShopImages.length;
+    console.log(`[getCoffeeShopImage] place_id: ${identifier}, prefix: ${placeIdPrefix}, index: ${imageIndex}`);
   } else {
     // Jika identifier adalah number, gunakan langsung sebagai index
     imageIndex = (identifier || 0) % coffeeShopImages.length;
   }
-  
+
   return coffeeShopImages[imageIndex];
 };
 

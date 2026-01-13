@@ -14,9 +14,9 @@ const OptimizedImage = ({
   alt, 
   className = '', 
   fallbackColor = '#4F46E5',
-  shopName = 'Coffee Shop',
   isHero = false,
-  style = {}
+  style = {},
+  onError = null
 }) => {
   const [imageState, setImageState] = useState('loading'); // loading, loaded, error
   const [imageSrc, setImageSrc] = useState(null);
@@ -36,7 +36,8 @@ const OptimizedImage = ({
 
   // Lazy loading dengan Intersection Observer
   useEffect(() => {
-    if (!imgRef.current) return;
+    const imgEl = imgRef.current;
+    if (!imgEl) return;
 
     // Jika browser tidak support IntersectionObserver, langsung load
     if (!('IntersectionObserver' in window)) {
@@ -52,8 +53,8 @@ const OptimizedImage = ({
             // Gambar terlihat di viewport, mulai load
             setImageSrc(src);
             // Stop observing setelah mulai load
-            if (observerRef.current && imgRef.current) {
-              observerRef.current.unobserve(imgRef.current);
+            if (observerRef.current && imgEl) {
+              observerRef.current.unobserve(imgEl);
             }
           }
         });
@@ -64,14 +65,14 @@ const OptimizedImage = ({
       }
     );
 
-    if (imgRef.current) {
-      observerRef.current.observe(imgRef.current);
+    if (imgEl) {
+      observerRef.current.observe(imgEl);
     }
 
     // Cleanup
     return () => {
-      if (observerRef.current && imgRef.current) {
-        observerRef.current.unobserve(imgRef.current);
+      if (observerRef.current && imgEl) {
+        observerRef.current.unobserve(imgEl);
       }
     };
   }, [src]);
@@ -85,6 +86,10 @@ const OptimizedImage = ({
   const handleError = () => {
     setImageState('error');
     setImageSrc(getPlaceholderSVG());
+    // Call custom onError handler if provided
+    if (onError) {
+      onError();
+    }
   };
 
   return (
