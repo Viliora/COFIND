@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/authContext';
+import { authService } from '../services/authService';
 import coffeeshopBg from '../assets/sign_page.webp';
 
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signIn, signUp, resetPassword, isAuthenticated, isSupabaseConfigured, loading } = useAuth();
+  const { signIn, signUp, resetPassword, isAuthenticated, loading } = useAuth();
   
   const [mode, setMode] = useState('login'); // 'login', 'register', 'forgot'
   const [username, setUsername] = useState('');
@@ -69,36 +70,6 @@ const Login = () => {
     }
   }, [isAuthenticated, navigate, location, isSubmitting]);
 
-  // Show warning if Supabase not configured
-  if (!isSupabaseConfigured) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-zinc-900 flex items-center justify-center px-4">
-        <div className="max-w-md w-full bg-white dark:bg-zinc-800 rounded-2xl shadow-xl p-8 text-center">
-          <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-          </div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-            Supabase Belum Dikonfigurasi
-          </h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            Fitur login memerlukan konfigurasi Supabase. Silakan tambahkan VITE_SUPABASE_URL dan VITE_SUPABASE_ANON_KEY di file .env
-          </p>
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Kembali ke Beranda
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -153,9 +124,7 @@ const Login = () => {
           console.warn('[Login] Password kurang dari 12 karakter - disarankan menggunakan password yang lebih kuat');
         }
 
-        const { error } = await signUp(username.trim(), password, {
-          full_name: fullName.trim()
-        });
+        const { error } = await signUp(username.trim(), password, fullName.trim());
 
         if (error) {
           // Handle leaked password error specifically (jika Leaked Password Protection enabled)

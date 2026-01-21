@@ -1,16 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/authContext';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+// Supabase removed - use local backend only
 import OptimizedImage from '../components/OptimizedImage';
 import FacilitiesTab from '../components/FacilitiesTab';
 import ReviewForm from '../components/ReviewForm';
 import ReviewList from '../components/ReviewList';
 import facilitiesData from '../data/facilities.json';
 import { addToRecentlyViewed } from '../utils/recentlyViewed';
-import { getCoffeeShopImage } from '../utils/coffeeShopImages'; // Fallback untuk local assets
-import { getValidPhotoUrl, isValidPhotoUrl } from '../utils/photoUrlHelper';
+import { getCoffeeShopImage } from '../utils/coffeeShopImages';
 
+// API Configuration (samakan sumber data dengan homepage)
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 // Using Supabase only - photos stored in Supabase Storage
 const MIN_REVIEWS = 15; // Maksimal jumlah reviews yang ditampilkan
 
@@ -70,89 +71,41 @@ function ShopDetail() {
         setIsLoading(true);
         setError(null);
 
-        // ✅ NEW: Fetch from Supabase places table
-        if (isSupabaseConfigured && supabase) {
-          console.log('[ShopDetail] Fetching from Supabase places table:', id);
+        // ✅ PRIMARY: Fetch from local backend (same source as homepage)
+        try {
+          const detailUrl = `${API_BASE}/api/coffeeshops/place/${id}`;
+          console.log('[ShopDetail] Fetching from backend:', detailUrl);
 
-          const { data: shopData, error: shopError } = await supabase
-            .from('places')
-            .select('*')
-            .eq('place_id', id)
-            .single();
+          const response = await fetch(detailUrl);
 
-          if (shopError) {
-            console.error('[ShopDetail] Supabase error:', shopError);
-            throw new Error('Coffee shop tidak ditemukan di database.');
+          if (!response.ok) {
+            throw new Error(`API returned status ${response.status}`);
           }
 
-          if (shopData) {
-            console.log('[ShopDetail] Found shop in Supabase:', shopData.name);
+          const payload = await response.json();
 
-            // Normalize data structure
+          if (payload?.status === 'success' && payload?.data) {
+            const detail = payload.data;
             const normalized = {
-              place_id: shopData.place_id,
-              name: shopData.name,
-              address: shopData.address,
-              rating: shopData.rating,
-              price_level: shopData.price_level,
-              user_ratings_total: shopData.user_ratings_total,
-              location: shopData.location,
-              photos: [], // Places table doesn't have photos, can be added later
-              business_status: shopData.business_status,
-              map_embed_url: shopData.map_embed_url,
+              place_id: detail.place_id,
+              name: detail.name,
+              address: detail.address,
+              rating: detail.rating,
+              user_ratings_total: detail.user_ratings_total,
+              price_level: detail.price_level || null,
+              location: detail.location || null,
+              photos: [],
+              business_status: detail.business_status || null,
+              map_embed_url: detail.map_embed_url || null,
             };
 
             setShop(normalized);
-
-            // Simpan ke recently viewed
             addToRecentlyViewed(normalized);
-
             setIsLoading(false);
             return;
           }
-        }
-
-        // Fallback to API if Supabase fails
-        if (USE_API) {
-          try {
-            const detailUrl = `${API_BASE}/api/coffeeshops/detail/${id}`;
-            console.log('[ShopDetail] Fallback: Fetching from API:', detailUrl);
-
-            const response = await fetch(detailUrl);
-
-            if (!response.ok) {
-              throw new Error(`API returned status ${response.status}`);
-            }
-
-            const payload = await response.json();
-
-            if (payload?.status === 'success' && payload?.data) {
-              const detail = payload.data;
-              // Normalisasi sebagian field agar konsisten dengan list
-              const normalized = {
-                place_id: id,
-                name: detail.name,
-                address: detail.formatted_address,
-                rating: detail.rating,
-                price_level: detail.price_level,
-                phone: detail.formatted_phone_number,
-                website: detail.website,
-                location: detail.geometry?.location,
-                photos: Array.isArray(detail.photos)
-                  ? detail.photos.slice(0, 5) // Foto sudah dalam format URL string langsung
-                  : [],
-              };
-              setShop(normalized);
-
-              // Simpan ke recently viewed
-              addToRecentlyViewed(normalized);
-
-              setIsLoading(false);
-              return;
-            }
-          } catch (apiErr) {
-            console.error('[ShopDetail] Failed to load from API:', apiErr?.message);
-          }
+        } catch (apiErr) {
+          console.error('[ShopDetail] Failed to load from backend:', apiErr?.message);
         }
 
         // If all methods fail
@@ -168,58 +121,46 @@ function ShopDetail() {
     loadShop();
   }, [id]);
 
-  // Check if shop is favorited or in want-to-visit (from Supabase or localStorage)
+  // Check if shop is favorited or in want-to-visit (local backend or localStorage)
   useEffect(() => {
     const checkFavoriteStatus = async () => {
       if (!id) return;
       
-      // If user is authenticated and Supabase is configured, check from Supabase
-      if (isAuthenticated && user?.id && isSupabaseConfigured && supabase) {
+      if (isAuthenticated && user?.id) {
         try {
-          // Check favorite
-          const { data: favoriteData, error: favoriteError } = await supabase
-            .from('favorites')
-            .select('id')
-            .eq('user_id', user.id)
-            .eq('place_id', id)
-            .maybeSingle();
-          
-          if (!favoriteError && favoriteData) {
-            setIsFavorite(true);
+          const response = await fetch(`${API_BASE}/api/coffeeshops/${id}/favorite-status?user_id=${user.id}`);
+          if (response.ok) {
+            const payload = await response.json();
+            setIsFavorite(!!payload?.is_favorite);
           } else {
             setIsFavorite(false);
           }
-          
-          // Check want to visit
-          const { data: wantToVisitData, error: wantToVisitError } = await supabase
-            .from('want_to_visit')
-            .select('id')
-            .eq('user_id', user.id)
-            .eq('place_id', id)
-            .maybeSingle();
-          
-          if (!wantToVisitError && wantToVisitData) {
-            setIsWantToVisit(true);
+        } catch (err) {
+          console.error('[ShopDetail] Error checking favorite status:', err);
+          setIsFavorite(false);
+        }
+
+        try {
+          const response = await fetch(`${API_BASE}/api/coffeeshops/${id}/want-to-visit-status?user_id=${user.id}`);
+          if (response.ok) {
+            const payload = await response.json();
+            setIsWantToVisit(!!payload?.is_want_to_visit);
           } else {
             setIsWantToVisit(false);
           }
         } catch (err) {
-          console.error('[ShopDetail] Error checking favorite/want to visit status:', err);
-          // Fallback to localStorage
-          const favorites = JSON.parse(localStorage.getItem('favoriteShops') || '[]');
-          setIsFavorite(favorites.includes(id));
-          
-          const wantToVisit = JSON.parse(localStorage.getItem('wantToVisitShops') || '[]');
-          setIsWantToVisit(wantToVisit.includes(id));
+          console.error('[ShopDetail] Error checking want-to-visit status:', err);
+          setIsWantToVisit(false);
         }
-      } else {
-        // Guest mode: use localStorage
-        const favorites = JSON.parse(localStorage.getItem('favoriteShops') || '[]');
-        setIsFavorite(favorites.includes(id));
-        
-        const wantToVisit = JSON.parse(localStorage.getItem('wantToVisitShops') || '[]');
-        setIsWantToVisit(wantToVisit.includes(id));
+        return;
       }
+
+      // Guest mode: use localStorage
+      const favorites = JSON.parse(localStorage.getItem('favoriteShops') || '[]');
+      setIsFavorite(favorites.includes(id));
+
+      const wantToVisit = JSON.parse(localStorage.getItem('wantToVisitShops') || '[]');
+      setIsWantToVisit(wantToVisit.includes(id));
     };
     
     checkFavoriteStatus();
@@ -234,57 +175,31 @@ function ShopDetail() {
     }
     
     try {
-      // If user is authenticated and Supabase is configured, save to Supabase
-      if (isSupabaseConfigured && supabase) {
-        if (isFavorite) {
-          // Remove from favorites in Supabase
-          const { error } = await supabase
-            .from('favorites')
-            .delete()
-            .eq('user_id', user.id)
-            .eq('place_id', id);
-          
-          if (error) {
-            console.error('[ShopDetail] Error removing favorite:', error);
-            setNotification({ type: 'error', message: 'Gagal menghapus dari favorit' });
-            return;
-          }
-          
-          setNotification({ type: 'removed', message: 'Dihapus dari favorit' });
-        } else {
-          // Add to favorites in Supabase
-          const { error } = await supabase
-            .from('favorites')
-            .insert({ user_id: user.id, place_id: id });
-          
-          if (error) {
-            console.error('[ShopDetail] Error adding favorite:', error);
-            setNotification({ type: 'error', message: 'Gagal menambahkan ke favorit' });
-            return;
-          }
-          
-          setNotification({ type: 'added', message: 'Ditambahkan ke favorit!' });
+      if (isFavorite) {
+        const response = await fetch(`${API_BASE}/api/favorites/${id}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: user.id })
+        });
+        if (!response.ok) {
+          setNotification({ type: 'error', message: 'Gagal menghapus dari favorit' });
+          return;
         }
-        
-        setIsFavorite(!isFavorite);
+        setNotification({ type: 'removed', message: 'Dihapus dari favorit' });
       } else {
-        // Guest mode: use localStorage
-        const favorites = JSON.parse(localStorage.getItem('favoriteShops') || '[]');
-        if (isFavorite) {
-          // Remove from favorites
-          const updated = favorites.filter(fav => fav !== id);
-          localStorage.setItem('favoriteShops', JSON.stringify(updated));
-          setNotification({ type: 'removed', message: 'Dihapus dari favorit' });
-        } else {
-          // Add to favorites
-          if (!favorites.includes(id)) {
-            favorites.push(id);
-            localStorage.setItem('favoriteShops', JSON.stringify(favorites));
-          }
-          setNotification({ type: 'added', message: 'Ditambahkan ke favorit!' });
+        const response = await fetch(`${API_BASE}/api/favorites`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: user.id, place_id: id })
+        });
+        if (!response.ok) {
+          setNotification({ type: 'error', message: 'Gagal menambahkan ke favorit' });
+          return;
         }
-        setIsFavorite(!isFavorite);
+        setNotification({ type: 'added', message: 'Ditambahkan ke favorit!' });
       }
+
+      setIsFavorite(!isFavorite);
     } catch (err) {
       console.error('[ShopDetail] Error toggling favorite:', err);
       setNotification({ type: 'error', message: 'Terjadi kesalahan saat mengubah favorit' });
@@ -300,57 +215,30 @@ function ShopDetail() {
     }
     
     try {
-      // If user is authenticated and Supabase is configured, save to Supabase
-      if (isSupabaseConfigured && supabase) {
-        if (isWantToVisit) {
-          // Remove from want to visit in Supabase
-          const { error } = await supabase
-            .from('want_to_visit')
-            .delete()
-            .eq('user_id', user.id)
-            .eq('place_id', id);
-          
-          if (error) {
-            console.error('[ShopDetail] Error removing want to visit:', error);
-            setNotification({ type: 'error', message: 'Gagal menghapus dari want to visit' });
-            return;
-          }
-          
-          setNotification({ type: 'removed', message: 'Dihapus dari want to visit' });
-        } else {
-          // Add to want to visit in Supabase
-          const { error } = await supabase
-            .from('want_to_visit')
-            .insert({ user_id: user.id, place_id: id });
-          
-          if (error) {
-            console.error('[ShopDetail] Error adding want to visit:', error);
-            setNotification({ type: 'error', message: 'Gagal menambahkan ke want to visit' });
-            return;
-          }
-          
-          setNotification({ type: 'added', message: 'Ditambahkan ke want to visit!' });
+      if (isWantToVisit) {
+        const response = await fetch(`${API_BASE}/api/want-to-visit/${id}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: user.id })
+        });
+        if (!response.ok) {
+          setNotification({ type: 'error', message: 'Gagal menghapus dari want to visit' });
+          return;
         }
-        
-        setIsWantToVisit(!isWantToVisit);
+        setNotification({ type: 'removed', message: 'Dihapus dari want to visit' });
       } else {
-        // Guest mode: use localStorage
-        const wantToVisit = JSON.parse(localStorage.getItem('wantToVisitShops') || '[]');
-        if (isWantToVisit) {
-          // Remove from want-to-visit
-          const updated = wantToVisit.filter(item => item !== id);
-          localStorage.setItem('wantToVisitShops', JSON.stringify(updated));
-          setNotification({ type: 'removed', message: 'Dihapus dari want to visit' });
-        } else {
-          // Add to want-to-visit
-          if (!wantToVisit.includes(id)) {
-            wantToVisit.push(id);
-            localStorage.setItem('wantToVisitShops', JSON.stringify(wantToVisit));
-          }
-          setNotification({ type: 'added', message: 'Ditambahkan ke want to visit!' });
+        const response = await fetch(`${API_BASE}/api/want-to-visit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: user.id, place_id: id })
+        });
+        if (!response.ok) {
+          setNotification({ type: 'error', message: 'Gagal menambahkan ke want to visit' });
+          return;
         }
-        setIsWantToVisit(!isWantToVisit);
+        setNotification({ type: 'added', message: 'Ditambahkan ke want to visit!' });
       }
+      setIsWantToVisit(!isWantToVisit);
     } catch (err) {
       console.error('[ShopDetail] Error toggling want to visit:', err);
       setNotification({ type: 'error', message: 'Terjadi kesalahan saat mengubah want to visit' });
@@ -410,9 +298,7 @@ function ShopDetail() {
         <div className="mb-6 rounded-xl overflow-hidden shadow-lg">
           <div className="w-full h-56 sm:h-64 md:h-80">
             <OptimizedImage
-              src={isValidPhotoUrl(getValidPhotoUrl(shop.photo_url, shop.place_id))
-                ? getValidPhotoUrl(shop.photo_url, shop.place_id)
-                : getCoffeeShopImage(shop.place_id || shop.name)}
+              src={getCoffeeShopImage(shop.place_id || shop.name)}
               alt={shop.name}
               className="w-full h-full object-cover"
               fallbackColor={(() => {

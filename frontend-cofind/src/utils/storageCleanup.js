@@ -1,208 +1,167 @@
 /**
- * Storage Cleanup Utility
- * 
- * Membersihkan data localStorage yang basi atau corrupt
+ * Storage Cleanup Utility - Local version without Supabase
+ * Manages localStorage cleanup for the application
  */
 
-// Current app version
-const CURRENT_APP_VERSION = '1.0.0';
-const APP_VERSION_KEY = 'cofind_app_version';
-
-// Maximum cache age (7 days)
-const MAX_CACHE_AGE = 7 * 24 * 60 * 60 * 1000;
-
 /**
- * Bersihkan data cache yang basi
- */
-export function cleanupStaleData() {
-  if (typeof window === 'undefined' || !window.localStorage) {
-    return;
-  }
-
-  try {
-    const keys = Object.keys(localStorage);
-    let cleanedCount = 0;
-
-    for (const key of keys) {
-      // Hapus cache lama
-      if (key.startsWith('cache_') || key.startsWith('temp_')) {
-        try {
-          const value = localStorage.getItem(key);
-          const parsed = JSON.parse(value);
-          
-          if (parsed?.timestamp) {
-            const age = Date.now() - parsed.timestamp;
-            if (age > MAX_CACHE_AGE) {
-              localStorage.removeItem(key);
-              cleanedCount++;
-            }
-          }
-        } catch {
-          void 0;
-        }
-      }
-    }
-
-    if (cleanedCount > 0) {
-      console.log(`[StorageCleanup] Removed ${cleanedCount} stale cache items`);
-    }
-  } catch (error) {
-    console.warn('[StorageCleanup] Error:', error);
-  }
-}
-
-/**
- * Cek versi app
- */
-export function checkAppVersion() {
-  if (typeof window === 'undefined' || !window.localStorage) {
-    return false;
-  }
-
-  try {
-    const storedVersion = localStorage.getItem(APP_VERSION_KEY);
-    
-    if (!storedVersion || storedVersion !== CURRENT_APP_VERSION) {
-      localStorage.setItem(APP_VERSION_KEY, CURRENT_APP_VERSION);
-      return !storedVersion ? false : true; // True jika versi berubah
-    }
-
-    return false;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Bersihkan JSON yang corrupt
- */
-export function cleanupCorruptedData() {
-  if (typeof window === 'undefined' || !window.localStorage) {
-    return;
-  }
-
-  try {
-    const keys = Object.keys(localStorage);
-
-    for (const key of keys) {
-      try {
-        const value = localStorage.getItem(key);
-        
-        if (value === null || value === undefined) {
-          localStorage.removeItem(key);
-          continue;
-        }
-
-        // Coba parse JSON jika terlihat seperti JSON
-        if (value.startsWith('{') || value.startsWith('[')) {
-          JSON.parse(value);
-        }
-      } catch {
-        // JSON corrupt, hapus
-        localStorage.removeItem(key);
-      }
-    }
-  } catch (error) {
-    console.warn('[StorageCleanup] Error:', error);
-  }
-}
-
-/**
- * Validasi Supabase session
- */
-export async function validateSupabaseSession(supabase) {
-  if (!supabase) {
-    return false;
-  }
-
-  try {
-    const { data: { session }, error } = await supabase.auth.getSession();
-
-    if (error || !session) {
-      return false;
-    }
-
-    // Cek apakah session expired
-    const expiresAt = session.expires_at ? session.expires_at * 1000 : null;
-    if (expiresAt && expiresAt < Date.now()) {
-      await supabase.auth.signOut();
-      return false;
-    }
-
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Full cleanup routine - dipanggil saat app init (opsional)
- */
-export async function performFullCleanup(supabase) {
-  checkAppVersion();
-  cleanupCorruptedData();
-  cleanupStaleData();
-  
-  if (supabase) {
-    await validateSupabaseSession(supabase);
-  }
-}
-
-/**
- * Emergency cleanup - clear semua kecuali theme
- */
-export function emergencyCleanup() {
-  if (typeof window === 'undefined' || !window.localStorage) {
-    return;
-  }
-
-  try {
-    const theme = localStorage.getItem('theme-dark');
-    localStorage.clear();
-    
-    if (theme !== null) {
-      localStorage.setItem('theme-dark', theme);
-    }
-    
-    localStorage.setItem(APP_VERSION_KEY, CURRENT_APP_VERSION);
-    window.location.reload();
-  } catch (error) {
-    console.error('[StorageCleanup] Emergency cleanup failed:', error);
-  }
-}
-
-/**
- * Get storage info untuk debugging
+ * Get storage information
  */
 export function getStorageInfo() {
-  if (typeof window === 'undefined' || !window.localStorage) {
-    return { available: false };
-  }
-
   try {
-    const keys = Object.keys(localStorage);
-    const totalSize = keys.reduce((acc, key) => {
-      const value = localStorage.getItem(key);
-      return acc + (value ? value.length : 0);
-    }, 0);
+    let totalSize = 0;
+    let keyCount = 0;
+
+    for (let key in localStorage) {
+      if (localStorage.hasOwnProperty(key)) {
+        const value = localStorage.getItem(key);
+        if (value) {
+          totalSize += key.length + value.length;
+          keyCount++;
+        }
+      }
+    }
 
     return {
       available: true,
-      keyCount: keys.length,
-      totalSizeKB: Math.round(totalSize / 1024),
-      keys: keys
+      keyCount,
+      totalSizeKB: (totalSize / 1024).toFixed(2),
+      version: 'v1.0'
     };
   } catch (error) {
-    return { available: true, error: error.message };
+    console.error('[Storage] Error getting storage info:', error);
+    return {
+      available: false,
+      keyCount: 0,
+      totalSizeKB: 0,
+      version: 'unknown'
+    };
+  }
+}
+
+/**
+ * Emergency cleanup - clears all localStorage except theme
+ */
+export function emergencyCleanup() {
+  try {
+    console.log('[Storage] Starting emergency cleanup...');
+    
+    // Save theme preference if it exists
+    const theme = localStorage.getItem('theme');
+    
+    // Clear all localStorage
+    localStorage.clear();
+    
+    // Restore theme
+    if (theme) {
+      localStorage.setItem('theme', theme);
+    }
+    
+    console.log('[Storage] Emergency cleanup complete');
+    
+    // Reload page to reset app state
+    window.location.reload();
+  } catch (error) {
+    console.error('[Storage] Error during emergency cleanup:', error);
+    // Force reload anyway
+    window.location.reload();
+  }
+}
+
+/**
+ * Clear specific cache types
+ */
+export function clearCache(cacheType = 'all') {
+  try {
+    console.log(`[Storage] Clearing cache: ${cacheType}`);
+    
+    const keysToDelete = [];
+    
+    for (let key in localStorage) {
+      if (localStorage.hasOwnProperty(key)) {
+        let shouldDelete = false;
+        
+        switch (cacheType) {
+          case 'auth':
+            shouldDelete = key.includes('auth') || key.includes('token') || key.includes('session');
+            break;
+          case 'images':
+            shouldDelete = key.includes('image') || key.includes('photo');
+            break;
+          case 'reviews':
+            shouldDelete = key.includes('review');
+            break;
+          case 'favorites':
+            shouldDelete = key.includes('favorite') || key.includes('want_to_visit');
+            break;
+          case 'all':
+            shouldDelete = key !== 'theme'; // Keep theme
+            break;
+          default:
+            shouldDelete = false;
+        }
+        
+        if (shouldDelete) {
+          keysToDelete.push(key);
+        }
+      }
+    }
+    
+    keysToDelete.forEach(key => localStorage.removeItem(key));
+    
+    console.log(`[Storage] Cleared ${keysToDelete.length} cache entries`);
+    return keysToDelete.length;
+  } catch (error) {
+    console.error('[Storage] Error clearing cache:', error);
+    return 0;
+  }
+}
+
+/**
+ * Clean up old/expired cache entries
+ */
+export function cleanupOldCache() {
+  try {
+    console.log('[Storage] Cleaning up old cache...');
+    
+    const now = Date.now();
+    const keysToDelete = [];
+    
+    for (let key in localStorage) {
+      if (localStorage.hasOwnProperty(key)) {
+        try {
+          const value = localStorage.getItem(key);
+          if (!value) continue;
+          
+          // Try to parse as JSON to check for timestamp
+          const data = JSON.parse(value);
+          if (data && data.timestamp) {
+            const age = now - data.timestamp;
+            const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
+            
+            if (age > maxAge) {
+              keysToDelete.push(key);
+            }
+          }
+        } catch {
+          // Not JSON or no timestamp, skip
+          continue;
+        }
+      }
+    }
+    
+    keysToDelete.forEach(key => localStorage.removeItem(key));
+    
+    console.log(`[Storage] Cleaned up ${keysToDelete.length} old cache entries`);
+    return keysToDelete.length;
+  } catch (error) {
+    console.error('[Storage] Error cleaning up old cache:', error);
+    return 0;
   }
 }
 
 export default {
-  cleanupStaleData,
-  checkAppVersion,
-  cleanupCorruptedData,
-  validateSupabaseSession,
-  performFullCleanup,
+  getStorageInfo,
   emergencyCleanup,
-  getStorageInfo
+  clearCache,
+  cleanupOldCache
 };

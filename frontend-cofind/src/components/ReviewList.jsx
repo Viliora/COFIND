@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { supabase, isSupabaseConfigured, validateSession } from '../lib/supabase';
 import { useAuth } from '../context/authContext';
 import ReviewCard from './ReviewCard';
+
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
 /**
  * ReviewList Component - COMPLETE FIX VERSION
@@ -23,7 +24,6 @@ const ReviewList = ({ placeId, newReview }) => {
   const abortControllerRef = useRef(null);
   const fetchCountRef = useRef(0);
   const currentPlaceIdRef = useRef(null);
-  const channelRef = useRef(null);
   
   // Debug auth state changes
   useEffect(() => {
@@ -35,7 +35,7 @@ const ReviewList = ({ placeId, newReview }) => {
     });
   }, [authInitialized, isAuthenticated, user?.id, placeId]);
   
-  // Fetch reviews - FIXED: With local fallback AND session validation
+  // Fetch reviews - local SQLite backend only
   const fetchReviews = useCallback(async (showLoading = false) => {
     if (!placeId) {
       setLoading(false);
@@ -62,68 +62,34 @@ const ReviewList = ({ placeId, newReview }) => {
     console.log(`[ReviewList] Fetching reviews for: ${placeId}`);
     
     try {
-      // Try Supabase first if configured (works for both authenticated and guest users)
-      if (isSupabaseConfigured && supabase) {
-        // VALIDATE SESSION BEFORE FETCHING
-        const validation = await validateSession();
-        if (!validation.valid) {
-          console.warn('[ReviewList] Session invalid, but continuing with public data fetch');
-        }
-        
-        const { data: reviewsData, error: reviewsError } = await supabase
-          .from('reviews')
-          .select(`
-            id,
-            user_id,
-            place_id,
-            rating,
-            text,
-            created_at,
-            updated_at,
-            profiles:user_id (username, avatar_url, full_name)
-          `)
-          .eq('place_id', placeId)
-          .order('created_at', { ascending: false })
-          .limit(50)
-          .abortSignal(abortControllerRef.current.signal);
-        
-        // Check if fetch is still relevant
-        if (currentFetchCount !== fetchCountRef.current) {
-          return { success: false, reason: 'outdated' };
-        }
-        
-        if (reviewsError) {
-          if (reviewsError.message?.includes('abort') || reviewsError.name === 'AbortError') {
-            return { success: false, reason: 'aborted' };
-          }
-          console.error('[ReviewList] Supabase error:', reviewsError);
-          throw reviewsError;
-        }
-        
-        if (reviewsData && reviewsData.length > 0) {
-          const mappedReviews = reviewsData.map(r => ({
-            ...r,
-            source: 'supabase'
-          }));
-          
-          console.log(`[ReviewList] ✅ Loaded ${mappedReviews.length} reviews from Supabase`);
-          setReviews(mappedReviews);
-          setError(null);
-          return { success: true, count: mappedReviews.length };
-        }
-        
-        // No reviews in Supabase
-        console.log('[ReviewList] No reviews found in Supabase');
-        setReviews([]);
-        setError(null);
-        return { success: true, count: 0 };
-        
-      } else {
-        console.log('[ReviewList] Supabase not configured');
-        setReviews([]);
-        setError('Database tidak dikonfigurasi');
-        return { success: false, reason: 'not_configured' };
+      const response = await fetch(`${API_BASE}/api/coffeeshops/${placeId}/reviews`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        signal: abortControllerRef.current.signal,
+      });
+
+      if (currentFetchCount !== fetchCountRef.current) {
+        return { success: false, reason: 'outdated' };
       }
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const reviewsData = Array.isArray(data.reviews) ? data.reviews : [];
+      const mappedReviews = reviewsData.map(r => ({
+        ...r,
+        profiles: r.username || r.full_name ? {
+          username: r.username,
+          full_name: r.full_name,
+        } : undefined,
+        source: 'local'
+      }));
+
+      setReviews(mappedReviews);
+      setError(null);
+      return { success: true, count: mappedReviews.length };
     } catch (err) {
       if (currentFetchCount !== fetchCountRef.current) {
         return { success: false, reason: 'outdated' };
@@ -147,12 +113,6 @@ const ReviewList = ({ placeId, newReview }) => {
   useEffect(() => {
     if (!placeId) {
       setLoading(false);
-      return;
-    }
-    
-    // Wait for auth to initialize before fetching from Supabase
-    if (!authInitialized && (isSupabaseConfigured && supabase)) {
-      console.log('[ReviewList] Waiting for auth to initialize...');
       return;
     }
     
@@ -190,99 +150,6 @@ const ReviewList = ({ placeId, newReview }) => {
     };
   }, [placeId, fetchReviews, authInitialized, user?.id, isAuthenticated]);
   
-  // Real-time subscription - Only when authenticated
-  useEffect(() => {
-    if (!isSupabaseConfigured || !supabase || !placeId || !authInitialized || !isAuthenticated || !user) {
-      // Clean up subscription if not authenticated
-      if (channelRef.current) {
-        try {
-          supabase.removeChannel(channelRef.current);
-          channelRef.current = null;
-        } catch {
-          // Ignore
-        }
-      }
-      return;
-    }
-    
-    console.log('[ReviewList] Setting up real-time subscription');
-    
-    // Remove old channel if exists
-    if (channelRef.current) {
-      try {
-        supabase.removeChannel(channelRef.current);
-      } catch {
-        // Ignore
-      }
-    }
-    
-    const channel = supabase
-      .channel(`reviews-${placeId}-${Date.now()}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'reviews',
-          filter: `place_id=eq.${placeId}`
-        },
-        (payload) => {
-          console.log('[ReviewList] 🔔 Real-time update:', payload.eventType, payload.new?.id || payload.old?.id);
-          
-          if (payload.eventType === 'INSERT' && payload.new) {
-            // Optimistic update: add to list immediately
-            setReviews(prev => {
-              const exists = prev.some(r => r.id === payload.new.id);
-              if (exists) {
-                console.log('[ReviewList] Review already exists, updating...');
-                return prev.map(r => r.id === payload.new.id ? { ...payload.new, source: 'supabase' } : r);
-              }
-              console.log('[ReviewList] Adding new review from realtime');
-              return [{ ...payload.new, source: 'supabase' }, ...prev];
-            });
-            
-            // Refetch in background untuk sync data lengkap (dengan profiles)
-            setTimeout(() => {
-              fetchReviews(false).catch(err => {
-                console.warn('[ReviewList] Background refetch failed:', err);
-              });
-            }, 1000);
-          } 
-          else if (payload.eventType === 'UPDATE' && payload.new) {
-            console.log('[ReviewList] Updating review from realtime');
-            setReviews(prev => prev.map(r => 
-              r.id === payload.new.id ? { ...r, ...payload.new, source: 'supabase' } : r
-            ));
-            
-            // Refetch untuk dapat profiles jika belum ada
-            setTimeout(() => {
-              fetchReviews(false).catch(() => {});
-            }, 500);
-          } 
-          else if (payload.eventType === 'DELETE' && payload.old) {
-            console.log('[ReviewList] Deleting review from realtime');
-            setReviews(prev => prev.filter(r => r.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe((status) => {
-        console.log('[ReviewList] Realtime subscription status:', status);
-      });
-    
-    channelRef.current = channel;
-    
-    return () => {
-      if (channelRef.current) {
-        try {
-          supabase.removeChannel(channelRef.current);
-          channelRef.current = null;
-        } catch {
-          // Ignore
-        }
-      }
-    };
-  }, [placeId, fetchReviews, authInitialized, user?.id, isAuthenticated]);
-  
   // Handle new review from prop
   useEffect(() => {
     if (!newReview?.id) return;
@@ -292,9 +159,9 @@ const ReviewList = ({ placeId, newReview }) => {
     setReviews(prev => {
       const exists = prev.some(r => r.id === newReview.id);
       if (exists) {
-        return prev.map(r => r.id === newReview.id ? { ...newReview, source: 'supabase' } : r);
+        return prev.map(r => r.id === newReview.id ? { ...newReview, source: 'local' } : r);
       }
-      return [{ ...newReview, source: 'supabase' }, ...prev];
+      return [{ ...newReview, source: 'local' }, ...prev];
     });
     
     // Refetch to sync (non-blocking)
@@ -334,8 +201,8 @@ const ReviewList = ({ placeId, newReview }) => {
     console.log('[ReviewList] handleUpdate called for:', updatedReview.id);
     
     // Optimistic update: update immediately
-    setReviews(prev => prev.map(r => 
-      r.id === updatedReview.id ? { ...r, ...updatedReview, source: 'supabase' } : r
+    setReviews(prev => prev.map(r =>
+      r.id === updatedReview.id ? { ...r, ...updatedReview, source: 'local' } : r
     ));
     
     // Refetch untuk sync dengan database (non-blocking)

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/authContext';
-import { supabase, updateUserProfile } from '../lib/supabase';
+import { authService } from '../services/authService';
 import { emergencyCleanup, getStorageInfo } from '../utils/storageCleanup';
 
 const Profile = () => {
@@ -40,34 +40,18 @@ const Profile = () => {
     }
   }, [user, profile, refreshProfile]);
 
-  // Load user stats
+  // Load user stats (TODO: will need /api/stats endpoint)
   useEffect(() => {
     const loadStats = async () => {
-      if (!user || !supabase) return;
+      if (!user) return;
 
       try {
-        // Get review count
-        const { count: reviewCount } = await supabase
-          .from('reviews')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id);
-
-        // Get favorite count
-        const { count: favoriteCount } = await supabase
-          .from('favorites')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id);
-
-        // Get want to visit count
-        const { count: wantToVisitCount } = await supabase
-          .from('want_to_visit')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id);
-
+        // TODO: Call /api/stats endpoint once implemented
+        // For now, show placeholder stats
         setStats({
-          reviewCount: reviewCount || 0,
-          favoriteCount: favoriteCount || 0,
-          wantToVisitCount: wantToVisitCount || 0
+          reviewCount: 0,
+          favoriteCount: 0,
+          wantToVisitCount: 0
         });
       } catch (err) {
         console.error('Error loading stats:', err);
@@ -85,19 +69,14 @@ const Profile = () => {
     setLoading(true);
 
     try {
-      // Update profile - hanya username dan full_name (nickname)
-      const { error: updateError } = await updateUserProfile(user.id, {
-        username: username.trim(),
+      // Update profile using authService
+      const result = await authService.updateProfile({
         full_name: fullName.trim(),
-        updated_at: new Date().toISOString()
+        bio: '' // Can be extended later
       });
 
-      if (updateError) {
-        if (updateError.message.includes('duplicate')) {
-          setError('Username sudah digunakan');
-        } else {
-          setError('Gagal menyimpan profil: ' + updateError.message);
-        }
+      if (!result.success) {
+        setError('Gagal menyimpan profil: ' + result.error);
       } else {
         setSuccess('Profil berhasil disimpan!');
         await refreshProfile();

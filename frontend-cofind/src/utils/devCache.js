@@ -38,17 +38,26 @@ function isCacheValid(cacheEntry) {
 
 /**
  * Check if URL is auth-related and should not be cached
+ * CRITICAL: Session dan auth endpoints harus SELALU fresh
  */
 function isAuthRelated(url) {
   if (!url) return false;
   const lowerUrl = url.toLowerCase();
-  return lowerUrl.includes('/auth/') ||
-         lowerUrl.includes('/session') ||
-         lowerUrl.includes('/profile') ||
-         lowerUrl.includes('/user') ||
-         lowerUrl.includes('supabase.co/auth/') ||
-         lowerUrl.includes('supabase.co/rest/v1/profiles') ||
-         lowerUrl.includes('supabase.co/rest/v1/reviews') && lowerUrl.includes('user_id');
+  
+  // EXTENDED: Tambahan endpoint yang auth/session sensitive
+  return (
+    lowerUrl.includes('/auth/') ||
+    lowerUrl.includes('/session') ||
+    lowerUrl.includes('/validate') ||
+    lowerUrl.includes('/refresh') ||
+    lowerUrl.includes('/profile') ||
+    lowerUrl.includes('/user') ||
+    (lowerUrl.includes('/reviews') && lowerUrl.includes('user_id')) ||
+    lowerUrl.includes('/favorites') ||
+    lowerUrl.includes('/want-to-visit') ||
+    lowerUrl.endsWith('.html') ||
+    lowerUrl.endsWith('index.html')
+  );
 }
 
 /**

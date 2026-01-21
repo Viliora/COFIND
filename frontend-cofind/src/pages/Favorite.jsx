@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/authContext';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import CoffeeShopCard from '../components/CoffeeShopCard';
+import { ensureCoffeeShopImageMap } from '../utils/coffeeShopImages';
 import { getPersonalizedRecommendations } from '../utils/personalizedRecommendations';
-// Using Supabase only
-const USE_LOCAL_DATA = false; // Set false untuk menggunakan Supabase database
+
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
 const Favorite = () => {
   const { isAuthenticated, user } = useAuth();
@@ -16,23 +16,16 @@ const Favorite = () => {
   // Load semua coffee shops untuk recommendations
   const loadAllShops = useCallback(async () => {
     try {
-      if (!isSupabaseConfigured) {
-        console.error('[Favorite] Supabase not configured');
-        return;
+      const response = await fetch(`${API_BASE}/api/coffeeshops`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
       }
-      
-      const { data: places, error } = await supabase
-        .from('places')
-        .select('*')
-        .order('rating', { ascending: false });
-      
-      if (error) {
-        console.error('[Favorite] Error loading places:', error);
-        return;
-      }
-      
-      if (places && Array.isArray(places)) {
-        setAllShops(places);
+      const payload = await response.json();
+      if (payload?.status === 'success' && Array.isArray(payload.data)) {
+        setAllShops(payload.data);
       }
     } catch (error) {
       console.error('[Favorite] Error loading all shops:', error);
@@ -43,96 +36,59 @@ const Favorite = () => {
     try {
       setIsLoading(true);
       
-      // Get list of favorite place_ids from Supabase (if authenticated) or localStorage (if guest)
-      let favoritePlaceIds = [];
-      
-      if (isAuthenticated && user?.id && isSupabaseConfigured && supabase) {
-        // Fetch from Supabase
-        try {
-          const { data, error } = await supabase
-            .from('favorites')
-            .select('place_id')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false });
-          
-          if (error) {
-            console.error('[Favorite] Error fetching favorites from Supabase:', error);
-            // Fallback to localStorage
-            favoritePlaceIds = JSON.parse(localStorage.getItem('favoriteShops') || '[]');
-          } else if (data) {
-            favoritePlaceIds = data.map(fav => fav.place_id);
-          }
-        } catch (err) {
-          console.error('[Favorite] Exception fetching favorites from Supabase:', err);
-          // Fallback to localStorage
-          favoritePlaceIds = JSON.parse(localStorage.getItem('favoriteShops') || '[]');
+      if (isAuthenticated && user?.id) {
+        const response = await fetch(`${API_BASE}/api/users/${user.id}/favorites`, {
+          method: 'GET'
+        });
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
         }
-      } else {
-        // Guest mode: use localStorage
-        favoritePlaceIds = JSON.parse(localStorage.getItem('favoriteShops') || '[]');
+        const payload = await response.json();
+        const favorites = Array.isArray(payload.favorites) ? payload.favorites : [];
+        const shops = favorites
+          .filter(fav => fav.shop)
+          .map(fav => ({
+            place_id: fav.place_id,
+            name: fav.shop.name,
+            address: fav.shop.address,
+            vicinity: fav.shop.address,
+            rating: fav.shop.rating,
+            user_ratings_total: fav.shop.user_ratings_total,
+            photos: fav.shop.photos || null
+          }));
+
+        ensureCoffeeShopImageMap(shops);
+        setFavoriteShops(shops);
+        setIsLoading(false);
+        return;
       }
-      
+
+      // Guest mode: localStorage fallback
+      const favoritePlaceIds = JSON.parse(localStorage.getItem('favoriteShops') || '[]');
       if (favoritePlaceIds.length === 0) {
         setFavoriteShops([]);
         setIsLoading(false);
         return;
       }
 
-      // Load full shop data for each favorite from Supabase
-      let shops = [];
-
-      if (!isSupabaseConfigured) {
-        console.error('[Favorite] Supabase not configured');
-        setFavoriteShops([]);
-        setIsLoading(false);
-        return;
+      const response = await fetch(`${API_BASE}/api/coffeeshops`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
       }
-
-      console.log('[Favorite] Loading shop details from Supabase...');
-
-      // Fetch all places that match the favorite place_ids
-      const { data: places, error } = await supabase
-        .from('places')
-        .select('*')
-        .in('place_id', favoritePlaceIds);
-
-      if (error) {
-        console.error('[Favorite] Error fetching places from Supabase:', error);
-        setFavoriteShops([]);
-        setIsLoading(false);
-        return;
-      }
-
-      if (places && Array.isArray(places)) {
-        shops = places.map(place => ({
-          place_id: place.place_id,
-          name: place.name,
-          address: place.address,
-          vicinity: place.address,
-          rating: place.rating,
-          user_ratings_total: place.user_ratings_total,
-          location: place.location,
-          business_status: place.business_status,
-          price_level: place.price_level,
-          // photos tidak perlu di-set karena CoffeeShopCard menggunakan getCoffeeShopImage(place_id)
-        }));
-
-        console.log(`[Favorite] Total shops loaded from Supabase: ${shops.length}`);
-        setFavoriteShops(shops);
-        setIsLoading(false);
-      } else {
-        setFavoriteShops([]);
-        setIsLoading(false);
-      }
-
-      console.log(`[Favorite] Total shops loaded: ${shops.length}`);
+      const payload = await response.json();
+      const all = Array.isArray(payload.data) ? payload.data : [];
+      const shops = all.filter(shop => favoritePlaceIds.includes(shop.place_id));
+      ensureCoffeeShopImageMap(shops);
       setFavoriteShops(shops);
       setIsLoading(false);
     } catch (err) {
       console.error('Error loading favorites:', err);
       setIsLoading(false);
     }
-  }, [isAuthenticated, user?.id, isSupabaseConfigured, supabase]);
+  }, [isAuthenticated, user?.id]);
 
   useEffect(() => {
     loadFavorites();

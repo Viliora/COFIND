@@ -1,11 +1,13 @@
 // src/App.jsx
 import React, { useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider } from './context/authContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
+import { initializeSessionFix } from './utils/sessionFix';
+// import './utils/debugSessionIssue'; // Temporarily disabled - will import manually when needed
 
 // Lazy load page components for code splitting
 // This reduces initial bundle size and improves FCP/LCP
@@ -17,11 +19,8 @@ const About = lazy(() => import('./pages/About'));
 const Login = lazy(() => import('./pages/Login'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Admin = lazy(() => import('./pages/Admin'));
-const AdminPhotoUpdate = lazy(() => import('./pages/AdminPhotoUpdate'));
 
-// Load diagnostic dan fix tools untuk photo URL
-import './utils/diagnosticPhotoUrl';
-import './utils/fixPhotoUrl';
+// Photo tools removed (local images only)
 
 /**
  * Loading fallback component - ditampilkan saat page sedang di-load
@@ -82,16 +81,6 @@ function AppContent() {
               </AdminRoute>
             } 
           />
-          <Route 
-            path="/admin/photo-update" 
-            element={
-              <AdminRoute>
-                <Suspense fallback={<PageLoadingFallback />}>
-                  <AdminPhotoUpdate />
-                </Suspense>
-              </AdminRoute>
-            } 
-          />
         </Routes>
       </main>
       
@@ -102,6 +91,11 @@ function AppContent() {
 }
 
 function App() {
+  // Initialize session fix on app load
+  useEffect(() => {
+    initializeSessionFix();
+  }, []);
+
   return (
     <AuthProvider>
       <AppContent />

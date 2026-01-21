@@ -20,6 +20,7 @@ export function registerServiceWorker() {
     
     // Aggressively unregister service worker yang mungkin sudah terdaftar
     if ('serviceWorker' in navigator) {
+      const hadController = !!navigator.serviceWorker.controller;
       navigator.serviceWorker.getRegistrations().then((registrations) => {
         registrations.forEach((registration) => {
           registration.unregister().then((success) => {
@@ -28,6 +29,13 @@ export function registerServiceWorker() {
             }
           });
         });
+      }).then(() => {
+        // If a SW was controlling the page, reload once to drop control
+        if (hadController && window.location.search.indexOf('_sw_unreg') === -1) {
+          const url = new URL(window.location);
+          url.searchParams.set('_sw_unreg', '1');
+          window.location.replace(url.toString());
+        }
       });
 
       // Aggressively clear semua cache yang mungkin ada

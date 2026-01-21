@@ -11,13 +11,11 @@ import 'swiper/css/navigation';
 import 'swiper/css/effect-fade';
 
 import OptimizedImage from './OptimizedImage';
-import { getCoffeeShopImage } from '../utils/coffeeShopImages'; // Fallback untuk local assets
-import { getValidPhotoUrl, isValidPhotoUrl } from '../utils/photoUrlHelper';
+import { ensureCoffeeShopImageMap, getCoffeeShopImage } from '../utils/coffeeShopImages';
 
 const HeroSwiper = ({ coffeeShops }) => {
   const [featuredShops, setFeaturedShops] = useState([]);
-  const [photoUrls, setPhotoUrls] = useState({}); // Track photo URLs per place_id
-  const [useFallback, setUseFallback] = useState({}); // Track which shops use fallback
+  const [photoUrls, setPhotoUrls] = useState({});
 
   useEffect(() => {
     if (coffeeShops && coffeeShops.length > 0) {
@@ -34,42 +32,25 @@ const HeroSwiper = ({ coffeeShops }) => {
 
       setFeaturedShops(shopsWithPhotos);
 
+      ensureCoffeeShopImageMap(shopsWithPhotos);
+
       // Initialize photo URLs untuk semua shops
       const urlsMap = {};
-      const fallbackMap = {};
       
       shopsWithPhotos.forEach((shop) => {
-        // Get valid photo URL - replace template if needed
-        const validPhotoUrl = getValidPhotoUrl(shop.photo_url, shop.place_id);
-        
-        if (isValidPhotoUrl(validPhotoUrl)) {
-          urlsMap[shop.place_id] = validPhotoUrl;
-          fallbackMap[shop.place_id] = false;
-        } else {
-          // Use local asset immediately if Supabase URL invalid
-          urlsMap[shop.place_id] = getCoffeeShopImage(shop.place_id || shop.name);
-          fallbackMap[shop.place_id] = true;
-        }
+        urlsMap[shop.place_id] = getCoffeeShopImage(shop.place_id || shop.name);
       });
       
       setPhotoUrls(urlsMap);
-      setUseFallback(fallbackMap);
     }
   }, [coffeeShops]);
 
   // Handle image load error - fallback to local asset
   const handleImageError = (placeId, shopName) => {
-    setUseFallback(prev => {
-      if (!prev[placeId]) { // Only fallback once
-        console.log(`[HeroSwiper] Supabase URL failed for ${shopName}, falling back to local asset`);
-        setPhotoUrls(urls => ({
-          ...urls,
-          [placeId]: getCoffeeShopImage(placeId || shopName)
-        }));
-        return { ...prev, [placeId]: true };
-      }
-      return prev;
-    });
+    setPhotoUrls(urls => ({
+      ...urls,
+      [placeId]: getCoffeeShopImage(placeId || shopName)
+    }));
   };
 
   if (featuredShops.length === 0) {
@@ -111,7 +92,7 @@ const HeroSwiper = ({ coffeeShops }) => {
           <SwiperSlide key={shop.place_id}>
             <Link to={`/shop/${shop.place_id}`} className="block relative group">
               <div className="relative w-full h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] overflow-hidden">
-                {/* Image - dari Supabase Storage dengan fallback ke local assets */}
+                {/* Image - dari local assets */}
                 <OptimizedImage
                   src={photoUrl}
                   alt={shop.name}

@@ -10,13 +10,13 @@ export default defineConfig({
     }),
   ],
   server: {
-    // Enable HMR (Hot Module Replacement)
+    // Enable HMR with auto-detection for dynamic port assignment
     hmr: {
-      overlay: true, // Tampilkan error overlay
+      protocol: 'ws',
+      host: 'localhost',
+      // Let Vite auto-detect the port
     },
-    // Port untuk development server
     port: 5173,
-    // Watch options untuk file changes
     watch: {
       usePolling: false,
       interval: 100,

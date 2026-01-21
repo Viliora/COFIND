@@ -2,8 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import OptimizedImage from './OptimizedImage';
-import { getCoffeeShopImage } from '../utils/coffeeShopImages'; // Fallback untuk local assets
-import { getValidPhotoUrl, isValidPhotoUrl } from '../utils/photoUrlHelper';
+import { getCoffeeShopImage } from '../utils/coffeeShopImages';
 import { getReviewSummary } from '../utils/reviewSummary';
  
 
@@ -12,23 +11,13 @@ const CoffeeShopCard = ({ shop }) => {
     const [isLoadingSummary, setIsLoadingSummary] = useState(false);
     const [isModalOpen] = useState(false);
     const [photoUrl, setPhotoUrl] = useState(null);
-    const [useFallback, setUseFallback] = useState(false);
 
     // Initialize photo URL
     useEffect(() => {
       if (!shop.place_id) return;
-      
-      // Try Supabase URL first
-      const validPhotoUrl = getValidPhotoUrl(shop.photo_url, shop.place_id);
-      
-      if (isValidPhotoUrl(validPhotoUrl)) {
-        setPhotoUrl(validPhotoUrl);
-        setUseFallback(false);
-      } else {
-        // Use local asset fallback immediately if Supabase URL invalid
-        setPhotoUrl(getCoffeeShopImage(shop.place_id || shop.name));
-        setUseFallback(true);
-      }
+
+      // Local-only image
+      setPhotoUrl(getCoffeeShopImage(shop.place_id || shop.name));
     }, [shop.photo_url, shop.place_id, shop.name]);
 
     // Fetch review summary saat component mount
@@ -49,11 +38,7 @@ const CoffeeShopCard = ({ shop }) => {
 
     // Handle image load error - fallback to local asset
     const handleImageError = () => {
-      if (!useFallback) {
-        console.log(`[CoffeeShopCard] Supabase URL failed for ${shop.name}, falling back to local asset`);
-        setPhotoUrl(getCoffeeShopImage(shop.place_id || shop.name));
-        setUseFallback(true);
-      }
+      setPhotoUrl(getCoffeeShopImage(shop.place_id || shop.name));
     };
 
     // Fungsi untuk mendapatkan warna placeholder berdasarkan nama shop

@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/authContext';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import CoffeeShopCard from '../components/CoffeeShopCard';
-// Using Supabase only
-const USE_LOCAL_DATA = false; // Set false untuk menggunakan Supabase database
+import { ensureCoffeeShopImageMap } from '../utils/coffeeShopImages';
+
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
 const WantToVisit = () => {
   const { isAuthenticated, user } = useAuth();
@@ -16,96 +16,57 @@ const WantToVisit = () => {
     try {
       setIsLoading(true);
       
-      // Get list of want-to-visit place_ids from Supabase (if authenticated) or localStorage (if guest)
-      let wantToVisitPlaceIds = [];
-      
-      if (isAuthenticated && user?.id && isSupabaseConfigured && supabase) {
-        // Fetch from Supabase
-        try {
-          const { data, error } = await supabase
-            .from('want_to_visit')
-            .select('place_id')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false });
-          
-          if (error) {
-            console.error('[WantToVisit] Error fetching want to visit from Supabase:', error);
-            // Fallback to localStorage
-            wantToVisitPlaceIds = JSON.parse(localStorage.getItem('wantToVisitShops') || '[]');
-          } else if (data) {
-            wantToVisitPlaceIds = data.map(wtv => wtv.place_id);
-          }
-        } catch (err) {
-          console.error('[WantToVisit] Exception fetching want to visit from Supabase:', err);
-          // Fallback to localStorage
-          wantToVisitPlaceIds = JSON.parse(localStorage.getItem('wantToVisitShops') || '[]');
+      if (isAuthenticated && user?.id) {
+        const response = await fetch(`${API_BASE}/api/users/${user.id}/want-to-visit`, {
+          method: 'GET'
+        });
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
         }
-      } else {
-        // Guest mode: use localStorage
-        wantToVisitPlaceIds = JSON.parse(localStorage.getItem('wantToVisitShops') || '[]');
+        const payload = await response.json();
+        const wantList = Array.isArray(payload.want_to_visit) ? payload.want_to_visit : [];
+        const shops = wantList
+          .filter(item => item.shop)
+          .map(item => ({
+            place_id: item.place_id,
+            name: item.shop.name,
+            address: item.shop.address,
+            vicinity: item.shop.address,
+            rating: item.shop.rating,
+            user_ratings_total: item.shop.user_ratings_total
+          }));
+        ensureCoffeeShopImageMap(shops);
+        setWantToVisitShops(shops);
+        setIsLoading(false);
+        return;
       }
-      
+
+      // Guest mode: localStorage fallback
+      const wantToVisitPlaceIds = JSON.parse(localStorage.getItem('wantToVisitShops') || '[]');
       if (wantToVisitPlaceIds.length === 0) {
         setWantToVisitShops([]);
         setIsLoading(false);
         return;
       }
 
-      // Load full shop data for each want-to-visit from Supabase
-      let shops = [];
-
-      if (!isSupabaseConfigured) {
-        console.error('[WantToVisit] Supabase not configured');
-        setWantToVisitShops([]);
-        setIsLoading(false);
-        return;
+      const response = await fetch(`${API_BASE}/api/coffeeshops`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
       }
-
-      console.log('[WantToVisit] Loading shop details from Supabase...');
-      
-      // Fetch all places that match the want-to-visit place_ids
-      const { data: places, error } = await supabase
-        .from('places')
-        .select('*')
-        .in('place_id', wantToVisitPlaceIds);
-      
-      if (error) {
-        console.error('[WantToVisit] Error fetching places from Supabase:', error);
-        setWantToVisitShops([]);
-        setIsLoading(false);
-        return;
-      }
-      
-      if (places && Array.isArray(places)) {
-        shops = places.map(place => ({
-          place_id: place.place_id,
-          name: place.name,
-          address: place.address,
-          vicinity: place.address,
-          rating: place.rating,
-          user_ratings_total: place.user_ratings_total,
-          location: place.location,
-          business_status: place.business_status,
-          price_level: place.price_level,
-          // photos tidak perlu di-set karena CoffeeShopCard menggunakan getCoffeeShopImage(place_id)
-        }));
-        
-        console.log(`[WantToVisit] Total shops loaded from Supabase: ${shops.length}`);
-        setWantToVisitShops(shops);
-        setIsLoading(false);
-      } else {
-        setWantToVisitShops([]);
-        setIsLoading(false);
-      }
-      
-      console.log(`[WantToVisit] Total shops loaded: ${shops.length}`);
+      const payload = await response.json();
+      const all = Array.isArray(payload.data) ? payload.data : [];
+      const shops = all.filter(shop => wantToVisitPlaceIds.includes(shop.place_id));
+      ensureCoffeeShopImageMap(shops);
       setWantToVisitShops(shops);
       setIsLoading(false);
     } catch (err) {
       console.error('[WantToVisit] Error loading want-to-visit:', err);
       setIsLoading(false);
     }
-  }, [isAuthenticated, user?.id, supabase, isSupabaseConfigured]); // ✅ Dependencies yang benar
+  }, [isAuthenticated, user?.id]); // ✅ Dependencies yang benar
 
   // ✅ OPTIMIZED: useEffect dengan dependency array yang benar
   useEffect(() => {

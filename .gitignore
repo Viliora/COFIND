@@ -1,13 +1,70 @@
-.env
-venv/
+# Python
 __pycache__/
-*.pyc
-node_modules/
-/frontend-cofind/dist/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Log files
-logs/
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+backups/
+*.db-journal
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
 *.log
+logs/
 
-# Cursor IDE
-.cursor/
+# Node (Frontend)
+frontend-cofind/node_modules/
+frontend-cofind/dist/
+frontend-cofind/build/
+frontend-cofind/.env
+frontend-cofind/.env.local
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+
+# Backup files
+backup_task.xml

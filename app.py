@@ -8,6 +8,11 @@ from dotenv import load_dotenv
 import time  # Tambahkan untuk penundaan
 from datetime import datetime, timedelta
 from huggingface_hub import InferenceClient
+import sqlite3  # Local database
+from auth_utils import signup, login, logout, verify_token, get_user_by_id, update_user_profile, update_password
+from review_utils import create_review, get_review, get_reviews_for_shop, get_user_reviews, update_review, delete_review, get_average_rating
+from favorites_utils import add_favorite, remove_favorite, get_user_favorites, is_favorite, get_favorite_count
+from want_to_visit_utils import add_want_to_visit, remove_want_to_visit, get_user_want_to_visit, is_want_to_visit
 
 # Load environment variables
 load_dotenv()
@@ -15,6 +20,9 @@ load_dotenv()
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app)  # Enable CORS
+
+# Database configuration
+DATABASE_PATH = os.path.join(os.path.dirname(__file__), 'cofind.db')
 
 # Configure Hugging Face Inference API (gunakan env, jangan hardcode token)
 HF_API_TOKEN = os.getenv('HF_API_TOKEN')  # Pastikan diset di environment (.env)
@@ -48,6 +56,737 @@ def test_api():
         "timestamp": time.time(),
         "hf_client_ready": hf_client is not None
     })
+
+# ============================================================================
+# COFFEE SHOPS API ENDPOINTS (SQLite Local Database)
+# ============================================================================
+
+@app.route('/api/coffeeshops', methods=['GET'])
+def get_coffeeshops():
+    """Get all coffee shops from local SQLite database"""
+    try:
+        conn = sqlite3.connect(DATABASE_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT * FROM coffee_shops ORDER BY rating DESC')
+        rows = cursor.fetchall()
+        
+        shops = [dict(row) for row in rows]
+        conn.close()
+        
+        return jsonify({
+            'status': 'success',
+            'data': shops,
+            'total': len(shops)
+        })
+    except Exception as e:
+        print(f"[ERROR] Failed to fetch coffeeshops: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@app.route('/api/coffeeshops/<int:shop_id>', methods=['GET'])
+def get_coffeeshop(shop_id):
+    """Get specific coffee shop by ID"""
+    try:
+        conn = sqlite3.connect(DATABASE_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT * FROM coffee_shops WHERE id = ?', (shop_id,))
+        row = cursor.fetchone()
+        conn.close()
+        
+        if not row:
+            return jsonify({
+                'status': 'error',
+                'message': f'Coffee shop {shop_id} not found'
+            }), 404
+        
+        return jsonify({
+            'status': 'success',
+            'data': dict(row)
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@app.route('/api/coffeeshops/place/<place_id>', methods=['GET'])
+def get_coffeeshop_by_place_id(place_id):
+    """Get specific coffee shop by place_id"""
+    try:
+        conn = sqlite3.connect(DATABASE_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        cursor.execute('SELECT * FROM coffee_shops WHERE place_id = ?', (place_id,))
+        row = cursor.fetchone()
+        conn.close()
+
+        if not row:
+            return jsonify({
+                'status': 'error',
+                'message': f'Coffee shop {place_id} not found'
+            }), 404
+
+        return jsonify({
+            'status': 'success',
+            'data': dict(row)
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@app.route('/api/coffeeshops/search', methods=['GET'])
+def search_coffeeshops():
+    """Search coffee shops by name"""
+    query = request.args.get('q', '').strip()
+    
+    if not query or len(query) < 2:
+        return jsonify({
+            'status': 'error',
+            'message': 'Search query must be at least 2 characters'
+        }), 400
+    
+    try:
+        conn = sqlite3.connect(DATABASE_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        search_term = f"%{query}%"
+        cursor.execute('''
+            SELECT * FROM coffee_shops 
+            WHERE name LIKE ? OR address LIKE ? 
+            ORDER BY rating DESC
+        ''', (search_term, search_term))
+        
+        rows = cursor.fetchall()
+        shops = [dict(row) for row in rows]
+        conn.close()
+        
+        return jsonify({
+            'status': 'success',
+            'data': shops,
+            'total': len(shops),
+            'query': query
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+# ============================================================================
+# AUTHENTICATION API ENDPOINTS (Local SQLite - No Supabase)
+# ============================================================================
+
+@app.route('/api/auth/signup', methods=['POST'])
+def auth_signup():
+    """Register new user"""
+    try:
+        data = request.get_json()
+        result = signup(
+            email=data.get('email'),
+            username=data.get('username'),
+            password=data.get('password'),
+            full_name=data.get('full_name', '')
+        )
+        
+        if result['success']:
+            return jsonify({
+                'status': 'success',
+                'user': result['user'],
+                'token': result['token'],
+                'expires_in': result['expires_in']
+            }), 201
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': result['error']
+            }), 400
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@app.route('/api/auth/login', methods=['POST'])
+def auth_login():
+    """Login user"""
+    try:
+        data = request.get_json()
+        result = login(
+            email=data.get('email'),
+            password=data.get('password')
+        )
+        
+        if result['success']:
+            return jsonify({
+                'status': 'success',
+                'user': result['user'],
+                'token': result['token'],
+                'expires_in': result['expires_in']
+            }), 200
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': result['error']
+            }), 401
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@app.route('/api/auth/verify', methods=['POST'])
+def auth_verify():
+    """Verify session token"""
+    try:
+        data = request.get_json()
+        token = data.get('token') or request.headers.get('Authorization', '').replace('Bearer ', '')
+        
+        result = verify_token(token)
+        
+        if result['valid']:
+            return jsonify({
+                'status': 'success',
+                'user': result['user']
+            }), 200
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'Invalid or expired token'
+            }), 401
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@app.route('/api/auth/logout', methods=['POST'])
+def auth_logout():
+    """Logout user"""
+    try:
+        data = request.get_json()
+        token = data.get('token') or request.headers.get('Authorization', '').replace('Bearer ', '')
+        
+        result = logout(token)
+        
+        if result['success']:
+            return jsonify({
+                'status': 'success',
+                'message': 'Logged out successfully'
+            }), 200
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': result['error']
+            }), 500
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@app.route('/api/auth/user', methods=['GET'])
+def auth_get_user():
+    """Get current user info"""
+    try:
+        token = request.headers.get('Authorization', '').replace('Bearer ', '')
+        
+        if not token:
+            return jsonify({
+                'status': 'error',
+                'message': 'No token provided'
+            }), 401
+        
+        result = verify_token(token)
+        
+        if not result['valid']:
+            return jsonify({
+                'status': 'error',
+                'message': 'Invalid or expired token'
+            }), 401
+        
+        return jsonify({
+            'status': 'success',
+            'user': result['user']
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@app.route('/api/auth/update-profile', methods=['PUT'])
+def auth_update_profile():
+    """Update user profile"""
+    try:
+        token = request.headers.get('Authorization', '').replace('Bearer ', '')
+        
+        if not token:
+            return jsonify({
+                'status': 'error',
+                'message': 'No token provided'
+            }), 401
+        
+        result = verify_token(token)
+        
+        if not result['valid']:
+            return jsonify({
+                'status': 'error',
+                'message': 'Invalid or expired token'
+            }), 401
+        
+        user_id = result['user']['id']
+        data = request.get_json()
+        
+        update_result = update_user_profile(
+            user_id=user_id,
+            full_name=data.get('full_name'),
+            bio=data.get('bio'),
+            avatar_url=data.get('avatar_url'),
+            phone=data.get('phone')
+        )
+        
+        if update_result['success']:
+            # Get updated user
+            updated_user = get_user_by_id(user_id)
+            return jsonify({
+                'status': 'success',
+                'user': updated_user
+            }), 200
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': update_result['error']
+            }), 500
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@app.route('/api/auth/update-password', methods=['PUT'])
+def auth_update_password():
+    """Update user password"""
+    try:
+        token = request.headers.get('Authorization', '').replace('Bearer ', '')
+        
+        if not token:
+            return jsonify({
+                'status': 'error',
+                'message': 'No token provided'
+            }), 401
+        
+        result = verify_token(token)
+        
+        if not result['valid']:
+            return jsonify({
+                'status': 'error',
+                'message': 'Invalid or expired token'
+            }), 401
+        
+        user_id = result['user']['id']
+        data = request.get_json()
+        
+        update_result = update_password(
+            user_id=user_id,
+            old_password=data.get('old_password'),
+            new_password=data.get('new_password')
+        )
+        
+        if update_result['success']:
+            return jsonify({
+                'status': 'success',
+                'message': 'Password updated successfully'
+            }), 200
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': update_result['error']
+            }), 400
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+# ============================================================================
+# REVIEWS API ENDPOINTS (Local SQLite)
+# ============================================================================
+
+@app.route('/api/reviews', methods=['POST'])
+def api_create_review():
+    """Create a new review"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        place_id = data.get('place_id')
+        rating = data.get('rating')
+        text = data.get('text', '')
+        
+        if not user_id or not place_id or rating is None:
+            return jsonify({'status': 'error', 'message': 'Missing required fields'}), 400
+        
+        result = create_review(user_id, place_id, rating, text)
+        
+        if result['success']:
+            return jsonify({
+                'status': 'success',
+                'review': result['review']
+            }), 201
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': result['error']
+            }), 400
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/reviews/<int:review_id>', methods=['GET'])
+def api_get_review(review_id):
+    """Get a single review"""
+    try:
+        result = get_review(review_id)
+        
+        if result['success']:
+            return jsonify({
+                'status': 'success',
+                'review': result['review']
+            }), 200
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': result['error']
+            }), 404
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/reviews/<int:review_id>', methods=['PUT'])
+def api_update_review(review_id):
+    """Update a review"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        
+        if not user_id:
+            return jsonify({'status': 'error', 'message': 'user_id required'}), 400
+        
+        result = update_review(
+            review_id,
+            user_id,
+            rating=data.get('rating'),
+            text=data.get('text'),
+            photos=data.get('photos')
+        )
+        
+        if result['success']:
+            return jsonify({
+                'status': 'success',
+                'review': result['review']
+            }), 200
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': result['error']
+            }), 400
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/reviews/<int:review_id>', methods=['DELETE'])
+def api_delete_review(review_id):
+    """Delete a review"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        
+        if not user_id:
+            return jsonify({'status': 'error', 'message': 'user_id required'}), 400
+        
+        result = delete_review(review_id, user_id)
+        
+        if result['success']:
+            return jsonify({
+                'status': 'success',
+                'message': result['message']
+            }), 200
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': result['error']
+            }), 400
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/coffeeshops/<place_id>/reviews', methods=['GET'])
+def api_get_shop_reviews(place_id):
+    """Get all reviews for a coffee shop"""
+    try:
+        limit = request.args.get('limit', 50, type=int)
+        result = get_reviews_for_shop(place_id, limit)
+        
+        if result['success']:
+            # Also get average rating
+            rating_result = get_average_rating(place_id)
+            return jsonify({
+                'status': 'success',
+                'reviews': result['reviews'],
+                'average_rating': rating_result.get('average_rating', 0),
+                'review_count': rating_result.get('review_count', 0)
+            }), 200
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': result['error']
+            }), 400
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/users/<int:user_id>/reviews', methods=['GET'])
+def api_get_user_reviews(user_id):
+    """Get all reviews by a user"""
+    try:
+        limit = request.args.get('limit', 50, type=int)
+        result = get_user_reviews(user_id, limit)
+        
+        if result['success']:
+            return jsonify({
+                'status': 'success',
+                'reviews': result['reviews']
+            }), 200
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': result['error']
+            }), 400
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# ============================================================================
+# FAVORITES API ENDPOINTS (Local SQLite)
+# ============================================================================
+
+@app.route('/api/favorites', methods=['POST'])
+def api_add_favorite():
+    """Add a coffee shop to favorites"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        place_id = data.get('place_id')
+        
+        if not user_id or not place_id:
+            return jsonify({'status': 'error', 'message': 'Missing required fields'}), 400
+        
+        result = add_favorite(user_id, place_id)
+        
+        if result['success']:
+            return jsonify({
+                'status': 'success',
+                'favorite_id': result['favorite_id'],
+                'message': result['message']
+            }), 201
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': result['error']
+            }), 400
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/favorites/<place_id>', methods=['DELETE'])
+def api_remove_favorite(place_id):
+    """Remove a coffee shop from favorites"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        
+        if not user_id:
+            return jsonify({'status': 'error', 'message': 'user_id required'}), 400
+        
+        result = remove_favorite(user_id, place_id)
+        
+        if result['success']:
+            return jsonify({
+                'status': 'success',
+                'message': result['message']
+            }), 200
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': result['error']
+            }), 400
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/users/<int:user_id>/favorites', methods=['GET'])
+def api_get_user_favorites(user_id):
+    """Get all favorites for a user"""
+    try:
+        limit = request.args.get('limit', 100, type=int)
+        result = get_user_favorites(user_id, limit)
+        
+        if result['success']:
+            return jsonify({
+                'status': 'success',
+                'favorites': result['favorites']
+            }), 200
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': result['error']
+            }), 400
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/coffeeshops/<place_id>/favorite-status', methods=['GET'])
+def api_check_favorite(place_id):
+    """Check if a coffee shop is in user's favorites"""
+    try:
+        user_id = request.args.get('user_id', type=int)
+        
+        if not user_id:
+            return jsonify({'status': 'error', 'message': 'user_id required'}), 400
+        
+        result = is_favorite(user_id, place_id)
+        
+        if result['success']:
+            return jsonify({
+                'status': 'success',
+                'is_favorite': result['is_favorite']
+            }), 200
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': result['error']
+            }), 400
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/coffeeshops/<place_id>/favorite-count', methods=['GET'])
+def api_get_favorite_count(place_id):
+    """Get number of times a coffee shop is favorited"""
+    try:
+        result = get_favorite_count(place_id)
+        
+        if result['success']:
+            return jsonify({
+                'status': 'success',
+                'count': result['count']
+            }), 200
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': result['error']
+            }), 400
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# ============================================================================
+# WANT TO VISIT API ENDPOINTS (Local SQLite)
+# ============================================================================
+
+@app.route('/api/want-to-visit', methods=['POST'])
+def api_add_want_to_visit():
+    """Add a coffee shop to want_to_visit"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        place_id = data.get('place_id')
+
+        if not user_id or not place_id:
+            return jsonify({'status': 'error', 'message': 'Missing required fields'}), 400
+
+        result = add_want_to_visit(user_id, place_id)
+
+        if result['success']:
+            return jsonify({
+                'status': 'success',
+                'want_to_visit_id': result['want_to_visit_id'],
+                'message': result['message']
+            }), 201
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': result['error']
+            }), 400
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/want-to-visit/<place_id>', methods=['DELETE'])
+def api_remove_want_to_visit(place_id):
+    """Remove a coffee shop from want_to_visit"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+
+        if not user_id:
+            return jsonify({'status': 'error', 'message': 'user_id required'}), 400
+
+        result = remove_want_to_visit(user_id, place_id)
+
+        if result['success']:
+            return jsonify({
+                'status': 'success',
+                'message': result['message']
+            }), 200
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': result['error']
+            }), 400
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/users/<int:user_id>/want-to-visit', methods=['GET'])
+def api_get_user_want_to_visit(user_id):
+    """Get all want_to_visit for a user"""
+    try:
+        limit = request.args.get('limit', 100, type=int)
+        result = get_user_want_to_visit(user_id, limit)
+
+        if result['success']:
+            return jsonify({
+                'status': 'success',
+                'want_to_visit': result['want_to_visit']
+            }), 200
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': result['error']
+            }), 400
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/coffeeshops/<place_id>/want-to-visit-status', methods=['GET'])
+def api_check_want_to_visit(place_id):
+    """Check if a coffee shop is in user's want_to_visit"""
+    try:
+        user_id = request.args.get('user_id', type=int)
+
+        if not user_id:
+            return jsonify({'status': 'error', 'message': 'user_id required'}), 400
+
+        result = is_want_to_visit(user_id, place_id)
+
+        if result['success']:
+            return jsonify({
+                'status': 'success',
+                'is_want_to_visit': result['is_want_to_visit']
+            }), 200
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': result['error']
+            }), 400
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 # Cache endpoints removed - caching disabled
 

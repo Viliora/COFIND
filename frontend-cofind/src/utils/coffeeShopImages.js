@@ -1,5 +1,4 @@
 // Utility untuk assign foto coffee shop dari asset lokal
-// Fallback untuk photo_url dari Supabase jika tidak tersedia
 
 import photo1 from '../assets/ChIJ9RWUkaZZHS4RYeuZOYAMQ-4.webp';
 import photo2 from '../assets/ChIJDcJgropZHS4RKuh8s52jy9U.webp';
@@ -35,6 +34,64 @@ const coffeeShopImages = [
   photo15,
 ];
 
+const IMAGE_MAP_KEY = 'cofind_image_map_v1';
+
+const loadImageMap = () => {
+  try {
+    const stored = localStorage.getItem(IMAGE_MAP_KEY);
+    return stored ? JSON.parse(stored) : {};
+  } catch (error) {
+    console.warn('[getCoffeeShopImage] Failed to load image map:', error);
+    return {};
+  }
+};
+
+const saveImageMap = (map) => {
+  try {
+    localStorage.setItem(IMAGE_MAP_KEY, JSON.stringify(map));
+  } catch (error) {
+    console.warn('[getCoffeeShopImage] Failed to save image map:', error);
+  }
+};
+
+const getNextAvailableIndex = (usedIndices) => {
+  for (let i = 0; i < coffeeShopImages.length; i += 1) {
+    if (!usedIndices.has(i)) {
+      return i;
+    }
+  }
+  console.warn('[getCoffeeShopImage] Image pool exhausted, reusing indexes');
+  return usedIndices.size % coffeeShopImages.length;
+};
+
+export const ensureCoffeeShopImageMap = (shops = []) => {
+  if (shops.length > coffeeShopImages.length) {
+    console.warn('[getCoffeeShopImage] Jumlah coffee shop melebihi jumlah foto .webp');
+  }
+  const map = loadImageMap();
+  const usedIndices = new Set(
+    Object.values(map).map((value) => Number(value)).filter((value) => Number.isInteger(value))
+  );
+
+  let changed = false;
+  shops.forEach((shop) => {
+    const key = shop?.place_id || shop?.name;
+    if (!key) return;
+    if (map[key] === undefined) {
+      const nextIndex = getNextAvailableIndex(usedIndices);
+      map[key] = nextIndex;
+      usedIndices.add(nextIndex);
+      changed = true;
+    }
+  });
+
+  if (changed) {
+    saveImageMap(map);
+  }
+
+  return map;
+};
+
 /**
  * Mendapatkan foto coffee shop fallback dari local assets
  * Digunakan sebagai fallback jika photo_url dari Supabase tidak tersedia
@@ -51,20 +108,11 @@ export const getCoffeeShopImage = (identifier) => {
   let imageIndex = 0;
 
   if (typeof identifier === 'string') {
-    // For place_id, use first 8 characters and convert to number
-    // place_id format: ChIJ9RWUkaZZHS4RYeuZOYAMQ-4
-    // Extract hex-like characters and mod with array length
-    const placeIdPrefix = identifier.substring(0, 8); // "ChIJ9RWU"
-    let hash = 0;
-    
-    for (let i = 0; i < placeIdPrefix.length; i++) {
-      const code = placeIdPrefix.charCodeAt(i);
-      hash = ((hash << 5) - hash) + code;
-      hash = hash & hash; // Convert to 32bit integer
+    const map = ensureCoffeeShopImageMap([{ place_id: identifier }]);
+    imageIndex = Number(map[identifier]);
+    if (!Number.isInteger(imageIndex) || imageIndex < 0) {
+      imageIndex = 0;
     }
-    
-    imageIndex = Math.abs(hash) % coffeeShopImages.length;
-    console.log(`[getCoffeeShopImage] place_id: ${identifier}, prefix: ${placeIdPrefix}, index: ${imageIndex}`);
   } else {
     // Jika identifier adalah number, gunakan langsung sebagai index
     imageIndex = (identifier || 0) % coffeeShopImages.length;

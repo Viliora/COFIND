@@ -15,9 +15,7 @@ function isAuthRelated(url) {
          lowerUrl.includes('/session') ||
          lowerUrl.includes('/profile') ||
          lowerUrl.includes('/user') ||
-         lowerUrl.includes('supabase.co/auth/') ||
-         lowerUrl.includes('supabase.co/rest/v1/profiles') ||
-         (lowerUrl.includes('supabase.co/rest/v1/reviews') && lowerUrl.includes('user_id'));
+         (lowerUrl.includes('/reviews') && lowerUrl.includes('user_id'));
 }
 
 /**

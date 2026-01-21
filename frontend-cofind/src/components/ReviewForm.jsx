@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/authContext';
-import { supabase } from '../lib/supabase';
 import { Link } from 'react-router-dom';
 
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+
 const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
-  const { user, isAuthenticated, isSupabaseConfigured } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [text, setText] = useState('');
@@ -43,83 +44,32 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
 
     try {
       console.log(`[ReviewForm] Starting review submission for user ${user.id} at place ${placeId}`);
-      
-      // Check jumlah reviews user untuk coffee shop ini
-      const { count, error: countError } = await supabase
-        .from('reviews')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('place_id', placeId);
 
-      if (countError) {
-        console.error('[ReviewForm] Error checking review count:', countError);
-        setError('Gagal memeriksa jumlah review. Silakan coba lagi.');
-        setLoading(false);
-        return;
-      }
-
-      console.log(`[ReviewForm] User has ${count || 0} existing reviews for this place`);
-
-      // Check if user sudah mencapai limit 3 reviews
-      if (count && count >= 3) {
-        setError(`Anda sudah mencapai batas maksimal 3 review untuk ${shopName}. Silakan edit atau hapus review lama jika ingin membuat review baru.`);
-        setLoading(false);
-        return;
-      }
-
-      // Insert review
-      console.log('[ReviewForm] Inserting review...');
-      const { data: reviewData, error: reviewError } = await supabase
-        .from('reviews')
-        .insert({
+      const response = await fetch(`${API_BASE}/api/reviews`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           user_id: user.id,
           place_id: placeId,
           rating,
           text: text.trim()
         })
-        .select(`
-          id,
-          user_id,
-          place_id,
-          rating,
-          text,
-          created_at,
-          updated_at,
-          profiles:user_id (username, avatar_url, full_name)
-        `)
-        .single();
+      });
 
-      if (reviewError) {
-        console.error('[ReviewForm] ❌ Error inserting review:', reviewError);
-        console.error('[ReviewForm] Error details:', {
-          message: reviewError.message,
-          code: reviewError.code,
-          details: reviewError.details,
-          hint: reviewError.hint
-        });
-        
-        if (reviewError.message?.includes('violates row-level security') || reviewError.code === '42501') {
-          setError('Anda tidak memiliki izin untuk mengirim review. Pastikan Anda sudah login dan coba lagi.');
-        } else if (reviewError.message?.includes('duplicate key') || reviewError.code === '23505') {
-          setError('Review ini sudah ada. Silakan refresh halaman.');
-        } else if (reviewError.message?.includes('null value') || reviewError.code === '23502') {
-          setError('Data review tidak lengkap. Silakan coba lagi.');
-        } else {
-          setError('Gagal menyimpan review: ' + (reviewError.message || 'Unknown error'));
-        }
+      const payload = await response.json();
+
+      if (!response.ok || payload.status !== 'success') {
+        setError(payload.message || 'Gagal menyimpan review.');
         setLoading(false);
         return;
       }
-      
+
+      const reviewData = payload.review;
       if (!reviewData || !reviewData.id) {
-        console.error('[ReviewForm] ❌ No review data returned after insert');
-        setError('Gagal mendapatkan data review setelah insert. Silakan refresh halaman dan coba lagi.');
+        setError('Gagal mendapatkan data review setelah insert.');
         setLoading(false);
         return;
       }
-
-      console.log('[ReviewForm] ✅ Review inserted successfully with ID:', reviewData.id);
-      console.log('[ReviewForm] Review data:', reviewData);
       
       // Set success message (tidak akan hilang sampai user clear form)
       setSuccess('Review berhasil dikirim!');
@@ -130,7 +80,11 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
         try {
           onReviewSubmitted({
             ...reviewData,
-            source: 'supabase'
+            profiles: {
+              username: user?.username,
+              full_name: user?.full_name
+            },
+            source: 'local'
           });
           console.log('[ReviewForm] ✅ Callback executed successfully');
         } catch (callbackError) {
@@ -160,11 +114,6 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
       setLoading(false);
     }
   };
-
-  // Show nothing if Supabase not configured
-  if (!isSupabaseConfigured) {
-    return null;
-  }
 
   // Show login prompt if not authenticated
   if (!isAuthenticated) {

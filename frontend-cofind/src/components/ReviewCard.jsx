@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/authContext';
-import { supabase } from '../lib/supabase';
+
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
 const ReviewCard = ({ review, onDelete, onUpdate }) => {
   const { user, isAuthenticated } = useAuth();
@@ -68,36 +69,25 @@ const ReviewCard = ({ review, onDelete, onUpdate }) => {
     try {
       console.log('[ReviewCard] Updating review:', review.id);
       
-      const { data: updatedReview, error } = await supabase
-        .from('reviews')
-        .update({ 
-          text: editText.trim(), 
-          rating: editRating, 
-          updated_at: new Date().toISOString() 
+      const response = await fetch(`${API_BASE}/api/reviews/${review.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          text: editText.trim(),
+          rating: editRating,
         })
-        .eq('id', review.id)
-        .eq('user_id', user.id)
-        .select(`
-          id,
-          user_id,
-          place_id,
-          rating,
-          text,
-          created_at,
-          updated_at,
-          profiles:user_id (username, avatar_url, full_name)
-        `)
-        .single();
+      });
 
-      if (error) {
-        console.error('[ReviewCard] ❌ Error updating review:', error);
-        setEditError('Gagal menyimpan perubahan: ' + (error.message || 'Unknown error'));
+      const payload = await response.json();
+      if (!response.ok || payload.status !== 'success') {
+        setEditError('Gagal menyimpan perubahan: ' + (payload.message || 'Unknown error'));
         setLoading(false);
         return;
       }
 
+      const updatedReview = payload.review;
       if (!updatedReview || !updatedReview.id) {
-        console.error('[ReviewCard] ❌ No data returned after update');
         setEditError('Gagal mendapatkan data review setelah update.');
         setLoading(false);
         return;
@@ -114,7 +104,7 @@ const ReviewCard = ({ review, onDelete, onUpdate }) => {
           onUpdate({
             ...review,
             ...updatedReview,
-            profiles: updatedReview.profiles || review.profiles
+            profiles: review.profiles
           });
           console.log('[ReviewCard] ✅ onUpdate callback executed');
         } catch (callbackError) {
@@ -147,15 +137,15 @@ const ReviewCard = ({ review, onDelete, onUpdate }) => {
     try {
       console.log('[ReviewCard] Deleting review:', review.id);
       
-      const { error } = await supabase
-        .from('reviews')
-        .delete()
-        .eq('id', review.id)
-        .eq('user_id', user.id);
+      const response = await fetch(`${API_BASE}/api/reviews/${review.id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id })
+      });
 
-      if (error) {
-        console.error('[ReviewCard] ❌ Delete error:', error);
-        alert('Gagal menghapus review: ' + (error.message || 'Unknown error'));
+      const payload = await response.json();
+      if (!response.ok || payload.status !== 'success') {
+        alert('Gagal menghapus review: ' + (payload.message || 'Unknown error'));
         setLoading(false);
         return;
       }

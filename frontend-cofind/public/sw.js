@@ -1,20 +1,21 @@
 // Service Worker untuk Cofind dengan Optimized Caching Strategy
 // UPDATE CACHE VERSION SETIAP KALI ADA PERUBAHAN PENTING
-const CACHE_VERSION = 'cofind-v5'; // Updated untuk fix HTML page caching (login page issue)
-const CACHE_SHELL = 'cofind-shell-v5';      // Navbar, Footer, App.jsx, CSS
-const CACHE_STATIC = 'cofind-static-v5';    // Images, fonts, dll
-const CACHE_CONTENT = 'cofind-content-v5';  // API responses, dynamic content (DISABLED)
-// CACHE_PAGES dihapus - HTML pages tidak di-cache untuk prevent stale pages
+const CACHE_VERSION = 'cofind-v6'; // FIX: Disabled HTML caching, session persistence
+const CACHE_SHELL = 'cofind-shell-v6';      // ONLY static JS/CSS chunks (bukan HTML)
+const CACHE_STATIC = 'cofind-static-v6';    // Images, fonts, dll
+const CACHE_CONTENT = 'cofind-content-v6';  // API responses, dynamic content (DISABLED)
+// HTML pages NOT cached - always fetch fresh untuk prevent stale login page
 
-// Application Shell Assets - di-cache pertama kali dan jarang update
+// Application Shell Assets - HANYA static assets, bukan HTML pages
+// HTML pages harus SELALU fresh untuk session persistence
 const SHELL_ASSETS = [
-  '/',
-  '/index.html',
-  '/src/main.jsx',
-  '/src/App.jsx',
-  '/src/index.css',
-  '/src/components/Navbar.jsx',
-  '/src/components/Footer.jsx',
+  // Static JS chunks (built dengan hash di filename)
+  // Auto-discovered saat build (entry-[hash].js, chunk-[hash].js)
+  
+  // Static CSS
+  // Auto-discovered dari HTML
+
+  // Note: /index.html dan / TIDAK di-cache untuk prevent stale pages with wrong session
 ];
 
 // Static Assets - tidak sering berubah
@@ -542,11 +543,9 @@ async function networkFirstStrategy(request, cacheName) {
 
 function isShellAsset(request) {
   const url = request.url;
-  return url.includes('/src/App.jsx') ||
-         url.includes('/src/main.jsx') ||
-         url.includes('/src/components/Navbar') ||
-         url.includes('/src/components/Footer') ||
-         url.includes('/src/index.css') ||
+  // Static JS chunks (built dengan hash, tidak include HTML)
+  return url.includes('.js') && !url.includes('.html') ||
+         url.includes('.css') ||
          url === self.location.origin + '/' ||
          url === self.location.origin + '/index.html';
 }
@@ -586,7 +585,19 @@ function isAPIRequest(request) {
 }
 
 function isHTMLRequest(request) {
-  return request.headers.get('accept')?.includes('text/html');
+  const url = new URL(request.url);
+  const accept = request.headers.get('accept') || '';
+  const pathname = url.pathname;
+  
+  // Check if this is an HTML page request
+  return (
+    // Browser requesting HTML pages
+    accept.includes('text/html') ||
+    // Any .html files
+    pathname.endsWith('.html') ||
+    // Routes (no extension = HTML page)
+    (!pathname.includes('.') && pathname !== '/api' && !pathname.startsWith('/api/'))
+  );
 }
 
 function isExternalImageRequest(request) {
