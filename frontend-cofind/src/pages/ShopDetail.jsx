@@ -300,7 +300,7 @@ function ShopDetail() {
             <OptimizedImage
               src={getCoffeeShopImage(shop.place_id || shop.name)}
               alt={shop.name}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover object-center"
               fallbackColor={(() => {
                 const seed = (shop.name || 'Coffee Shop').length % 10;
                 const colors = ['#4F46E5', '#7C3AED', '#EC4899', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#F97316', '#06B6D4', '#6366F1'];

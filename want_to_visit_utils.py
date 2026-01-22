@@ -19,12 +19,23 @@ def add_want_to_visit(user_id, place_id):
         if existing:
             return {'success': False, 'error': 'Already in want_to_visit'}
 
+        # Get shop_id from place_id
+        shop = cursor.execute(
+            'SELECT id FROM coffee_shops WHERE place_id = ?',
+            (place_id,)
+        ).fetchone()
+        
+        if not shop:
+            return {'success': False, 'error': 'Coffee shop not found'}
+        
+        shop_id = shop[0]
+
         cursor.execute(
             '''
-            INSERT INTO want_to_visit (user_id, place_id, added_at)
-            VALUES (?, ?, ?)
+            INSERT INTO want_to_visit (user_id, shop_id, place_id, added_at)
+            VALUES (?, ?, ?, ?)
             ''',
-            (user_id, place_id, datetime.utcnow().isoformat())
+            (user_id, shop_id, place_id, datetime.utcnow().isoformat())
         )
 
         conn.commit()

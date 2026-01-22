@@ -22,11 +22,22 @@ def add_favorite(user_id, place_id):
         if existing:
             return {'success': False, 'error': 'Already in favorites'}
         
+        # Get shop_id from place_id
+        shop = cursor.execute(
+            'SELECT id FROM coffee_shops WHERE place_id = ?',
+            (place_id,)
+        ).fetchone()
+        
+        if not shop:
+            return {'success': False, 'error': 'Coffee shop not found'}
+        
+        shop_id = shop[0]
+        
         # Add favorite
         cursor.execute('''
-            INSERT INTO favorites (user_id, place_id, created_at)
-            VALUES (?, ?, ?)
-        ''', (user_id, place_id, datetime.utcnow().isoformat()))
+            INSERT INTO favorites (user_id, shop_id, place_id, added_at)
+            VALUES (?, ?, ?, ?)
+        ''', (user_id, shop_id, place_id, datetime.utcnow().isoformat()))
         
         conn.commit()
         favorite_id = cursor.lastrowid
@@ -76,12 +87,12 @@ def get_user_favorites(user_id, limit=100):
         
         # Get favorites with shop data
         favorites = cursor.execute('''
-            SELECT f.id, f.place_id, f.created_at, 
-                   c.name, c.address, c.rating, c.photos
+            SELECT f.id, f.place_id, f.added_at, 
+                   c.name, c.address, c.rating
             FROM favorites f
             LEFT JOIN coffee_shops c ON f.place_id = c.place_id
             WHERE f.user_id = ?
-            ORDER BY f.created_at DESC
+            ORDER BY f.added_at DESC
             LIMIT ?
         ''', (user_id, limit)).fetchall()
         
@@ -96,8 +107,7 @@ def get_user_favorites(user_id, limit=100):
                 'shop': {
                     'name': fav[3],
                     'address': fav[4],
-                    'rating': fav[5],
-                    'photos': fav[6]
+                    'rating': fav[5]
                 } if fav[3] else None
             })
         

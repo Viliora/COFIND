@@ -26,18 +26,29 @@ def create_review(user_id, place_id, rating, text='', photos=None):
         if existing:
             return {'success': False, 'error': 'You already have a review for this shop'}
         
+        # Get shop_id from place_id
+        shop = cursor.execute(
+            'SELECT id FROM coffee_shops WHERE place_id = ?',
+            (place_id,)
+        ).fetchone()
+        
+        if not shop:
+            return {'success': False, 'error': 'Coffee shop not found'}
+        
+        shop_id = shop[0]
+        
         # Create review
         cursor.execute('''
-            INSERT INTO reviews (user_id, place_id, rating, text, photos, created_at, updated_at)
+            INSERT INTO reviews (user_id, shop_id, place_id, rating, review_text, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (user_id, place_id, rating, text or '', photos or '', datetime.utcnow().isoformat(), datetime.utcnow().isoformat()))
+        ''', (user_id, shop_id, place_id, rating, text or '', datetime.utcnow().isoformat(), datetime.utcnow().isoformat()))
         
         conn.commit()
         review_id = cursor.lastrowid
         
         # Return review object
         review = cursor.execute(
-            'SELECT * FROM reviews WHERE id = ?',
+            'SELECT id, user_id, shop_id, place_id, rating, review_text, created_at, updated_at FROM reviews WHERE id = ?',
             (review_id,)
         ).fetchone()
         
@@ -48,10 +59,10 @@ def create_review(user_id, place_id, rating, text='', photos=None):
             'review': {
                 'id': review[0],
                 'user_id': review[1],
-                'place_id': review[2],
-                'rating': review[3],
-                'text': review[4],
-                'photos': review[5],
+                'shop_id': review[2],
+                'place_id': review[3],
+                'rating': review[4],
+                'text': review[5],
                 'created_at': review[6],
                 'updated_at': review[7]
             }
@@ -66,7 +77,7 @@ def get_review(review_id):
         cursor = conn.cursor()
         
         review = cursor.execute(
-            'SELECT * FROM reviews WHERE id = ?',
+            'SELECT id, user_id, shop_id, place_id, rating, review_text, created_at, updated_at FROM reviews WHERE id = ?',
             (review_id,)
         ).fetchone()
         
@@ -80,10 +91,10 @@ def get_review(review_id):
             'review': {
                 'id': review[0],
                 'user_id': review[1],
-                'place_id': review[2],
-                'rating': review[3],
-                'text': review[4],
-                'photos': review[5],
+                'shop_id': review[2],
+                'place_id': review[3],
+                'rating': review[4],
+                'text': review[5],
                 'created_at': review[6],
                 'updated_at': review[7]
             }
@@ -98,7 +109,7 @@ def get_reviews_for_shop(place_id, limit=50):
         cursor = conn.cursor()
         
         reviews = cursor.execute('''
-            SELECT r.*, u.username, u.full_name
+            SELECT r.id, r.user_id, r.shop_id, r.place_id, r.rating, r.review_text, r.created_at, r.updated_at, u.username
             FROM reviews r
             LEFT JOIN users u ON r.user_id = u.id
             WHERE r.place_id = ?
@@ -113,14 +124,14 @@ def get_reviews_for_shop(place_id, limit=50):
             review_list.append({
                 'id': review[0],
                 'user_id': review[1],
-                'place_id': review[2],
-                'rating': review[3],
-                'text': review[4],
-                'photos': review[5],
+                'shop_id': review[2],
+                'place_id': review[3],
+                'rating': review[4],
+                'text': review[5],
                 'created_at': review[6],
                 'updated_at': review[7],
                 'username': review[8],
-                'full_name': review[9]
+                'full_name': review[8]  # Use username as full_name
             })
         
         return {'success': True, 'reviews': review_list}
@@ -134,7 +145,7 @@ def get_user_reviews(user_id, limit=50):
         cursor = conn.cursor()
         
         reviews = cursor.execute('''
-            SELECT * FROM reviews
+            SELECT id, user_id, shop_id, place_id, rating, review_text, created_at, updated_at FROM reviews
             WHERE user_id = ?
             ORDER BY created_at DESC
             LIMIT ?
@@ -147,10 +158,10 @@ def get_user_reviews(user_id, limit=50):
             review_list.append({
                 'id': review[0],
                 'user_id': review[1],
-                'place_id': review[2],
-                'rating': review[3],
-                'text': review[4],
-                'photos': review[5],
+                'shop_id': review[2],
+                'place_id': review[3],
+                'rating': review[4],
+                'text': review[5],
                 'created_at': review[6],
                 'updated_at': review[7]
             })
@@ -167,7 +178,7 @@ def update_review(review_id, user_id, rating=None, text=None, photos=None):
         
         # Check review exists and user owns it
         review = cursor.execute(
-            'SELECT * FROM reviews WHERE id = ?',
+            'SELECT id, user_id, shop_id, place_id, rating, review_text FROM reviews WHERE id = ?',
             (review_id,)
         ).fetchone()
         
@@ -177,19 +188,18 @@ def update_review(review_id, user_id, rating=None, text=None, photos=None):
         if review[1] != user_id:
             return {'success': False, 'error': 'Unauthorized'}
         
-        # Update review
-        new_rating = rating if rating is not None else review[3]
-        new_text = text if text is not None else review[4]
-        new_photos = photos if photos is not None else review[5]
+        # Update review (index adjusted: rating=4, review_text=5)
+        new_rating = rating if rating is not None else review[4]
+        new_text = text if text is not None else review[5]
         
         if rating is not None and not 1 <= rating <= 5:
             return {'success': False, 'error': 'Rating must be between 1 and 5'}
         
         cursor.execute('''
             UPDATE reviews
-            SET rating = ?, text = ?, photos = ?, updated_at = ?
+            SET rating = ?, review_text = ?, updated_at = ?
             WHERE id = ?
-        ''', (new_rating, new_text, new_photos, datetime.utcnow().isoformat(), review_id))
+        ''', (new_rating, new_text, datetime.utcnow().isoformat(), review_id))
         
         conn.commit()
         conn.close()

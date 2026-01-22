@@ -11,6 +11,9 @@ const CoffeeShopCard = ({ shop }) => {
     const [isLoadingSummary, setIsLoadingSummary] = useState(false);
     const [isModalOpen] = useState(false);
     const [photoUrl, setPhotoUrl] = useState(null);
+    const [aiSummary, setAiSummary] = useState(null);
+    const [isLoadingAI, setIsLoadingAI] = useState(false);
+    const [showAiBubble, setShowAiBubble] = useState(false);
 
     // Initialize photo URL
     useEffect(() => {
@@ -39,6 +42,41 @@ const CoffeeShopCard = ({ shop }) => {
     // Handle image load error - fallback to local asset
     const handleImageError = () => {
       setPhotoUrl(getCoffeeShopImage(shop.place_id || shop.name));
+    };
+
+    // Function to fetch AI summary
+    const handleAISummarize = async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (aiSummary) {
+            setShowAiBubble(!showAiBubble);
+            return;
+        }
+        
+        setIsLoadingAI(true);
+        try {
+            const response = await fetch(`http://localhost:5000/api/coffeeshops/${shop.place_id}/summarize`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                setAiSummary(data.summary);
+                setShowAiBubble(true);
+            } else {
+                setAiSummary('AI tidak tersedia saat ini');
+                setShowAiBubble(true);
+            }
+        } catch (error) {
+            console.error('[AI Summarize] Error:', error);
+            setAiSummary('Gagal memuat ringkasan AI');
+            setShowAiBubble(true);
+        } finally {
+            setIsLoadingAI(false);
+        }
     };
 
     // Fungsi untuk mendapatkan warna placeholder berdasarkan nama shop
@@ -100,12 +138,65 @@ const CoffeeShopCard = ({ shop }) => {
                         fallbackColor={getPlaceholderColor(shop.name)}
                         onError={handleImageError}
                     />
-                    {shop.rating && (
-                        <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full flex items-center shadow-lg z-10">
-                            <span className="text-yellow-500 mr-1">⭐</span>
-                            <span className="font-semibold">{shop.rating}</span>
+                    <div className="absolute top-2 left-2 right-2 flex justify-between items-start z-10">
+                        {/* AI Summarize Button */}
+                        <div className="relative">
+                            <button
+                                onClick={handleAISummarize}
+                                className="bg-white/90 backdrop-blur-sm p-1.5 rounded-full shadow-lg hover:scale-110 transition-all duration-200 hover:bg-white"
+                                title="AI Summary"
+                                disabled={isLoadingAI}
+                            >
+                                {isLoadingAI ? (
+                                    <div className="w-8 h-8 flex items-center justify-center">
+                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
+                                    </div>
+                                ) : (
+                                    <img 
+                                        src="https://img.icons8.com/3d-fluency/94/bard.png" 
+                                        alt="AI Summary" 
+                                        className="w-8 h-8"
+                                    />
+                                )}
+                            </button>
+                            
+                            {/* AI Summary Bubble */}
+                            {showAiBubble && aiSummary && (
+                                <div className="absolute top-12 left-0 w-64 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/90 dark:to-blue-900/90 backdrop-blur-sm p-3 rounded-2xl shadow-2xl border-2 border-purple-200 dark:border-purple-700 z-50 animate-fade-in">
+                                    <button
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setShowAiBubble(false);
+                                        }}
+                                        className="absolute -top-2 -right-2 bg-white dark:bg-gray-800 rounded-full p-1 shadow-lg hover:bg-red-50 transition-colors"
+                                    >
+                                        <svg className="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                    <div className="flex items-start gap-2">
+                                        <img 
+                                            src="https://img.icons8.com/3d-fluency/94/bard.png" 
+                                            alt="AI" 
+                                            className="w-6 h-6 flex-shrink-0"
+                                        />
+                                        <p className="text-sm text-gray-800 dark:text-gray-100 leading-relaxed">
+                                            {aiSummary}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
-                    )}
+                        
+                        {/* Rating Badge */}
+                        {shop.rating && (
+                            <div className="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full flex items-center shadow-lg">
+                                <span className="text-yellow-500 mr-1">⭐</span>
+                                <span className="font-semibold">{shop.rating}</span>
+                            </div>
+                        )}
+                    </div>
                 </div>
             
             <div className="p-4">

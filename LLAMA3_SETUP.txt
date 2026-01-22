@@ -1,0 +1,49 @@
+===================================================================
+SETUP HUGGING FACE LLAMA 3 - AI SUMMARIZE FITUR
+===================================================================
+
+Model yang digunakan: Meta-Llama-3-8B-Instruct
+URL: https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct
+
+LANGKAH SETUP:
+--------------
+
+1. Buat akun di Hugging Face (https://huggingface.co/join)
+
+2. Accept Agreement untuk Llama 3:
+   - Kunjungi: https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct
+   - Klik "Agree and access repository"
+   - Isi form dan submit
+
+3. Generate Access Token:
+   - Kunjungi: https://huggingface.co/settings/tokens
+   - Klik "New token"
+   - Pilih "Read" access
+   - Copy token yang dihasilkan
+
+4. Setup Environment Variable:
+   - Buat file .env di root project (cofind/)
+   - Tambahkan baris:
+     HF_API_TOKEN=your_token_here
+   - Ganti "your_token_here" dengan token dari step 3
+
+5. Restart Backend:
+   - Tutup terminal backend
+   - Jalankan: python app.py
+   - Atau: .\venv\Scripts\python.exe app.py
+
+CARA KERJA:
+-----------
+- Fitur AI Summarize HANYA berjalan saat user klik button Bard
+- Tidak auto-summarize untuk semua coffee shop di katalog
+- Menganalisis reviews + facilities + services
+- Output maksimal 100 karakter
+- Jika tidak ada reviews, fokus ke facilities dan services
+
+TROUBLESHOOTING:
+----------------
+- Error "LLM tidak tersedia" = HF_API_TOKEN belum di-set di .env
+- Error 401/403 = Token tidak valid atau belum accept agreement
+- Error 429 = Rate limit exceeded, tunggu beberapa menit
+
+===================================================================

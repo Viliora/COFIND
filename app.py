@@ -542,10 +542,13 @@ def api_get_shop_reviews(place_id):
                 'review_count': rating_result.get('review_count', 0)
             }), 200
         else:
+            # Return empty array instead of error if no reviews found
             return jsonify({
-                'status': 'error',
-                'message': result['error']
-            }), 400
+                'status': 'success',
+                'reviews': [],
+                'average_rating': 0,
+                'review_count': 0
+            }), 200
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
@@ -786,6 +789,92 @@ def api_check_want_to_visit(place_id):
                 'message': result['error']
             }), 400
     except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/coffeeshops/<place_id>/summarize', methods=['POST'])
+def api_summarize_coffeeshop(place_id):
+    """Generate AI summary for a coffee shop (max 100 chars)"""
+    try:
+        if hf_client is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'LLM tidak tersedia'
+            }), 503
+        
+        # Get coffee shop data
+        conn = sqlite3.connect('cofind.db', timeout=10)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        shop = cursor.execute(
+            'SELECT * FROM coffee_shops WHERE place_id = ?',
+            (place_id,)
+        ).fetchone()
+        
+        if not shop:
+            conn.close()
+            return jsonify({'status': 'error', 'message': 'Coffee shop not found'}), 404
+        
+        # Get reviews
+        reviews_result = get_reviews_for_shop(place_id, limit=10)
+        reviews = reviews_result.get('reviews', []) if reviews_result.get('success') else []
+        
+        # Get facilities from facilities.json
+        facilities_path = os.path.join('frontend-cofind', 'src', 'data', 'facilities.json')
+        facilities_text = ""
+        
+        if os.path.exists(facilities_path):
+            with open(facilities_path, 'r', encoding='utf-8') as f:
+                facilities_data = json.load(f)
+                shop_facilities = facilities_data.get(place_id, {})
+                if shop_facilities:
+                    amenities = shop_facilities.get('amenities', [])
+                    services = shop_facilities.get('services', [])
+                    facilities_text = f"Fasilitas: {', '.join(amenities[:5])}. Layanan: {', '.join(services[:3])}."
+        
+        # Build context for LLM
+        reviews_text = ""
+        if reviews:
+            reviews_text = " ".join([r.get('text', '')[:100] for r in reviews[:3]])
+        
+        # Create prompt untuk Llama 3
+        system_instruction = "Kamu adalah asisten yang membuat ringkasan singkat dan menarik tentang coffee shop."
+        
+        if reviews_text and facilities_text:
+            user_prompt = f"Buat ringkasan menarik maksimal 100 karakter untuk {shop['name']}. Review pelanggan: {reviews_text}. {facilities_text}"
+        elif reviews_text:
+            user_prompt = f"Buat ringkasan menarik maksimal 100 karakter untuk {shop['name']}. Review pelanggan: {reviews_text}"
+        elif facilities_text:
+            user_prompt = f"Buat ringkasan menarik maksimal 100 karakter untuk coffee shop {shop['name']}. {facilities_text}"
+        else:
+            user_prompt = f"Buat ringkasan menarik maksimal 100 karakter untuk coffee shop {shop['name']}. Fokus pada suasana dan pengalaman khas coffee shop."
+        
+        # Format untuk Llama 3 Instruct
+        prompt = f"<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n{system_instruction}<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n{user_prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
+        
+        # Call LLM dengan Meta-Llama-3-8B-Instruct
+        response = hf_client.text_generation(
+            prompt,
+            model="meta-llama/Meta-Llama-3-8B-Instruct",
+            max_new_tokens=60,
+            temperature=0.7,
+            do_sample=True
+        )
+        
+        # Clean and truncate response
+        summary = response.strip()
+        if len(summary) > 100:
+            summary = summary[:97] + "..."
+        
+        conn.close()
+        
+        return jsonify({
+            'status': 'success',
+            'summary': summary
+        }), 200
+        
+    except Exception as e:
+        print(f"[ERROR] Summarize failed: {str(e)}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 # Cache endpoints removed - caching disabled
