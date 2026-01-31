@@ -26,12 +26,23 @@ DATABASE_PATH = os.path.join(os.path.dirname(__file__), 'cofind.db')
 
 # Configure Hugging Face Inference API (gunakan env, jangan hardcode token)
 HF_API_TOKEN = os.getenv('HF_API_TOKEN')  # Pastikan diset di environment (.env)
-HF_MODEL = os.getenv('HF_MODEL', "meta-llama/Llama-3.1-8B-Instruct")  # default model
+HF_MODEL = os.getenv('HF_MODEL', "meta-llama/Meta-Llama-3-8B")  # default model
 
-# Initialize Hugging Face Inference Client (optional)
+# Initialize Hugging Face Inference Client dengan Featherless AI provider
 hf_client = None
 if HF_API_TOKEN:
-    hf_client = InferenceClient(api_key=HF_API_TOKEN)
+    try:
+        # Gunakan Featherless AI provider untuk Meta-Llama models (recommended)
+        hf_client = InferenceClient(
+            provider="featherless-ai",
+            api_key=HF_API_TOKEN
+        )
+        print("[INFO] LLM initialized with Featherless AI provider")
+    except Exception as e:
+        print(f"[WARNING] Failed to initialize Featherless AI provider: {e}")
+        # Fallback ke default client tanpa provider
+        hf_client = InferenceClient(api_key=HF_API_TOKEN)
+        print("[INFO] Using default HF client as fallback")
 else:
     print("[WARNING] HF_API_TOKEN tidak diset. Endpoint LLM akan nonaktif.")
 
@@ -63,13 +74,18 @@ def test_api():
 
 @app.route('/api/coffeeshops', methods=['GET'])
 def get_coffeeshops():
-    """Get all coffee shops from local SQLite database"""
+    """Get all coffee shops from local SQLite database (dengan jam operasional)"""
     try:
         conn = sqlite3.connect(DATABASE_PATH)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
-        cursor.execute('SELECT * FROM coffee_shops ORDER BY rating DESC')
+        cursor.execute("""
+            SELECT c.*, COALESCE(o.hours_display, '') AS opening_hours_display
+            FROM coffee_shops c
+            LEFT JOIN opening_hours o ON c.place_id = o.place_id
+            ORDER BY c.rating DESC
+        """)
         rows = cursor.fetchall()
         
         shops = [dict(row) for row in rows]
@@ -89,13 +105,18 @@ def get_coffeeshops():
 
 @app.route('/api/coffeeshops/<int:shop_id>', methods=['GET'])
 def get_coffeeshop(shop_id):
-    """Get specific coffee shop by ID"""
+    """Get specific coffee shop by ID (dengan jam operasional)"""
     try:
         conn = sqlite3.connect(DATABASE_PATH)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
-        cursor.execute('SELECT * FROM coffee_shops WHERE id = ?', (shop_id,))
+        cursor.execute("""
+            SELECT c.*, COALESCE(o.hours_display, '') AS opening_hours_display
+            FROM coffee_shops c
+            LEFT JOIN opening_hours o ON c.place_id = o.place_id
+            WHERE c.id = ?
+        """, (shop_id,))
         row = cursor.fetchone()
         conn.close()
         
@@ -117,13 +138,18 @@ def get_coffeeshop(shop_id):
 
 @app.route('/api/coffeeshops/place/<place_id>', methods=['GET'])
 def get_coffeeshop_by_place_id(place_id):
-    """Get specific coffee shop by place_id"""
+    """Get specific coffee shop by place_id (dengan jam operasional)"""
     try:
         conn = sqlite3.connect(DATABASE_PATH)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
-        cursor.execute('SELECT * FROM coffee_shops WHERE place_id = ?', (place_id,))
+        cursor.execute("""
+            SELECT c.*, COALESCE(o.hours_display, '') AS opening_hours_display
+            FROM coffee_shops c
+            LEFT JOIN opening_hours o ON c.place_id = o.place_id
+            WHERE c.place_id = ?
+        """, (place_id,))
         row = cursor.fetchone()
         conn.close()
 
@@ -793,8 +819,27 @@ def api_check_want_to_visit(place_id):
 
 @app.route('/api/coffeeshops/<place_id>/summarize', methods=['POST'])
 def api_summarize_coffeeshop(place_id):
-    """Generate AI summary for a coffee shop (max 100 chars)"""
+    """Generate AI summary for a coffee shop with 3 positive keywords (max 100 chars). Memerlukan login."""
+    conn = None
     try:
+        # Wajib login untuk fitur AI Summary
+        token = request.headers.get('Authorization', '').replace('Bearer ', '').strip()
+        if not token and request.get_json():
+            token = (request.get_json() or {}).get('token', '')
+        if not token:
+            return jsonify({
+                'status': 'error',
+                'message': 'Login diperlukan untuk menggunakan fitur AI Summary',
+                'require_login': True
+            }), 401
+        auth_result = verify_token(token)
+        if not auth_result.get('valid'):
+            return jsonify({
+                'status': 'error',
+                'message': 'Login diperlukan untuk menggunakan fitur AI Summary',
+                'require_login': True
+            }), 401
+
         if hf_client is None:
             return jsonify({
                 'status': 'error',
@@ -802,7 +847,7 @@ def api_summarize_coffeeshop(place_id):
             }), 503
         
         # Get coffee shop data
-        conn = sqlite3.connect('cofind.db', timeout=10)
+        conn = sqlite3.connect(DATABASE_PATH, timeout=10)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
@@ -812,70 +857,642 @@ def api_summarize_coffeeshop(place_id):
         ).fetchone()
         
         if not shop:
-            conn.close()
             return jsonify({'status': 'error', 'message': 'Coffee shop not found'}), 404
         
-        # Get reviews
+        shop_name = shop['name']
+        
+        # Get reviews from database only (NO fallback to reviews.json)
         reviews_result = get_reviews_for_shop(place_id, limit=10)
         reviews = reviews_result.get('reviews', []) if reviews_result.get('success') else []
         
-        # Get facilities from facilities.json
-        facilities_path = os.path.join('frontend-cofind', 'src', 'data', 'facilities.json')
-        facilities_text = ""
+        if not reviews:
+            return jsonify({
+                'status': 'success',
+                'summary': "Belum ada review. Jadilah yang pertama!",
+                'keywords': []
+            }), 200
         
-        if os.path.exists(facilities_path):
-            with open(facilities_path, 'r', encoding='utf-8') as f:
-                facilities_data = json.load(f)
-                shop_facilities = facilities_data.get(place_id, {})
-                if shop_facilities:
-                    amenities = shop_facilities.get('amenities', [])
-                    services = shop_facilities.get('services', [])
-                    facilities_text = f"Fasilitas: {', '.join(amenities[:5])}. Layanan: {', '.join(services[:3])}."
-        
-        # Build context for LLM
+        # Build full reviews text: gabungkan semua review menjadi satu variabel teks
+        # Agar lebih mudah dianalisis LLM (satu blok teks)
         reviews_text = ""
         if reviews:
-            reviews_text = " ".join([r.get('text', '')[:100] for r in reviews[:3]])
-        
-        # Create prompt untuk Llama 3
-        system_instruction = "Kamu adalah asisten yang membuat ringkasan singkat dan menarik tentang coffee shop."
-        
-        if reviews_text and facilities_text:
-            user_prompt = f"Buat ringkasan menarik maksimal 100 karakter untuk {shop['name']}. Review pelanggan: {reviews_text}. {facilities_text}"
-        elif reviews_text:
-            user_prompt = f"Buat ringkasan menarik maksimal 100 karakter untuk {shop['name']}. Review pelanggan: {reviews_text}"
-        elif facilities_text:
-            user_prompt = f"Buat ringkasan menarik maksimal 100 karakter untuk coffee shop {shop['name']}. {facilities_text}"
+            review_texts = []
+            for r in reviews[:5]:  # Max 5 reviews untuk konteks LLM
+                text = r.get('text', '').strip()
+                if text:
+                    review_texts.append(text)
+            # Gabungkan jadi satu kalimat/blok: pisah dengan spasi
+            reviews_text = " ".join(review_texts)
+            print(f"[LLM] Reviews text prepared ({len(review_texts)} reviews, 1 variable):\n{reviews_text[:200]}...")
         else:
-            user_prompt = f"Buat ringkasan menarik maksimal 100 karakter untuk coffee shop {shop['name']}. Fokus pada suasana dan pengalaman khas coffee shop."
+            print(f"[LLM] No reviews found for {place_id}")
         
-        # Format untuk Llama 3 Instruct
-        prompt = f"<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n{system_instruction}<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n{user_prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
+        # Get facilities info text
+        facilities_path = os.path.join('frontend-cofind', 'src', 'data', 'facilities.json')
+        facilities_text = ""
+        try:
+            if os.path.exists(facilities_path):
+                with open(facilities_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    shop_fac = data.get('facilities_by_place_id', {}).get(place_id, {})
+                    facilities_text = _format_facilities_to_text(shop_fac)
+        except Exception as e:
+            print(f"[WARN] Failed to load facilities: {e}")
+
+        # === STEP 1: Extract Keywords from Reviews ===
+        extracted_keywords = []
         
-        # Call LLM dengan Meta-Llama-3-8B-Instruct
-        response = hf_client.text_generation(
-            prompt,
-            model="meta-llama/Meta-Llama-3-8B-Instruct",
-            max_new_tokens=60,
-            temperature=0.7,
-            do_sample=True
+        # PRIORITAS: Jika ada review, HANYA gunakan review. JANGAN gunakan facilities untuk keyword extraction.
+        if reviews_text:
+            print(f"[LLM] Reviews found! Using ONLY reviews for keyword extraction (ignoring facilities)")
+            print(f"[LLM] Reviews text ({len(reviews_text)} chars):\n{reviews_text[:500]}...")
+            
+            # Prompt 2-langkah:
+            # 1) LLM diminta menyusun ulang setiap review menjadi SATU kalimat terstruktur per review (internal reasoning)
+            # 2) Dari kalimat-kalimat terstruktur itu, LLM mengekstrak keywords SENTIMEN POSITIF saja
+            # Output akhir TETAP hanya berupa daftar keywords, dipisah koma.
+            keyword_extraction_prompt = f"""Analisis review pelanggan berikut dan lakukan DUA LANGKAH secara berurutan (namun output akhir HANYA berupa keywords):
+1) Untuk setiap review, susun ulang menjadi SATU kalimat terstruktur yang jelas (internal, TIDAK perlu ditampilkan di output).
+   - Contoh:
+     Review asli: \"ramah ramah pelayannye, ape agik kakak kasirnye\"
+     Kalimat terstruktur: \"Pelayan dan kasirnya sangat ramah kepada pelanggan.\"
+2) Dari kumpulan kalimat terstruktur tersebut, ekstrak HANYA kata kunci yang menggambarkan KELEBIHAN atau SENTIMEN POSITIF.
+
+FOKUS PADA SENTIMEN POSITIF:
+- Abaikan keluhan atau sentimen negatif (jika ada).
+- Ambil hanya aspek positif seperti kualitas kopi, suasana, pelayanan, harga, fasilitas, dll.
+
+Review Pelanggan (teks review digabung dalam satu blok):
+{reviews_text[:1500]}
+
+⚠️ ATURAN SANGAT KETAT (WAJIB DIPATUHI):
+1. Ekstrak HANYA keywords positif yang BENAR-BENAR disebutkan EKSPLISIT di review di atas.
+2. JANGAN membuat keywords yang tidak ada di review (contoh: jika review TIDAK menyebutkan "bersih" atau "wifi", JANGAN tambahkan "bersih" atau "wifi bagus").
+3. JANGAN gunakan informasi dari luar review atau asumsi.
+4. JANGAN menambahkan keywords generic seperti "bersih", "wifi bagus", "suasana nyaman" jika TIDAK disebutkan di review.
+5. Keywords harus spesifik dan berdasarkan review yang ada (contoh: \"pelayanan ramah\", \"kopi enak\", \"harga terjangkau\", \"tempat parkir luas\", \"indoor smoking area\").
+6. Jika review menyebutkan \"ramah ramah pelayannye\" → ekstrak \"pelayanan ramah\".
+7. Jika review menyebutkan \"Kopinya enak banget dan affordable\" → ekstrak \"kopi enak\" dan \"affordable\".
+8. Jika review menyebutkan \"tempat parkir luas\" → ekstrak \"tempat parkir luas\" (BUKAN \"bersih\" atau \"wifi bagus\").
+9. Jika suatu aspek disebut oleh lebih dari satu review (misal \"kopi enak\" muncul di beberapa review), cukup tampilkan SATU kali saja.
+10. Output HANYA keywords positif yang BENAR-BENAR ADA di review, dipisah koma, TANPA penjelasan, TANPA tambahan apapun.
+
+Contoh:
+- Review: "Kopinya enak banget dan affordable, cobain dah" → kopi enak, affordable
+- Review: "ramah ramah pelayannye, ape agik kakak kasirnye" → pelayanan ramah
+- Review: "Tempatnya bersih, kopi enak, wifi bagus" → kopi enak, bersih, wifi bagus
+
+Keywords:"""
+
+            try:
+                print(f"[LLM] Step 1: Extracting keywords from reviews ONLY...")
+                keyword_response = hf_client.text_generation(
+                    keyword_extraction_prompt,
+                    model=(HF_MODEL or "meta-llama/Meta-Llama-3-8B").strip(),
+                    max_new_tokens=50,
+                    temperature=0.3,  # Lower temperature untuk lebih deterministik
+                    return_full_text=False
+                )
+                
+                # Parse keywords
+                keywords_text = keyword_response.strip().replace('"', '').replace("'", '')
+                extracted_keywords = [kw.strip().lower() for kw in keywords_text.split(',') if kw.strip()][:3]
+                print(f"[LLM] Extracted keywords from reviews: {extracted_keywords}")
+                
+            except Exception as e:
+                print(f"[LLM] Error extracting keywords from reviews: {e}")
+        
+        # === STEP 2: Fallback to Facilities.json HANYA jika TIDAK ADA REVIEW ===
+        # Jika ada review tapi keywords kurang dari 3, tetap gunakan yang ada (jangan tambah dari facilities)
+        if len(extracted_keywords) < 3:
+            if reviews_text:
+                # Ada review tapi keywords kurang - tetap gunakan yang ada, jangan tambah dari facilities
+                print(f"[LLM] Only {len(extracted_keywords)} keywords extracted from reviews. Using what we have (NOT adding from facilities to preserve review authenticity).")
+            else:
+                # Tidak ada review sama sekali - baru gunakan facilities
+                print(f"[LLM] No reviews found. Using facilities as fallback...")
+                facilities_path = os.path.join('frontend-cofind', 'src', 'data', 'facilities.json')
+                
+                if os.path.exists(facilities_path):
+                    with open(facilities_path, 'r', encoding='utf-8') as f:
+                        facilities_data = json.load(f)
+                        # FIX: Use correct path with facilities_by_place_id
+                        shop_facilities = facilities_data.get('facilities_by_place_id', {}).get(place_id, {})
+                        
+                        if shop_facilities:
+                            facilities_obj = shop_facilities.get('facilities', {})
+                            
+                            # Mapping facilities to user-friendly Indonesian keywords
+                            keyword_mapping = {
+                                # Highlights
+                                'good_coffee': 'kopi berkualitas',
+                                'good_desserts': 'dessert enak',
+                                'good_tea_selection': 'pilihan teh lengkap',
+                                'live_music': 'live music',
+                                'sports': 'ada olahraga',
+                                'live_performances': 'pertunjukan live',
+                                # Popular for
+                                'solo_dining': 'cocok solo',
+                                'good_for_working_on_laptop': 'cocok untuk kerja',
+                                'breakfast': 'sarapan enak',
+                                'lunch': 'makan siang',
+                                'dinner': 'makan malam',
+                                # Atmosphere (already in Indonesian)
+                            }
+                            
+                            # Get 1 from highlights
+                            highlights = facilities_obj.get('highlights', {})
+                            for key, value in highlights.items():
+                                if value and len(extracted_keywords) < 3:
+                                    keyword = keyword_mapping.get(key, key.replace('_', ' '))
+                                    extracted_keywords.append(keyword)
+                                    print(f"[LLM] Added keyword from highlights: {keyword}")
+                                    break
+                            
+                            # Get 1 from popular_for
+                            popular_for = facilities_obj.get('popular_for', {})
+                            for key, value in popular_for.items():
+                                if value and len(extracted_keywords) < 3:
+                                    keyword = keyword_mapping.get(key, key.replace('_', ' '))
+                                    extracted_keywords.append(keyword)
+                                    print(f"[LLM] Added keyword from popular_for: {keyword}")
+                                    break
+                            
+                            # Get 1 from atmosphere
+                            atmosphere = facilities_obj.get('atmosphere', [])
+                            if atmosphere and len(extracted_keywords) < 3:
+                                keyword = atmosphere[0]  # Already in Indonesian
+                                extracted_keywords.append(keyword)
+                                print(f"[LLM] Added keyword from atmosphere: {keyword}")
+        
+        # Ensure we have keywords (bisa kurang dari 3 jika review terbatas)
+        # Deduplikasi: jika ada dua keyword yang sama, hanya tampilkan satu
+        seen = []
+        for kw in extracted_keywords:
+            kw_lower = kw.strip().lower()
+            if kw_lower not in [s.lower() for s in seen]:
+                seen.append(kw)
+        final_keywords = seen[:3]
+        
+        # HANYA tambah generic keywords jika TIDAK ADA REVIEW sama sekali
+        # Jika ada review, gunakan keywords dari review saja (meskipun kurang dari 3)
+        if not reviews_text and len(final_keywords) < 3:
+            print(f"[LLM] No reviews, adding generic keywords to reach 3...")
+            while len(final_keywords) < 3:
+                generic_keywords = ['kopi enak', 'suasana nyaman', 'pelayanan ramah']
+                for gk in generic_keywords:
+                    if gk not in final_keywords and len(final_keywords) < 3:
+                        final_keywords.append(gk)
+        elif reviews_text and len(final_keywords) < 3:
+            print(f"[LLM] Reviews exist but only {len(final_keywords)} keywords extracted. Using review keywords only (no generic fallback).")
+        
+        print(f"[LLM] Final keywords: {final_keywords}")
+        
+        # === STEP 3: Generate Objective Summary ===
+        # Format keywords string berdasarkan jumlah keywords
+        if len(final_keywords) == 0:
+            keywords_str = "kopi enak, suasana nyaman, pelayanan ramah"  # Fallback
+        elif len(final_keywords) == 1:
+            keywords_str = final_keywords[0]
+        elif len(final_keywords) == 2:
+            keywords_str = f"{final_keywords[0]} dan {final_keywords[1]}"
+        else:
+            keywords_str = ", ".join(final_keywords[:2]) + f", dan {final_keywords[2]}"
+        
+        # System instruction SANGAT singkat agar LLM tidak meng-echo (hanya output ringkasan)
+        system_instruction = """Kamu membantu membuat satu kalimat ringkasan. Output HANYA satu kalimat, tanpa nama tempat, tanpa sapaan."""
+
+        # User prompt: hanya beri keywords, minta analisis tanpa nama
+        user_prompt = f"""Buat satu kalimat ringkasan sifat/karakter coffee shop dari keywords berikut. Jangan sebut nama coffee shop. Output HANYA satu kalimat saja.
+
+Keywords: {keywords_str}
+
+Contoh output: Interior mewah dengan area outdoor yang cozy.
+Contoh lain: Kopi enak, suasana nyaman, dan pelayanan ramah.
+
+Ringkasan (satu kalimat saja):"""
+
+        # Build prompt untuk Llama 3 format
+        prompt = (
+            f"<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n"
+            f"{system_instruction}<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n"
+            f"{user_prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
         )
+
+        summary = None
+        last_error_detail = None
+
+        try:
+            print(f"[LLM] Step 3: Generating objective summary...")
+            print(f"[LLM] Prompt length: {len(prompt)} chars")
+            
+            if hf_client and hasattr(hf_client, 'text_generation'):
+                # Use higher max_tokens for better analysis
+                # Lower temperature untuk lebih deterministik dan mengurangi echo template
+                response_text = hf_client.text_generation(
+                    prompt,
+                    model=(HF_MODEL or "meta-llama/Meta-Llama-3-8B").strip(),
+                    max_new_tokens=150,  # Increased for better analysis
+                    temperature=0.2,  # Lower temperature untuk mengurangi echo template
+                    return_full_text=False
+                )
+                
+                # Clean response
+                summary = (response_text or '').strip()
+                print(f"[LLM] Raw response from LLM: {summary[:200]}...")
+                
+                # Remove Llama template markers
+                if '<|eot_id|>' in summary:
+                    parts = summary.split('<|start_header_id|>assistant<|end_header_id|>')
+                    if len(parts) > 1:
+                        summary = parts[-1].split('<|eot_id|>')[0].strip()
+                        print(f"[LLM] After removing Llama markers: {summary[:200]}...")
+                
+                # Remove system instruction jika ikut ter-output
+                if "Kamu adalah asisten" in summary:
+                    # Hapus bagian system instruction
+                    if "Format WAJIB:" in summary:
+                        summary = summary.split("Format WAJIB:")[-1].strip()
+                    if "Kamu adalah asisten" in summary:
+                        # Cari mulai dari "Format WAJIB:" atau langsung ambil setelah system instruction
+                        lines = summary.split('\n')
+                        cleaned_lines = []
+                        skip_until_format = False
+                        for line in lines:
+                            if "Kamu adalah asisten" in line or "Format WAJIB" in line:
+                                skip_until_format = True
+                                if "Format WAJIB:" in line:
+                                    # Ambil bagian setelah "Format WAJIB:"
+                                    if 'Format WAJIB:' in line:
+                                        after_format = line.split('Format WAJIB:')[-1].strip()
+                                        if after_format and not after_format.startswith('"'):
+                                            cleaned_lines.append(after_format)
+                                continue
+                            if skip_until_format and line.strip().startswith('"'):
+                                skip_until_format = False
+                            if not skip_until_format:
+                                cleaned_lines.append(line)
+                        summary = '\n'.join(cleaned_lines).strip()
+                
+                # Remove any instruction echoing
+                if "Ringkasan:" in summary:
+                    summary = summary.split("Ringkasan:")[-1].strip()
+                
+                # Remove prompt template markers
+                if "Coffee Shop:" in summary:
+                    # Ambil hanya bagian setelah "Ringkasan:" atau langsung ambil kalimat terakhir
+                    lines = summary.split('\n')
+                    for i, line in enumerate(lines):
+                        if "Ringkasan:" in line or (i == len(lines) - 1 and line.strip() and not "Coffee Shop:" in line):
+                            summary = line.split("Ringkasan:")[-1].strip() if "Ringkasan:" in line else line.strip()
+                            break
+                
+                # Hapus baris yang mengandung prompt template
+                lines = summary.split('\n')
+                cleaned_lines = []
+                for line in lines:
+                    # Skip baris yang mengandung template markers
+                    if any(marker in line for marker in ["Coffee Shop:", "Keywords Positif:", "Buat ringkasan", "Maksimal 100 karakter", "JANGAN tambah informasi"]):
+                        continue
+                    # Skip baris yang hanya berisi system instruction
+                    if "Kamu adalah asisten" in line or "Format WAJIB" in line or "JANGAN gunakan sapaan" in line:
+                        continue
+                    cleaned_lines.append(line)
+                summary = '\n'.join(cleaned_lines).strip()
+                
+                # Ambil hanya kalimat pertama yang valid (biasanya ringkasan)
+                if '\n' in summary:
+                    first_line = summary.split('\n')[0].strip()
+                    # Pastikan ini bukan template marker
+                    if not any(marker in first_line for marker in ["Coffee Shop:", "Keywords:", "Buat ringkasan", "Format WAJIB"]):
+                        summary = first_line
+                
+                # Remove quotes if present
+                summary = summary.strip('"').strip("'").strip()
+                
+                # Final cleanup: hapus jika masih mengandung system instruction
+                if "Kamu adalah asisten" in summary or "Format WAJIB" in summary:
+                    # Coba ambil hanya bagian yang diapit tanda kutip atau kalimat terakhir
+                    import re
+                    if '"' in summary:
+                        # Ambil teks di dalam tanda kutip
+                        quoted = re.findall(r'"([^"]+)"', summary)
+                        if quoted:
+                            summary = quoted[-1].strip()
+                        else:
+                            # Ambil kalimat terakhir yang tidak mengandung template
+                            sentences = summary.split('.')
+                            for sent in reversed(sentences):
+                                sent = sent.strip()
+                                if sent and not any(marker in sent for marker in ["Kamu adalah", "Format WAJIB", "JANGAN gunakan"]):
+                                    summary = sent
+                                    break
+                    else:
+                        # Jika tidak ada tanda kutip, ambil kalimat pertama yang valid
+                        sentences = summary.split('.')
+                        for sent in sentences:
+                            sent = sent.strip()
+                            if sent and not any(marker in sent for marker in ["Kamu adalah", "Format WAJIB", "JANGAN gunakan", "Output HANYA"]):
+                                summary = sent
+                                break
+                
+                # Hapus "Coffee..." atau teks setelah keywords jika ada
+                # Pattern: "Aming Coffee adalah coffee shop yang memiliki kopi enak, affordable, dan pelayanan ramah. Coffee..."
+                # Kita ingin stop setelah keywords (setelah titik setelah keywords)
+                if summary and '.' in summary:
+                    # Split berdasarkan titik
+                    parts = summary.split('.')
+                    # Ambil hanya bagian pertama yang mengandung format yang benar
+                    if len(parts) > 1:
+                        first_part = parts[0].strip()
+                        # Cek apakah bagian pertama sudah lengkap (mengandung "adalah coffee shop yang memiliki")
+                        if "adalah coffee shop yang memiliki" in first_part or "memiliki" in first_part:
+                            summary = first_part + '.'
+                        else:
+                            # Jika tidak, ambil sampai bagian yang valid
+                            valid_parts = []
+                            for part in parts:
+                                part = part.strip()
+                                if part and not part.lower().startswith('coffee') and not any(marker in part for marker in ["Kamu adalah", "Format WAJIB"]):
+                                    valid_parts.append(part)
+                                    # Stop setelah menemukan format yang benar
+                                    if "adalah coffee shop yang memiliki" in part or "memiliki" in part:
+                                        break
+                            if valid_parts:
+                                summary = '. '.join(valid_parts) + '.'
+                
+                # Deteksi template placeholder - PRIORITAS TINGGI: cek SEBELUM cleaning lainnya
+                # Jika ada berarti LLM mengeluarkan template instruction
+                if summary and ("{Nama Coffee Shop}" in summary or "{deskripsi singkat berdasarkan keywords}" in summary or "{deskripsi" in summary or "{keywords}" in summary):
+                    print(f"[LLM] WARNING: Template placeholder detected in output: {summary}")
+                    # Coba extract dari dalam tanda kutip jika ada
+                    import re
+                    if '"' in summary:
+                        quoted = re.findall(r'"([^"]+)"', summary)
+                        if quoted:
+                            summary = quoted[-1].strip()
+                            print(f"[LLM] Extracted from quotes: {summary}")
+                            # Jika masih ada placeholder, berarti tidak ada ringkasan valid
+                            if "{Nama Coffee Shop}" in summary or "{deskripsi" in summary or "{keywords}" in summary:
+                                print(f"[LLM] ERROR: Placeholder still present after quote extraction, setting summary = None")
+                                summary = None
+                    else:
+                        # Tidak ada tanda kutip dan ada placeholder = invalid output
+                        print(f"[LLM] ERROR: No quotes found and placeholder detected, setting summary = None")
+                        summary = None
+                
+                # Final check: hapus jika masih ada system instruction di awal
+                if summary and (summary.startswith("Kamu adalah asisten") or summary.startswith("Format WAJIB")):
+                    # Coba extract dari dalam tanda kutip atau ambil setelah "adalah coffee shop"
+                    if '"' in summary:
+                        import re
+                        quoted = re.findall(r'"([^"]+)"', summary)
+                        if quoted:
+                            summary = quoted[-1].strip()
+                    elif "adalah coffee shop" in summary:
+                        # Ambil bagian setelah "adalah coffee shop"
+                        summary = summary.split("adalah coffee shop")[-1].strip()
+                        if not summary.startswith("yang"):
+                            summary = "yang memiliki" + summary
+                
+                # Final check: pastikan tidak ada template placeholder
+                if summary and ("{Nama Coffee Shop}" in summary or "{deskripsi" in summary or "{keywords}" in summary):
+                    print(f"[LLM] ERROR: Template placeholder still present after cleaning: {summary}")
+                    summary = None
+                
+                print(f"[LLM] Generated summary: {summary}")
+                
+            else:
+                # Fallback to direct API call
+                print("[LLM] InferenceClient unavailable, using direct API...")
+                API_URL = "https://router.huggingface.co/featherless-ai/v1/completions"
+                headers = {
+                    "Authorization": f"Bearer {HF_API_TOKEN}",
+                    "Content-Type": "application/json"
+                }
+                
+                payload = {
+                    "model": (HF_MODEL or "meta-llama/Meta-Llama-3-8B").strip(),
+                    "prompt": prompt,
+                    "max_tokens": 150,
+                    "temperature": 0.4
+                }
+                
+                response = requests.post(API_URL, headers=headers, json=payload, timeout=30)
+                
+                if response.ok:
+                    result = response.json()
+                    if 'choices' in result and len(result['choices']) > 0:
+                        summary = result['choices'][0].get('text', '').strip()
+                        
+                        # Clean response - sama seperti di atas (copy dari main API call)
+                        if '<|eot_id|>' in summary:
+                            parts = summary.split('<|start_header_id|>assistant<|end_header_id|>')
+                            if len(parts) > 1:
+                                summary = parts[-1].split('<|eot_id|>')[0].strip()
+                        
+                        # Remove system instruction jika ikut ter-output
+                        if "Kamu adalah asisten" in summary:
+                            if "Format WAJIB:" in summary:
+                                summary = summary.split("Format WAJIB:")[-1].strip()
+                            if "Kamu adalah asisten" in summary:
+                                lines = summary.split('\n')
+                                cleaned_lines = []
+                                skip_until_format = False
+                                for line in lines:
+                                    if "Kamu adalah asisten" in line or "Format WAJIB" in line:
+                                        skip_until_format = True
+                                        if "Format WAJIB:" in line:
+                                            after_format = line.split('Format WAJIB:')[-1].strip()
+                                            if after_format and not after_format.startswith('"'):
+                                                cleaned_lines.append(after_format)
+                                        continue
+                                    if skip_until_format and line.strip().startswith('"'):
+                                        skip_until_format = False
+                                    if not skip_until_format:
+                                        cleaned_lines.append(line)
+                                summary = '\n'.join(cleaned_lines).strip()
+                        
+                        # Remove any instruction echoing
+                        if "Ringkasan:" in summary:
+                            summary = summary.split("Ringkasan:")[-1].strip()
+                        
+                        # Remove prompt template markers
+                        if "Coffee Shop:" in summary:
+                            lines = summary.split('\n')
+                            for i, line in enumerate(lines):
+                                if "Ringkasan:" in line or (i == len(lines) - 1 and line.strip() and not "Coffee Shop:" in line):
+                                    summary = line.split("Ringkasan:")[-1].strip() if "Ringkasan:" in line else line.strip()
+                                    break
+                        
+                        # Hapus baris yang mengandung prompt template
+                        lines = summary.split('\n')
+                        cleaned_lines = []
+                        for line in lines:
+                            if any(marker in line for marker in ["Coffee Shop:", "Keywords Positif:", "Buat ringkasan", "Maksimal 100 karakter", "JANGAN tambah informasi"]):
+                                continue
+                            if "Kamu adalah asisten" in line or "Format WAJIB" in line or "JANGAN gunakan sapaan" in line:
+                                continue
+                            cleaned_lines.append(line)
+                        summary = '\n'.join(cleaned_lines).strip()
+                        
+                        # Ambil hanya kalimat pertama yang valid
+                        if '\n' in summary:
+                            first_line = summary.split('\n')[0].strip()
+                            if not any(marker in first_line for marker in ["Coffee Shop:", "Keywords:", "Buat ringkasan", "Format WAJIB"]):
+                                summary = first_line
+                        
+                        # Remove quotes if present
+                        summary = summary.strip('"').strip("'").strip()
+                        
+                        # Hapus "Coffee..." atau teks setelah keywords jika ada
+                        if summary and '.' in summary:
+                            parts = summary.split('.')
+                            if len(parts) > 1:
+                                first_part = parts[0].strip()
+                                if "adalah coffee shop yang memiliki" in first_part or ("memiliki" in first_part and "adalah" in first_part):
+                                    summary = first_part + '.'
+                        
+                        # Final cleanup: hapus jika masih mengandung system instruction
+                        if "Kamu adalah asisten" in summary or "Format WAJIB" in summary:
+                            import re
+                            if '"' in summary:
+                                quoted = re.findall(r'"([^"]+)"', summary)
+                                if quoted:
+                                    summary = quoted[-1].strip()
+                            else:
+                                sentences = summary.split('.')
+                                for sent in sentences:
+                                    sent = sent.strip()
+                                    if sent and not any(marker in sent for marker in ["Kamu adalah", "Format WAJIB", "JANGAN gunakan", "Output HANYA"]):
+                                        summary = sent
+                                        break
+                        
+                        # Deteksi template placeholder
+                        if summary and ("{Nama Coffee Shop}" in summary or "{deskripsi singkat berdasarkan keywords}" in summary or "{deskripsi" in summary):
+                            print(f"[LLM] WARNING: Template placeholder detected in fallback API output: {summary}")
+                            import re
+                            if '"' in summary:
+                                quoted = re.findall(r'"([^"]+)"', summary)
+                                if quoted:
+                                    summary = quoted[-1].strip()
+                                    if "{Nama Coffee Shop}" in summary or "{deskripsi" in summary:
+                                        summary = None
+                            else:
+                                summary = None
+                        
+                        # Final check: hapus jika masih ada system instruction di awal
+                        if summary and (summary.startswith("Kamu adalah asisten") or summary.startswith("Format WAJIB")):
+                            if '"' in summary:
+                                import re
+                                quoted = re.findall(r'"([^"]+)"', summary)
+                                if quoted:
+                                    summary = quoted[-1].strip()
+                            elif "adalah coffee shop" in summary:
+                                summary = summary.split("adalah coffee shop")[-1].strip()
+                                if not summary.startswith("yang"):
+                                    summary = "yang memiliki" + summary
+                        
+                        # Final check: pastikan tidak ada template placeholder
+                        if summary and ("{Nama Coffee Shop}" in summary or "{deskripsi" in summary or "{keywords}" in summary):
+                            print(f"[LLM] ERROR: Template placeholder still present in fallback output: {summary}")
+                            summary = None
+                    else:
+                        last_error_detail = result
+                else:
+                    last_error_detail = response.json() if response.headers.get('content-type') == 'application/json' else response.text
+                        
+        except Exception as e:
+            print(f"[LLM] Exception during summary generation: {str(e)}")
+            last_error_detail = str(e)
+
+        # Jika summary masih mengandung template placeholder atau kosong, generate fallback
+        if not summary or "{Nama Coffee Shop}" in summary or "{deskripsi" in summary or "Kamu adalah" in summary:
+            print(f"[LLM] Summary invalid or contains template placeholder. Generating fallback...")
+            # Fallback: hanya isi analisis (tanpa nama), tanpa duplikat keyword
+            if final_keywords:
+                if len(final_keywords) == 1:
+                    summary = f"{final_keywords[0]}."
+                elif len(final_keywords) == 2:
+                    summary = f"{final_keywords[0]} dan {final_keywords[1]}."
+                else:
+                    summary = ", ".join(final_keywords[:2]) + f", dan {final_keywords[2]}."
+            else:
+                summary = "Kopi enak, suasana nyaman, dan pelayanan ramah."
+            print(f"[LLM] Using fallback summary: {summary}")
         
-        # Clean and truncate response
-        summary = response.strip()
+        if not summary:
+            return jsonify({
+                'status': 'error',
+                'message': f"Gagal generate summary. Detail: {last_error_detail}"
+            }), 502
+        
+        # Hapus teks setelah keywords (seperti "Coffee...")
+        # Pattern: "{Nama} adalah coffee shop yang memiliki {keywords}. Coffee..."
+        # Kita ingin stop setelah titik setelah keywords
+        if summary and '.' in summary:
+            parts = summary.split('.')
+            # Ambil hanya bagian pertama yang mengandung format yang benar
+            if len(parts) > 1:
+                first_part = parts[0].strip()
+                # Cek apakah bagian pertama sudah lengkap (mengandung "adalah coffee shop yang memiliki")
+                if "adalah coffee shop yang memiliki" in first_part or ("memiliki" in first_part and "adalah" in first_part):
+                    summary = first_part + '.'
+                else:
+                    # Cari bagian yang valid
+                    for part in parts:
+                        part = part.strip()
+                        if part and ("adalah coffee shop yang memiliki" in part or ("memiliki" in part and "adalah" in part)):
+                            summary = part + '.'
+                            break
+        
+        # Hapus nama coffee shop dari summary jika LLM masih menyebutkannya (hanya isi analisis)
+        if summary and shop_name:
+            summary_lower = summary.lower().strip()
+            for prefix in [shop_name + " adalah", shop_name + " merupakan", shop_name + ",", shop_name]:
+                if summary_lower.startswith(prefix.lower()):
+                    summary = summary[len(prefix):].strip()
+                    if summary.startswith(",") or summary.startswith(":"):
+                        summary = summary[1:].strip()
+                    break
+            if " adalah coffee shop yang memiliki " in summary_lower:
+                idx = summary_lower.find(" yang memiliki ")
+                if idx >= 0:
+                    summary = summary[idx + len(" yang memiliki "):].strip()
+
+        # Truncate if needed (maksimal 100 karakter)
         if len(summary) > 100:
-            summary = summary[:97] + "..."
-        
-        conn.close()
+            # Potong di titik terakhir sebelum 100 karakter jika ada
+            if '.' in summary[:100]:
+                last_dot = summary[:100].rfind('.')
+                if last_dot > 50:  # Pastikan masih ada konten yang berarti
+                    summary = summary[:last_dot + 1]
+                else:
+                    summary = summary[:97] + "..."
+            else:
+                summary = summary[:97] + "..."
         
         return jsonify({
             'status': 'success',
-            'summary': summary
+            'summary': summary,
+            'keywords': final_keywords  # Added keywords field
         }), 200
         
     except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
         print(f"[ERROR] Summarize failed: {str(e)}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        print(f"[ERROR] Traceback: {error_trace}")
+        return jsonify({
+            'status': 'error', 
+            'message': f'Gagal generate summary: {str(e)}'
+        }), 500
+    finally:
+        try:
+            if conn is not None:
+                conn.close()
+        except Exception:
+            pass
 
 # Cache endpoints removed - caching disabled
 
@@ -1065,6 +1682,39 @@ IRRELEVANT_KEYWORDS = [
     'alien', 'robot', 'monster', 'hantu', 'setan', 'jin', 'peri',
 ]
 
+def _format_facilities_to_text(shop_facilities):
+    """Mengubah data facilities JSON menjadi teks deskriptif terstruktur."""
+    facilities = shop_facilities.get('facilities', {})
+    if not facilities:
+        return ""
+    
+    parts = []
+    
+    # Highlights
+    highlights = facilities.get('highlights', {})
+    active_highlights = [k.replace('_', ' ') for k, v in highlights.items() if v]
+    if active_highlights:
+        parts.append(f"Memiliki keunggulan: {', '.join(active_highlights)}.")
+        
+    # Popular For
+    popular = facilities.get('popular_for', {})
+    active_popular = [k.replace('_', ' ') for k, v in popular.items() if v]
+    if active_popular:
+        parts.append(f"Populer untuk: {', '.join(active_popular)}.")
+        
+    # Atmosphere
+    atmosphere = facilities.get('atmosphere', [])
+    if atmosphere:
+        parts.append(f"Suasana: {', '.join(atmosphere)}.")
+        
+    # Amenities
+    amenities = facilities.get('amenities', {})
+    active_amenities = [k.replace('_', ' ') for k, v in amenities.items() if v]
+    if active_amenities:
+        parts.append(f"Fasilitas tersedia: {', '.join(active_amenities)}.")
+
+    return " ".join(parts)
+
 def _filter_irrelevant_keywords(keywords):
     """
     Filter keywords yang tidak relevan dengan konteks coffee shop.
@@ -1136,7 +1786,7 @@ def _expand_keywords_with_synonyms(keywords):
 # Helper function untuk fetch coffee shops dengan REVIEWS dari file JSON lokal
 def _fetch_coffeeshops_with_reviews_from_json(location_str, max_shops=15, keywords=None):
     """
-    Fetch coffee shops DENGAN REVIEWS dari file JSON lokal (places.json dan reviews.json) untuk LLM context.
+    Fetch coffee shops DENGAN REVIEWS dari file JSON lokal (places.json) dan database (reviews) untuk LLM context.
     Reviews digunakan sebagai bukti/evidence dalam rekomendasi.
     Coffee shops diurutkan berdasarkan rating dan jumlah review untuk mendapatkan yang terbaik.
     JIKA ADA KEYWORDS: Prioritaskan coffee shop yang memiliki review relevan dengan keywords.
@@ -1154,8 +1804,6 @@ def _fetch_coffeeshops_with_reviews_from_json(location_str, max_shops=15, keywor
         
         # Path ke file JSON (relatif dari app.py di root)
         places_json_path = os.path.join('frontend-cofind', 'src', 'data', 'places.json')
-        reviews_json_path = os.path.join('frontend-cofind', 'src', 'data', 'reviews.json')
-        
         # Baca places.json
         if not os.path.exists(places_json_path):
             print(f"[JSON+REVIEWS] Error: File {places_json_path} tidak ditemukan")
@@ -1169,15 +1817,9 @@ def _fetch_coffeeshops_with_reviews_from_json(location_str, max_shops=15, keywor
             print(f"[JSON+REVIEWS] Error: Tidak ada data coffee shop di places.json")
             return "Tidak ada data coffee shop yang ditemukan."
         
-        # Baca reviews.json
-        reviews_data = {}
-        if os.path.exists(reviews_json_path):
-            with open(reviews_json_path, 'r', encoding='utf-8') as f:
-                reviews_data = json.load(f)
-        else:
-            print(f"[JSON+REVIEWS] Warning: File {reviews_json_path} tidak ditemukan, akan menggunakan data tanpa reviews")
-        
-        reviews_by_place_id = reviews_data.get('reviews_by_place_id', {})
+        # Reviews sekarang hanya dari database, tidak dari reviews.json
+        # Kita akan fetch reviews dari database saat dibutuhkan per coffee shop
+        reviews_by_place_id = {}  # Akan diisi dari database saat loop
         
         # PENTING: Jika ada keywords, prioritaskan coffee shop yang memiliki review relevan
         relevant_shops = []
@@ -1292,16 +1934,18 @@ def _fetch_coffeeshops_with_reviews_from_json(location_str, max_shops=15, keywor
             context_lines.append(f"   • Rating: {rating}/5.0 ({total_ratings} reviews)")
             context_lines.append(f"   • Google Maps: {maps_url}")
             
-            # REVIEWS - Ambil dari reviews.json (max 3 reviews per coffee shop)
-            reviews = reviews_by_place_id.get(place_id, [])
+            # REVIEWS - Ambil dari database (max 3 reviews per coffee shop)
+            reviews_result = get_reviews_for_shop(place_id, limit=3)
+            reviews = reviews_result.get('reviews', []) if reviews_result.get('success') else []
+            
             if reviews:
                 context_lines.append(f"   • Review dari Pengunjung:")
                 review_count = 0
-                for review in reviews[:3]:  # Max 3 reviews per coffee shop
+                for review in reviews:
                     review_text = review.get('text', '').strip()
                     if review_text and len(review_text) > 20:  # Min 20 karakter
                         review_rating = review.get('rating', 0)
-                        author_name = review.get('author_name', 'Anonim')
+                        author_name = review.get('username', 'Anonim')
                         
                         # Truncate review yang terlalu panjang
                         if len(review_text) > 150:
@@ -1384,27 +2028,46 @@ def llm_analyze():
         # Langkah ini akan menganalisis review data untuk mengekstrak keywords yang relevan
         print(f"[LLM] Step 1: Extracting keywords from user input based on review data...")
         
-        # Baca reviews.json untuk context ekstraksi keywords
-        reviews_json_path = os.path.join('frontend-cofind', 'src', 'data', 'reviews.json')
-        reviews_data = {}
+        # Reviews sekarang dari database, tidak dari reviews.json
+        # Untuk context ekstraksi keywords, kita akan menggunakan sample reviews dari database
         reviews_context_for_extraction = ""
         
-        if os.path.exists(reviews_json_path):
-            with open(reviews_json_path, 'r', encoding='utf-8') as f:
-                reviews_data = json.load(f)
+        # Ambil sample reviews dari database untuk context ekstraksi
+        try:
+            conn = sqlite3.connect(DATABASE_PATH, timeout=10)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
             
-            # Ambil sample reviews untuk context ekstraksi (maksimal 20 review dari berbagai coffee shop)
-            reviews_by_place_id = reviews_data.get('reviews_by_place_id', {})
-            sample_reviews = []
-            for place_id, reviews in list(reviews_by_place_id.items())[:5]:  # Ambil 5 coffee shop pertama
-                sample_reviews.extend(reviews[:4])  # 4 review per coffee shop
-                if len(sample_reviews) >= 20:
+            # Ambil maksimal 20 review terbaru dari berbagai coffee shop
+            sample_reviews_db = cursor.execute('''
+                SELECT r.place_id, r.review_text, r.rating, u.username
+                FROM reviews r
+                LEFT JOIN users u ON r.user_id = u.id
+                WHERE r.review_text IS NOT NULL AND LENGTH(r.review_text) > 20
+                ORDER BY r.created_at DESC
+                LIMIT 20
+            ''').fetchall()
+            
+            if sample_reviews_db:
+                sample_reviews = []
+                for review in sample_reviews_db:
+                    sample_reviews.append({
+                        'text': review['review_text'],
+                        'rating': review['rating'],
+                        'author_name': review['username'] or 'Anonim'
+                    })
+                
                     break
+                
+                # Buat context untuk ekstraksi keywords
+                reviews_context_for_extraction = "\n".join([
+                    f"- {review.get('text', '')}" for review in sample_reviews[:20]
+                ])
             
-            # Buat context untuk ekstraksi keywords
-            reviews_context_for_extraction = "\n".join([
-                f"- {review.get('text', '')}" for review in sample_reviews[:20]
-            ])
+            conn.close()
+        except Exception as e:
+            print(f"[WARN] Failed to load sample reviews from database for keyword extraction: {e}")
+            reviews_context_for_extraction = ""
         
         # Buat prompt untuk ekstraksi keywords berdasarkan review data
         extraction_prompt = f"""Anda adalah asisten yang ahli dalam menganalisis preferensi user berdasarkan review coffee shop yang tersedia.
@@ -2291,20 +2954,15 @@ Jika tidak ada review yang relevan, jawab: "Maaf, tidak ada coffee shop yang ses
         try:
             # Baca data untuk post-processing
             places_json_path = os.path.join('frontend-cofind', 'src', 'data', 'places.json')
-            reviews_json_path = os.path.join('frontend-cofind', 'src', 'data', 'reviews.json')
-            
-            # Baca places.json dan reviews.json
+            # Baca places.json (reviews sekarang dari database, tidak dari reviews.json)
             coffee_shops_data = []
-            reviews_by_place_id = {}
             if os.path.exists(places_json_path):
                 with open(places_json_path, 'r', encoding='utf-8') as f:
                     places_data = json.load(f)
                     coffee_shops_data = places_data.get('data', [])
             
-            if os.path.exists(reviews_json_path):
-                with open(reviews_json_path, 'r', encoding='utf-8') as f:
-                    reviews_data = json.load(f)
-                    reviews_by_place_id = reviews_data.get('reviews_by_place_id', {})
+            # Reviews akan diambil dari database saat dibutuhkan per coffee shop
+            reviews_by_place_id = {}
         except Exception as e:
             print(f"[ERROR] Failed to load data for post-processing: {e}")
             coffee_shops_data = []
@@ -2703,25 +3361,43 @@ def suggest_keywords():
                 'message': 'HF_API_TOKEN tidak dikonfigurasi. LLM suggest keywords endpoint nonaktif.'
             }), 503
         
-        # Baca reviews.json untuk context saran keywords
-        reviews_json_path = os.path.join('frontend-cofind', 'src', 'data', 'reviews.json')
-        reviews_data = {}
+        # Reviews sekarang dari database, tidak dari reviews.json
+        # Ambil sample reviews dari database untuk context saran keywords
         reviews_context_for_suggestion = ""
         
-        if os.path.exists(reviews_json_path):
-            with open(reviews_json_path, 'r', encoding='utf-8') as f:
-                reviews_data = json.load(f)
+        try:
+            conn = sqlite3.connect(DATABASE_PATH, timeout=10)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
             
-            # Ambil semua reviews untuk analisis yang lebih lengkap
-            reviews_by_place_id = reviews_data.get('reviews_by_place_id', {})
+            # Ambil maksimal 50 review terbaru untuk analisis
+            all_reviews_db = cursor.execute('''
+                SELECT r.review_text, r.rating, u.username
+                FROM reviews r
+                LEFT JOIN users u ON r.user_id = u.id
+                WHERE r.review_text IS NOT NULL AND LENGTH(r.review_text) > 20
+                ORDER BY r.created_at DESC
+                LIMIT 50
+            ''').fetchall()
+            
             all_reviews = []
-            for place_id, reviews in reviews_by_place_id.items():
-                all_reviews.extend(reviews)
+            for review in all_reviews_db:
+                all_reviews.append({
+                    'text': review['review_text'],
+                    'rating': review['rating'],
+                    'author_name': review['username'] or 'Anonim'
+                })
+            
+            conn.close()
             
             # Buat context untuk saran keywords (ambil lebih banyak review untuk analisis yang lebih baik)
-            reviews_context_for_suggestion = "\n".join([
-                f"- {review.get('text', '')}" for review in all_reviews[:50]  # Ambil 50 review untuk analisis lebih lengkap
-            ])
+            if all_reviews:
+                reviews_context_for_suggestion = "\n".join([
+                    f"- {review.get('text', '')}" for review in all_reviews[:50]  # Ambil 50 review untuk analisis lebih lengkap
+                ])
+        except Exception as e:
+            print(f"[WARN] Failed to load reviews from database for keyword suggestion: {e}")
+            reviews_context_for_suggestion = ""
         
         # Buat prompt untuk saran keywords umum berdasarkan review data
         suggestion_prompt = f"""Anda adalah asisten yang ahli dalam menganalisis review coffee shop untuk memberikan saran keywords yang sebaiknya digunakan user dalam mencari coffee shop.
@@ -2923,37 +3599,22 @@ def summarize_review():
                 'message': 'place_id cannot be empty'
             }), 400
         
-        # Baca reviews dari reviews.json
-        reviews_json_path = os.path.join('frontend-cofind', 'src', 'data', 'reviews.json')
-        reviews_data = {}
+        # Baca reviews dari database
+        reviews_result = get_reviews_for_shop(place_id, limit=10)
+        reviews = reviews_result.get('reviews', []) if reviews_result.get('success') else []
         
-        if os.path.exists(reviews_json_path):
-            with open(reviews_json_path, 'r', encoding='utf-8') as f:
-                reviews_data = json.load(f)
-        else:
+        if not reviews or len(reviews) == 0:
             return jsonify({
                 'status': 'error',
-                'message': 'File reviews.json tidak ditemukan'
+                'message': 'Tidak ada review untuk coffee shop ini di database'
             }), 404
-        
-        reviews_by_place_id = reviews_data.get('reviews_by_place_id', {})
-        shop_reviews = reviews_by_place_id.get(place_id, [])
-        
-        if not shop_reviews or len(shop_reviews) == 0:
-            return jsonify({
-                'status': 'error',
-                'message': 'Tidak ada review untuk coffee shop ini'
-            }), 404
-        
-        # Ambil maksimal 10 review terbaru untuk context
-        reviews_for_summary = shop_reviews[:10]
         
         # Format reviews untuk context
         reviews_text = []
-        for review in reviews_for_summary:
+        for review in reviews[:10]:  # Max 10 reviews
             review_text = review.get('text', '').strip()
             rating = review.get('rating', 0)
-            author = review.get('author_name', 'Anonim')
+            author = review.get('username', 'Anonim')
             if review_text and len(review_text) > 20:
                 reviews_text.append(f"- {author} ({rating}⭐): \"{review_text}\"")
         
@@ -3159,7 +3820,7 @@ def analyze_sentiment():
     {
         "place_id": "ChIJ...",
         "shop_name": "Nama Coffee Shop",
-        "reviews": [...] (optional, jika tidak ada akan dibaca dari reviews.json)
+        "reviews": [...] (optional, jika tidak ada akan dibaca dari database)
     }
     
     Response JSON:
@@ -3194,22 +3855,27 @@ def analyze_sentiment():
                 'message': 'place_id cannot be empty'
             }), 400
         
-        # Gunakan reviews dari request atau baca dari file
+        # Gunakan reviews dari request atau baca dari database
         if provided_reviews and len(provided_reviews) > 0:
             shop_reviews = provided_reviews
         else:
-            # Baca reviews dari reviews.json
-            reviews_json_path = os.path.join('frontend-cofind', 'src', 'data', 'reviews.json')
+            # Baca reviews dari database
+            reviews_result = get_reviews_for_shop(place_id, limit=50)
+            reviews_list = reviews_result.get('reviews', []) if reviews_result.get('success') else []
             
-            if os.path.exists(reviews_json_path):
-                with open(reviews_json_path, 'r', encoding='utf-8') as f:
-                    reviews_data = json.load(f)
-                reviews_by_place_id = reviews_data.get('reviews_by_place_id', {})
-                shop_reviews = reviews_by_place_id.get(place_id, [])
-            else:
+            # Convert format dari database ke format yang diharapkan
+            shop_reviews = []
+            for r in reviews_list:
+                shop_reviews.append({
+                    'text': r.get('text', ''),
+                    'rating': r.get('rating', 0),
+                    'author_name': r.get('username', 'Anonim')
+                })
+            
+            if not shop_reviews:
                 return jsonify({
                     'status': 'error',
-                    'message': 'File reviews.json tidak ditemukan'
+                    'message': 'Tidak ada review untuk coffee shop ini di database'
                 }), 404
         
         if not shop_reviews or len(shop_reviews) == 0:

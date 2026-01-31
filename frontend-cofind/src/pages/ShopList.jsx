@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import CoffeeShopCard from '../components/CoffeeShopCard';
 import HeroSwiper from '../components/HeroSwiper';
+import CoffeeShopMap from '../components/CoffeeShopMap';
 import { preloadFeaturedImages } from '../utils/imagePreloader';
 import { ensureCoffeeShopImageMap } from '../utils/coffeeShopImages';
 import { getRecentlyViewedWithDetails } from '../utils/recentlyViewed';
@@ -587,6 +588,11 @@ export default function ShopList() {
               ))}
             </div>
           </div>
+        )}
+
+        {/* Coffee Shop Map - Tampilkan di atas judul All Coffee Shops */}
+        {!error && !isLoading && coffeeShops.length > 0 && !searchTerm && (
+          <CoffeeShopMap coffeeShops={coffeeShops} />
         )}
 
         <div className="flex items-center justify-between mb-4 sm:mb-6 flex-wrap gap-2">

@@ -92,11 +92,13 @@ function ShopDetail() {
               address: detail.address,
               rating: detail.rating,
               user_ratings_total: detail.user_ratings_total,
+              total_reviews: detail.total_reviews ?? detail.user_ratings_total,
               price_level: detail.price_level || null,
               location: detail.location || null,
               photos: [],
               business_status: detail.business_status || null,
               map_embed_url: detail.map_embed_url || null,
+              opening_hours_display: detail.opening_hours_display ?? '',
             };
 
             setShop(normalized);
@@ -336,6 +338,17 @@ function ShopDetail() {
             <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300 break-words flex-1">
               {shop.address}
             </p>
+          </div>
+
+          {/* Jam Operasional */}
+          <div className="flex items-start gap-3 p-4 bg-amber-50/50 dark:bg-amber-900/10 rounded-lg border border-amber-100 dark:border-amber-900/30">
+            <span className="text-lg flex-shrink-0" aria-hidden>🕐</span>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Jam Operasional</p>
+              <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300 whitespace-pre-line">
+                {shop.opening_hours_display || 'Jam operasional belum diisi'}
+              </p>
+            </div>
           </div>
 
           {/* Kontak & Website */}
