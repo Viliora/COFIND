@@ -13,6 +13,7 @@ from auth_utils import signup, login, logout, verify_token, get_user_by_id, upda
 from review_utils import create_review, get_review, get_reviews_for_shop, get_user_reviews, update_review, delete_review, get_average_rating
 from favorites_utils import add_favorite, remove_favorite, get_user_favorites, is_favorite, get_favorite_count
 from want_to_visit_utils import add_want_to_visit, remove_want_to_visit, get_user_want_to_visit, is_want_to_visit
+from preference_suggestions_utils import create_preference_suggestion
 
 # Load environment variables
 load_dotenv()
@@ -814,6 +815,47 @@ def api_check_want_to_visit(place_id):
                 'status': 'error',
                 'message': result['error']
             }), 400
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# ============================================================================
+# PREFERENCE SUGGESTIONS (saran preferensi - hanya user login)
+# ============================================================================
+
+@app.route('/api/preference-suggestions', methods=['POST'])
+def api_create_preference_suggestion():
+    """Simpan saran preferensi. Memerlukan login."""
+    try:
+        token = request.headers.get('Authorization', '').replace('Bearer ', '').strip()
+        if not token:
+            return jsonify({
+                'status': 'error',
+                'message': 'Silakan login terlebih dahulu untuk mengirim saran preferensi',
+                'require_login': True
+            }), 401
+
+        result = verify_token(token)
+        if not result.get('valid') or not result.get('user'):
+            return jsonify({
+                'status': 'error',
+                'message': 'Sesi tidak valid. Silakan login kembali.',
+                'require_login': True
+            }), 401
+
+        user_id = result['user']['id']
+        data = request.get_json() or {}
+        preference_text = data.get('preference_text', '').strip()
+        reason_text = data.get('reason_text', '').strip()
+
+        out = create_preference_suggestion(user_id, preference_text, reason_text)
+        if not out['success']:
+            return jsonify({'status': 'error', 'message': out['error']}), 400
+
+        return jsonify({
+            'status': 'success',
+            'message': out['message'],
+            'id': out['id']
+        }), 201
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
 

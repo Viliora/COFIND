@@ -1,20 +1,23 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import CoffeeShopCard from '../components/CoffeeShopCard';
 import HeroSwiper from '../components/HeroSwiper';
 import CoffeeShopMap from '../components/CoffeeShopMap';
+import CoffeeShopRadiusMap from '../components/CoffeeShopRadiusMap';
 import { preloadFeaturedImages } from '../utils/imagePreloader';
 import { ensureCoffeeShopImageMap } from '../utils/coffeeShopImages';
 import { getRecentlyViewedWithDetails } from '../utils/recentlyViewed';
 import heroBgImage from '../assets/1R modern cafe 1.5.jpg';
 import { useAuth } from '../context/authContext';
+import { authService } from '../services/authService';
 
 // API Configuration
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
 export default function ShopList() {
   const [searchParams] = useSearchParams();
-  const { loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const { loading: authLoading, isAuthenticated, user } = useAuth();
   const [coffeeShops, setCoffeeShops] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -24,6 +27,21 @@ export default function ShopList() {
   const [selectedPills, setSelectedPills] = useState([]);
   const featuredScrollRef = useRef(null);
   const hasLoadedRef = useRef(false);
+
+  // Modal saran preferensi
+  const [showSuggestModal, setShowSuggestModal] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [preferenceInput, setPreferenceInput] = useState('');
+  const [reasonInput, setReasonInput] = useState('');
+  const [submitLoading, setSubmitLoading] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState('');
+  const [submitError, setSubmitError] = useState('');
+
+  // Lokasi saat ini & radius dalam meter (untuk katalog "coffee shop dalam radius")
+  const [userLocation, setUserLocation] = useState(null);
+  const [radiusMeters, setRadiusMeters] = useState(2000);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState(null);
 
   // Update search term from URL params
   useEffect(() => {
@@ -248,6 +266,65 @@ export default function ShopList() {
     { label: '🌙 24 jam', value: '24 jam' },
   ];
 
+  // Jarak Haversine (km) antara dua koordinat
+  const haversineKm = (lat1, lng1, lat2, lng2) => {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  // Coffee shop dalam radius (hanya ada setelah user dapat lokasi, radius dalam meter)
+  const shopsInRadius = useMemo(() => {
+    if (!userLocation || !coffeeShops.length) return [];
+    const radiusKm = radiusMeters / 1000;
+    return coffeeShops
+      .filter(shop => shop.latitude != null && shop.longitude != null)
+      .map(shop => ({
+        ...shop,
+        _distanceKm: haversineKm(
+          userLocation.lat,
+          userLocation.lng,
+          shop.latitude,
+          shop.longitude
+        )
+      }))
+      .filter(shop => shop._distanceKm <= radiusKm)
+      .sort((a, b) => a._distanceKm - b._distanceKm);
+  }, [coffeeShops, userLocation, radiusMeters]);
+
+  // Ambil lokasi saat ini (Browser Geolocation API)
+  const getCurrentLocation = () => {
+    setLocationError(null);
+    setLocationLoading(true);
+    if (!navigator.geolocation) {
+      setLocationError('Browser tidak mendukung geolokasi.');
+      setLocationLoading(false);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setLocationError(null);
+        setLocationLoading(false);
+      },
+      (err) => {
+        setLocationError(
+          err.code === 1
+            ? 'Akses lokasi ditolak. Izinkan lokasi di pengaturan browser.'
+            : 'Tidak dapat mengambil lokasi. Coba lagi.'
+        );
+        setLocationLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  };
+
   // Handle pill click - toggle selection (max 3)
   const handlePillClick = (pillValue) => {
     setSelectedPills(prev => {
@@ -264,6 +341,72 @@ export default function ShopList() {
         }
       }
     });
+  };
+
+  // Buka modal saran preferensi
+  const handleOpenSuggestModal = () => {
+    setSubmitSuccess('');
+    setSubmitError('');
+    setPreferenceInput('');
+    setReasonInput('');
+    setShowSuggestModal(true);
+  };
+
+  // Tutup modal saran preferensi
+  const handleCloseSuggestModal = () => {
+    setShowSuggestModal(false);
+    setSubmitSuccess('');
+    setSubmitError('');
+  };
+
+  // Submit saran preferensi (hanya jika sudah login)
+  const handleSuggestSubmit = async (e) => {
+    e.preventDefault();
+    if (!isAuthenticated || !user?.id) {
+      setShowLoginPrompt(true);
+      return;
+    }
+    setSubmitError('');
+    setSubmitSuccess('');
+    const pref = preferenceInput.trim();
+    const reason = reasonInput.trim();
+    if (!pref) {
+      setSubmitError('Preferensi tidak boleh kosong.');
+      return;
+    }
+    if (!reason) {
+      setSubmitError('Alasan tidak boleh kosong.');
+      return;
+    }
+    setSubmitLoading(true);
+    try {
+      const token = authService.getToken();
+      const res = await fetch(`${API_BASE}/api/preference-suggestions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ preference_text: pref, reason_text: reason }),
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        setSubmitSuccess('Saran preferensi berhasil disimpan. Terima kasih!');
+        setPreferenceInput('');
+        setReasonInput('');
+        setTimeout(() => {
+          setShowSuggestModal(false);
+          setSubmitSuccess('');
+        }, 1500);
+      } else {
+        setSubmitError(data.message || 'Gagal menyimpan.');
+        if (data.require_login) setShowLoginPrompt(true);
+      }
+    } catch (err) {
+      setSubmitError(err.message || 'Gagal mengirim. Coba lagi.');
+    } finally {
+      setSubmitLoading(false);
+    }
   };
 
   // Filter coffee shops berdasarkan selected pills
@@ -389,7 +532,7 @@ export default function ShopList() {
                 Pilih maksimal 3 preferensi untuk menemukan coffee shop yang sesuai
               </p>
             </div>
-            <div className="flex flex-wrap gap-2 sm:gap-3">
+            <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
               {recommendationFields.map((field) => {
                 const isSelected = selectedPills.includes(field.value);
                 const isDisabled = !isSelected && selectedPills.length >= 3;
@@ -419,6 +562,14 @@ export default function ShopList() {
                   </button>
                 );
               })}
+              <button
+                type="button"
+                onClick={handleOpenSuggestModal}
+                className="px-3 sm:px-4 py-2 rounded-full text-sm font-medium bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 border border-dashed border-indigo-400 dark:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all duration-200"
+                title="Sarankan preferensi yang kamu butuhkan"
+              >
+                + Sarankan preferensi
+              </button>
             </div>
             {selectedPills.length > 0 && (
               <div className="mt-3 flex items-center gap-2">
@@ -429,6 +580,134 @@ export default function ShopList() {
                   Hapus semua filter
                 </button>
               </div>
+            )}
+
+            {/* Modal: Ingin menyarankan preferensimu? */}
+            {showSuggestModal && (
+              <>
+                <div
+                  className="fixed inset-0 bg-black/50 z-[100]"
+                  aria-hidden="true"
+                  onClick={handleCloseSuggestModal}
+                />
+                <div
+                  className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(90vw,420px)] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-2xl shadow-2xl z-[101]"
+                  role="dialog"
+                  aria-labelledby="suggest-modal-title"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="p-4 sm:p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 id="suggest-modal-title" className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                        Ingin menyarankan preferensimu?
+                      </h2>
+                      <button
+                        type="button"
+                        onClick={handleCloseSuggestModal}
+                        className="p-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        aria-label="Tutup"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                    <form onSubmit={handleSuggestSubmit} className="space-y-4">
+                      <div>
+                        <label htmlFor="preference-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Apa preferensi yang kamu perlu/butuhkan?
+                        </label>
+                        <input
+                          id="preference-input"
+                          type="text"
+                          value={preferenceInput}
+                          onChange={(e) => setPreferenceInput(e.target.value)}
+                          placeholder="Contoh: area smoking, tempat kerja kelompok"
+                          className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="reason-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Alasan preferensimu perlu dipertimbangkan
+                        </label>
+                        <textarea
+                          id="reason-input"
+                          value={reasonInput}
+                          onChange={(e) => setReasonInput(e.target.value)}
+                          placeholder="Jelaskan mengapa preferensi ini penting untuk kamu"
+                          rows={3}
+                          className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                        />
+                      </div>
+                      {submitError && (
+                        <p className="text-sm text-red-600 dark:text-red-400">{submitError}</p>
+                      )}
+                      {submitSuccess && (
+                        <p className="text-sm text-green-600 dark:text-green-400">{submitSuccess}</p>
+                      )}
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          type="submit"
+                          disabled={submitLoading}
+                          className="flex-1 px-4 py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {submitLoading ? 'Menyimpan...' : 'Simpan'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCloseSuggestModal}
+                          className="px-4 py-2 text-sm font-medium rounded-lg bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
+                        >
+                          Batal
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Popup: arahkan login saat guest mengirim saran */}
+            {showLoginPrompt && (
+              <>
+                <div
+                  className="fixed inset-0 bg-black/40 z-[102]"
+                  aria-hidden="true"
+                  onClick={() => setShowLoginPrompt(false)}
+                />
+                <div
+                  className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(90vw,320px)] bg-white dark:bg-gray-800 border-2 border-indigo-200 dark:border-indigo-700 rounded-2xl shadow-2xl p-4 z-[103]"
+                  role="alertdialog"
+                  aria-labelledby="login-prompt-title"
+                  aria-describedby="login-prompt-desc"
+                >
+                  <p id="login-prompt-title" className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
+                    Perlu login
+                  </p>
+                  <p id="login-prompt-desc" className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                    Silakan login terlebih dahulu untuk mengirim saran preferensi.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowLoginPrompt(false);
+                        navigate('/login');
+                      }}
+                      className="flex-1 px-3 py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+                    >
+                      Login
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowLoginPrompt(false)}
+                      className="px-3 py-2 text-sm font-medium rounded-lg bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
+                    >
+                      Tutup
+                    </button>
+                  </div>
+                </div>
+              </>
             )}
           </div>
         )}
@@ -588,6 +867,19 @@ export default function ShopList() {
               ))}
             </div>
           </div>
+        )}
+
+        {/* Coffee shop dalam radius - di atas peta All Coffee Shops */}
+        {!error && !isLoading && coffeeShops.length > 0 && !searchTerm && (
+          <CoffeeShopRadiusMap
+            userLocation={userLocation}
+            radiusMeters={radiusMeters}
+            setRadiusMeters={setRadiusMeters}
+            locationLoading={locationLoading}
+            locationError={locationError}
+            getCurrentLocation={getCurrentLocation}
+            shopsInRadius={shopsInRadius}
+          />
         )}
 
         {/* Coffee Shop Map - Tampilkan di atas judul All Coffee Shops */}

@@ -105,12 +105,20 @@ const WantToVisit = () => {
             <p className="mt-3 sm:mt-4 text-base sm:text-lg text-gray-600 dark:text-gray-400 px-4">
               Tandai coffee shop yang ingin Anda kunjungi!
             </p>
-            <Link
-              to="/"
-              className="inline-block mt-6 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-            >
-              Jelajahi Coffee Shop
-            </Link>
+            <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+              <Link
+                to="/"
+                className="inline-flex items-center justify-center px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+              >
+                Jelajahi Coffee Shop
+              </Link>
+              <Link
+                to="/login"
+                className="inline-flex items-center justify-center px-6 py-2.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors font-medium"
+              >
+                Login untuk melihat coffee shop yang ingin kamu kunjungi!
+              </Link>
+            </div>
           </div>
         </div>
       </div>
