@@ -7,85 +7,104 @@ import sqlite3
 from datetime import datetime
 from auth_utils import get_db_connection
 
-def create_review(user_id, place_id, rating, text='', photos=None):
-    """Create a new review"""
+def _validate_rating(r, allow_none=False):
+    if allow_none and r is None:
+        return True
+    return r is not None and 1 <= r <= 5
+
+def create_review(user_id, place_id, rating, text='', rating_makanan=None, rating_layanan=None, rating_suasana=None, photos=None):
+    """Create a new review with optional category ratings and photos."""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Validate rating
-        if not 1 <= rating <= 5:
+        if not _validate_rating(rating):
             return {'success': False, 'error': 'Rating must be between 1 and 5'}
+        if rating_makanan is not None and not _validate_rating(rating_makanan):
+            return {'success': False, 'error': 'Rating makanan must be between 1 and 5'}
+        if rating_layanan is not None and not _validate_rating(rating_layanan):
+            return {'success': False, 'error': 'Rating layanan must be between 1 and 5'}
+        if rating_suasana is not None and not _validate_rating(rating_suasana):
+            return {'success': False, 'error': 'Rating suasana must be between 1 and 5'}
         
-        # Check if user already reviewed this shop
         existing = cursor.execute(
             'SELECT id FROM reviews WHERE user_id = ? AND place_id = ?',
             (user_id, place_id)
         ).fetchone()
-        
         if existing:
             return {'success': False, 'error': 'You already have a review for this shop'}
         
-        # Get shop_id from place_id
         shop = cursor.execute(
             'SELECT id FROM coffee_shops WHERE place_id = ?',
             (place_id,)
         ).fetchone()
-        
         if not shop:
             return {'success': False, 'error': 'Coffee shop not found'}
-        
         shop_id = shop[0]
         
-        # Create review
         cursor.execute('''
-            INSERT INTO reviews (user_id, shop_id, place_id, rating, review_text, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (user_id, shop_id, place_id, rating, text or '', datetime.utcnow().isoformat(), datetime.utcnow().isoformat()))
-        
-        conn.commit()
+            INSERT INTO reviews (user_id, shop_id, place_id, rating, review_text, rating_makanan, rating_layanan, rating_suasana, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (user_id, shop_id, place_id, rating, text or '', rating_makanan, rating_layanan, rating_suasana, datetime.utcnow().isoformat(), datetime.utcnow().isoformat()))
         review_id = cursor.lastrowid
         
-        # Return review object
-        review = cursor.execute(
-            'SELECT id, user_id, shop_id, place_id, rating, review_text, created_at, updated_at FROM reviews WHERE id = ?',
+        photos = photos or []
+        for i, p in enumerate(photos[:5]):  # max 5 photos
+            caption = (p.get('caption') or '').strip() if isinstance(p, dict) else ''
+            image_data = p.get('image_data') if isinstance(p, dict) else None
+            cursor.execute(
+                'INSERT INTO review_photos (review_id, caption, image_data) VALUES (?, ?, ?)',
+                (review_id, caption or None, image_data)
+            )
+        
+        conn.commit()
+        row = cursor.execute(
+            'SELECT id, user_id, shop_id, place_id, rating, review_text, rating_makanan, rating_layanan, rating_suasana, created_at, updated_at FROM reviews WHERE id = ?',
             (review_id,)
         ).fetchone()
-        
+        photos_out = cursor.execute(
+            'SELECT id, caption, image_data FROM review_photos WHERE review_id = ? ORDER BY id',
+            (review_id,)
+        ).fetchall()
         conn.close()
         
         return {
             'success': True,
             'review': {
-                'id': review[0],
-                'user_id': review[1],
-                'shop_id': review[2],
-                'place_id': review[3],
-                'rating': review[4],
-                'text': review[5],
-                'created_at': review[6],
-                'updated_at': review[7]
+                'id': row[0],
+                'user_id': row[1],
+                'shop_id': row[2],
+                'place_id': row[3],
+                'rating': row[4],
+                'text': row[5],
+                'rating_makanan': row[6],
+                'rating_layanan': row[7],
+                'rating_suasana': row[8],
+                'created_at': row[9],
+                'updated_at': row[10],
+                'photos': [{'id': p[0], 'caption': p[1], 'image_data': p[2]} for p in photos_out]
             }
         }
     except Exception as e:
         return {'success': False, 'error': str(e)}
 
 def get_review(review_id):
-    """Get a single review"""
+    """Get a single review with photos."""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
         review = cursor.execute(
-            'SELECT id, user_id, shop_id, place_id, rating, review_text, created_at, updated_at FROM reviews WHERE id = ?',
+            'SELECT id, user_id, shop_id, place_id, rating, review_text, rating_makanan, rating_layanan, rating_suasana, created_at, updated_at FROM reviews WHERE id = ?',
             (review_id,)
         ).fetchone()
-        
-        conn.close()
-        
         if not review:
+            conn.close()
             return {'success': False, 'error': 'Review not found'}
-        
+        photos = cursor.execute(
+            'SELECT id, caption, image_data FROM review_photos WHERE review_id = ? ORDER BY id',
+            (review_id,)
+        ).fetchall()
+        conn.close()
         return {
             'success': True,
             'review': {
@@ -95,21 +114,27 @@ def get_review(review_id):
                 'place_id': review[3],
                 'rating': review[4],
                 'text': review[5],
-                'created_at': review[6],
-                'updated_at': review[7]
+                'rating_makanan': review[6],
+                'rating_layanan': review[7],
+                'rating_suasana': review[8],
+                'created_at': review[9],
+                'updated_at': review[10],
+                'photos': [{'id': p[0], 'caption': p[1], 'image_data': p[2]} for p in photos]
             }
         }
     except Exception as e:
         return {'success': False, 'error': str(e)}
 
-def get_reviews_for_shop(place_id, limit=50):
-    """Get all reviews for a coffee shop"""
+def get_reviews_for_shop(place_id, limit=50, current_user_id=None):
+    """Get all reviews for a coffee shop. Optionally include like_count and user_has_liked when current_user_id is set."""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
         
         reviews = cursor.execute('''
-            SELECT r.id, r.user_id, r.shop_id, r.place_id, r.rating, r.review_text, r.created_at, r.updated_at, u.username
+            SELECT r.id, r.user_id, r.shop_id, r.place_id, r.rating, r.review_text,
+                   r.rating_makanan, r.rating_layanan, r.rating_suasana,
+                   r.created_at, r.updated_at, u.username
             FROM reviews r
             LEFT JOIN users u ON r.user_id = u.id
             WHERE r.place_id = ?
@@ -117,22 +142,59 @@ def get_reviews_for_shop(place_id, limit=50):
             LIMIT ?
         ''', (place_id, limit)).fetchall()
         
-        conn.close()
-        
+        user_ids = list({r[1] for r in reviews if r[1]})
+        user_total_reviews = {}
+        if user_ids:
+            placeholders = ','.join('?' * len(user_ids))
+            counts = cursor.execute(
+                f'SELECT user_id, COUNT(*) FROM reviews WHERE user_id IN ({placeholders}) GROUP BY user_id',
+                user_ids
+            ).fetchall()
+            user_total_reviews = {row[0]: row[1] for row in counts}
+        review_ids = [r[0] for r in reviews]
+        like_counts = {}
+        user_liked = {}
+        if review_ids:
+            placeholders = ','.join('?' * len(review_ids))
+            like_rows = cursor.execute(
+                f'SELECT review_id, COUNT(*) FROM review_likes WHERE review_id IN ({placeholders}) GROUP BY review_id',
+                review_ids
+            ).fetchall()
+            like_counts = {row[0]: row[1] for row in like_rows}
+            if current_user_id:
+                liked_rows = cursor.execute(
+                    'SELECT review_id FROM review_likes WHERE user_id = ? AND review_id IN (' + placeholders + ')',
+                    [current_user_id] + review_ids
+                ).fetchall()
+                user_liked = {row[0]: True for row in liked_rows}
         review_list = []
         for review in reviews:
+            review_id = review[0]
+            uid = review[1]
+            photos = cursor.execute(
+                'SELECT id, caption, image_data FROM review_photos WHERE review_id = ? ORDER BY id',
+                (review_id,)
+            ).fetchall()
             review_list.append({
-                'id': review[0],
-                'user_id': review[1],
+                'id': review_id,
+                'user_id': uid,
                 'shop_id': review[2],
                 'place_id': review[3],
                 'rating': review[4],
                 'text': review[5],
-                'created_at': review[6],
-                'updated_at': review[7],
-                'username': review[8],
-                'full_name': review[8]  # Use username as full_name
+                'rating_makanan': review[6],
+                'rating_layanan': review[7],
+                'rating_suasana': review[8],
+                'created_at': review[9],
+                'updated_at': review[10],
+                'username': review[11],
+                'full_name': review[11],
+                'photos': [{'id': p[0], 'caption': p[1], 'image_data': p[2]} for p in photos],
+                'user_total_reviews': user_total_reviews.get(uid, 0),
+                'like_count': like_counts.get(review_id, 0),
+                'user_has_liked': user_liked.get(review_id, False)
             })
+        conn.close()
         
         return {'success': True, 'reviews': review_list}
     except Exception as e:
@@ -258,5 +320,30 @@ def get_average_rating(place_id):
             'average_rating': round(avg_rating, 2),
             'review_count': review_count
         }
+    except Exception as e:
+        return {'success': False, 'error': str(e)}
+
+
+def toggle_review_like(user_id, review_id):
+    """Toggle like on a review. Returns { success, liked, like_count }."""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT id FROM reviews WHERE id = ?', (review_id,))
+        if not cursor.fetchone():
+            conn.close()
+            return {'success': False, 'error': 'Review not found'}
+        cursor.execute('SELECT 1 FROM review_likes WHERE user_id = ? AND review_id = ?', (user_id, review_id))
+        exists = cursor.fetchone()
+        if exists:
+            cursor.execute('DELETE FROM review_likes WHERE user_id = ? AND review_id = ?', (user_id, review_id))
+            liked = False
+        else:
+            cursor.execute('INSERT INTO review_likes (user_id, review_id) VALUES (?, ?)', (user_id, review_id))
+            liked = True
+        count = cursor.execute('SELECT COUNT(*) FROM review_likes WHERE review_id = ?', (review_id,)).fetchone()[0]
+        conn.commit()
+        conn.close()
+        return {'success': True, 'liked': liked, 'like_count': count}
     except Exception as e:
         return {'success': False, 'error': str(e)}

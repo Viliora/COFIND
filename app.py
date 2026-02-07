@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from huggingface_hub import InferenceClient
 import sqlite3  # Local database
 from auth_utils import signup, login, logout, verify_token, get_user_by_id, update_user_profile, update_password
-from review_utils import create_review, get_review, get_reviews_for_shop, get_user_reviews, update_review, delete_review, get_average_rating
+from review_utils import create_review, get_review, get_reviews_for_shop, get_user_reviews, update_review, delete_review, get_average_rating, toggle_review_like
 from favorites_utils import add_favorite, remove_favorite, get_user_favorites, is_favorite, get_favorite_count
 from want_to_visit_utils import add_want_to_visit, remove_want_to_visit, get_user_want_to_visit, is_want_to_visit
 from preference_suggestions_utils import create_preference_suggestion
@@ -451,18 +451,28 @@ def auth_update_password():
 
 @app.route('/api/reviews', methods=['POST'])
 def api_create_review():
-    """Create a new review"""
+    """Create a new review (rating tempat + optional makanan/layanan/suasana + photos)."""
     try:
         data = request.get_json()
         user_id = data.get('user_id')
         place_id = data.get('place_id')
         rating = data.get('rating')
         text = data.get('text', '')
+        rating_makanan = data.get('rating_makanan')
+        rating_layanan = data.get('rating_layanan')
+        rating_suasana = data.get('rating_suasana')
+        photos = data.get('photos') or []
         
         if not user_id or not place_id or rating is None:
             return jsonify({'status': 'error', 'message': 'Missing required fields'}), 400
         
-        result = create_review(user_id, place_id, rating, text)
+        result = create_review(
+            user_id, place_id, rating, text,
+            rating_makanan=rating_makanan,
+            rating_layanan=rating_layanan,
+            rating_suasana=rating_suasana,
+            photos=photos
+        )
         
         if result['success']:
             return jsonify({
@@ -552,12 +562,32 @@ def api_delete_review(review_id):
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
+@app.route('/api/reviews/<int:review_id>/like', methods=['POST'])
+def api_toggle_review_like(review_id):
+    """Toggle like on a review. Body: { user_id }."""
+    try:
+        data = request.get_json() or {}
+        user_id = data.get('user_id')
+        if not user_id:
+            return jsonify({'status': 'error', 'message': 'user_id required'}), 400
+        result = toggle_review_like(user_id, review_id)
+        if result['success']:
+            return jsonify({
+                'status': 'success',
+                'liked': result['liked'],
+                'like_count': result['like_count']
+            }), 200
+        return jsonify({'status': 'error', 'message': result.get('error', 'Failed')}), 400
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
 @app.route('/api/coffeeshops/<place_id>/reviews', methods=['GET'])
 def api_get_shop_reviews(place_id):
-    """Get all reviews for a coffee shop"""
+    """Get all reviews for a coffee shop. Optional query: user_id to include user_has_liked."""
     try:
         limit = request.args.get('limit', 50, type=int)
-        result = get_reviews_for_shop(place_id, limit)
+        current_user_id = request.args.get('user_id', type=int)
+        result = get_reviews_for_shop(place_id, limit, current_user_id=current_user_id)
         
         if result['success']:
             # Also get average rating

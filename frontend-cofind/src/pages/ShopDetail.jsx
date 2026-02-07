@@ -4,7 +4,6 @@ import { useAuth } from '../context/authContext';
 // Supabase removed - use local backend only
 import OptimizedImage from '../components/OptimizedImage';
 import FacilitiesTab from '../components/FacilitiesTab';
-import ReviewForm from '../components/ReviewForm';
 import ReviewList from '../components/ReviewList';
 import facilitiesData from '../data/facilities.json';
 import { addToRecentlyViewed } from '../utils/recentlyViewed';
@@ -470,28 +469,20 @@ function ShopDetail() {
       </div>
 
       {/* Reviews Section */}
-      <div className="mt-6 sm:mt-8 space-y-6">
-        {/* Review Form */}
-        <div ref={reviewFormRef}>
-          <ReviewForm 
-            placeId={shop.place_id}
-            shopName={shop.name}
-            onReviewSubmitted={(review) => {
-              console.log('[ShopDetail] Review submitted:', review);
-              setNewReview(review);
-            }}
-          />
-        </div>
-
-        {/* Review List - Only render if shop and place_id are loaded */}
+      <div className="mt-6 sm:mt-8 space-y-6" ref={reviewFormRef}>
         {shop?.place_id && (
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4">
               Review Pengunjung
             </h2>
-            <ReviewList 
+            <ReviewList
               placeId={shop.place_id}
+              shopName={shop.name}
               newReview={newReview}
+              onReviewSubmitted={(review) => {
+                console.log('[ShopDetail] Review submitted:', review);
+                setNewReview(review);
+              }}
             />
           </div>
         )}

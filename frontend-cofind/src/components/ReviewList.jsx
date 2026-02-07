@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/authContext';
 import ReviewCard from './ReviewCard';
+import ReviewForm from './ReviewForm';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
@@ -14,7 +15,7 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
  * ✅ Realtime subscription dengan proper cleanup
  * ✅ Optimistic updates dengan fallback refetch
  */
-const ReviewList = ({ placeId, newReview }) => {
+const ReviewList = ({ placeId, shopName, newReview, onReviewSubmitted }) => {
   const { initialized: authInitialized, user, isAuthenticated } = useAuth();
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -61,7 +62,10 @@ const ReviewList = ({ placeId, newReview }) => {
     console.log(`[ReviewList] Fetching reviews for: ${placeId}`);
     
     try {
-      const response = await fetch(`${API_BASE}/api/coffeeshops/${placeId}/reviews`, {
+      const url = user?.id
+        ? `${API_BASE}/api/coffeeshops/${placeId}/reviews?user_id=${user.id}&limit=50`
+        : `${API_BASE}/api/coffeeshops/${placeId}/reviews?limit=50`;
+      const response = await fetch(url, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         signal: abortControllerRef.current.signal,
@@ -157,6 +161,10 @@ const ReviewList = ({ placeId, newReview }) => {
     }, 1000);
   }, [newReview, fetchReviews]);
   
+  const handleLike = useCallback((reviewId, { like_count, user_has_liked }) => {
+    setReviews(prev => prev.map(r => r.id === reviewId ? { ...r, like_count, user_has_liked } : r));
+  }, []);
+
   // Handlers - FIXED: Trigger refetch setelah update/delete
   const handleDelete = useCallback((reviewId) => {
     if (!reviewId) return;
@@ -305,6 +313,17 @@ const ReviewList = ({ placeId, newReview }) => {
         </div>
       )}
 
+      {/* Tombol Tulis Review - di bawah stats header */}
+      {placeId && (
+        <div className="mb-6">
+          <ReviewForm
+            placeId={placeId}
+            shopName={shopName || 'Coffee Shop'}
+            onReviewSubmitted={onReviewSubmitted}
+          />
+        </div>
+      )}
+
       {/* Reviews List or Empty State */}
       {reviews.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 dark:bg-zinc-800/50 rounded-xl border border-gray-200 dark:border-zinc-700">
@@ -326,6 +345,7 @@ const ReviewList = ({ placeId, newReview }) => {
               review={review}
               onDelete={handleDelete}
               onUpdate={handleUpdate}
+              onLike={handleLike}
             />
           ))}
         </div>
