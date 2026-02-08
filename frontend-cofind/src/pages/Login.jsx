@@ -19,6 +19,12 @@ const Login = () => {
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Title halaman
+  useEffect(() => {
+    document.title = 'Masuk - Cofind';
+    return () => { document.title = 'Cofind'; };
+  }, []);
+
   // Redirect if already logged in
   useEffect(() => {
     console.log('[Login] isAuthenticated changed:', isAuthenticated, 'isSubmitting:', isSubmitting);

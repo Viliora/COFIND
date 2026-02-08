@@ -73,6 +73,12 @@ const WantToVisit = () => {
     loadWantToVisit();
   }, [loadWantToVisit]); // ✅ Sekarang aman karena fungsi sudah di-wrap dengan useCallback
 
+  // Title halaman
+  useEffect(() => {
+    document.title = 'Tempat yang Ingin Dikunjungi - Cofind';
+    return () => { document.title = 'Cofind'; };
+  }, []);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-zinc-900 py-6 sm:py-8 px-3 sm:px-4 md:px-6 lg:px-8">

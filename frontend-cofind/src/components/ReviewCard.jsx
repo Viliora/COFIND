@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/authContext';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+const MAX_PHOTOS = 5;
+const MAX_IMAGE_SIZE_KB = 500;
 
 const ReviewCard = ({ review, onDelete, onUpdate, onLike }) => {
   const { user } = useAuth();
@@ -9,6 +12,12 @@ const ReviewCard = ({ review, onDelete, onUpdate, onLike }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(review.text || '');
   const [editRating, setEditRating] = useState(review.rating || 0);
+  const [editRatingMakanan, setEditRatingMakanan] = useState(review.rating_makanan ?? 0);
+  const [editRatingLayanan, setEditRatingLayanan] = useState(review.rating_layanan ?? 0);
+  const [editRatingSuasana, setEditRatingSuasana] = useState(review.rating_suasana ?? 0);
+  const [editPhotos, setEditPhotos] = useState(() =>
+    (review.photos || []).filter((p) => p.image_data).map((p) => ({ id: p.id, caption: p.caption || '', image_data: p.image_data }))
+  );
   const [editError, setEditError] = useState('');
   const [success, setSuccess] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
@@ -17,6 +26,7 @@ const ReviewCard = ({ review, onDelete, onUpdate, onLike }) => {
   const [likeCount, setLikeCount] = useState(review.like_count ?? 0);
   const [userHasLiked, setUserHasLiked] = useState(review.user_has_liked ?? false);
   const [likeLoading, setLikeLoading] = useState(false);
+  const editPhotoInputRef = useRef(null);
 
   React.useEffect(() => {
     if (review.like_count !== undefined) setLikeCount(review.like_count);
@@ -26,13 +36,66 @@ const ReviewCard = ({ review, onDelete, onUpdate, onLike }) => {
   const isOwner = user?.id === review.user_id;
   const timeAgo = getTimeAgo(review.created_at, review.relative_time);
 
-  // Handle edit click
+  // Handle edit click - isi form dari review
   const handleEditClick = () => {
     setEditText(review.text || '');
     setEditRating(review.rating || 0);
+    setEditRatingMakanan(review.rating_makanan ?? 0);
+    setEditRatingLayanan(review.rating_layanan ?? 0);
+    setEditRatingSuasana(review.rating_suasana ?? 0);
+    setEditPhotos((review.photos || []).filter((p) => p.image_data).map((p) => ({ id: p.id, caption: p.caption || '', image_data: p.image_data })));
     setEditError('');
     setSuccess('');
     setIsEditing(true);
+  };
+
+  const fileToBase64 = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+    });
+
+  const handleEditAddPhoto = async (e) => {
+    const files = e.target.files;
+    if (!files?.length || editPhotos.length >= MAX_PHOTOS) return;
+    for (let i = 0; i < files.length && editPhotos.length < MAX_PHOTOS; i++) {
+      const file = files[i];
+      if (!file.type.startsWith('image/')) continue;
+      if (file.size > MAX_IMAGE_SIZE_KB * 1024) {
+        setEditError(`Ukuran gambar maksimal ${MAX_IMAGE_SIZE_KB} KB. "${file.name}" dilewati.`);
+        continue;
+      }
+      try {
+        const image_data = await fileToBase64(file);
+        setEditPhotos((prev) => [...prev, { caption: '', image_data }]);
+      } catch {
+        setEditError('Gagal membaca file.');
+      }
+    }
+    e.target.value = '';
+  };
+
+  const removeEditPhoto = (index) => {
+    setEditPhotos((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const updateEditPhotoCaption = (index, caption) => {
+    setEditPhotos((prev) => prev.map((p, i) => (i === index ? { ...p, caption } : p)));
+  };
+
+  const closeEditModal = () => {
+    setMenuOpen(false);
+    setIsEditing(false);
+    setEditText(review.text || '');
+    setEditRating(review.rating || 0);
+    setEditRatingMakanan(review.rating_makanan ?? 0);
+    setEditRatingLayanan(review.rating_layanan ?? 0);
+    setEditRatingSuasana(review.rating_suasana ?? 0);
+    setEditPhotos((review.photos || []).filter((p) => p.image_data).map((p) => ({ id: p.id, caption: p.caption || '', image_data: p.image_data })));
+    setEditError('');
+    setSuccess('');
   };
 
   // Format time ago: hari ini, kemarin, X hari lalu, lalu minggu/bulan
@@ -99,6 +162,10 @@ const ReviewCard = ({ review, onDelete, onUpdate, onLike }) => {
           user_id: user.id,
           text: editText.trim(),
           rating: editRating,
+          rating_makanan: editRatingMakanan || undefined,
+          rating_layanan: editRatingLayanan || undefined,
+          rating_suasana: editRatingSuasana || undefined,
+          photos: editPhotos.map((p) => ({ caption: p.caption || undefined, image_data: p.image_data })),
         })
       });
 
@@ -238,9 +305,18 @@ const ReviewCard = ({ review, onDelete, onUpdate, onLike }) => {
         </div>
 
         <div className="flex-1 min-w-0">
-          <h4 className="font-bold text-gray-900 dark:text-white truncate">
-            {displayName}
-          </h4>
+          {review.user_id ? (
+            <Link
+              to={`/profile/${review.user_id}`}
+              className="font-bold text-gray-900 dark:text-white truncate block cursor-pointer hover:underline hover:text-amber-600 dark:hover:text-amber-500 transition-colors"
+            >
+              {displayName}
+            </Link>
+          ) : (
+            <h4 className="font-bold text-gray-900 dark:text-white truncate">
+              {displayName}
+            </h4>
+          )}
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
             {totalUlasan > 0 ? `${totalUlasan} ulasan` : 'Pengguna'}
           </p>
@@ -304,11 +380,8 @@ const ReviewCard = ({ review, onDelete, onUpdate, onLike }) => {
             <svg
               key={star}
               className={`w-4 h-4 ${
-                star <= (isEditing ? editRating : review.rating)
-                  ? 'text-amber-500 fill-amber-500'
-                  : 'text-gray-300 dark:text-gray-600'
-              } ${isEditing ? 'cursor-pointer hover:scale-110 transition-transform' : ''}`}
-              onClick={() => isEditing && setEditRating(star)}
+                star <= review.rating ? 'text-amber-500 fill-amber-500' : 'text-gray-300 dark:text-gray-600'
+              }`}
               viewBox="0 0 24 24"
               fill="currentColor"
             >
@@ -324,51 +397,9 @@ const ReviewCard = ({ review, onDelete, onUpdate, onLike }) => {
         )}
       </div>
 
-      {/* Review Text */}
-      {isEditing ? (
-        <div className="mb-3">
-          <textarea
-            value={editText}
-            onChange={(e) => {
-              setEditText(e.target.value);
-              setEditError('');
-            }}
-            rows={3}
-            className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-gray-900 dark:text-white text-sm resize-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-            placeholder="Tulis review Anda..."
-          />
-          {editError && (
-            <p className="text-sm text-red-600 dark:text-red-400 mt-1">{editError}</p>
-          )}
-          {success && (
-            <p className="text-sm text-green-600 dark:text-green-400 mt-1">{success}</p>
-          )}
-          <div className="flex gap-2 mt-2">
-            <button
-              onClick={handleEditSubmit}
-              disabled={loading || !editText.trim()}
-              className="px-3 py-1.5 bg-amber-600 text-white text-sm rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Menyimpan...' : 'Simpan'}
-            </button>
-            <button
-              onClick={() => {
-                setIsEditing(false);
-                setEditText(review.text || '');
-                setEditRating(review.rating || 0);
-                setEditError('');
-                setSuccess('');
-              }}
-              disabled={loading}
-              className="px-3 py-1.5 border border-gray-300 dark:border-zinc-600 text-gray-700 dark:text-gray-300 text-sm rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-700 disabled:opacity-50"
-            >
-              Batal
-            </button>
-          </div>
-        </div>
-      ) : (
-        <>
-          <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed mb-3">
+      {/* Review Text - tampil dengan paragraf (enter) */}
+      <>
+          <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed mb-3 whitespace-pre-wrap">
             {review.text}
           </p>
           {review.photos && review.photos.filter((p) => p.image_data).length > 0 && (
@@ -439,6 +470,157 @@ const ReviewCard = ({ review, onDelete, onUpdate, onLike }) => {
           {success && (
             <p className="text-sm text-green-600 dark:text-green-400 mb-3">{success}</p>
           )}
+      </>
+
+      {/* Modal Edit Ulasan - seperti form input review (rating tempat, M/L/S, teks, foto) */}
+      {isEditing && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 z-[100]"
+            aria-hidden="true"
+            onClick={closeEditModal}
+          />
+          <div
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(95vw,520px)] max-h-[90vh] overflow-y-auto bg-white dark:bg-zinc-800 rounded-2xl border border-gray-200 dark:border-zinc-700 shadow-2xl z-[101]"
+            role="dialog"
+            aria-labelledby="edit-review-modal-title"
+            aria-modal="true"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-5 sm:p-6">
+              <h2 id="edit-review-modal-title" className="text-xl font-semibold text-gray-900 dark:text-white text-center mb-4">
+                Edit Ulasan
+              </h2>
+
+              <div className="mb-4">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Rating tempat</p>
+                <div className="flex gap-0.5">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setEditRating(star)}
+                      className="p-0.5 transition-transform hover:scale-110 focus:outline-none"
+                      aria-label={`${star} bintang`}
+                    >
+                      <svg
+                        className={`w-8 h-8 ${star <= editRating ? 'text-amber-500 fill-amber-500' : 'text-gray-300 dark:text-gray-600'}`}
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                      </svg>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Makanan</p>
+                <div className="flex gap-0.5">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button key={star} type="button" onClick={() => setEditRatingMakanan(star)} className="p-0.5 focus:outline-none" aria-label={`${star} bintang`}>
+                      <svg className={`w-6 h-6 ${star <= editRatingMakanan ? 'text-amber-500 fill-amber-500' : 'text-gray-300 dark:text-gray-600'}`} fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                      </svg>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="mb-4">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Layanan</p>
+                <div className="flex gap-0.5">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button key={star} type="button" onClick={() => setEditRatingLayanan(star)} className="p-0.5 focus:outline-none" aria-label={`${star} bintang`}>
+                      <svg className={`w-6 h-6 ${star <= editRatingLayanan ? 'text-amber-500 fill-amber-500' : 'text-gray-300 dark:text-gray-600'}`} fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                      </svg>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="mb-4">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Suasana</p>
+                <div className="flex gap-0.5">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button key={star} type="button" onClick={() => setEditRatingSuasana(star)} className="p-0.5 focus:outline-none" aria-label={`${star} bintang`}>
+                      <svg className={`w-6 h-6 ${star <= editRatingSuasana ? 'text-amber-500 fill-amber-500' : 'text-gray-300 dark:text-gray-600'}`} fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                      </svg>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ulasan Anda</label>
+                <textarea
+                  value={editText}
+                  onChange={(e) => { setEditText(e.target.value); setEditError(''); }}
+                  rows={4}
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
+                  placeholder="Bagikan pengalaman Anda tentang tempat ini..."
+                />
+              </div>
+
+              <div className="mb-4">
+                <input
+                  ref={editPhotoInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleEditAddPhoto}
+                />
+                <button
+                  type="button"
+                  onClick={() => editPhotoInputRef.current?.click()}
+                  disabled={editPhotos.length >= MAX_PHOTOS}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed border-gray-300 dark:border-zinc-600 text-gray-600 dark:text-gray-400 hover:border-amber-500 hover:text-amber-600 dark:hover:text-amber-400 transition-colors disabled:opacity-50"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 13v7a2 2 0 01-2 2H7a2 2 0 01-2-2v-7" />
+                  </svg>
+                  Tambahkan foto ({editPhotos.length}/{MAX_PHOTOS})
+                </button>
+                {editPhotos.length > 0 && (
+                  <div className="mt-2 space-y-2">
+                    {editPhotos.map((p, i) => (
+                      <div key={i} className="flex gap-2 items-start p-2 bg-gray-50 dark:bg-zinc-900/50 rounded-lg">
+                        <img src={p.image_data} alt="" className="w-14 h-14 object-cover rounded flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <input
+                            type="text"
+                            value={p.caption}
+                            onChange={(e) => updateEditPhotoCaption(i, e.target.value)}
+                            placeholder="Keterangan (opsional)"
+                            className="w-full text-sm px-2 py-1 rounded border border-gray-200 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-gray-900 dark:text-white"
+                          />
+                        </div>
+                        <button type="button" onClick={() => removeEditPhoto(i)} className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded flex-shrink-0" aria-label="Hapus foto">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {editError && <p className="text-sm text-red-600 dark:text-red-400 mb-2">{editError}</p>}
+              {success && <p className="text-sm text-green-600 dark:text-green-400 mb-2">{success}</p>}
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button type="button" onClick={closeEditModal} disabled={loading} className="px-4 py-2 rounded-lg font-medium bg-gray-200 dark:bg-zinc-600 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-zinc-500 transition-colors disabled:opacity-50">
+                  Batal
+                </button>
+                <button type="button" onClick={handleEditSubmit} disabled={loading || !editText.trim()} className="px-4 py-2 rounded-lg font-medium bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white transition-colors">
+                  {loading ? 'Menyimpan...' : 'Simpan'}
+                </button>
+              </div>
+            </div>
+          </div>
         </>
       )}
 

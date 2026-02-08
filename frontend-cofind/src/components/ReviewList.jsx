@@ -141,6 +141,24 @@ const ReviewList = ({ placeId, shopName, newReview, onReviewSubmitted }) => {
     };
   }, [placeId, fetchReviews, authInitialized, user?.id, isAuthenticated]);
   
+  // Auto-scroll ke review saat dibuka dari link (e.g. dari profile page dengan hash #review-123)
+  useEffect(() => {
+    if (loading || reviews.length === 0) return;
+    const hash = window.location.hash;
+    const match = hash && /^#review-(\d+)$/.exec(hash);
+    if (!match) return;
+    const reviewId = match[1];
+    if (!reviews.some((r) => String(r.id) === reviewId)) return;
+    const id = `review-${reviewId}`;
+    const timer = setTimeout(() => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [reviews, loading]);
+
   // Handle new review from prop
   useEffect(() => {
     if (!newReview?.id) return;
@@ -340,13 +358,14 @@ const ReviewList = ({ placeId, shopName, newReview, onReviewSubmitted }) => {
       ) : (
         <div className="space-y-4">
           {reviews.map((review) => (
-            <ReviewCard
-              key={review.id}
-              review={review}
-              onDelete={handleDelete}
-              onUpdate={handleUpdate}
-              onLike={handleLike}
-            />
+            <div key={review.id} id={`review-${review.id}`} className="scroll-mt-24">
+              <ReviewCard
+                review={review}
+                onDelete={handleDelete}
+                onUpdate={handleUpdate}
+                onLike={handleLike}
+              />
+            </div>
           ))}
         </div>
       )}

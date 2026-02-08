@@ -1,9 +1,14 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAuth } from '../context/authContext';
 import { Link } from 'react-router-dom';
 
 const Admin = () => {
   const { profile, isAdmin } = useAuth();
+
+  useEffect(() => {
+    document.title = 'Admin - Cofind';
+    return () => { document.title = 'Cofind'; };
+  }, []);
 
   if (!isAdmin) {
     return (

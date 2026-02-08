@@ -61,6 +61,9 @@ function AppContent() {
           <Route path="/want-to-visit" element={<Suspense fallback={<PageLoadingFallback />}><WantToVisit /></Suspense>} />
           <Route path="/about" element={<Suspense fallback={<PageLoadingFallback />}><About /></Suspense>} />
           <Route path="/login" element={<Suspense fallback={<PageLoadingFallback />}><Login /></Suspense>} />
+          {/* Profil publik: bisa diakses siapa saja */}
+          <Route path="/profile/:userId" element={<Suspense fallback={<PageLoadingFallback />}><Profile /></Suspense>} />
+          {/* Profil saya: butuh login */}
           <Route 
             path="/profile" 
             element={

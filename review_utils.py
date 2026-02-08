@@ -200,73 +200,124 @@ def get_reviews_for_shop(place_id, limit=50, current_user_id=None):
     except Exception as e:
         return {'success': False, 'error': str(e)}
 
-def get_user_reviews(user_id, limit=50):
-    """Get all reviews by a user"""
+def get_user_review_stats(user_id):
+    """Get total review count and average rating for a user."""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
+        row = cursor.execute(
+            'SELECT COUNT(*), AVG(rating) FROM reviews WHERE user_id = ?',
+            (user_id,)
+        ).fetchone()
+        conn.close()
+        return {
+            'success': True,
+            'review_count': row[0] or 0,
+            'average_rating': round(row[1], 2) if row[1] is not None else 0
+        }
+    except Exception as e:
+        return {'success': False, 'error': str(e)}
+
+
+def get_user_reviews(user_id, limit=50):
+    """Get all reviews by a user with shop name and optional photos."""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
         reviews = cursor.execute('''
-            SELECT id, user_id, shop_id, place_id, rating, review_text, created_at, updated_at FROM reviews
-            WHERE user_id = ?
-            ORDER BY created_at DESC
+            SELECT r.id, r.user_id, r.shop_id, r.place_id, r.rating, r.review_text,
+                   r.rating_makanan, r.rating_layanan, r.rating_suasana,
+                   r.created_at, r.updated_at, c.name AS shop_name
+            FROM reviews r
+            LEFT JOIN coffee_shops c ON r.place_id = c.place_id
+            WHERE r.user_id = ?
+            ORDER BY r.created_at DESC
             LIMIT ?
         ''', (user_id, limit)).fetchall()
-        
-        conn.close()
-        
         review_list = []
         for review in reviews:
+            review_id = review[0]
+            photos = cursor.execute(
+                'SELECT id, caption, image_data FROM review_photos WHERE review_id = ? ORDER BY id',
+                (review_id,)
+            ).fetchall()
+            like_count = cursor.execute(
+                'SELECT COUNT(*) FROM review_likes WHERE review_id = ?', (review_id,)
+            ).fetchone()[0]
             review_list.append({
-                'id': review[0],
+                'id': review_id,
                 'user_id': review[1],
                 'shop_id': review[2],
                 'place_id': review[3],
                 'rating': review[4],
                 'text': review[5],
-                'created_at': review[6],
-                'updated_at': review[7]
+                'rating_makanan': review[6],
+                'rating_layanan': review[7],
+                'rating_suasana': review[8],
+                'created_at': review[9],
+                'updated_at': review[10],
+                'shop_name': review[11],
+                'photos': [{'id': p[0], 'caption': p[1], 'image_data': p[2]} for p in photos],
+                'like_count': like_count
             })
-        
+        conn.close()
         return {'success': True, 'reviews': review_list}
     except Exception as e:
         return {'success': False, 'error': str(e)}
 
-def update_review(review_id, user_id, rating=None, text=None, photos=None):
-    """Update a review"""
+def update_review(review_id, user_id, rating=None, text=None, rating_makanan=None, rating_layanan=None, rating_suasana=None, photos=None):
+    """Update a review (rating, text, rating_makanan/layanan/suasana, photos)."""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
-        # Check review exists and user owns it
         review = cursor.execute(
-            'SELECT id, user_id, shop_id, place_id, rating, review_text FROM reviews WHERE id = ?',
+            'SELECT id, user_id, shop_id, place_id, rating, review_text, rating_makanan, rating_layanan, rating_suasana FROM reviews WHERE id = ?',
             (review_id,)
         ).fetchone()
-        
         if not review:
+            conn.close()
             return {'success': False, 'error': 'Review not found'}
-        
         if review[1] != user_id:
+            conn.close()
             return {'success': False, 'error': 'Unauthorized'}
-        
-        # Update review (index adjusted: rating=4, review_text=5)
         new_rating = rating if rating is not None else review[4]
         new_text = text if text is not None else review[5]
-        
-        if rating is not None and not 1 <= rating <= 5:
+        def _opt_rating(val, current):
+            if val is None:
+                return current
+            return val if 1 <= val <= 5 else None
+        new_makanan = _opt_rating(rating_makanan, review[6])
+        new_layanan = _opt_rating(rating_layanan, review[7])
+        new_suasana = _opt_rating(rating_suasana, review[8])
+        if rating is not None and not _validate_rating(rating):
+            conn.close()
             return {'success': False, 'error': 'Rating must be between 1 and 5'}
-        
+        if rating_makanan is not None and not _validate_rating(rating_makanan, allow_none=True):
+            conn.close()
+            return {'success': False, 'error': 'Rating makanan must be between 1 and 5'}
+        if rating_layanan is not None and not _validate_rating(rating_layanan, allow_none=True):
+            conn.close()
+            return {'success': False, 'error': 'Rating layanan must be between 1 and 5'}
+        if rating_suasana is not None and not _validate_rating(rating_suasana, allow_none=True):
+            conn.close()
+            return {'success': False, 'error': 'Rating suasana must be between 1 and 5'}
         cursor.execute('''
             UPDATE reviews
-            SET rating = ?, review_text = ?, updated_at = ?
+            SET rating = ?, review_text = ?, rating_makanan = ?, rating_layanan = ?, rating_suasana = ?, updated_at = ?
             WHERE id = ?
-        ''', (new_rating, new_text, datetime.utcnow().isoformat(), review_id))
-        
+        ''', (new_rating, new_text, new_makanan, new_layanan, new_suasana, datetime.utcnow().isoformat(), review_id))
+        if photos is not None:
+            cursor.execute('DELETE FROM review_photos WHERE review_id = ?', (review_id,))
+            for p in (photos or [])[:5]:
+                caption = (p.get('caption') or '').strip() if isinstance(p, dict) else ''
+                image_data = p.get('image_data') if isinstance(p, dict) else None
+                if image_data:
+                    cursor.execute(
+                        'INSERT INTO review_photos (review_id, caption, image_data) VALUES (?, ?, ?)',
+                        (review_id, caption or None, image_data)
+                    )
         conn.commit()
         conn.close()
-        
-        # Return updated review
         result = get_review(review_id)
         return result
     except Exception as e:

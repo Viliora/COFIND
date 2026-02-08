@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from huggingface_hub import InferenceClient
 import sqlite3  # Local database
 from auth_utils import signup, login, logout, verify_token, get_user_by_id, update_user_profile, update_password
-from review_utils import create_review, get_review, get_reviews_for_shop, get_user_reviews, update_review, delete_review, get_average_rating, toggle_review_like
+from review_utils import create_review, get_review, get_reviews_for_shop, get_user_reviews, get_user_review_stats, update_review, delete_review, get_average_rating, toggle_review_like
 from favorites_utils import add_favorite, remove_favorite, get_user_favorites, is_favorite, get_favorite_count
 from want_to_visit_utils import add_want_to_visit, remove_want_to_visit, get_user_want_to_visit, is_want_to_visit
 from preference_suggestions_utils import create_preference_suggestion
@@ -20,7 +20,6 @@ load_dotenv()
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app)  # Enable CORS
 
 # Database configuration
 DATABASE_PATH = os.path.join(os.path.dirname(__file__), 'cofind.db')
@@ -51,8 +50,30 @@ else:
 # CACHING SYSTEM DISABLED - Using direct API calls
 # ============================================================================
 
-# Enable CORS for /api/*
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+# Enable CORS for /api/* (preflight + allow Content-Type for POST JSON)
+CORS(
+    app,
+    resources={r"/api/*": {
+        "origins": "*",
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"],
+        "expose_headers": ["Content-Type"],
+    }},
+    supports_credentials=False,
+)
+
+
+@app.after_request
+def add_cors_headers_to_response(response):
+    """Pastikan semua response (termasuk error 4xx/5xx) punya CORS headers agar browser tidak blok."""
+    if request.path.startswith("/api/"):
+        if "Access-Control-Allow-Origin" not in response.headers:
+            response.headers["Access-Control-Allow-Origin"] = "*"
+        if "Access-Control-Allow-Methods" not in response.headers:
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        if "Access-Control-Allow-Headers" not in response.headers:
+            response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    return response
 
 # Root endpoint
 @app.route('/')
@@ -521,6 +542,9 @@ def api_update_review(review_id):
             user_id,
             rating=data.get('rating'),
             text=data.get('text'),
+            rating_makanan=data.get('rating_makanan'),
+            rating_layanan=data.get('rating_layanan'),
+            rating_suasana=data.get('rating_suasana'),
             photos=data.get('photos')
         )
         
@@ -608,6 +632,35 @@ def api_get_shop_reviews(place_id):
             }), 200
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/users/<int:user_id>/profile', methods=['GET'])
+def api_get_user_public_profile(user_id):
+    """Get public profile for a user (no email). Includes review stats."""
+    try:
+        user = get_user_by_id(user_id)
+        if not user:
+            return jsonify({'status': 'error', 'message': 'User not found'}), 404
+        stats = get_user_review_stats(user_id)
+        if not stats.get('success'):
+            review_count, average_rating = 0, 0
+        else:
+            review_count = stats.get('review_count', 0)
+            average_rating = stats.get('average_rating', 0)
+        return jsonify({
+            'status': 'success',
+            'profile': {
+                'id': user['id'],
+                'username': user.get('username'),
+                'full_name': user.get('full_name') or user.get('username'),
+                'avatar_url': user.get('avatar_url'),
+                'bio': user.get('bio'),
+                'review_count': review_count,
+                'average_rating': average_rating
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
 
 @app.route('/api/users/<int:user_id>/reviews', methods=['GET'])
 def api_get_user_reviews(user_id):
@@ -1855,6 +1908,44 @@ def _expand_keywords_with_synonyms(keywords):
     
     return list(expanded)
 
+
+def _summarize_reviews_with_llm(review_texts):
+    """
+    Ringkas beberapa teks review menjadi 2-4 kalimat dalam Bahasa Indonesia.
+    Digunakan agar LLM analisis rekomendasi mendapat input yang ringkas dan mudah dianalisis.
+    Returns string ringkasan, atau gabungan teks terpotong jika LLM tidak tersedia/error.
+    """
+    texts = [t.strip() for t in review_texts if t and len(t.strip()) > 15]
+    if not texts:
+        return ""
+    if len(texts) == 1 and len(texts[0]) <= 300:
+        return texts[0]
+    combined = "\n---\n".join(texts[:8])  # Maks 8 review agar tidak overflow token
+    if len(combined) > 1200:
+        combined = combined[:1197] + "..."
+    if hf_client is None:
+        return combined[:500] + ("..." if len(combined) > 500 else "")
+    try:
+        prompt = f"""Ringkas ulasan pengunjung berikut menjadi 2-4 kalimat dalam Bahasa Indonesia. Fokus pada: suasana, fasilitas (WiFi, stopkontak, parkir, dll), dan kesesuaian untuk belajar/ngopi/kerja. Jangan tambahkan opini baru, hanya rangkum isi ulasan.
+
+ULASAN:
+{combined}
+
+Ringkasan:"""
+        out = hf_client.text_generation(
+            prompt,
+            model=(HF_MODEL or "meta-llama/Meta-Llama-3-8B").strip(),
+            max_new_tokens=200,
+            temperature=0.2,
+            return_full_text=False,
+        )
+        summary = (out or "").strip()
+        return summary if summary else combined[:500] + "..."
+    except Exception as e:
+        print(f"[SUMMARIZE REVIEWS] Error: {e}")
+        return combined[:500] + "..."
+
+
 # Helper function untuk fetch coffee shops dengan REVIEWS dari file JSON lokal
 def _fetch_coffeeshops_with_reviews_from_json(location_str, max_shops=15, keywords=None):
     """
@@ -1984,10 +2075,21 @@ def _fetch_coffeeshops_with_reviews_from_json(location_str, max_shops=15, keywor
         else:
             print(f"[JSON+REVIEWS] Selected top {len(coffee_shops)} coffee shops (sorted by rating & review count), preparing context...")
         
-        # Format context
+        # Load facilities sekali untuk fallback saat tidak ada review
+        facilities_by_place_id = {}
+        facilities_path = os.path.join('frontend-cofind', 'src', 'data', 'facilities.json')
+        if os.path.exists(facilities_path):
+            try:
+                with open(facilities_path, 'r', encoding='utf-8') as f:
+                    facilities_by_place_id = json.load(f).get('facilities_by_place_id', {})
+            except Exception as e:
+                print(f"[JSON+REVIEWS] Warning: could not load facilities: {e}")
+        
+        # Format context: utamakan REVIEW; jika tidak ada review gunakan DATA FASILITAS (seperti di FacilitiesTab)
         context_lines = [
-            f"DAFTAR COFFEE SHOP DI {location_str.upper()} DENGAN REVIEW",
-            f"Total: {len(coffee_shops)} coffee shop pilihan terbaik\n"
+            f"DAFTAR COFFEE SHOP DI {location_str.upper()}",
+            f"Setiap toko punya sumber: 'Review pengunjung' (prioritas) atau 'Data fasilitas' (jika tidak ada review).",
+            f"Total: {len(coffee_shops)} coffee shop\n"
         ]
         
         for i, shop in enumerate(coffee_shops, 1):
@@ -1995,50 +2097,40 @@ def _fetch_coffeeshops_with_reviews_from_json(location_str, max_shops=15, keywor
             name = shop.get('name', 'Unknown')
             rating = shop.get('rating', 'N/A')
             total_ratings = shop.get('user_ratings_total', 0)
-            address = shop.get('address', 'No address')
-            price_level = shop.get('price_level')
             
-            # Generate Google Maps URL
             maps_url = f"https://www.google.com/maps/place/?q=place_id:{place_id}"
             
-            # Format entry dengan reviews (TANPA ALAMAT untuk mengurangi token)
             context_lines.append(f"{i}. {name}")
             context_lines.append(f"   • Rating: {rating}/5.0 ({total_ratings} reviews)")
             context_lines.append(f"   • Google Maps: {maps_url}")
             
-            # REVIEWS - Ambil dari database (max 3 reviews per coffee shop)
-            reviews_result = get_reviews_for_shop(place_id, limit=3)
+            # REVIEWS dari database (prioritas analisis)
+            reviews_result = get_reviews_for_shop(place_id, limit=10)
             reviews = reviews_result.get('reviews', []) if reviews_result.get('success') else []
+            review_texts = [r.get('text', '').strip() for r in reviews if (r.get('text') or '').strip() and len((r.get('text') or '').strip()) > 20]
             
-            if reviews:
-                context_lines.append(f"   • Review dari Pengunjung:")
-                review_count = 0
-                for review in reviews:
-                    review_text = review.get('text', '').strip()
-                    if review_text and len(review_text) > 20:  # Min 20 karakter
-                        review_rating = review.get('rating', 0)
-                        author_name = review.get('username', 'Anonim')
-                        
-                        # Truncate review yang terlalu panjang
-                        if len(review_text) > 150:
-                            review_text = review_text[:147] + "..."
-                        
-                        context_lines.append(f"     - {author_name} ({review_rating}⭐): \"{review_text}\"")
-                        review_count += 1
-                
-                if review_count == 0:
-                    context_lines.append(f"     - (Belum ada review dengan teks)")
+            if review_texts:
+                # Ada review: summarization jika beberapa komentar agar LLM mudah analisis
+                if len(review_texts) >= 2 or sum(len(t) for t in review_texts) > 400:
+                    summary = _summarize_reviews_with_llm(review_texts)
+                    context_lines.append(f"   • Sumber: Review pengunjung (ringkasan): {summary}")
+                else:
+                    single = review_texts[0][:400] + ("..." if len(review_texts[0]) > 400 else "")
+                    context_lines.append(f"   • Sumber: Review pengunjung: \"{single}\"")
             else:
-                context_lines.append(f"   • Review: Belum ada review tersedia")
+                # Tidak ada review: gunakan data fasilitas (sama seperti yang ditampilkan di FacilitiesTab)
+                shop_fac = facilities_by_place_id.get(place_id, {})
+                facilities_text = _format_facilities_to_text(shop_fac)
+                if facilities_text:
+                    context_lines.append(f"   • Sumber: Data fasilitas: {facilities_text}")
+                else:
+                    context_lines.append(f"   • Sumber: (Tidak ada review maupun data fasilitas)")
             
             context_lines.append("")  # Separator
         
         context = "\n".join(context_lines)
         
-        # Hitung total reviews yang digunakan
-        total_reviews = sum(len(reviews_by_place_id.get(shop.get('place_id', ''), [])) for shop in coffee_shops)
-        
-        print(f"[JSON+REVIEWS] Context prepared: {len(coffee_shops)} shops with reviews, {total_reviews} total reviews, {len(context)} characters")
+        print(f"[JSON+REVIEWS] Context prepared: {len(coffee_shops)} shops, {len(context)} characters (sumber: review atau data fasilitas)")
         print(f"[JSON+REVIEWS] 📊 SUMMARY: {len(coffee_shops)} coffee shops akan dianalisis oleh LLM")
         if keywords and len(keywords) > 0:
             print(f"[JSON+REVIEWS] 📊 Pre-filtered: {len(relevant_shops_sorted)} relevant shops + {len(other_shops_sorted[:other_count])} top-rated shops")
@@ -2050,6 +2142,78 @@ def _fetch_coffeeshops_with_reviews_from_json(location_str, max_shops=15, keywor
         print(f"[JSON+REVIEWS] Error: {str(e)}")
         print(f"[JSON+REVIEWS] Traceback: {error_detail}")
         return f"Error mengambil data coffee shop dengan review dari JSON: {str(e)}"
+
+# Endpoint rekomendasi berdasarkan preferensi (pill) - LLM analisis + 1 kalimat penjelasan per toko
+@app.route('/api/recommend-by-preferences', methods=['POST'])
+def api_recommend_by_preferences():
+    """
+    Request: { "preferences": ["cozy", "wifi stabil", "belajar"] }  (1-3 item)
+    Response: { "status": "success", "recommendations": [ { "name": "...", "explanation": "Satu kalimat." } ] }
+    """
+    try:
+        if hf_client is None:
+            return jsonify({'status': 'error', 'message': 'LLM tidak tersedia. HF_API_TOKEN tidak dikonfigurasi.'}), 503
+        data = request.get_json() or {}
+        prefs = data.get('preferences') or []
+        if not isinstance(prefs, list):
+            prefs = [prefs] if prefs else []
+        prefs = [str(p).strip() for p in prefs if str(p).strip()][:3]
+        if not prefs:
+            return jsonify({'status': 'error', 'message': 'Pilih minimal 1 preferensi.'}), 400
+        location = data.get('location', 'Pontianak')
+        expanded = _expand_keywords_with_synonyms(prefs)
+        places_context = _fetch_coffeeshops_with_reviews_from_json(location, max_shops=12, keywords=expanded)
+        if places_context.startswith('Error') or not places_context.strip():
+            return jsonify({'status': 'error', 'message': 'Data coffee shop tidak tersedia.'}), 500
+        prompt = f"""Berdasarkan data coffee shop di bawah, user memilih preferensi: {', '.join(prefs)}.
+
+Setiap toko punya sumber analisis: "Sumber: Review pengunjung" (prioritas, dari ulasan pengunjung) atau "Sumber: Data fasilitas" (jika tidak ada review, dari data fasilitas seperti highlights, suasana, parkir, WiFi, dll). Gunakan sumber tersebut untuk alasan rekomendasi.
+
+DATA COFFEE SHOP:
+{places_context}
+
+Tugas: Pilih 1-5 coffee shop yang PALING SESUAI dengan preferensi user. Untuk setiap coffee shop yang Anda rekomendasikan, tulis SATU KALIMAT dalam Bahasa Indonesia yang menjelaskan mengapa coffee shop tersebut cocok dengan preferensi user. Sebutkan bukti dari "Review pengunjung" atau "Data fasilitas" yang sesuai.
+
+ATURAN:
+- Hanya rekomendasikan coffee shop yang NAMA-nya muncul persis di data di atas.
+- Nama harus persis seperti di data (copy-paste).
+- Satu kalimat penjelasan per coffee shop, tanpa emoji.
+- Output HANYA dalam format JSON array, tidak ada teks lain. Contoh format:
+[{{"name": "Nama Coffee Shop Persis", "explanation": "Satu kalimat penjelasan mengapa cocok dengan preferensi."}}]
+
+Output JSON:"""
+        response_text = hf_client.text_generation(
+            prompt,
+            model=(HF_MODEL or "meta-llama/Meta-Llama-3-8B").strip(),
+            max_new_tokens=600,
+            temperature=0.3,
+            return_full_text=False
+        )
+        text = (response_text or '').strip()
+        if '```' in text:
+            for part in text.split('```'):
+                part = part.strip()
+                if part.startswith('json') or part.startswith('['):
+                    text = part[4:].strip() if part.startswith('json') else part
+                    break
+        text = text.strip()
+        if not text.startswith('['):
+            return jsonify({'status': 'error', 'message': 'Format respons LLM tidak valid.', 'recommendations': []}), 200
+        try:
+            recommendations = json.loads(text)
+        except json.JSONDecodeError:
+            return jsonify({'status': 'error', 'message': 'Gagal memparse rekomendasi LLM.', 'recommendations': []}), 200
+        if not isinstance(recommendations, list):
+            recommendations = []
+        out = []
+        for r in recommendations:
+            if isinstance(r, dict) and r.get('name') and r.get('explanation'):
+                out.append({'name': str(r['name']).strip(), 'explanation': str(r['explanation']).strip()})
+        return jsonify({'status': 'success', 'recommendations': out}), 200
+    except Exception as e:
+        print(f"[recommend-by-preferences] Error: {e}")
+        return jsonify({'status': 'error', 'message': str(e), 'recommendations': []}), 500
+
 
 # Endpoint untuk cek status LLM availability (lightweight, no token usage)
 @app.route('/api/llm/status', methods=['GET'])

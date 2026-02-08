@@ -9,7 +9,7 @@ import { authService } from '../services/authService';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
-const CoffeeShopCard = ({ shop }) => {
+const CoffeeShopCard = ({ shop, recommendationExplanation }) => {
     const { isAuthenticated } = useAuth();
     const navigate = useNavigate();
     const [reviewSummary, setReviewSummary] = useState(null);
@@ -268,6 +268,12 @@ const CoffeeShopCard = ({ shop }) => {
                             {reviewSummary}
                         </p>
                     </div>
+                )}
+
+                {recommendationExplanation && (
+                    <p className="text-sm text-indigo-600 dark:text-indigo-400 mb-3 line-clamp-2" title={recommendationExplanation}>
+                        {recommendationExplanation}
+                    </p>
                 )}
                 
                 {shop.vicinity && (

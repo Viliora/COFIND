@@ -95,6 +95,12 @@ const Favorite = () => {
     loadAllShops();
   }, [isAuthenticated, user?.id, loadFavorites, loadAllShops]);
 
+  // Title halaman
+  useEffect(() => {
+    document.title = 'Favorit - Cofind';
+    return () => { document.title = 'Cofind'; };
+  }, []);
+
   // Generate Personalized Recommendations berdasarkan favorit
   const personalizedRecommendations = useMemo(() => {
     if (favoriteShops.length === 0 || allShops.length === 0) return [];

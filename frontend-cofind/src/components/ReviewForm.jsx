@@ -52,6 +52,7 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const fileInputRef = useRef(null);
 
   const openModal = () => {
@@ -151,6 +152,7 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
         return;
       }
       setSuccess('Review berhasil dikirim!');
+      setShowSuccessPopup(true);
       if (onReviewSubmitted) {
         onReviewSubmitted({
           ...data.review,
@@ -162,6 +164,7 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
         closeModal();
         setSuccess('');
       }, 1500);
+      setTimeout(() => setShowSuccessPopup(false), 2500);
     } catch (err) {
       setError('Terjadi kesalahan: ' + (err.message || 'Unknown error'));
     } finally {
@@ -189,6 +192,20 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
 
   return (
     <>
+      {/* Popup sukses saat review berhasil di input */}
+      {showSuccessPopup && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 pointer-events-none">
+          <div className="bg-white dark:bg-zinc-800 rounded-xl shadow-2xl border border-amber-200 dark:border-amber-700 px-6 py-4 flex items-center gap-3 animate-fadeIn max-w-sm">
+            <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center flex-shrink-0">
+              <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <p className="text-gray-900 dark:text-white font-medium">Review berhasil di input</p>
+          </div>
+        </div>
+      )}
+
       <button
         type="button"
         onClick={openModal}

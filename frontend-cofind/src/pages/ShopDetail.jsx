@@ -64,6 +64,14 @@ function ShopDetail() {
     }
   }, [isAuthenticated, shop, isLoading, location]);
 
+  // Title halaman: (nama coffee shop) - Cofind
+  useEffect(() => {
+    if (shop?.name) {
+      document.title = `${shop.name} - Cofind`;
+      return () => { document.title = 'Cofind'; };
+    }
+  }, [shop?.name]);
+
   useEffect(() => {
     const loadShop = async () => {
       try {

@@ -25,6 +25,9 @@ export default function ShopList() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [activeFilter] = useState('all');
   const [selectedPills, setSelectedPills] = useState([]);
+  const [confirmedPills, setConfirmedPills] = useState([]);
+  const [llmRecommendations, setLlmRecommendations] = useState([]);
+  const [pillRecommendLoading, setPillRecommendLoading] = useState(false);
   const featuredScrollRef = useRef(null);
   const hasLoadedRef = useRef(false);
 
@@ -42,6 +45,13 @@ export default function ShopList() {
   const [radiusMeters, setRadiusMeters] = useState(2000);
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState(null);
+  const [showStatsInfoBubble, setShowStatsInfoBubble] = useState(false);
+
+  // Title halaman
+  useEffect(() => {
+    document.title = 'Beranda - Cofind';
+    return () => { document.title = 'Cofind'; };
+  }, []);
 
   // Update search term from URL params
   useEffect(() => {
@@ -193,14 +203,14 @@ export default function ShopList() {
   }, [coffeeShops]);
 
 
-  // Dapatkan Top Rated Coffee Shops (rating 4.8-5.0)
+  // Dapatkan Top Rated Coffee Shops (rating 4.5-5.0)
   const topRatedShops = useMemo(() => {
     if (coffeeShops.length === 0) return [];
     
     return coffeeShops
       .filter(shop => {
         const rating = parseFloat(shop.rating) || 0;
-        return rating >= 4.8 && rating <= 5.0;
+        return rating >= 4.5 && rating <= 5.0;
       })
       .sort((a, b) => {
         // Sort berdasarkan rating (descending), lalu jumlah review (descending)
@@ -222,10 +232,10 @@ export default function ShopList() {
   const getFilteredShopsByCategory = (shops) => {
     switch (activeFilter) {
       case 'top-rated':
-        // Filter coffee shop dengan rating 4.8-5.0
+        // Filter coffee shop dengan rating 4.5-5.0
         return shops.filter(shop => {
           const rating = parseFloat(shop.rating) || 0;
-          return rating >= 4.8 && rating <= 5.0;
+          return rating >= 4.5 && rating <= 5.0;
         }).sort((a, b) => {
           // Sort berdasarkan rating (descending), lalu jumlah review (descending)
           const ratingA = parseFloat(a.rating) || 0;
@@ -409,20 +419,52 @@ export default function ShopList() {
     }
   };
 
-  // Filter coffee shops berdasarkan selected pills
-  // NOTE: Filtering berdasarkan reviews sekarang tidak tersedia karena reviews hanya dari Supabase
-  // Filtering akan menggunakan data dari places.json (amenities/features) jika tersedia
-  // Atau bisa diimplementasikan dengan fetch reviews dari Supabase untuk filtering (future enhancement)
+  // Rekomendasi LLM: map nama toko (normalized) -> penjelasan
+  const recommendationExplanationByShopName = useMemo(() => {
+    const map = {};
+    llmRecommendations.forEach((r) => {
+      if (r.name && r.explanation) map[r.name.trim().toLowerCase()] = r.explanation;
+    });
+    return map;
+  }, [llmRecommendations]);
+
+  // Konfirmasi preferensi & panggil API rekomendasi LLM
+  const handleConfirmPills = async () => {
+    if (selectedPills.length === 0) return;
+    setConfirmedPills(selectedPills);
+    setPillRecommendLoading(true);
+    setLlmRecommendations([]);
+    try {
+      const res = await fetch(`${API_BASE}/api/recommend-by-preferences`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ preferences: selectedPills }),
+      });
+      const data = await res.json();
+      if (data.status === 'success' && Array.isArray(data.recommendations)) {
+        setLlmRecommendations(data.recommendations);
+      } else {
+        setLlmRecommendations([]);
+      }
+    } catch (err) {
+      console.error('[ShopList] recommend-by-preferences error:', err);
+      setLlmRecommendations([]);
+    } finally {
+      setPillRecommendLoading(false);
+    }
+  };
+
+  // Filter coffee shops: jika sudah konfirmasi dan ada hasil LLM, hanya tampilkan yang direkomendasikan
   const filterShopsByPills = (shops) => {
-    if (selectedPills.length === 0) {
+    if (confirmedPills.length === 0 || llmRecommendations.length === 0) {
       return shops;
     }
-
-    // TODO: Implement filtering dengan fetch reviews dari Supabase jika diperlukan
-    // Untuk sekarang, return semua shops jika ada pill yang dipilih
-    // (atau bisa filter berdasarkan amenities di places.json jika ada)
-    console.log('[ShopList] Pill filtering tidak tersedia - reviews sekarang hanya dari Supabase');
-    return shops;
+    const namesSet = new Set(
+      llmRecommendations.map((r) => (r.name || '').trim().toLowerCase())
+    );
+    return shops.filter((shop) =>
+      namesSet.has((shop.name || '').trim().toLowerCase())
+    );
   };
 
   // Filter berdasarkan search, kategori, dan pills
@@ -434,18 +476,22 @@ export default function ShopList() {
     )
   );
 
-  // Statistics
-  const stats = {
-    total: coffeeShops.length,
-    avgRating: coffeeShops.length > 0 
-      ? (coffeeShops.reduce((sum, shop) => sum + (shop.rating || 0), 0) / coffeeShops.length).toFixed(1)
-      : 0,
-    topRated: coffeeShops.filter(shop => {
-      const rating = parseFloat(shop.rating) || 0;
-      return rating >= 4.8 && rating <= 5.0;
-    }).length,
-    totalReviews: coffeeShops.reduce((sum, shop) => sum + (shop.user_ratings_total || 0), 0),
-  };
+  // Statistics: dari data yang tampil (filteredShops) dan field yang dipakai aplikasi (total_reviews / user_ratings_total, rating)
+  const stats = useMemo(() => {
+    const list = filteredShops;
+    const total = list.length;
+    const sumRating = list.reduce((sum, shop) => sum + (parseFloat(shop.rating) || 0), 0);
+    const avgRating = total > 0 ? (sumRating / total).toFixed(1) : '0';
+    const topRated = list.filter(shop => {
+      const r = parseFloat(shop.rating) || 0;
+      return r >= 4.5 && r <= 5;
+    }).length;
+    const totalReviews = list.reduce(
+      (sum, shop) => sum + (Number(shop.total_reviews) || Number(shop.user_ratings_total) || 0),
+      0
+    );
+    return { total, avgRating, topRated, totalReviews };
+  }, [filteredShops]);
 
   // Preload featured images setelah data dimuat
   useEffect(() => {
@@ -490,34 +536,89 @@ export default function ShopList() {
 
       <main className="w-full py-4 sm:py-6 md:py-8 px-4 sm:px-6">
         
-        {/* Statistics Cards */}
+        {/* Statistics Cards - sesuai data yang tampil di aplikasi (filteredShops) */}
         {!error && !isLoading && coffeeShops.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-            <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-4 sm:p-5 text-white shadow-lg hover:shadow-xl transition-shadow">
+          <div className="relative grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+            <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-4 sm:p-5 text-white shadow-lg hover:shadow-xl transition-shadow relative">
+              <button
+                type="button"
+                onClick={() => setShowStatsInfoBubble((v) => !v)}
+                className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white/25 hover:bg-white/40 flex items-center justify-center text-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-white/50"
+                aria-label="Informasi sumber data"
+              >
+                i
+              </button>
               <div className="text-2xl sm:text-3xl font-bold mb-1">{stats.total}</div>
               <div className="text-xs sm:text-sm opacity-90">Coffee Shops</div>
-              <div className="text-xs mt-1 opacity-75">di Pontianak</div>
+              <div className="text-xs mt-1 opacity-75">{searchTerm ? 'hasil pencarian' : 'di Pontianak'}</div>
             </div>
-            
-            <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-4 sm:p-5 text-white shadow-lg hover:shadow-xl transition-shadow">
+
+            <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-4 sm:p-5 text-white shadow-lg hover:shadow-xl transition-shadow relative">
+              <button
+                type="button"
+                onClick={() => setShowStatsInfoBubble((v) => !v)}
+                className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white/25 hover:bg-white/40 flex items-center justify-center text-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-white/50"
+                aria-label="Informasi sumber data"
+              >
+                i
+              </button>
               <div className="text-2xl sm:text-3xl font-bold mb-1 flex items-center">
                 ⭐ {stats.avgRating}
               </div>
               <div className="text-xs sm:text-sm opacity-90">Rata-rata Rating</div>
-              <div className="text-xs mt-1 opacity-75">dari semua review</div>
+              <div className="text-xs mt-1 opacity-75">tempat yang tampil</div>
             </div>
-            
-            <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-4 sm:p-5 text-white shadow-lg hover:shadow-xl transition-shadow">
+
+            <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-4 sm:p-5 text-white shadow-lg hover:shadow-xl transition-shadow relative">
+              <button
+                type="button"
+                onClick={() => setShowStatsInfoBubble((v) => !v)}
+                className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white/25 hover:bg-white/40 flex items-center justify-center text-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-white/50"
+                aria-label="Informasi sumber data"
+              >
+                i
+              </button>
               <div className="text-2xl sm:text-3xl font-bold mb-1">{stats.topRated}</div>
               <div className="text-xs sm:text-sm opacity-90">Top Rated</div>
-              <div className="text-xs mt-1 opacity-75">rating ≥ 4.8</div>
+              <div className="text-xs mt-1 opacity-75">rating ≥ 4.5</div>
             </div>
-            
-            <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl p-4 sm:p-5 text-white shadow-lg hover:shadow-xl transition-shadow">
-              <div className="text-2xl sm:text-3xl font-bold mb-1">{stats.totalReviews.toLocaleString()}</div>
-              <div className="text-xs sm:text-sm opacity-90">Total Reviews</div>
-              <div className="text-xs mt-1 opacity-75">dari pengguna</div>
+
+            <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl p-4 sm:p-5 text-white shadow-lg hover:shadow-xl transition-shadow relative">
+              <button
+                type="button"
+                onClick={() => setShowStatsInfoBubble((v) => !v)}
+                className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white/25 hover:bg-white/40 flex items-center justify-center text-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-white/50"
+                aria-label="Informasi sumber data"
+              >
+                i
+              </button>
+              <div className="text-2xl sm:text-3xl font-bold mb-1">{stats.totalReviews.toLocaleString('id-ID')}</div>
+              <div className="text-xs sm:text-sm opacity-90">Total Ulasan</div>
+              <div className="text-xs mt-1 opacity-75">semua tempat yang tampil</div>
             </div>
+
+            {/* Bubble pesan sumber data */}
+            {showStatsInfoBubble && (
+              <>
+                <div
+                  className="fixed inset-0 z-10"
+                  aria-hidden="true"
+                  onClick={() => setShowStatsInfoBubble(false)}
+                />
+                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-3 z-20 w-[min(90vw,320px)] sm:w-80 px-4 py-3 bg-white dark:bg-zinc-800 rounded-xl shadow-xl border border-gray-200 dark:border-zinc-600 text-left">
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    Data dan informasi ini berdasarkan <span className="font-semibold">Places API</span> per tahun <span className="font-semibold">2025</span>.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowStatsInfoBubble(false)}
+                    className="mt-2 text-xs text-amber-600 dark:text-amber-500 hover:underline font-medium"
+                  >
+                    Tutup
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         )}
 
@@ -572,10 +673,24 @@ export default function ShopList() {
               </button>
             </div>
             {selectedPills.length > 0 && (
-              <div className="mt-3 flex items-center gap-2">
+              <div className="mt-3 flex flex-wrap items-center gap-2">
                 <button
-                  onClick={() => setSelectedPills([])}
-                  className="px-3 sm:px-4 py-2 rounded-full text-sm font-medium bg-indigo-600 text-white shadow-md hover:bg-indigo-700 transition-all duration-200"
+                  type="button"
+                  onClick={handleConfirmPills}
+                  disabled={pillRecommendLoading}
+                  className="px-3 sm:px-4 py-2 rounded-full text-sm font-medium bg-indigo-600 text-white shadow-md hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200"
+                  title="Konfirmasi preferensi dan lihat rekomendasi"
+                >
+                  {pillRecommendLoading ? 'Menganalisis...' : 'OK'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedPills([]);
+                    setConfirmedPills([]);
+                    setLlmRecommendations([]);
+                  }}
+                  className="px-3 sm:px-4 py-2 rounded-full text-sm font-medium bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 transition-all duration-200"
                 >
                   Hapus semua filter
                 </button>
@@ -713,7 +828,7 @@ export default function ShopList() {
         )}
 
         {/* Featured Coffee Shops */}
-        {!error && !isLoading && featuredShops.length > 0 && !searchTerm && !selectedPills.length && (
+        {!error && !isLoading && featuredShops.length > 0 && !searchTerm && !confirmedPills.length && (
           <div className="mb-8 sm:mb-10">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
@@ -750,7 +865,7 @@ export default function ShopList() {
         )}
 
         {/* Modern Hero Banner with Background Image - Dipindahkan ke antara Featured dan Terbaru */}
-        {!error && !isLoading && coffeeShops.length > 0 && !searchTerm && !selectedPills.length && (
+        {!error && !isLoading && coffeeShops.length > 0 && !searchTerm && !confirmedPills.length && (
           <div className="relative h-48 sm:h-56 md:h-64 flex items-center justify-center mb-6 sm:mb-8 overflow-hidden w-full">
             {/* Background Image with Overlay */}
             <div 
@@ -786,8 +901,8 @@ export default function ShopList() {
           </div>
         )}
 
-        {/* Top Rated Coffee Shops (4.8-5.0) */}
-        {!error && !isLoading && topRatedShops.length > 0 && !searchTerm && !selectedPills.length && (
+        {/* Top Rated Coffee Shops (4.5-5.0) */}
+        {!error && !isLoading && topRatedShops.length > 0 && !searchTerm && !confirmedPills.length && (
           <div className="mb-8 sm:mb-10">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
@@ -817,7 +932,7 @@ export default function ShopList() {
         )}
 
         {/* Newest Coffee Shops */}
-        {!error && !isLoading && newestShops.length > 0 && !searchTerm && !selectedPills.length && (
+        {!error && !isLoading && newestShops.length > 0 && !searchTerm && !confirmedPills.length && (
           <div className="mb-8 sm:mb-10">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
@@ -847,7 +962,7 @@ export default function ShopList() {
         )}
 
         {/* Recently Viewed Coffee Shops - Tampilkan di atas All Coffee Shops */}
-        {!error && !isLoading && recentlyViewedShops.length > 0 && !searchTerm && !selectedPills.length && (
+        {!error && !isLoading && recentlyViewedShops.length > 0 && !searchTerm && !confirmedPills.length && (
           <div className="mb-8 sm:mb-10">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
@@ -943,7 +1058,12 @@ export default function ShopList() {
                 key={shop.place_id}
                 className="block hover:shadow-2xl transition duration-300"
               >
-                <CoffeeShopCard shop={shop} />
+                <CoffeeShopCard
+                  shop={shop}
+                  recommendationExplanation={
+                    recommendationExplanationByShopName[(shop.name || '').trim().toLowerCase()]
+                  }
+                />
               </div>
             ))}
           </div>
@@ -959,19 +1079,23 @@ export default function ShopList() {
           </div>
         )}
         
-        {!error && !isLoading && filteredShops.length === 0 && selectedPills.length > 0 && (
+        {!error && !isLoading && filteredShops.length === 0 && (selectedPills.length > 0 || confirmedPills.length > 0) && (
           <div className="text-center py-12">
             <svg className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M12 20a8 8 0 100-16 8 8 0 000 16z" />
             </svg>
             <h3 className="mt-2 text-lg font-medium text-gray-900 dark:text-gray-100">
-              Tidak ada coffee shop yang sesuai
+              {pillRecommendLoading ? 'Menganalisis rekomendasi...' : 'Tidak ada coffee shop yang sesuai'}
             </h3>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Tidak ada coffee shop yang memiliki review sesuai dengan preferensi yang Anda pilih.
+              {pillRecommendLoading ? 'Tunggu sebentar.' : 'Tidak ada coffee shop yang memiliki review sesuai dengan preferensi yang Anda pilih.'}
             </p>
             <button
-              onClick={() => setSelectedPills([])}
+              onClick={() => {
+                setSelectedPills([]);
+                setConfirmedPills([]);
+                setLlmRecommendations([]);
+              }}
               className="mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors"
             >
               Hapus Filter

@@ -19,9 +19,10 @@ const Navbar = () => {
     setSearchQuery(query);
   }, [searchParams]);
 
-  // Close user dropdown when route changes
+  // Close dropdown saat pindah halaman (navbar link lain diklik)
   useEffect(() => {
     setUserDropdownOpen(false);
+    setCollectionDropdownOpen(false);
   }, [location.pathname]);
 
   // Close user dropdown when clicking outside
@@ -39,6 +40,22 @@ const Navbar = () => {
       };
     }
   }, [userDropdownOpen]);
+
+  // Close collection dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (collectionDropdownOpen && !event.target.closest('.collection-dropdown-container')) {
+        setCollectionDropdownOpen(false);
+      }
+    };
+
+    if (collectionDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [collectionDropdownOpen]);
 
   // Handle search submission
   const handleSearch = (e) => {
@@ -194,7 +211,7 @@ const Navbar = () => {
               </Link>
 
               {/* Koleksi (Dropdown) */}
-              <div className="relative">
+              <div className="relative collection-dropdown-container">
                 <button
                   onClick={() => setCollectionDropdownOpen(!collectionDropdownOpen)}
                   className={`relative inline-flex items-center justify-center gap-1.5 rounded-md px-3 lg:px-4 py-1.5 lg:py-2 text-xs lg:text-sm font-medium transition-all duration-300 ease-in-out ${
