@@ -1,1 +1,340 @@
-{}
+{
+  "ChIJhx6zl0BZHS4RGNla_oPoIJ0": {
+    "data": {
+      "review_relevance": [
+        {
+          "index": 0,
+          "relevant": true
+        },
+        {
+          "index": 1,
+          "relevant": true
+        },
+        {
+          "index": 2,
+          "relevant": true
+        }
+      ],
+      "aspects": {
+        "suasana": {
+          "sentiment": "netral",
+          "summary": "Aspek suasana sering muncul di review.",
+          "evidence": null
+        },
+        "fasilitas": null,
+        "makanan_minuman": {
+          "sentiment": "netral",
+          "summary": "Aspek makanan minuman sering muncul di review.",
+          "evidence": null
+        },
+        "harga": {
+          "sentiment": "netral",
+          "summary": "Aspek harga sering muncul di review.",
+          "evidence": null
+        },
+        "pelayanan": {
+          "sentiment": "netral",
+          "summary": "Aspek pelayanan sering muncul di review.",
+          "evidence": null
+        },
+        "lokasi": null
+      },
+      "overall_sentiment": "netral",
+      "highlights": [
+        "enak",
+        "bagus",
+        "makanan"
+      ],
+      "warnings": [],
+      "cocok_untuk": [],
+      "summary": "Coffee shop ini dikenal dengan makanan, luas, dan harga.",
+      "top_terms": [
+        {
+          "term": "enak",
+          "count": 2
+        },
+        {
+          "term": "bagus",
+          "count": 2
+        },
+        {
+          "term": "makanan",
+          "count": 2
+        }
+      ],
+      "aspect_counts": {
+        "suasana": 1,
+        "fasilitas": 0,
+        "makanan_minuman": 2,
+        "harga": 2,
+        "pelayanan": 2,
+        "lokasi": 0
+      },
+      "aspect_keywords": {
+        "suasana": [
+          "luas"
+        ],
+        "fasilitas": [],
+        "makanan_minuman": [
+          "makanan",
+          "minuman"
+        ],
+        "harga": [
+          "harga",
+          "murah"
+        ],
+        "pelayanan": [
+          "lama",
+          "pelayanan",
+          "ramah"
+        ],
+        "lokasi": []
+      },
+      "quality": {
+        "total_reviews": 3,
+        "used_reviews": 3,
+        "rejected_reasons": {}
+      }
+    },
+    "timestamp": 1775141802.2702842,
+    "review_count": 3,
+    "shop_name": "Haruna Cafe",
+    "analysis_version": 5
+  },
+  "ChIJyRLXBlJYHS4RWNj0yvAvSAQ": {
+    "data": {
+      "review_relevance": [
+        {
+          "index": 0,
+          "relevant": true,
+          "reason": "opsional"
+        }
+      ],
+      "aspects": {
+        "suasana": {
+          "sentiment": "positif",
+          "summary": "...",
+          "evidence": "..."
+        },
+        "fasilitas": {
+          "sentiment": "positif",
+          "summary": "...",
+          "evidence": "..."
+        },
+        "makanan_minuman": {
+          "sentiment": "positif",
+          "summary": "...",
+          "evidence": "..."
+        },
+        "harga": {
+          "sentiment": "positif",
+          "summary": "...",
+          "evidence": "..."
+        },
+        "pelayanan": {
+          "sentiment": "positif",
+          "summary": "...",
+          "evidence": "..."
+        },
+        "lokasi": {
+          "sentiment": "positif",
+          "summary": "...",
+          "evidence": "..."
+        }
+      },
+      "overall_sentiment": "positif",
+      "highlights": [
+        "maks 3 poin kuat, 2-5 kata"
+      ],
+      "warnings": [
+        "maks 2 poin lemah, 2-6 kata"
+      ],
+      "cocok_untuk": [
+        "maks 4 aktivitas"
+      ],
+      "summary": "Coffee shop ini dikenal dengan kopi yang disukai pengunjung, suasana yang terasa nyaman, dan lokasi yang mudah dijangkau.",
+      "top_terms": [
+        {
+          "term": "kopi",
+          "count": 3
+        },
+        {
+          "term": "rasanya",
+          "count": 3
+        },
+        {
+          "term": "srikayanya",
+          "count": 2
+        },
+        {
+          "term": "roti",
+          "count": 2
+        },
+        {
+          "term": "malam",
+          "count": 2
+        },
+        {
+          "term": "ngopi",
+          "count": 2
+        },
+        {
+          "term": "enak",
+          "count": 2
+        },
+        {
+          "term": "nongkrong",
+          "count": 2
+        }
+      ],
+      "aspect_counts": {
+        "suasana": 1,
+        "fasilitas": 1,
+        "makanan_minuman": 3,
+        "harga": 1,
+        "pelayanan": 1,
+        "lokasi": 1
+      },
+      "aspect_keywords": {
+        "suasana": [
+          "nyaman",
+          "ramai",
+          "luas"
+        ],
+        "fasilitas": [
+          "parkir",
+          "toilet"
+        ],
+        "makanan_minuman": [
+          "kopi",
+          "coffee",
+          "makanan",
+          "minuman",
+          "menu"
+        ],
+        "harga": [
+          "harga"
+        ],
+        "pelayanan": [
+          "pelayanan",
+          "ramah",
+          "lama"
+        ],
+        "lokasi": [
+          "lokasi"
+        ]
+      },
+      "quality": {
+        "total_reviews": 3,
+        "used_reviews": 3,
+        "rejected_reasons": {}
+      }
+    },
+    "timestamp": 1775142248.874083,
+    "review_count": 3,
+    "shop_name": "Aming Coffee",
+    "analysis_version": 6
+  },
+  "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4": {
+    "data": {
+      "review_relevance": [
+        {
+          "index": 0,
+          "relevant": true,
+          "reason": "opsional"
+        }
+      ],
+      "aspects": {
+        "suasana": {
+          "sentiment": "positif",
+          "summary": "indoor, luas, nyaman, outdoor",
+          "evidence": "untuk perokok ini nyaman karna ada indoor smoking area, dan untuk yang ga ngerokok juga ada indoor ac non smoking, kopinya pun enak"
+        },
+        "fasilitas": {
+          "sentiment": "positif",
+          "summary": "ac, smoking, parkir",
+          "evidence": "tempat parkir luas, tempat duduk banyak, cuma pelayannya agak cuek"
+        },
+        "makanan_minuman": {
+          "sentiment": "positif",
+          "summary": "kopi",
+          "evidence": "kopinya pun enak"
+        },
+        "harga": {
+          "sentiment": "positif",
+          "summary": "harga",
+          "evidence": "harga standar"
+        },
+        "pelayanan": {
+          "sentiment": "netral",
+          "summary": "-",
+          "evidence": "-"
+        },
+        "lokasi": {
+          "sentiment": "netral",
+          "summary": "-",
+          "evidence": "-"
+        }
+      },
+      "overall_sentiment": "positif",
+      "highlights": [
+        "maks 3 poin kuat, 2-5 kata"
+      ],
+      "warnings": [
+        "maks 2 poin lemah, 2-6 kata"
+      ],
+      "cocok_untuk": [
+        "maks 4 aktivitas"
+      ],
+      "summary": "Coffee shop ini dikenal dengan indoor, luas, dan outdoor.",
+      "top_terms": [
+        {
+          "term": "indoor",
+          "count": 2
+        },
+        {
+          "term": "luas",
+          "count": 2
+        }
+      ],
+      "aspect_counts": {
+        "suasana": 3,
+        "fasilitas": 2,
+        "makanan_minuman": 2,
+        "harga": 1,
+        "pelayanan": 0,
+        "lokasi": 0
+      },
+      "aspect_keywords": {
+        "suasana": [
+          "indoor",
+          "luas",
+          "nyaman",
+          "outdoor"
+        ],
+        "fasilitas": [
+          "ac",
+          "smoking",
+          "parkir"
+        ],
+        "makanan_minuman": [
+          "kopi"
+        ],
+        "harga": [
+          "harga"
+        ],
+        "pelayanan": [],
+        "lokasi": []
+      },
+      "quality": {
+        "total_reviews": 3,
+        "used_reviews": 3,
+        "rejected_reasons": {}
+      }
+    },
+    "timestamp": 1775141776.7252803,
+    "review_count": 3,
+    "shop_name": "Aming Coffee Podomoro",
+    "analysis_version": 5
+  }
+}

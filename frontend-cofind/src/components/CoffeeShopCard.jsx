@@ -1,102 +1,22 @@
 // src/components/CoffeeShopCard.jsx
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import OptimizedImage from './OptimizedImage';
 import { getCoffeeShopImage } from '../utils/coffeeShopImages';
-import { getReviewSummary } from '../utils/reviewSummary';
-import { useAuth } from '../context/authContext';
-import { authService } from '../services/authService';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
-
-const CoffeeShopCard = ({ shop, recommendationExplanation }) => {
-    const { isAuthenticated } = useAuth();
-    const navigate = useNavigate();
-    const [reviewSummary, setReviewSummary] = useState(null);
-    const [isLoadingSummary, setIsLoadingSummary] = useState(false);
+const CoffeeShopCard = ({ shop, variant = 'default' }) => {
     const [isModalOpen] = useState(false);
     const [photoUrl, setPhotoUrl] = useState(null);
-    const [aiSummary, setAiSummary] = useState(null);
-    const [isLoadingAI, setIsLoadingAI] = useState(false);
-    const [showAiBubble, setShowAiBubble] = useState(false);
-    const [showInfoBubble, setShowInfoBubble] = useState(false);
-    const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+    const [showRatingInfoBubble, setShowRatingInfoBubble] = useState(false);
+    const isMini = variant === 'mini';
 
-    // Initialize photo URL
     useEffect(() => {
       if (!shop.place_id) return;
-
-      // Local-only image
       setPhotoUrl(getCoffeeShopImage(shop.place_id || shop.name));
     }, [shop.photo_url, shop.place_id, shop.name]);
 
-    // Fetch review summary saat component mount
-    useEffect(() => {
-        if (shop.place_id) {
-            setIsLoadingSummary(true);
-            getReviewSummary(shop.place_id, shop.name)
-                .then(summary => {
-                    setReviewSummary(summary);
-                    setIsLoadingSummary(false);
-                })
-                .catch(error => {
-                    console.error('[CoffeeShopCard] Error loading summary:', error);
-                    setIsLoadingSummary(false);
-                });
-        }
-    }, [shop.place_id, shop.name]);
-
-    // Handle image load error - fallback to local asset
     const handleImageError = () => {
       setPhotoUrl(getCoffeeShopImage(shop.place_id || shop.name));
-    };
-
-    // Function to fetch AI summary (hanya untuk user yang sudah login)
-    const handleAISummarize = async (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        if (!isAuthenticated) {
-            setShowLoginPrompt(true);
-            return;
-        }
-        
-        if (aiSummary) {
-            setShowAiBubble(!showAiBubble);
-            return;
-        }
-        
-        setIsLoadingAI(true);
-        try {
-            const token = authService.getToken();
-            const headers = { 'Content-Type': 'application/json' };
-            if (token) headers['Authorization'] = `Bearer ${token}`;
-
-            const response = await fetch(`${API_BASE}/api/coffeeshops/${shop.place_id}/summarize`, {
-                method: 'POST',
-                headers
-            });
-            
-            const data = await response.json();
-            
-            if (response.status === 401 || data.require_login) {
-                setShowLoginPrompt(true);
-                return;
-            }
-            if (data.status === 'success') {
-                setAiSummary(data.summary);
-                setShowAiBubble(true);
-            } else {
-                setAiSummary(data.message || 'AI tidak tersedia saat ini');
-                setShowAiBubble(true);
-            }
-        } catch (error) {
-            console.error('[AI Summarize] Error:', error);
-            setAiSummary('Gagal memuat ringkasan AI');
-            setShowAiBubble(true);
-        } finally {
-            setIsLoadingAI(false);
-        }
     };
 
     // Fungsi untuk mendapatkan warna placeholder berdasarkan nama shop
@@ -165,7 +85,7 @@ const CoffeeShopCard = ({ shop, recommendationExplanation }) => {
         <div className="relative w-full">
         <Link
             to={`/shop/${shop.place_id}`}
-            className="block bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 overflow-hidden group w-full"
+            className="block group w-full overflow-visible"
             style={{ pointerEvents: isModalOpen ? 'none' : 'auto' }}
                 onClick={(e) => {
                     // Prevent navigation if modal is open
@@ -175,7 +95,12 @@ const CoffeeShopCard = ({ shop, recommendationExplanation }) => {
                     }
                 }}
             >
-                <div className="aspect-w-16 aspect-h-9 relative overflow-hidden h-48">
+            <div className={`bg-white dark:bg-gray-800 rounded-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 overflow-visible ${
+                isMini ? 'shadow-sm hover:shadow-md' : 'shadow-lg hover:shadow-xl'
+            }`}>
+                <div className={`aspect-w-16 aspect-h-9 relative overflow-hidden rounded-t-xl ${
+                    isMini ? 'h-32' : 'h-48'
+                }`}>
                     <OptimizedImage
                         src={photoUrl}
                         alt={shop.name}
@@ -185,15 +110,15 @@ const CoffeeShopCard = ({ shop, recommendationExplanation }) => {
                     />
                 </div>
             
-            <div className="p-4">
-                    <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors">
+            <div className={`relative ${isMini ? 'p-3' : 'p-4'}`}>
+                    <h2 className={`${isMini ? 'text-base mb-1.5' : 'text-xl mb-2'} font-bold text-gray-800 dark:text-gray-200 line-clamp-2 group-hover:text-indigo-600 transition-colors`}>
                         {shop.name}
                     </h2>
 
                 {/* Rating seperti di foto: bintang + angka + total reviews + ikon (i) */}
-                <div className="relative flex items-center gap-2 mb-2 flex-wrap">
+                <div className={`relative flex items-center gap-2 flex-wrap ${isMini ? 'mb-1.5' : 'mb-2'}`}>
                     <div className="flex items-center gap-1.5">
-                        <span className="flex text-lg leading-none" aria-label={`Rating ${rating} dari 5`}>
+                        <span className={`flex leading-none ${isMini ? 'text-base' : 'text-lg'}`} aria-label={`Rating ${rating} dari 5`}>
                             {renderStars()}
                         </span>
                         {rating > 0 && (
@@ -202,37 +127,43 @@ const CoffeeShopCard = ({ shop, recommendationExplanation }) => {
                                 {totalReviews > 0 && (
                                     <span className="text-sm text-gray-500 dark:text-gray-400">({totalReviews} reviews)</span>
                                 )}
-                                <button
-                                    type="button"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        setShowInfoBubble(!showInfoBubble);
-                                    }}
-                                    className="w-5 h-5 rounded-full border border-gray-400 dark:border-gray-500 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
-                                    title="Informasi rating dan ulasan"
-                                    aria-label="Informasi rating dan ulasan"
-                                >
-                                    <span className="text-xs font-bold leading-none">i</span>
-                                </button>
+                                {!isMini && (
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setShowRatingInfoBubble(!showRatingInfoBubble);
+                                        }}
+                                        className="w-5 h-5 rounded-full border border-gray-400 dark:border-gray-500 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
+                                        title="Informasi rating dan ulasan"
+                                        aria-label="Informasi rating dan ulasan"
+                                    >
+                                        <span className="text-xs font-bold leading-none">i</span>
+                                    </button>
+                                )}
                             </>
                         )}
                     </div>
-                    {statusInfo && (
+                    {!isMini && statusInfo && (
                         <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${statusInfo.class}`}>
                             {statusInfo.text}
                         </span>
                     )}
                     {/* Bubble info: rating & reviews berdasarkan Google Maps */}
-                    {showInfoBubble && (
+                    {!isMini && showRatingInfoBubble && (
                         <div
                             className="absolute left-0 top-full mt-1 w-64 p-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-50 text-sm text-gray-700 dark:text-gray-300"
                             role="tooltip"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                            }}
                         >
                             <p>Rating dan total ulasan berdasarkan data dari Google Maps.</p>
                             <button
                                 type="button"
-                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowInfoBubble(false); }}
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowRatingInfoBubble(false); }}
                                 className="mt-2 text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
                             >
                                 Tutup
@@ -241,158 +172,28 @@ const CoffeeShopCard = ({ shop, recommendationExplanation }) => {
                     )}
                 </div>
 
-                {/* Jam Operasional - di bawah nama, di atas button AI summary */}
-                {shop.opening_hours_display != null && (
+                {!isMini && shop.opening_hours_display != null && (
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 flex items-center gap-1.5 line-clamp-2">
                         <span aria-hidden>🕐</span>
                         {shop.opening_hours_display || 'Jam operasional belum diisi'}
                     </p>
                 )}
-                
-                {/* Review Summary */}
-                {isLoadingSummary && !reviewSummary && (
-                    <div className="mb-3">
-                        <div className="h-4 bg-gray-100 dark:bg-gray-700 rounded animate-pulse w-3/4"></div>
-                    </div>
-                )}
-                {reviewSummary && (
-                    <div className="mb-3 flex items-start gap-2">
-                        <svg 
-                            className="w-4 h-4 text-teal-500 dark:text-teal-400 mt-0.5 flex-shrink-0" 
-                            fill="currentColor" 
-                            viewBox="0 0 20 20"
-                        >
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2 flex-1">
-                            {reviewSummary}
-                        </p>
-                    </div>
-                )}
 
-                {recommendationExplanation && (
-                    <p className="text-sm text-indigo-600 dark:text-indigo-400 mb-3 line-clamp-2" title={recommendationExplanation}>
-                        {recommendationExplanation}
-                    </p>
-                )}
-                
-                {shop.vicinity && (
+                {!isMini && shop.vicinity && (
                     <p className="text-gray-600 text-sm mb-3 line-clamp-2">
                         📍 {shop.vicinity}
                     </p>
                 )}
                 
-                {shop.opening_hours?.open_now !== undefined && (
+                {!isMini && shop.opening_hours?.open_now !== undefined && (
                     <p className={`text-sm font-medium ${shop.opening_hours.open_now ? 'text-green-600' : 'text-red-600'}`}>
                         {shop.opening_hours.open_now ? '🕒 Currently Open' : '🕒 Currently Closed'}
                     </p>
                 )}
                 
+                {!isMini && (
                 <div className="mt-4 flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                        {/* AI Summarize Button - No Background */}
-                        <div className="relative">
-                            <button
-                                onClick={handleAISummarize}
-                                className="hover:scale-110 transition-transform duration-200"
-                                title="AI Summary"
-                                disabled={isLoadingAI}
-                            >
-                                {isLoadingAI ? (
-                                    <div className="w-7 h-7 flex items-center justify-center">
-                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
-                                    </div>
-                                ) : (
-                                    <img 
-                                        src="https://img.icons8.com/3d-fluency/94/bard.png" 
-                                        alt="AI Summary" 
-                                        className="w-7 h-7"
-                                    />
-                                )}
-                            </button>
-                            
-                            {/* AI Summary Bubble - format seperti gambar: tulisan biru, hanya isi analisis (tanpa nama) */}
-                            {showAiBubble && aiSummary && (
-                                <div className="absolute bottom-10 left-0 w-64 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/90 dark:to-blue-900/90 backdrop-blur-sm p-3 rounded-2xl shadow-2xl border-2 border-purple-200 dark:border-purple-700 z-50 animate-fade-in">
-                                    <button
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            setShowAiBubble(false);
-                                        }}
-                                        className="absolute -top-2 -right-2 bg-white dark:bg-gray-800 rounded-full p-1 shadow-lg hover:bg-red-50 transition-colors"
-                                    >
-                                        <svg className="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
-                                    <div className="flex items-start gap-2">
-                                        <img 
-                                            src="https://img.icons8.com/3d-fluency/94/bard.png" 
-                                            alt="AI" 
-                                            className="w-6 h-6 flex-shrink-0"
-                                        />
-                                        <p className="text-sm text-blue-600 dark:text-blue-400 leading-relaxed font-medium">
-                                            ✨ {aiSummary}
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
-                            {/* Popup: saran login untuk AI Summary */}
-                            {showLoginPrompt && (
-                                <>
-                                    <div
-                                        className="fixed inset-0 bg-black/40 z-[100]"
-                                        aria-hidden="true"
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            setShowLoginPrompt(false);
-                                        }}
-                                    />
-                                    <div
-                                        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(90vw,320px)] bg-white dark:bg-gray-800 border-2 border-amber-200 dark:border-amber-700 rounded-2xl shadow-2xl p-4 z-[101] animate-fade-in"
-                                        role="dialog"
-                                        aria-labelledby="login-prompt-title"
-                                        aria-describedby="login-prompt-desc"
-                                    >
-                                        <p id="login-prompt-title" className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
-                                            Fitur AI Summary
-                                        </p>
-                                        <p id="login-prompt-desc" className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                                            Silakan login terlebih dahulu untuk menggunakan fitur AI Summary.
-                                        </p>
-                                        <div className="flex gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    setShowLoginPrompt(false);
-                                                    navigate('/login');
-                                                }}
-                                                className="flex-1 px-3 py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
-                                            >
-                                                Login
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    setShowLoginPrompt(false);
-                                                }}
-                                                className="px-3 py-2 text-sm font-medium rounded-lg bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
-                                            >
-                                                Tutup
-                                            </button>
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                        
-                        {/* Types Tags */}
                         <div className="flex flex-wrap gap-2">
                             {shop.types?.slice(0, 2).map((type, index) => (
                                 <span key={index} className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded">
@@ -409,10 +210,11 @@ const CoffeeShopCard = ({ shop, recommendationExplanation }) => {
                         </svg>
                     </div>
                 </div>
+                )}
+            </div>
             </div>
         </Link>
         
-        {/* AI Analysis disabled */}
         </div>
     );
 }

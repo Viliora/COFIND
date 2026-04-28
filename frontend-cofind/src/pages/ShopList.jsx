@@ -1,44 +1,184 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
 import CoffeeShopCard from '../components/CoffeeShopCard';
 import HeroSwiper from '../components/HeroSwiper';
 import CoffeeShopMap from '../components/CoffeeShopMap';
 import CoffeeShopRadiusMap from '../components/CoffeeShopRadiusMap';
+import RecommendationModal from '../components/RecommendationModal';
 import { preloadFeaturedImages } from '../utils/imagePreloader';
 import { ensureCoffeeShopImageMap } from '../utils/coffeeShopImages';
 import { getRecentlyViewedWithDetails } from '../utils/recentlyViewed';
 import heroBgImage from '../assets/1R modern cafe 1.5.jpg';
 import { useAuth } from '../context/authContext';
-import { authService } from '../services/authService';
-
 // API Configuration
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
+/** Sama seperti CoffeeShopCard: rating & total ulasan dari data Google Maps */
+function getGoogleRating(shop) {
+  return shop?.rating != null ? Number(shop.rating) : 0;
+}
+
+function getGoogleReviewCount(shop) {
+  const n = Number(shop?.total_reviews ?? shop?.user_ratings_total ?? 0);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function normalizeMatchText(value) {
+  return String(value ?? '').trim().toLowerCase();
+}
+
+const MANUAL_CONTEXT_KEYWORDS = {
+  cozy: ['cozy', 'nyaman', 'tenang', 'santai', 'homey', 'adem', 'betah'],
+  belajar: ['belajar', 'kerja', 'tugas', 'laptop', 'wfc', 'produktif', 'fokus'],
+  'wifi stabil': ['wifi', 'wi-fi', 'internet', 'koneksi', 'sinyal'],
+  stopkontak: ['stopkontak', 'colokan', 'charger', 'charge', 'outlet', 'cas'],
+  'ruang ibadah': ['ruang ibadah', 'musholla', 'mushola', 'sholat', 'solat', 'salat', 'masjid'],
+  fotogenik: ['fotogenik', 'aesthetic', 'estetik', 'instagramable', 'foto'],
+  'live music': ['live music', 'musik', 'akustik', 'band', 'nyanyi'],
+  'parkiran luas': ['parkiran', 'parkir', 'parking'],
+  '24 jam': ['24 jam', 'buka malam', 'larut malam', 'subuh'],
+  keluarga: ['keluarga', 'family', 'anak', 'ramah keluarga', 'bawa anak'],
+};
+
+/** Huruf, angka, spasi, dan koma saja (tanpa karakter khusus lain). */
+const MANUAL_INPUT_ALLOWED_REGEX = /^[a-z0-9\s,]+$/i;
+const MANUAL_INPUT_RAW_ALLOWED_REGEX = /^[a-zA-Z0-9\s,]*$/;
+const MANUAL_SPECIAL_CHAR_NOTIFICATION =
+  'Jangan gunakan karakter khusus. Yang diperbolehkan: huruf, angka, spasi, dan koma (,).';
+const MANUAL_PROFANITY_WORDS = new Set([
+  'anjing', 'bangsat', 'kontol', 'memek', 'ngentot', 'tai', 'bajingan', 'tolol', 'goblok', 'asu',
+]);
+const MANUAL_MAX_CHARS = 80;
+const RECOMMENDATION_FIELDS = [
+  { label: '🛋️ Cozy', value: 'cozy' },
+  { label: '📚 Belajar', value: 'belajar' },
+  { label: '📶 WiFi', value: 'wifi stabil' },
+  { label: '🔌 Stopkontak', value: 'stopkontak' },
+  { label: '🕌 Ruang Ibadah', value: 'ruang ibadah' },
+  { label: '📸 Fotogenik', value: 'fotogenik' },
+  { label: '🎵 Live Music', value: 'live music' },
+  { label: '🅿️ Parkir Luas', value: 'parkiran luas' },
+  { label: '🌙 24 jam', value: '24 jam' },
+  { label: '👨‍👩‍👧‍👦 Keluarga', value: 'keluarga' },
+];
+
+function normalizeManualPreference(value) {
+  return String(value ?? '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s,]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function sanitizeManualPreferenceInput(value) {
+  return String(value ?? '').replace(/[^a-zA-Z0-9\s,]/g, ' ');
+}
+
+function truncateManualPreferenceToMaxChars(value, maxChars = MANUAL_MAX_CHARS) {
+  const safe = sanitizeManualPreferenceInput(value);
+  return safe.slice(0, maxChars);
+}
+
+function getManualPreferenceCharCount(value) {
+  return sanitizeManualPreferenceInput(value).length;
+}
+
+function containsManualProfanity(value) {
+  const normalized = normalizeManualPreference(value);
+  if (!normalized) return false;
+  return normalized
+    .split(/\s+/)
+    .filter(Boolean)
+    .some((token) => MANUAL_PROFANITY_WORDS.has(token));
+}
+
+function hasKnownContextKeyword(value) {
+  const normalized = normalizeManualPreference(value);
+  if (!normalized) return false;
+  const knownTerms = Object.values(MANUAL_CONTEXT_KEYWORDS).flat().map((t) => normalizeManualPreference(t));
+  return knownTerms.includes(normalized) || knownTerms.some((term) => term && normalized.includes(term));
+}
+
+function isLikelyGibberishToken(token) {
+  if (!token || token.length < 7) return false;
+  if (/^\d+$/.test(token)) return true;
+  const vowelCount = (token.match(/[aiueo]/g) || []).length;
+  const consonantCluster = /[bcdfghjklmnpqrstvwxyz]{5,}/.test(token);
+  return vowelCount <= 1 || consonantCluster;
+}
+
+function looksLikeAbsurdManualPreference(value) {
+  const normalized = normalizeManualPreference(value);
+  if (!normalized) return false;
+  const tokens = normalized.split(/\s+/).filter(Boolean);
+  if (!tokens.length) return false;
+  if (tokens.length === 1 && tokens[0].length >= 10 && !hasKnownContextKeyword(tokens[0])) {
+    return true;
+  }
+  const gibberishCount = tokens.filter(isLikelyGibberishToken).length;
+  return gibberishCount >= Math.max(1, Math.ceil(tokens.length * 0.6));
+}
+
+function getManualPreferenceValidationMessage(value) {
+  const normalized = normalizeManualPreference(value);
+  if (!normalized) return '';
+  const charCount = getManualPreferenceCharCount(value);
+
+  // 1) Normalisasi input (sudah via normalizeManualPreference)
+  // 2) Basic validation
+  if (normalized.length < 3) {
+    return 'Input opsi Lainnya terlalu pendek. Masukkan minimal 3 karakter.';
+  }
+  if (normalized.length > MANUAL_MAX_CHARS) {
+    return `Input opsi Lainnya terlalu panjang. Gunakan maksimal ${MANUAL_MAX_CHARS} karakter.`;
+  }
+  if (!MANUAL_INPUT_ALLOWED_REGEX.test(normalized)) {
+    return 'Input opsi Lainnya hanya boleh berisi huruf, angka, spasi, dan koma (,).';
+  }
+  if (charCount > MANUAL_MAX_CHARS) {
+    return `Input opsi Lainnya maksimal ${MANUAL_MAX_CHARS} karakter.`;
+  }
+
+  if (containsManualProfanity(normalized)) {
+    return 'Sistem belum mengerti preferensi Anda. Coba gunakan preferensi lain.';
+  }
+
+  if (looksLikeAbsurdManualPreference(normalized)) {
+    return 'Sistem belum mengerti preferensi Anda. Coba gunakan preferensi lain.';
+  }
+
+  return '';
+}
+
+/** Urut katalog utama: rating tertinggi dulu, lalu jumlah review Google (banyak → sedikit) */
+function sortShopsByGoogleMaps(shops) {
+  return [...shops].sort((a, b) => {
+    const rDiff = getGoogleRating(b) - getGoogleRating(a);
+    if (rDiff !== 0) return rDiff;
+    return getGoogleReviewCount(b) - getGoogleReviewCount(a);
+  });
+}
+
 export default function ShopList() {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const { loading: authLoading, isAuthenticated, user } = useAuth();
+  const { loading: authLoading } = useAuth();
   const [coffeeShops, setCoffeeShops] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [activeFilter] = useState('all');
   const [selectedPills, setSelectedPills] = useState([]);
   const [confirmedPills, setConfirmedPills] = useState([]);
+  const [confirmedCustomQuery, setConfirmedCustomQuery] = useState('');
   const [llmRecommendations, setLlmRecommendations] = useState([]);
   const [pillRecommendLoading, setPillRecommendLoading] = useState(false);
+  const [pillRecommendError, setPillRecommendError] = useState('');
+  const [otherPreferenceText, setOtherPreferenceText] = useState('');
+  const [otherPreferenceError, setOtherPreferenceError] = useState('');
+  const [recommendationModalMode, setRecommendationModalMode] = useState('pills');
+  const [manualSearchAttempted, setManualSearchAttempted] = useState(false);
+  const [recommendationNotification, setRecommendationNotification] = useState(null);
+  const [showRecommendationModal, setShowRecommendationModal] = useState(false);
   const featuredScrollRef = useRef(null);
   const hasLoadedRef = useRef(false);
-
-  // Modal saran preferensi
-  const [showSuggestModal, setShowSuggestModal] = useState(false);
-  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-  const [preferenceInput, setPreferenceInput] = useState('');
-  const [reasonInput, setReasonInput] = useState('');
-  const [submitLoading, setSubmitLoading] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState('');
-  const [submitError, setSubmitError] = useState('');
 
   // Lokasi saat ini & radius dalam meter (untuk katalog "coffee shop dalam radius")
   const [userLocation, setUserLocation] = useState(null);
@@ -51,24 +191,6 @@ export default function ShopList() {
   useEffect(() => {
     document.title = 'Beranda - Cofind';
     return () => { document.title = 'Cofind'; };
-  }, []);
-
-  // Update search term from URL params
-  useEffect(() => {
-    const query = searchParams.get('search') || '';
-    setSearchTerm(query);
-  }, [searchParams]);
-
-  // Listen for URL changes (from Navbar search)
-  useEffect(() => {
-    const handlePopState = () => {
-      const params = new URLSearchParams(window.location.search);
-      const query = params.get('search') || '';
-      setSearchTerm(query);
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   // Listen untuk online/offline events
@@ -157,23 +279,29 @@ export default function ShopList() {
     };
   }, [authLoading]);
 
+  useEffect(() => {
+    if (!recommendationNotification) return undefined;
+    const timer = setTimeout(() => setRecommendationNotification(null), 3200);
+    return () => clearTimeout(timer);
+  }, [recommendationNotification]);
+
   // Dapatkan Featured Coffee Shops (Top 5 berdasarkan scoring) - menggunakan useMemo untuk optimasi
   const featuredShops = useMemo(() => {
     if (coffeeShops.length === 0) return [];
     
     const calculateFeaturedScore = (shop) => {
-      const rating = shop.rating || 0;
-      const reviews = shop.user_ratings_total || 0;
-      const maxReviews = Math.max(...coffeeShops.map(s => s.user_ratings_total || 0));
+      const rating = getGoogleRating(shop);
+      const reviews = getGoogleReviewCount(shop);
+      const maxReviews = Math.max(...coffeeShops.map((s) => getGoogleReviewCount(s)), 0);
       const normalizedReviews = maxReviews > 0 ? reviews / maxReviews : 0;
-      const hasCompleteData = shop.address && shop.rating && shop.user_ratings_total ? 1 : 0.5;
+      const hasCompleteData = shop.address && rating > 0 && reviews > 0 ? 1 : 0.5;
       
       // Scoring: rating (40%) + popularity (30%) + data completeness (30%)
       return (rating * 0.4) + (normalizedReviews * 5 * 0.3) + (hasCompleteData * 5 * 0.3);
     };
 
     return coffeeShops
-      .filter(shop => shop.rating >= 4.0) // Minimal rating 4.0
+      .filter((shop) => getGoogleRating(shop) >= 4.0) // Minimal rating Google 4.0
       .map(shop => ({ ...shop, featuredScore: calculateFeaturedScore(shop) }))
       .sort((a, b) => b.featuredScore - a.featuredScore)
       .slice(0, 5);
@@ -184,13 +312,15 @@ export default function ShopList() {
     if (coffeeShops.length === 0) return [];
     
     return coffeeShops
-      .filter(shop => shop.rating >= 4.0 && (shop.user_ratings_total || 0) < 100)
+      .filter(
+        (shop) => getGoogleRating(shop) >= 4.0 && getGoogleReviewCount(shop) < 100
+      )
       .sort((a, b) => {
-        // Sort berdasarkan rating tertinggi (descending), lalu review paling sedikit (ascending)
-        const ratingA = parseFloat(a.rating) || 0;
-        const ratingB = parseFloat(b.rating) || 0;
-        const reviewsA = a.user_ratings_total || 0;
-        const reviewsB = b.user_ratings_total || 0;
+        // Sort berdasarkan rating Google tertinggi, lalu review paling sedikit (hidden gem)
+        const ratingA = getGoogleRating(a);
+        const ratingB = getGoogleRating(b);
+        const reviewsA = getGoogleReviewCount(a);
+        const reviewsB = getGoogleReviewCount(b);
         
         // Jika rating berbeda, urutkan berdasarkan rating tertinggi
         if (ratingB !== ratingA) {
@@ -208,18 +338,17 @@ export default function ShopList() {
     if (coffeeShops.length === 0) return [];
     
     return coffeeShops
-      .filter(shop => {
-        const rating = parseFloat(shop.rating) || 0;
+      .filter((shop) => {
+        const rating = getGoogleRating(shop);
         return rating >= 4.5 && rating <= 5.0;
       })
       .sort((a, b) => {
-        // Sort berdasarkan rating (descending), lalu jumlah review (descending)
-        const ratingA = parseFloat(a.rating) || 0;
-        const ratingB = parseFloat(b.rating) || 0;
+        const ratingA = getGoogleRating(a);
+        const ratingB = getGoogleRating(b);
         if (ratingB !== ratingA) {
           return ratingB - ratingA;
         }
-        return (b.user_ratings_total || 0) - (a.user_ratings_total || 0);
+        return getGoogleReviewCount(b) - getGoogleReviewCount(a);
       });
   }, [coffeeShops]);
 
@@ -228,53 +357,53 @@ export default function ShopList() {
     return getRecentlyViewedWithDetails(coffeeShops);
   }, [coffeeShops]);
 
+  /** Daftar penuh diurutkan seperti katalog utama (Google rating + total review) — untuk hero, dll. */
+  const coffeeShopsByGoogleOrder = useMemo(
+    () => sortShopsByGoogleMaps(coffeeShops),
+    [coffeeShops]
+  );
+
   // Filter berdasarkan kategori
   const getFilteredShopsByCategory = (shops) => {
     switch (activeFilter) {
       case 'top-rated':
-        // Filter coffee shop dengan rating 4.5-5.0
-        return shops.filter(shop => {
-          const rating = parseFloat(shop.rating) || 0;
-          return rating >= 4.5 && rating <= 5.0;
-        }).sort((a, b) => {
-          // Sort berdasarkan rating (descending), lalu jumlah review (descending)
-          const ratingA = parseFloat(a.rating) || 0;
-          const ratingB = parseFloat(b.rating) || 0;
-          if (ratingB !== ratingA) {
-            return ratingB - ratingA;
-          }
-          return (b.user_ratings_total || 0) - (a.user_ratings_total || 0);
-        });
+        return shops
+          .filter((shop) => {
+            const rating = getGoogleRating(shop);
+            return rating >= 4.5 && rating <= 5.0;
+          })
+          .sort((a, b) => {
+            const ratingA = getGoogleRating(a);
+            const ratingB = getGoogleRating(b);
+            if (ratingB !== ratingA) return ratingB - ratingA;
+            return getGoogleReviewCount(b) - getGoogleReviewCount(a);
+          });
       case 'popular':
-        // Filter coffee shop dengan review di atas 1000
         return shops
-          .filter(shop => (shop.user_ratings_total || 0) > 1000)
-          .sort((a, b) => (b.user_ratings_total || 0) - (a.user_ratings_total || 0));
+          .filter((shop) => getGoogleReviewCount(shop) > 1000)
+          .sort((a, b) => {
+            const cDiff = getGoogleReviewCount(b) - getGoogleReviewCount(a);
+            if (cDiff !== 0) return cDiff;
+            return getGoogleRating(b) - getGoogleRating(a);
+          });
       case 'newest':
-        // Coffee shop terbaru: rating bagus (>= 4.0) tapi review masih sedikit (< 100)
-        // Menandakan tempat baru yang berkualitas
         return shops
-          .filter(shop => shop.rating >= 4.0 && (shop.user_ratings_total || 0) < 100)
-          .sort((a, b) => (a.user_ratings_total || 0) - (b.user_ratings_total || 0));
+          .filter(
+            (shop) => getGoogleRating(shop) >= 4.0 && getGoogleReviewCount(shop) < 100
+          )
+          .sort((a, b) => {
+            const ratingA = getGoogleRating(a);
+            const ratingB = getGoogleRating(b);
+            if (ratingB !== ratingA) return ratingB - ratingA;
+            return getGoogleReviewCount(a) - getGoogleReviewCount(b);
+          });
       default:
-        return shops;
+        return sortShopsByGoogleMaps(shops);
     }
   };
 
   // Quick recommendation fields (sama dengan LLMAnalyzer)
-  const recommendationFields = [
-    { label: '🛋️ Cozy', value: 'cozy' },
-    { label: '📚 Belajar', value: 'belajar' },
-    { label: '📶 WiFi', value: 'wifi stabil' },
-    { label: '🔌 Stopkontak', value: 'stopkontak' },
-    { label: '🕌 Musholla', value: 'musholla' },
-    { label: '🛋️ Sofa', value: 'sofa' },
-    { label: '❄️ Dingin', value: 'dingin' },
-    { label: '📸 Aesthetic', value: 'aesthetic' },
-    { label: '🎵 Live Music', value: 'live music' },
-    { label: '🅿️ Parkir Luas', value: 'parkiran luas' },
-    { label: '🌙 24 jam', value: '24 jam' },
-  ];
+  const recommendationFields = RECOMMENDATION_FIELDS;
 
   // Jarak Haversine (km) antara dua koordinat
   const haversineKm = (lat1, lng1, lat2, lng2) => {
@@ -337,6 +466,9 @@ export default function ShopList() {
 
   // Handle pill click - toggle selection (max 3)
   const handlePillClick = (pillValue) => {
+    if (otherPreferenceText.trim()) return;
+    setPillRecommendError('');
+    setOtherPreferenceError('');
     setSelectedPills(prev => {
       if (prev.includes(pillValue)) {
         // Jika sudah dipilih, hapus
@@ -353,143 +485,215 @@ export default function ShopList() {
     });
   };
 
-  // Buka modal saran preferensi
-  const handleOpenSuggestModal = () => {
-    setSubmitSuccess('');
-    setSubmitError('');
-    setPreferenceInput('');
-    setReasonInput('');
-    setShowSuggestModal(true);
+  const hasConfirmedRecommendation = useMemo(
+    () => confirmedPills.length > 0 || Boolean((confirmedCustomQuery || '').trim()),
+    [confirmedPills, confirmedCustomQuery]
+  );
+
+  const hasPendingPillChanges = useMemo(() => {
+    const selectedKey = [...selectedPills].sort().join('|');
+    const confirmedKey = [...confirmedPills].sort().join('|');
+    const pillsDiffer = selectedKey !== confirmedKey;
+    const customDraft = otherPreferenceText.trim();
+    const customConfirmed = (confirmedCustomQuery || '').trim();
+    const manualDiffer =
+      Boolean(customDraft || customConfirmed) && customDraft !== customConfirmed;
+    return pillsDiffer || manualDiffer;
+  }, [selectedPills, confirmedPills, otherPreferenceText, confirmedCustomQuery]);
+
+  const manualCharCount = useMemo(
+    () => getManualPreferenceCharCount(otherPreferenceText),
+    [otherPreferenceText]
+  );
+  const isManualModeActive =
+    (showRecommendationModal && recommendationModalMode === 'manual') || Boolean(otherPreferenceText.trim());
+  const isPillModeActive = selectedPills.length > 0;
+
+  const openManualPreferenceModal = () => {
+    if (selectedPills.length > 0) return;
+    setRecommendationModalMode('manual');
+    setShowRecommendationModal(true);
+    setPillRecommendError('');
+    setOtherPreferenceError('');
+    setManualSearchAttempted(
+      llmRecommendations.length > 0 || Boolean((confirmedCustomQuery || '').trim()),
+    );
   };
 
-  // Tutup modal saran preferensi
-  const handleCloseSuggestModal = () => {
-    setShowSuggestModal(false);
-    setSubmitSuccess('');
-    setSubmitError('');
-  };
-
-  // Submit saran preferensi (hanya jika sudah login)
-  const handleSuggestSubmit = async (e) => {
-    e.preventDefault();
-    if (!isAuthenticated || !user?.id) {
-      setShowLoginPrompt(true);
+  const handleManualModalAnalyze = async () => {
+    const custom = otherPreferenceText.trim();
+    if (!custom) {
+      setOtherPreferenceError('Masukkan preferensi terlebih dahulu.');
       return;
     }
-    setSubmitError('');
-    setSubmitSuccess('');
-    const pref = preferenceInput.trim();
-    const reason = reasonInput.trim();
-    if (!pref) {
-      setSubmitError('Preferensi tidak boleh kosong.');
-      return;
-    }
-    if (!reason) {
-      setSubmitError('Alasan tidak boleh kosong.');
-      return;
-    }
-    setSubmitLoading(true);
-    try {
-      const token = authService.getToken();
-      const res = await fetch(`${API_BASE}/api/preference-suggestions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ preference_text: pref, reason_text: reason }),
+    const customValidationError = getManualPreferenceValidationMessage(otherPreferenceText);
+    if (customValidationError) {
+      setOtherPreferenceError(customValidationError);
+      setRecommendationNotification({
+        type: 'error',
+        message: customValidationError,
       });
-      const data = await res.json();
-      if (data.status === 'success') {
-        setSubmitSuccess('Saran preferensi berhasil disimpan. Terima kasih!');
-        setPreferenceInput('');
-        setReasonInput('');
-        setTimeout(() => {
-          setShowSuggestModal(false);
-          setSubmitSuccess('');
-        }, 1500);
-      } else {
-        setSubmitError(data.message || 'Gagal menyimpan.');
-        if (data.require_login) setShowLoginPrompt(true);
-      }
-    } catch (err) {
-      setSubmitError(err.message || 'Gagal mengirim. Coba lagi.');
-    } finally {
-      setSubmitLoading(false);
+      return;
     }
-  };
-
-  // Rekomendasi LLM: map nama toko (normalized) -> penjelasan
-  const recommendationExplanationByShopName = useMemo(() => {
-    const map = {};
-    llmRecommendations.forEach((r) => {
-      if (r.name && r.explanation) map[r.name.trim().toLowerCase()] = r.explanation;
-    });
-    return map;
-  }, [llmRecommendations]);
-
-  // Konfirmasi preferensi & panggil API rekomendasi LLM
-  const handleConfirmPills = async () => {
-    if (selectedPills.length === 0) return;
-    setConfirmedPills(selectedPills);
+    setManualSearchAttempted(true);
+    setOtherPreferenceError('');
+    setConfirmedPills([]);
+    setConfirmedCustomQuery(custom);
     setPillRecommendLoading(true);
+    setPillRecommendError('');
     setLlmRecommendations([]);
     try {
       const res = await fetch(`${API_BASE}/api/recommend-by-preferences`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ preferences: selectedPills }),
+        body: JSON.stringify({
+          preferences: [],
+          custom_query: custom,
+        }),
       });
-      const data = await res.json();
+      let data = null;
+      try {
+        data = await res.json();
+      } catch (parseError) {
+        console.error('[ShopList] failed to parse recommend-by-preferences response:', parseError);
+      }
+
+      if (!res.ok) {
+        throw new Error(data?.message || 'Rekomendasi AI sedang gagal diproses. Coba lagi.');
+      }
+
       if (data.status === 'success' && Array.isArray(data.recommendations)) {
         setLlmRecommendations(data.recommendations);
+        if (data.recommendations.length === 0) {
+          const emptyMessage = data?.message
+            || 'Sistem belum mengerti preferensi Anda. Coba gunakan preferensi lain.';
+          setPillRecommendError(emptyMessage);
+          setRecommendationNotification({
+            type: 'error',
+            message: emptyMessage,
+          });
+        }
       } else {
+        setPillRecommendError(data?.message || 'Rekomendasi AI belum bisa ditampilkan.');
         setLlmRecommendations([]);
+        if (data?.message) {
+          setRecommendationNotification({
+            type: 'error',
+            message: data.message,
+          });
+        }
       }
     } catch (err) {
       console.error('[ShopList] recommend-by-preferences error:', err);
+      setPillRecommendError(err.message || 'Gagal menghubungi layanan rekomendasi AI.');
       setLlmRecommendations([]);
+      setRecommendationNotification({
+        type: 'error',
+        message: err.message || 'Gagal menghubungi layanan rekomendasi AI.',
+      });
     } finally {
       setPillRecommendLoading(false);
     }
   };
 
-  // Filter coffee shops: jika sudah konfirmasi dan ada hasil LLM, hanya tampilkan yang direkomendasikan
-  const filterShopsByPills = (shops) => {
-    if (confirmedPills.length === 0 || llmRecommendations.length === 0) {
-      return shops;
+  const requestPillRecommendations = async (pillValues) => {
+    if (!Array.isArray(pillValues) || pillValues.length === 0) return;
+    setRecommendationModalMode('pills');
+    setOtherPreferenceError('');
+    setOtherPreferenceText('');
+    setConfirmedPills([...pillValues]);
+    setConfirmedCustomQuery('');
+    setPillRecommendLoading(true);
+    setPillRecommendError('');
+    setLlmRecommendations([]);
+    setShowRecommendationModal(false);
+    try {
+      const res = await fetch(`${API_BASE}/api/recommend-by-preferences`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          preferences: pillValues,
+          custom_query: '',
+        }),
+      });
+      let data = null;
+      try {
+        data = await res.json();
+      } catch (parseError) {
+        console.error('[ShopList] failed to parse recommend-by-preferences response:', parseError);
+      }
+
+      if (!res.ok) {
+        throw new Error(data?.message || 'Rekomendasi AI sedang gagal diproses. Coba lagi.');
+      }
+
+      if (data.status === 'success' && Array.isArray(data.recommendations)) {
+        setLlmRecommendations(data.recommendations);
+        if (data.recommendations.length === 0) {
+          const emptyMessage = data?.message
+            || 'Maaf, saat ini belum ada coffee shop yang sesuai. Coba gunakan button preferensi yang tersedia atau input preference lain.';
+          setPillRecommendError(emptyMessage);
+          setRecommendationNotification({
+            type: 'error',
+            message: emptyMessage,
+          });
+        }
+        setShowRecommendationModal(true);
+      } else {
+        setPillRecommendError(data?.message || 'Rekomendasi AI belum bisa ditampilkan.');
+        setLlmRecommendations([]);
+        setShowRecommendationModal(false);
+        if (data?.message) {
+          setRecommendationNotification({
+            type: 'error',
+            message: data.message,
+          });
+        }
+      }
+    } catch (err) {
+      console.error('[ShopList] recommend-by-preferences error:', err);
+      setPillRecommendError(err.message || 'Gagal menghubungi layanan rekomendasi AI.');
+      setLlmRecommendations([]);
+      setShowRecommendationModal(false);
+      setRecommendationNotification({
+        type: 'error',
+        message: err.message || 'Gagal menghubungi layanan rekomendasi AI.',
+      });
+    } finally {
+      setPillRecommendLoading(false);
     }
-    const namesSet = new Set(
-      llmRecommendations.map((r) => (r.name || '').trim().toLowerCase())
-    );
-    return shops.filter((shop) =>
-      namesSet.has((shop.name || '').trim().toLowerCase())
-    );
   };
 
-  // Filter berdasarkan search, kategori, dan pills
-  const filteredShops = getFilteredShopsByCategory(
-    filterShopsByPills(
-      coffeeShops.filter(shop =>
-        shop.name.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    )
-  );
+  // Peta shop berdasarkan place_id / nama (untuk modal rekomendasi)
+  const shopsByKey = useMemo(() => {
+    const map = {};
+    coffeeShops.forEach((shop) => {
+      if (shop.place_id) map[shop.place_id] = shop;
+      if (shop.name) map[normalizeMatchText(shop.name)] = shop;
+    });
+    return map;
+  }, [coffeeShops]);
+
+  // Konfirmasi pill di beranda (tanpa input manual; preferensi lainnya lewat modal)
+  const handleConfirmPills = async () => {
+    if (selectedPills.length === 0) return;
+    await requestPillRecommendations(selectedPills);
+  };
+
+  // Katalog homepage tetap utuh; hasil AI ditampilkan lewat overlay terpisah
+  const filteredShops = getFilteredShopsByCategory(coffeeShops);
 
   // Statistics: dari data yang tampil (filteredShops) dan field yang dipakai aplikasi (total_reviews / user_ratings_total, rating)
   const stats = useMemo(() => {
     const list = filteredShops;
     const total = list.length;
-    const sumRating = list.reduce((sum, shop) => sum + (parseFloat(shop.rating) || 0), 0);
+    const sumRating = list.reduce((sum, shop) => sum + getGoogleRating(shop), 0);
     const avgRating = total > 0 ? (sumRating / total).toFixed(1) : '0';
-    const topRated = list.filter(shop => {
-      const r = parseFloat(shop.rating) || 0;
+    const topRated = list.filter((shop) => {
+      const r = getGoogleRating(shop);
       return r >= 4.5 && r <= 5;
     }).length;
-    const totalReviews = list.reduce(
-      (sum, shop) => sum + (Number(shop.total_reviews) || Number(shop.user_ratings_total) || 0),
-      0
-    );
+    const totalReviews = list.reduce((sum, shop) => sum + getGoogleReviewCount(shop), 0);
     return { total, avgRating, topRated, totalReviews };
   }, [filteredShops]);
 
@@ -529,9 +733,23 @@ export default function ShopList() {
 
   return (
     <div className="w-full pb-6 sm:pb-8">
+      {recommendationNotification && (
+        <div
+          className={`fixed top-8 left-1/2 z-[120] -translate-x-1/2 rounded-lg px-6 py-3 text-sm font-medium text-white shadow-lg transition-all duration-300 ${
+            recommendationNotification.type === 'error'
+              ? 'bg-orange-500 dark:bg-orange-600'
+              : 'bg-emerald-500 dark:bg-emerald-600'
+          }`}
+          role="alert"
+          aria-live="polite"
+        >
+          {recommendationNotification.message}
+        </div>
+      )}
+
       {/* Hero Swiper - Auto-playing carousel */}
-      {!error && !isLoading && coffeeShops.length > 0 && !searchTerm && (
-        <HeroSwiper coffeeShops={coffeeShops} />
+      {!error && !isLoading && coffeeShops.length > 0 && (
+        <HeroSwiper coffeeShops={coffeeShopsByGoogleOrder} />
       )}
 
       <main className="w-full py-4 sm:py-6 md:py-8 px-4 sm:px-6">
@@ -550,7 +768,7 @@ export default function ShopList() {
               </button>
               <div className="text-2xl sm:text-3xl font-bold mb-1">{stats.total}</div>
               <div className="text-xs sm:text-sm opacity-90">Coffee Shops</div>
-              <div className="text-xs mt-1 opacity-75">{searchTerm ? 'hasil pencarian' : 'di Pontianak'}</div>
+              <div className="text-xs mt-1 opacity-75">di Pontianak</div>
             </div>
 
             <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-4 sm:p-5 text-white shadow-lg hover:shadow-xl transition-shadow relative">
@@ -623,20 +841,21 @@ export default function ShopList() {
         )}
 
         {/* Quick Recommendation Pills */}
-        {!error && !isLoading && coffeeShops.length > 0 && !searchTerm && (
+        {!error && !isLoading && coffeeShops.length > 0 && (
           <div className="mb-6 sm:mb-8">
             <div className="mb-3">
               <h3 className="text-sm sm:text-base font-semibold text-gray-700 dark:text-gray-300 mb-2">
                 Cari berdasarkan preferensi:
               </h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                Pilih maksimal 3 preferensi untuk menemukan coffee shop yang sesuai
+                Pilih hingga 3 pill lalu tekan OK, atau gunakan tombol Preferensi lainnya untuk menulis preferensi
+                bebas di modal (maksimal 3 rekomendasi).
               </p>
             </div>
             <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
               {recommendationFields.map((field) => {
                 const isSelected = selectedPills.includes(field.value);
-                const isDisabled = !isSelected && selectedPills.length >= 3;
+                const isDisabled = isManualModeActive || (!isSelected && selectedPills.length >= 3);
                 
                 return (
                   <button
@@ -665,30 +884,51 @@ export default function ShopList() {
               })}
               <button
                 type="button"
-                onClick={handleOpenSuggestModal}
-                className="px-3 sm:px-4 py-2 rounded-full text-sm font-medium bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 border border-dashed border-indigo-400 dark:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all duration-200"
-                title="Sarankan preferensi yang kamu butuhkan"
+                onClick={openManualPreferenceModal}
+                disabled={isPillModeActive}
+                className={`
+                  px-3 sm:px-4 py-2 rounded-full text-sm font-medium transition-all duration-200
+                  ${
+                    isPillModeActive
+                      ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-50'
+                      : 'bg-gradient-to-r from-violet-500 to-indigo-600 text-white shadow-md hover:from-violet-600 hover:to-indigo-700 border border-transparent'
+                  }
+                `}
+                title={
+                  isPillModeActive
+                    ? 'Hapus pilihan pill terlebih dahulu untuk menggunakan preferensi lainnya'
+                    : 'Buka modal: tulis preferensi dan lihat hasil LLM di tempat yang sama'
+                }
               >
-                + Sarankan preferensi
+                Preferensi lainnya
               </button>
             </div>
-            {selectedPills.length > 0 && (
+            {(selectedPills.length > 0 || hasConfirmedRecommendation) && (
               <div className="mt-3 flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleConfirmPills}
-                  disabled={pillRecommendLoading}
-                  className="px-3 sm:px-4 py-2 rounded-full text-sm font-medium bg-indigo-600 text-white shadow-md hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200"
-                  title="Konfirmasi preferensi dan lihat rekomendasi"
-                >
-                  {pillRecommendLoading ? 'Menganalisis...' : 'OK'}
-                </button>
+                {selectedPills.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleConfirmPills}
+                    disabled={pillRecommendLoading || Boolean(otherPreferenceError)}
+                    className="px-3 sm:px-4 py-2 rounded-full text-sm font-medium bg-indigo-600 text-white shadow-md hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200"
+                    title="Konfirmasi preferensi dan lihat rekomendasi"
+                  >
+                    {pillRecommendLoading && recommendationModalMode === 'pills' ? 'Menganalisis...' : 'OK'}
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => {
                     setSelectedPills([]);
                     setConfirmedPills([]);
+                    setConfirmedCustomQuery('');
+                    setOtherPreferenceText('');
+                    setOtherPreferenceError('');
+                    setManualSearchAttempted(false);
+                    setRecommendationModalMode('pills');
                     setLlmRecommendations([]);
+                    setPillRecommendError('');
+                    setShowRecommendationModal(false);
                   }}
                   className="px-3 sm:px-4 py-2 rounded-full text-sm font-medium bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 transition-all duration-200"
                 >
@@ -697,138 +937,66 @@ export default function ShopList() {
               </div>
             )}
 
-            {/* Modal: Ingin menyarankan preferensimu? */}
-            {showSuggestModal && (
-              <>
-                <div
-                  className="fixed inset-0 bg-black/50 z-[100]"
-                  aria-hidden="true"
-                  onClick={handleCloseSuggestModal}
-                />
-                <div
-                  className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(90vw,420px)] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-2xl shadow-2xl z-[101]"
-                  role="dialog"
-                  aria-labelledby="suggest-modal-title"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="p-4 sm:p-5">
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 id="suggest-modal-title" className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-                        Ingin menyarankan preferensimu?
-                      </h2>
-                      <button
-                        type="button"
-                        onClick={handleCloseSuggestModal}
-                        className="p-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                        aria-label="Tutup"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                    <form onSubmit={handleSuggestSubmit} className="space-y-4">
-                      <div>
-                        <label htmlFor="preference-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          Apa preferensi yang kamu perlu/butuhkan?
-                        </label>
-                        <input
-                          id="preference-input"
-                          type="text"
-                          value={preferenceInput}
-                          onChange={(e) => setPreferenceInput(e.target.value)}
-                          placeholder="Contoh: area smoking, tempat kerja kelompok"
-                          className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="reason-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          Alasan preferensimu perlu dipertimbangkan
-                        </label>
-                        <textarea
-                          id="reason-input"
-                          value={reasonInput}
-                          onChange={(e) => setReasonInput(e.target.value)}
-                          placeholder="Jelaskan mengapa preferensi ini penting untuk kamu"
-                          rows={3}
-                          className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
-                        />
-                      </div>
-                      {submitError && (
-                        <p className="text-sm text-red-600 dark:text-red-400">{submitError}</p>
-                      )}
-                      {submitSuccess && (
-                        <p className="text-sm text-green-600 dark:text-green-400">{submitSuccess}</p>
-                      )}
-                      <div className="flex gap-2 pt-1">
-                        <button
-                          type="submit"
-                          disabled={submitLoading}
-                          className="flex-1 px-4 py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                          {submitLoading ? 'Menyimpan...' : 'Simpan'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleCloseSuggestModal}
-                          className="px-4 py-2 text-sm font-medium rounded-lg bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
-                        >
-                          Batal
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Popup: arahkan login saat guest mengirim saran */}
-            {showLoginPrompt && (
-              <>
-                <div
-                  className="fixed inset-0 bg-black/40 z-[102]"
-                  aria-hidden="true"
-                  onClick={() => setShowLoginPrompt(false)}
-                />
-                <div
-                  className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(90vw,320px)] bg-white dark:bg-gray-800 border-2 border-indigo-200 dark:border-indigo-700 rounded-2xl shadow-2xl p-4 z-[103]"
-                  role="alertdialog"
-                  aria-labelledby="login-prompt-title"
-                  aria-describedby="login-prompt-desc"
-                >
-                  <p id="login-prompt-title" className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
-                    Perlu login
+            {hasConfirmedRecommendation && (
+              <div className="mt-3 space-y-2">
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  {confirmedPills.length > 0 && (
+                    <>
+                      Preferensi pill:{' '}
+                      <span className="font-medium text-gray-800 dark:text-gray-100">{confirmedPills.join(', ')}</span>
+                    </>
+                  )}
+                  {confirmedPills.length > 0 && confirmedCustomQuery.trim() && <span className="mx-1">·</span>}
+                  {confirmedCustomQuery.trim() && (
+                    <>
+                      Lainnya:{' '}
+                      <span className="font-medium text-gray-800 dark:text-gray-100">{confirmedCustomQuery.trim()}</span>
+                    </>
+                  )}
+                </p>
+                {hasPendingPillChanges && !pillRecommendLoading && (
+                  <p className="text-sm text-amber-700 dark:text-amber-300">
+                    Ada perubahan pill atau teks Preferensi lainnya. Konfirmasi ulang (OK atau Analisis di modal) untuk
+                    memperbarui rekomendasi.
                   </p>
-                  <p id="login-prompt-desc" className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                    Silakan login terlebih dahulu untuk mengirim saran preferensi.
+                )}
+                {!!pillRecommendError && !pillRecommendLoading && (
+                  <p className="text-sm text-red-600 dark:text-red-300">
+                    {pillRecommendError}
                   </p>
-                  <div className="flex gap-2">
+                )}
+                {!pillRecommendLoading && hasConfirmedRecommendation && (
+                  <div className="flex flex-wrap items-center gap-3">
+                    <p className={`text-sm ${llmRecommendations.length > 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-600 dark:text-gray-300'}`}>
+                      {llmRecommendations.length > 0
+                        ? `Menampilkan ${llmRecommendations.length} rekomendasi (maksimal 3) berdasarkan preferensi yang dikonfirmasi.`
+                        : 'Overlay hasil AI tetap tersedia untuk menampilkan status rekomendasi terbaru Anda.'}
+                    </p>
                     <button
                       type="button"
                       onClick={() => {
-                        setShowLoginPrompt(false);
-                        navigate('/login');
+                        setRecommendationModalMode(
+                          (confirmedCustomQuery || '').trim() ? 'manual' : 'pills',
+                        );
+                        setManualSearchAttempted(
+                          Boolean((confirmedCustomQuery || '').trim()) || llmRecommendations.length > 0,
+                        );
+                        setShowRecommendationModal(true);
                       }}
-                      className="flex-1 px-3 py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs sm:text-sm font-semibold bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow-sm hover:from-indigo-600 hover:to-violet-600 transition-colors"
+                      title="Lihat hasil rekomendasi AI pada overlay"
                     >
-                      Login
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowLoginPrompt(false)}
-                      className="px-3 py-2 text-sm font-medium rounded-lg bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
-                    >
-                      Tutup
+                      ✨ Lihat hasil AI
                     </button>
                   </div>
-                </div>
-              </>
+                )}
+              </div>
             )}
           </div>
         )}
 
         {/* Featured Coffee Shops */}
-        {!error && !isLoading && featuredShops.length > 0 && !searchTerm && !confirmedPills.length && (
+        {!error && !isLoading && featuredShops.length > 0 && (
           <div className="mb-8 sm:mb-10">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
@@ -865,7 +1033,7 @@ export default function ShopList() {
         )}
 
         {/* Modern Hero Banner with Background Image - Dipindahkan ke antara Featured dan Terbaru */}
-        {!error && !isLoading && coffeeShops.length > 0 && !searchTerm && !confirmedPills.length && (
+        {!error && !isLoading && coffeeShops.length > 0 && (
           <div className="relative h-48 sm:h-56 md:h-64 flex items-center justify-center mb-6 sm:mb-8 overflow-hidden w-full">
             {/* Background Image with Overlay */}
             <div 
@@ -902,7 +1070,7 @@ export default function ShopList() {
         )}
 
         {/* Top Rated Coffee Shops (4.5-5.0) */}
-        {!error && !isLoading && topRatedShops.length > 0 && !searchTerm && !confirmedPills.length && (
+        {!error && !isLoading && topRatedShops.length > 0 && (
           <div className="mb-8 sm:mb-10">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
@@ -932,7 +1100,7 @@ export default function ShopList() {
         )}
 
         {/* Newest Coffee Shops */}
-        {!error && !isLoading && newestShops.length > 0 && !searchTerm && !confirmedPills.length && (
+        {!error && !isLoading && newestShops.length > 0 && (
           <div className="mb-8 sm:mb-10">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
@@ -962,7 +1130,7 @@ export default function ShopList() {
         )}
 
         {/* Recently Viewed Coffee Shops - Tampilkan di atas All Coffee Shops */}
-        {!error && !isLoading && recentlyViewedShops.length > 0 && !searchTerm && !confirmedPills.length && (
+        {!error && !isLoading && recentlyViewedShops.length > 0 && (
           <div className="mb-8 sm:mb-10">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
@@ -985,7 +1153,7 @@ export default function ShopList() {
         )}
 
         {/* Coffee shop dalam radius - di atas peta All Coffee Shops */}
-        {!error && !isLoading && coffeeShops.length > 0 && !searchTerm && (
+        {!error && !isLoading && coffeeShops.length > 0 && (
           <CoffeeShopRadiusMap
             userLocation={userLocation}
             radiusMeters={radiusMeters}
@@ -998,17 +1166,15 @@ export default function ShopList() {
         )}
 
         {/* Coffee Shop Map - Tampilkan di atas judul All Coffee Shops */}
-        {!error && !isLoading && coffeeShops.length > 0 && !searchTerm && (
+        {!error && !isLoading && coffeeShops.length > 0 && (
           <CoffeeShopMap coffeeShops={coffeeShops} />
         )}
 
         <div className="flex items-center justify-between mb-4 sm:mb-6 flex-wrap gap-2">
           <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 border-b pb-2 flex-1">
-            {selectedPills.length > 0 ? 'Hasil Pencarian' :
-             activeFilter === 'all' ? 'All Coffee Shops' : 
+            {activeFilter === 'all' ? 'All Coffee Shops' : 
              activeFilter === 'top-rated' ? '⭐ Top Rated Coffee Shops' :
              activeFilter === 'newest' ? '💎 Hidden Gem Coffee Shops' : 'Coffee Shop Catalog'} ({filteredShops.length})
-            {searchTerm && <span className="block sm:inline text-gray-500 dark:text-gray-400 text-sm sm:text-base md:text-lg mt-1 sm:mt-0"> - Search: "{searchTerm}"</span>}
           </h2>
           <div className="flex items-center gap-2">
             {!isOnline && !isLoading && (
@@ -1058,18 +1224,13 @@ export default function ShopList() {
                 key={shop.place_id}
                 className="block hover:shadow-2xl transition duration-300"
               >
-                <CoffeeShopCard
-                  shop={shop}
-                  recommendationExplanation={
-                    recommendationExplanationByShopName[(shop.name || '').trim().toLowerCase()]
-                  }
-                />
+                <CoffeeShopCard shop={shop} />
               </div>
             ))}
           </div>
         )}
 
-        {!error && !isLoading && filteredShops.length === 0 && searchTerm === '' && selectedPills.length === 0 && (
+        {!error && !isLoading && filteredShops.length === 0 && selectedPills.length === 0 && (
           <div className="text-center py-12">
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M12 20a8 8 0 100-16 8 8 0 000 16z" />
@@ -1079,42 +1240,87 @@ export default function ShopList() {
           </div>
         )}
         
-        {!error && !isLoading && filteredShops.length === 0 && (selectedPills.length > 0 || confirmedPills.length > 0) && (
-          <div className="text-center py-12">
-            <svg className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M12 20a8 8 0 100-16 8 8 0 000 16z" />
-            </svg>
-            <h3 className="mt-2 text-lg font-medium text-gray-900 dark:text-gray-100">
-              {pillRecommendLoading ? 'Menganalisis rekomendasi...' : 'Tidak ada coffee shop yang sesuai'}
-            </h3>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              {pillRecommendLoading ? 'Tunggu sebentar.' : 'Tidak ada coffee shop yang memiliki review sesuai dengan preferensi yang Anda pilih.'}
-            </p>
-            <button
-              onClick={() => {
-                setSelectedPills([]);
-                setConfirmedPills([]);
-                setLlmRecommendations([]);
-              }}
-              className="mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors"
-            >
-              Hapus Filter
-            </button>
-          </div>
-        )}
-        {!error && !isLoading && filteredShops.length === 0 && searchTerm !== '' && (
-          <div className="text-center py-12">
-            <h3 className="text-lg font-medium text-gray-900">No results for "{searchTerm}"</h3>
-            <p className="mt-2 text-gray-500">Try different search terms or clear the search.</p>
-            <button
-              onClick={() => setSearchTerm('')}
-              className="mt-4 text-indigo-600 hover:text-indigo-500"
-            >
-              Clear Search
-            </button>
-          </div>
-        )}
       </main>
+
+      {pillRecommendLoading && recommendationModalMode === 'pills' && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6">
+          <div className="absolute inset-0 bg-slate-950/45 backdrop-blur-sm" aria-hidden="true" />
+          <div className="relative z-10 w-full max-w-md rounded-3xl border border-indigo-100 bg-white px-6 py-7 shadow-2xl dark:border-indigo-900/60 dark:bg-gray-900">
+            <div className="flex flex-col items-center text-center">
+              <div className="relative mb-5">
+                <div className="h-14 w-14 rounded-full border-4 border-indigo-100 dark:border-indigo-900/50" />
+                <div className="absolute inset-0 h-14 w-14 animate-spin rounded-full border-4 border-transparent border-t-indigo-600 border-r-violet-500" />
+              </div>
+
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-indigo-500 dark:text-indigo-300">
+                AI Sedang Bekerja
+              </p>
+              <h3 className="mt-2 text-xl font-bold text-gray-900 dark:text-white">
+                LLM sedang menganalisis preferensi Anda
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+                Sistem sedang mencocokkan pill preference, query tambahan, dan evidence review untuk memilih coffee shop yang paling relevan.
+              </p>
+
+              <div className="mt-5 w-full rounded-2xl bg-indigo-50 px-4 py-3 text-left text-sm text-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-100">
+                <p className="font-medium">Mohon tunggu sebentar...</p>
+                <p className="mt-1 text-indigo-800/80 dark:text-indigo-100/80">
+                  Hasil rekomendasi akan otomatis ditampilkan setelah analisis selesai.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <RecommendationModal
+        isOpen={showRecommendationModal}
+        onClose={() => setShowRecommendationModal(false)}
+        recommendations={llmRecommendations}
+        shopsByKey={shopsByKey}
+        confirmedPills={confirmedPills}
+        confirmedCustomQuery={confirmedCustomQuery}
+        modalMode={recommendationModalMode}
+        manualValue={otherPreferenceText}
+        onManualChange={(e) => {
+          const raw = e.target.value;
+          if (!MANUAL_INPUT_RAW_ALLOWED_REGEX.test(raw)) {
+            setRecommendationNotification({
+              type: 'error',
+              message: MANUAL_SPECIAL_CHAR_NOTIFICATION,
+            });
+          }
+          const nextValue = truncateManualPreferenceToMaxChars(raw);
+          setPillRecommendError('');
+          setOtherPreferenceText(nextValue);
+          if (getManualPreferenceCharCount(raw) > MANUAL_MAX_CHARS) {
+            setOtherPreferenceError(`Input opsi Lainnya maksimal ${MANUAL_MAX_CHARS} karakter.`);
+          } else {
+            setOtherPreferenceError(getManualPreferenceValidationMessage(nextValue));
+          }
+        }}
+        onManualAnalyze={handleManualModalAnalyze}
+        manualStatusMessage={pillRecommendError}
+        suggestedPills={recommendationFields}
+        onSuggestedPillClick={async (pillValue) => {
+          const nextPills = [pillValue];
+          setSelectedPills(nextPills);
+          setManualSearchAttempted(true);
+          await requestPillRecommendations(nextPills);
+        }}
+        manualError={otherPreferenceError}
+        manualCharCount={manualCharCount}
+        manualMaxChars={MANUAL_MAX_CHARS}
+        manualAnalyzeDisabled={
+          pillRecommendLoading
+          || Boolean(otherPreferenceError)
+          || !otherPreferenceText.trim()
+        }
+        isAnalyzing={pillRecommendLoading && recommendationModalMode === 'manual'}
+        manualAwaitingFirstSearch={
+          recommendationModalMode === 'manual' && !manualSearchAttempted
+        }
+      />
     </div>
   );
 }

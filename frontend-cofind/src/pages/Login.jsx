@@ -7,7 +7,7 @@ import coffeeshopBg from '../assets/sign_page.webp';
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signIn, signUp, resetPassword, isAuthenticated, loading } = useAuth();
+  const { signIn, signUp, resetPassword, isAuthenticated, isAdmin, loading } = useAuth();
   
   const [mode, setMode] = useState('login'); // 'login', 'register', 'forgot'
   const [username, setUsername] = useState('');
@@ -35,8 +35,14 @@ const Login = () => {
   }, [isSubmitting]);
 
   useEffect(() => {
-    console.log('[Login] useEffect check:', { isAuthenticated, isSubmitting, location: location.state });
+    console.log('[Login] useEffect check:', { isAuthenticated, isAdmin, isSubmitting, location: location.state });
     if (isAuthenticated && !isSubmitting) {
+      // Admin selalu diarahkan ke /admin
+      if (isAdmin) {
+        navigate('/admin', { replace: true });
+        return;
+      }
+
       // Check if there's redirect info from ReviewForm
       const redirectState = location.state;
       let redirectPath = '/';
@@ -74,7 +80,7 @@ const Login = () => {
         navigate('/', { replace: true });
       }
     }
-  }, [isAuthenticated, navigate, location, isSubmitting]);
+  }, [isAuthenticated, isAdmin, navigate, location, isSubmitting]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

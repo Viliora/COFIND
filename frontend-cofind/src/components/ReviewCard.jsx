@@ -6,13 +6,16 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 const MAX_PHOTOS = 5;
 const MAX_IMAGE_SIZE_KB = 500;
 
-const ReviewCard = ({ review, onDelete, onUpdate, onLike }) => {
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+const ReviewCard = ({ review, onDelete, onUpdate, onLike, highlightKeyword = '' }) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(review.text || '');
   const [editRating, setEditRating] = useState(review.rating || 0);
-  const [editRatingMakanan, setEditRatingMakanan] = useState(review.rating_makanan ?? 0);
   const [editRatingLayanan, setEditRatingLayanan] = useState(review.rating_layanan ?? 0);
   const [editRatingSuasana, setEditRatingSuasana] = useState(review.rating_suasana ?? 0);
   const [editPhotos, setEditPhotos] = useState(() =>
@@ -40,7 +43,6 @@ const ReviewCard = ({ review, onDelete, onUpdate, onLike }) => {
   const handleEditClick = () => {
     setEditText(review.text || '');
     setEditRating(review.rating || 0);
-    setEditRatingMakanan(review.rating_makanan ?? 0);
     setEditRatingLayanan(review.rating_layanan ?? 0);
     setEditRatingSuasana(review.rating_suasana ?? 0);
     setEditPhotos((review.photos || []).filter((p) => p.image_data).map((p) => ({ id: p.id, caption: p.caption || '', image_data: p.image_data })));
@@ -90,7 +92,6 @@ const ReviewCard = ({ review, onDelete, onUpdate, onLike }) => {
     setIsEditing(false);
     setEditText(review.text || '');
     setEditRating(review.rating || 0);
-    setEditRatingMakanan(review.rating_makanan ?? 0);
     setEditRatingLayanan(review.rating_layanan ?? 0);
     setEditRatingSuasana(review.rating_suasana ?? 0);
     setEditPhotos((review.photos || []).filter((p) => p.image_data).map((p) => ({ id: p.id, caption: p.caption || '', image_data: p.image_data })));
@@ -162,7 +163,6 @@ const ReviewCard = ({ review, onDelete, onUpdate, onLike }) => {
           user_id: user.id,
           text: editText.trim(),
           rating: editRating,
-          rating_makanan: editRatingMakanan || undefined,
           rating_layanan: editRatingLayanan || undefined,
           rating_suasana: editRatingSuasana || undefined,
           photos: editPhotos.map((p) => ({ caption: p.caption || undefined, image_data: p.image_data })),
@@ -262,6 +262,24 @@ const ReviewCard = ({ review, onDelete, onUpdate, onLike }) => {
 
   const displayName = review.profiles?.full_name || review.profiles?.username || review.full_name || review.username || review.author_name || 'Anonim';
   const totalUlasan = review.user_total_reviews != null ? review.user_total_reviews : 0;
+
+  const renderHighlightedReviewText = () => {
+    const text = String(review.text || '');
+    if (!highlightKeyword?.trim()) return text;
+
+    const escapedKeyword = escapeRegExp(highlightKeyword.trim());
+    const parts = text.split(new RegExp(`(${escapedKeyword})`, 'gi'));
+
+    return parts.map((part, index) =>
+      part.toLowerCase() === highlightKeyword.trim().toLowerCase() ? (
+        <strong key={`${part}-${index}`} className="font-bold text-gray-900 dark:text-white">
+          {part}
+        </strong>
+      ) : (
+        <React.Fragment key={`${part}-${index}`}>{part}</React.Fragment>
+      )
+    );
+  };
 
   const handleLikeClick = async () => {
     if (!user?.id || isOwner || likeLoading) return;
@@ -400,7 +418,7 @@ const ReviewCard = ({ review, onDelete, onUpdate, onLike }) => {
       {/* Review Text - tampil dengan paragraf (enter) */}
       <>
           <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed mb-3 whitespace-pre-wrap">
-            {review.text}
+            {renderHighlightedReviewText()}
           </p>
           {review.photos && review.photos.filter((p) => p.image_data).length > 0 && (
             <div className="flex flex-wrap gap-2 mb-3">
@@ -516,18 +534,6 @@ const ReviewCard = ({ review, onDelete, onUpdate, onLike }) => {
               </div>
 
               <div className="mb-4">
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Makanan</p>
-                <div className="flex gap-0.5">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button key={star} type="button" onClick={() => setEditRatingMakanan(star)} className="p-0.5 focus:outline-none" aria-label={`${star} bintang`}>
-                      <svg className={`w-6 h-6 ${star <= editRatingMakanan ? 'text-amber-500 fill-amber-500' : 'text-gray-300 dark:text-gray-600'}`} fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                      </svg>
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="mb-4">
                 <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Layanan</p>
                 <div className="flex gap-0.5">
                   {[1, 2, 3, 4, 5].map((star) => (
@@ -624,12 +630,9 @@ const ReviewCard = ({ review, onDelete, onUpdate, onLike }) => {
         </>
       )}
 
-      {/* Rating Makanan, Layanan, Suasana */}
-      {(review.rating_makanan != null || review.rating_layanan != null || review.rating_suasana != null) && !isEditing && (
+      {/* Rating Layanan, Suasana */}
+      {(review.rating_layanan != null || review.rating_suasana != null) && !isEditing && (
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600 dark:text-gray-400 pt-2 border-t border-gray-100 dark:border-zinc-700">
-          {review.rating_makanan != null && (
-            <span>Makanan: <span className="font-medium text-gray-800 dark:text-gray-200">{review.rating_makanan}</span></span>
-          )}
           {review.rating_layanan != null && (
             <span>Layanan: <span className="font-medium text-gray-800 dark:text-gray-200">{review.rating_layanan}</span></span>
           )}
@@ -639,15 +642,19 @@ const ReviewCard = ({ review, onDelete, onUpdate, onLike }) => {
         </div>
       )}
 
-      {/* Like button - hanya untuk review orang lain */}
-      {!isOwner && !isEditing && (
+      {/* Like button - tetap tampil di review sendiri, count tetap terlihat, tapi tetap nonaktif */}
+      {!isEditing && (
         <div className="pt-3 flex items-center">
           <button
             type="button"
             onClick={handleLikeClick}
-            disabled={likeLoading || !user?.id}
-            className="inline-flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-transparent hover:bg-gray-100 dark:hover:bg-zinc-700/50 text-gray-600 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors disabled:opacity-50"
-            aria-label={userHasLiked ? 'Batalkan like' : 'Suka'}
+            disabled={likeLoading || !user?.id || isOwner}
+            className={`inline-flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-transparent text-gray-600 dark:text-gray-400 transition-colors disabled:opacity-50 ${
+              isOwner
+                ? 'cursor-default'
+                : 'hover:bg-gray-100 dark:hover:bg-zinc-700/50 hover:text-red-500 dark:hover:text-red-400'
+            }`}
+            aria-label={isOwner ? 'Total like review pribadi' : userHasLiked ? 'Batalkan like' : 'Suka'}
           >
             {userHasLiked ? (
               <svg className="w-5 h-5 text-red-500 fill-red-500" viewBox="0 0 24 24" fill="currentColor">

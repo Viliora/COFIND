@@ -30,6 +30,7 @@ function ShopDetail() {
   const [newReview, setNewReview] = useState(null); // For triggering ReviewList update
   const [mapError, setMapError] = useState(false); // Track map load errors
   const reviewFormRef = useRef(null); // Ref untuk scroll ke review form
+  const locationSectionRef = useRef(null); // Ref untuk scroll ke section lokasi
 
   // Handle scroll to review form setelah login
   useEffect(() => {
@@ -254,6 +255,17 @@ function ShopDetail() {
     }
   };
 
+  const scrollToLocationSection = () => {
+    if (!locationSectionRef.current) return;
+    const navbarHeight = 70;
+    const elementPosition = locationSectionRef.current.getBoundingClientRect().top;
+    const offsetPosition = elementPosition + window.pageYOffset - navbarHeight;
+    window.scrollTo({
+      top: offsetPosition,
+      behavior: 'smooth',
+    });
+  };
+
   // Auto-hide notification setelah 3 detik
   useEffect(() => {
     if (notification) {
@@ -392,28 +404,28 @@ function ShopDetail() {
       </div>
 
 
-      {/* Facilities Section */}
+      {/* Ringkasan facilities (popular_for, highlights, atmosphere, amenities) */}
       {shop?.place_id && facilitiesData?.facilities_by_place_id?.[shop.place_id] && (
         <div className="mt-6 sm:mt-8">
           <div className="mb-4">
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <svg className="w-6 h-6 text-amber-600 dark:text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
-              Fasilitas & Layanan
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-md">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden>
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+              </span>
+              Fasilitas & Suasana
             </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-              Informasi lengkap tentang fasilitas, layanan, dan amenitas yang tersedia
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 max-w-2xl">
+              Populer, keunggulan, dan suasana yang dirasakan pengunjung.
             </p>
           </div>
-          <FacilitiesTab 
-            facilities={facilitiesData.facilities_by_place_id[shop.place_id].facilities}
-          />
+          <FacilitiesTab facilities={facilitiesData.facilities_by_place_id[shop.place_id].facilities} />
         </div>
       )}
 
       {/* Static Map */}
-      <div className="mt-6 sm:mt-8">
+      <div className="mt-6 sm:mt-8" ref={locationSectionRef}>
         <div className="bg-white dark:bg-zinc-800 p-4 sm:p-6 rounded-xl shadow border border-gray-200 dark:border-zinc-700">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4">
             📍 Lokasi
@@ -498,12 +510,46 @@ function ShopDetail() {
 
       {/* Floating Action Buttons - pojok kanan bawah (untuk semua user, termasuk guest) */}
       <div className="fixed bottom-8 right-8 flex flex-col gap-4 z-40">
+        {/* Go To Location Button */}
+        <button
+          onClick={scrollToLocationSection}
+          className="relative transition-all duration-200 hover:scale-110 focus:outline-none bg-transparent border-0 p-0 group"
+          aria-label="Menuju lokasi"
+        >
+          <span className="pointer-events-none absolute right-full mr-3 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-lg opacity-0 -translate-x-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0">
+            Menuju lokasi
+          </span>
+          <svg
+            width="48"
+            height="48"
+            viewBox="0 0 512 512"
+            xmlns="http://www.w3.org/2000/svg"
+            clipRule="evenodd"
+            fillRule="evenodd"
+          >
+            <circle
+              cx="256"
+              cy="256"
+              r="256"
+              fill="#10b981"
+              className="group-hover:fill-emerald-600 transition-colors duration-200"
+            />
+            <path
+              d="M256 120c-64.12 0-116 51.88-116 116 0 76.24 101.12 175.74 110.6 184.88a8 8 0 0010.8 0C270.88 411.74 372 312.24 372 236c0-64.12-51.88-116-116-116zm0 156a40 40 0 1140-40 40.05 40.05 0 01-40 40z"
+              fill="#ffffff"
+              className="group-hover:fill-emerald-100 transition-colors duration-200"
+            />
+          </svg>
+        </button>
+
         {/* Want to Visit Button */}
         <button
           onClick={toggleWantToVisit}
-          className="transition-all duration-200 hover:scale-110 focus:outline-none bg-transparent border-0 p-0 group"
-          title={isWantToVisit ? 'Hapus dari want to visit' : 'Tambah ke want to visit'}
+          className="relative transition-all duration-200 hover:scale-110 focus:outline-none bg-transparent border-0 p-0 group"
         >
+          <span className="pointer-events-none absolute right-full mr-3 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-lg opacity-0 -translate-x-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0">
+            {isWantToVisit ? 'Hapus simpan' : 'Simpan tempat ini'}
+          </span>
           <svg
             width="48"
             height="48"
@@ -560,9 +606,11 @@ function ShopDetail() {
         {/* Favorite Button */}
         <button
           onClick={toggleFavorite}
-          className="transition-all duration-200 hover:scale-110 focus:outline-none bg-transparent border-0 p-0 group"
-          title={isFavorite ? 'Hapus dari favorit' : 'Tambah ke favorit'}
+          className="relative transition-all duration-200 hover:scale-110 focus:outline-none bg-transparent border-0 p-0 group"
         >
+          <span className="pointer-events-none absolute right-full mr-3 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-pink-600 px-3 py-1.5 text-xs font-semibold text-white shadow-lg opacity-0 -translate-x-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0">
+            {isFavorite ? 'Hapus favorit' : 'Tambah favorit'}
+          </span>
           <svg
             width="48"
             height="48"

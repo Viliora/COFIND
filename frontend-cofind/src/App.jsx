@@ -1,7 +1,8 @@
 // src/App.jsx
 import React, { useEffect, lazy, Suspense } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/authContext';
+import { useAuth } from './context/authContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -37,41 +38,56 @@ function PageLoadingFallback() {
   );
 }
 
+/**
+ * Guard untuk halaman user biasa: jika admin, redirect ke /admin
+ */
+function UserRoute({ children }) {
+  const { isAdmin, initialized, loading } = useAuth();
+  if (!initialized || loading) return null;
+  if (isAdmin) return <Navigate to="/admin" replace />;
+  return children;
+}
+
 function AppContent() {
   const location = useLocation();
+  const { isAdmin } = useAuth();
+
   const isLoginPage = location.pathname === '/login';
+  const isAdminPage = location.pathname.startsWith('/admin');
+  // Sembunyikan Navbar/Footer di halaman login dan di semua halaman untuk admin
+  const hideChrome = isLoginPage || isAdminPage || isAdmin;
 
   return (
     <div 
       className={`${isLoginPage ? 'fixed inset-0 overflow-hidden' : 'min-h-screen'} bg-gray-50 dark:bg-zinc-900 w-full`}
       style={isLoginPage ? { width: '100vw', height: '100vh', minHeight: '100vh' } : {}}
     >
-      {/* 1. Navbar (fixed di atas) - Hidden di login page */}
-      {!isLoginPage && <Navbar />}
+      {/* Navbar - disembunyikan di login & untuk admin */}
+      {!hideChrome && <Navbar />}
       
-      {/* 2. Main Content (padding untuk menghindari navbar, kecuali di login) */}
       <main 
-        className={isLoginPage ? 'w-full' : 'pt-14 sm:pt-16 w-full'}
+        className={isLoginPage ? 'w-full' : hideChrome ? 'w-full' : 'pt-14 sm:pt-16 w-full'}
         style={isLoginPage ? { width: '100vw', height: '100vh', minHeight: '100vh' } : {}}
       > 
         <Routes>
-          <Route path="/" element={<Suspense fallback={<PageLoadingFallback />}><ShopList /></Suspense>} /> 
-          <Route path="/shop/:id" element={<Suspense fallback={<PageLoadingFallback />}><ShopDetail /></Suspense>} />
-          <Route path="/favorite" element={<Suspense fallback={<PageLoadingFallback />}><Favorite /></Suspense>} />
-          <Route path="/want-to-visit" element={<Suspense fallback={<PageLoadingFallback />}><WantToVisit /></Suspense>} />
-          <Route path="/about" element={<Suspense fallback={<PageLoadingFallback />}><About /></Suspense>} />
+          {/* Halaman user biasa — admin akan di-redirect ke /admin */}
+          <Route path="/" element={<UserRoute><Suspense fallback={<PageLoadingFallback />}><ShopList /></Suspense></UserRoute>} /> 
+          <Route path="/shop/:id" element={<UserRoute><Suspense fallback={<PageLoadingFallback />}><ShopDetail /></Suspense></UserRoute>} />
+          <Route path="/favorite" element={<UserRoute><Suspense fallback={<PageLoadingFallback />}><Favorite /></Suspense></UserRoute>} />
+          <Route path="/want-to-visit" element={<UserRoute><Suspense fallback={<PageLoadingFallback />}><WantToVisit /></Suspense></UserRoute>} />
+          <Route path="/about" element={<UserRoute><Suspense fallback={<PageLoadingFallback />}><About /></Suspense></UserRoute>} />
           <Route path="/login" element={<Suspense fallback={<PageLoadingFallback />}><Login /></Suspense>} />
-          {/* Profil publik: bisa diakses siapa saja */}
-          <Route path="/profile/:userId" element={<Suspense fallback={<PageLoadingFallback />}><Profile /></Suspense>} />
-          {/* Profil saya: butuh login */}
+          <Route path="/profile/:userId" element={<UserRoute><Suspense fallback={<PageLoadingFallback />}><Profile /></Suspense></UserRoute>} />
           <Route 
             path="/profile" 
             element={
-              <ProtectedRoute>
-                <Suspense fallback={<PageLoadingFallback />}>
-                  <Profile />
-                </Suspense>
-              </ProtectedRoute>
+              <UserRoute>
+                <ProtectedRoute>
+                  <Suspense fallback={<PageLoadingFallback />}>
+                    <Profile />
+                  </Suspense>
+                </ProtectedRoute>
+              </UserRoute>
             } 
           />
           <Route 
@@ -87,8 +103,8 @@ function AppContent() {
         </Routes>
       </main>
       
-      {/* 3. Footer (di bawah) - Hidden di login page */}
-      {!isLoginPage && <Footer />}
+      {/* Footer - disembunyikan di login & untuk admin */}
+      {!hideChrome && <Footer />}
     </div>
   );
 }

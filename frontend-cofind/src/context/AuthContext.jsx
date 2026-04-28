@@ -244,7 +244,11 @@ function AuthProvider({ children }) {
     loading,
     initialized,
     isAuthenticated: !!user,
-    isAdmin: profile?.role === 'admin' || profile?.role === 'superadmin',
+    isAdmin:
+      profile?.role === 'admin' ||
+      profile?.role === 'superadmin' ||
+      profile?.is_admin === 1 ||
+      profile?.is_admin === true,
     signUp,
     signIn,
     signOut,

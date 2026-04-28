@@ -1,9 +1,58 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/authContext';
 import ReviewCard from './ReviewCard';
 import ReviewForm from './ReviewForm';
+import { REVIEW_VERB_EXCLUSIONS } from '../constants/reviewKeywordVerbs';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+const REVIEW_KEYWORD_STOPWORDS = new Set([
+  'yang', 'dan', 'atau', 'untuk', 'dengan', 'juga', 'karena', 'dari', 'pada',
+  'saya', 'kami', 'kita', 'anda', 'nya', 'ini', 'itu', 'ada', 'aja', 'banget',
+  'sangat', 'lebih', 'cukup', 'buat', 'bisa', 'jadi', 'kalau', 'karna', 'udah',
+  'sudah', 'lagi', 'sih', 'nih', 'deh', 'the', 'and', 'very', 'place', 'coffee',
+  'shop', 'tempat', 'untung', 'seperti', 'dalam', 'saat', 'biar', 'pas', 'tapi',
+  'ga', 'gak', 'nggak', 'tidak', 'iya', 'dong', 'kok',
+]);
+
+function extractRecurringReviewKeywords(reviews) {
+  const tokenCounts = new Map();
+
+  reviews.forEach((review) => {
+    const text = String(review?.text || '').toLowerCase();
+    if (!text) return;
+
+    const uniqueTokens = new Set(
+      text
+        .replace(/[^a-zA-Z0-9\s]/g, ' ')
+        .split(/\s+/)
+        .map((token) => token.trim())
+        .filter(
+          (token) =>
+            token.length >= 3 &&
+            !REVIEW_KEYWORD_STOPWORDS.has(token) &&
+            !REVIEW_VERB_EXCLUSIONS.has(token) &&
+            !/^\d+$/.test(token)
+        )
+    );
+
+    uniqueTokens.forEach((token) => {
+      tokenCounts.set(token, (tokenCounts.get(token) || 0) + 1);
+    });
+  });
+
+  return Array.from(tokenCounts.entries())
+    .filter(([, count]) => count >= 2)
+    .sort((a, b) => {
+      if (b[1] !== a[1]) return b[1] - a[1];
+      return a[0].localeCompare(b[0]);
+    })
+    .slice(0, 12)
+    .map(([keyword, count]) => ({
+      keyword,
+      label: keyword.charAt(0).toUpperCase() + keyword.slice(1),
+      count,
+    }));
+}
 
 /**
  * ReviewList Component - COMPLETE FIX VERSION
@@ -19,6 +68,8 @@ const ReviewList = ({ placeId, shopName, newReview, onReviewSubmitted }) => {
   const { initialized: authInitialized, user, isAuthenticated } = useAuth();
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedKeyword, setSelectedKeyword] = useState('');
+  const [reviewSort, setReviewSort] = useState('latest');
   
   // Refs untuk tracking
   const abortControllerRef = useRef(null);
@@ -229,7 +280,40 @@ const ReviewList = ({ placeId, shopName, newReview, onReviewSubmitted }) => {
       });
     }, 500);
   }, [fetchReviews]);
-  
+
+  const reviewKeywords = useMemo(() => extractRecurringReviewKeywords(reviews), [reviews]);
+
+  const filteredReviews = useMemo(() => {
+    if (!selectedKeyword) return reviews;
+    return reviews.filter((review) =>
+      String(review?.text || '').toLowerCase().includes(selectedKeyword.toLowerCase())
+    );
+  }, [reviews, selectedKeyword]);
+
+  const displayedReviews = useMemo(() => {
+    const list = [...filteredReviews];
+
+    switch (reviewSort) {
+      case 'highest-rating':
+        return list.sort((a, b) => {
+          const ratingDiff = (Number(b.rating) || 0) - (Number(a.rating) || 0);
+          if (ratingDiff !== 0) return ratingDiff;
+          return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+        });
+      case 'lowest-rating':
+        return list.sort((a, b) => {
+          const ratingDiff = (Number(a.rating) || 0) - (Number(b.rating) || 0);
+          if (ratingDiff !== 0) return ratingDiff;
+          return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+        });
+      case 'latest':
+      default:
+        return list.sort(
+          (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)
+        );
+    }
+  }, [filteredReviews, reviewSort]);
+
   
   // Stats
   const stats = {
@@ -338,9 +422,37 @@ const ReviewList = ({ placeId, shopName, newReview, onReviewSubmitted }) => {
             placeId={placeId}
             shopName={shopName || 'Coffee Shop'}
             onReviewSubmitted={onReviewSubmitted}
+            reviewKeywords={reviewKeywords}
+            selectedKeyword={selectedKeyword}
+            onKeywordSelect={setSelectedKeyword}
           />
         </div>
       )}
+
+      {reviews.length > 0 ? (
+        <div className="mb-4 flex justify-end">
+          <label className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+            <span>Urutkan:</span>
+            <div className="relative">
+              <select
+                value={reviewSort}
+                onChange={(event) => setReviewSort(event.target.value)}
+                className="appearance-none rounded-lg border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 pl-3 pr-9 py-2 text-sm text-gray-800 dark:text-gray-100 cursor-pointer"
+                aria-label="Urutkan review"
+              >
+                <option value="latest">Terbaru</option>
+                <option value="highest-rating">Rating tertinggi</option>
+                <option value="lowest-rating">Rating terendah</option>
+              </select>
+              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-500 dark:text-gray-400">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </span>
+            </div>
+          </label>
+        </div>
+      ) : null}
 
       {/* Reviews List or Empty State */}
       {reviews.length === 0 ? (
@@ -355,15 +467,32 @@ const ReviewList = ({ placeId, shopName, newReview, onReviewSubmitted }) => {
             Jadilah yang pertama memberikan review!
           </p>
         </div>
+      ) : filteredReviews.length === 0 ? (
+        <div className="text-center py-10 bg-gray-50 dark:bg-zinc-800/50 rounded-xl border border-gray-200 dark:border-zinc-700">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+            Tidak ada review untuk topik "{selectedKeyword}"
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
+            Coba pilih kapsul topik lain atau reset filter.
+          </p>
+          <button
+            type="button"
+            onClick={() => setSelectedKeyword('')}
+            className="inline-flex items-center px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-medium transition-colors"
+          >
+            Reset filter
+          </button>
+        </div>
       ) : (
         <div className="space-y-4">
-          {reviews.map((review) => (
+          {displayedReviews.map((review) => (
             <div key={review.id} id={`review-${review.id}`} className="scroll-mt-24">
               <ReviewCard
                 review={review}
                 onDelete={handleDelete}
                 onUpdate={handleUpdate}
                 onLike={handleLike}
+                highlightKeyword={selectedKeyword}
               />
             </div>
           ))}

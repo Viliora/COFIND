@@ -17,7 +17,7 @@ def create_review(user_id, place_id, rating, text='', rating_makanan=None, ratin
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
+
         if not _validate_rating(rating):
             return {'success': False, 'error': 'Rating must be between 1 and 5'}
         if rating_makanan is not None and not _validate_rating(rating_makanan):
@@ -26,13 +26,6 @@ def create_review(user_id, place_id, rating, text='', rating_makanan=None, ratin
             return {'success': False, 'error': 'Rating layanan must be between 1 and 5'}
         if rating_suasana is not None and not _validate_rating(rating_suasana):
             return {'success': False, 'error': 'Rating suasana must be between 1 and 5'}
-        
-        existing = cursor.execute(
-            'SELECT id FROM reviews WHERE user_id = ? AND place_id = ?',
-            (user_id, place_id)
-        ).fetchone()
-        if existing:
-            return {'success': False, 'error': 'You already have a review for this shop'}
         
         shop = cursor.execute(
             'SELECT id FROM coffee_shops WHERE place_id = ?',
@@ -45,7 +38,18 @@ def create_review(user_id, place_id, rating, text='', rating_makanan=None, ratin
         cursor.execute('''
             INSERT INTO reviews (user_id, shop_id, place_id, rating, review_text, rating_makanan, rating_layanan, rating_suasana, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (user_id, shop_id, place_id, rating, text or '', rating_makanan, rating_layanan, rating_suasana, datetime.utcnow().isoformat(), datetime.utcnow().isoformat()))
+        ''', (
+            user_id,
+            shop_id,
+            place_id,
+            rating,
+            text or '',
+            rating_makanan,
+            rating_layanan,
+            rating_suasana,
+            datetime.utcnow().isoformat(),
+            datetime.utcnow().isoformat(),
+        ))
         review_id = cursor.lastrowid
         
         photos = photos or []
@@ -305,7 +309,15 @@ def update_review(review_id, user_id, rating=None, text=None, rating_makanan=Non
             UPDATE reviews
             SET rating = ?, review_text = ?, rating_makanan = ?, rating_layanan = ?, rating_suasana = ?, updated_at = ?
             WHERE id = ?
-        ''', (new_rating, new_text, new_makanan, new_layanan, new_suasana, datetime.utcnow().isoformat(), review_id))
+        ''', (
+            new_rating,
+            new_text,
+            new_makanan,
+            new_layanan,
+            new_suasana,
+            datetime.utcnow().isoformat(),
+            review_id,
+        ))
         if photos is not None:
             cursor.execute('DELETE FROM review_photos WHERE review_id = ?', (review_id,))
             for p in (photos or [])[:5]:

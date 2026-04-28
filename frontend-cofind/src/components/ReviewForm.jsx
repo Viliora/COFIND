@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { useAuth } from '../context/authContext';
 import { Link } from 'react-router-dom';
+import { REVIEW_VERB_EXCLUSIONS } from '../constants/reviewKeywordVerbs';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 const MAX_PHOTOS = 5;
@@ -36,15 +37,20 @@ function StarRating({ value, hoverValue, onSelect, onHover }) {
   );
 }
 
-const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
+const ReviewForm = ({
+  placeId,
+  shopName,
+  onReviewSubmitted,
+  reviewKeywords = [],
+  selectedKeyword = '',
+  onKeywordSelect,
+}) => {
   const { user, isAuthenticated } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [rating, setRating] = useState(0);
-  const [ratingMakanan, setRatingMakanan] = useState(0);
   const [ratingLayanan, setRatingLayanan] = useState(0);
   const [ratingSuasana, setRatingSuasana] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
-  const [hoverMakanan, setHoverMakanan] = useState(0);
   const [hoverLayanan, setHoverLayanan] = useState(0);
   const [hoverSuasana, setHoverSuasana] = useState(0);
   const [text, setText] = useState('');
@@ -55,6 +61,14 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const fileInputRef = useRef(null);
 
+  const visibleReviewKeywords = useMemo(
+    () =>
+      reviewKeywords.filter(
+        (item) => !REVIEW_VERB_EXCLUSIONS.has(String(item.keyword || '').toLowerCase())
+      ),
+    [reviewKeywords]
+  );
+
   const openModal = () => {
     setShowModal(true);
     setError('');
@@ -64,7 +78,6 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
   const closeModal = () => {
     setShowModal(false);
     setRating(0);
-    setRatingMakanan(0);
     setRatingLayanan(0);
     setRatingSuasana(0);
     setText('');
@@ -135,7 +148,6 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
         place_id: placeId,
         rating,
         text: text.trim(),
-        rating_makanan: ratingMakanan || undefined,
         rating_layanan: ratingLayanan || undefined,
         rating_suasana: ratingSuasana || undefined,
         photos: photos.map((p) => ({ caption: p.caption || undefined, image_data: p.image_data }))
@@ -217,6 +229,47 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
         Tulis Review
       </button>
 
+      {visibleReviewKeywords.length > 0 && (
+        <div className="mt-4 rounded-xl bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-700 p-4">
+          <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                Terkait Coffee Shop ini
+              </h3>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {visibleReviewKeywords.map((item) => {
+              const isActive = selectedKeyword === item.keyword;
+              return (
+                <button
+                  key={item.keyword}
+                  type="button"
+                  onClick={() => onKeywordSelect?.(isActive ? '' : item.keyword)}
+                  className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm transition-colors ${
+                    isActive
+                      ? 'bg-amber-600 text-white shadow-sm'
+                      : 'bg-white dark:bg-zinc-900 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-zinc-600 hover:border-amber-400 hover:text-amber-700 dark:hover:text-amber-400'
+                  }`}
+                >
+                  <span>{item.label}</span>
+                  <span
+                    className={`rounded-full px-1.5 py-0.5 text-[11px] ${
+                      isActive
+                        ? 'bg-white/20 text-white'
+                        : 'bg-gray-100 dark:bg-zinc-700 text-gray-500 dark:text-gray-300'
+                    }`}
+                  >
+                    {item.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {showModal && (
         <>
           <div
@@ -243,10 +296,6 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
                   <p className="font-semibold text-gray-900 dark:text-white">
                     {(user?.full_name || user?.username || 'User').toString().toUpperCase()}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                    Memposting untuk publik di Google
-                    <span className="inline-flex w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-600 items-center justify-center text-gray-500" title="Review akan tampil secara publik">ⓘ</span>
-                  </p>
                 </div>
               </div>
 
@@ -254,10 +303,6 @@ const ReviewForm = ({ placeId, shopName, onReviewSubmitted }) => {
                 <div>
                   <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rating tempat</p>
                   <StarRating value={rating} hoverValue={hoverRating} onSelect={setRating} onHover={setHoverRating} />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Makanan</p>
-                  <StarRating value={ratingMakanan} hoverValue={hoverMakanan} onSelect={setRatingMakanan} onHover={setHoverMakanan} />
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Layanan</p>

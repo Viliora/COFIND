@@ -4,6 +4,10 @@ import requests
 import os
 import json
 import re  # Untuk regex operations
+import importlib
+import unicodedata
+import math
+from collections import Counter
 from dotenv import load_dotenv
 import time  # Tambahkan untuk penundaan
 from datetime import datetime, timedelta
@@ -15,6 +19,11 @@ from favorites_utils import add_favorite, remove_favorite, get_user_favorites, i
 from want_to_visit_utils import add_want_to_visit, remove_want_to_visit, get_user_want_to_visit, is_want_to_visit
 from preference_suggestions_utils import create_preference_suggestion
 
+try:
+    StemmerFactory = importlib.import_module('Sastrawi.Stemmer.StemmerFactory').StemmerFactory
+except Exception:
+    StemmerFactory = None
+
 # Load environment variables
 load_dotenv()
 
@@ -24,9 +33,91 @@ app = Flask(__name__)
 # Database configuration
 DATABASE_PATH = os.path.join(os.path.dirname(__file__), 'cofind.db')
 
+
+def ensure_reviews_schema():
+    """
+    Pastikan schema reviews sudah:
+    - mengizinkan banyak review dari user yang sama pada shop yang sama
+    - tidak lagi memakai kolom `review_focus_pills` / `keywords`
+    """
+    conn = None
+    try:
+        conn = sqlite3.connect(DATABASE_PATH, timeout=10)
+        cursor = conn.cursor()
+        row = cursor.execute(
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='reviews'"
+        ).fetchone()
+
+        if not row or not row[0]:
+            return
+
+        schema_sql = str(row[0])
+        normalized_schema = re.sub(r'\s+', ' ', schema_sql).lower()
+        columns = cursor.execute("PRAGMA table_info(reviews)").fetchall()
+        column_names = {str(col[1]).lower() for col in columns}
+        has_unique_per_user_shop = 'unique(user_id, place_id)' in normalized_schema
+        has_keywords_column = 'keywords' in column_names
+        has_review_focus_pills_column = 'review_focus_pills' in column_names
+
+        if not has_unique_per_user_shop and not has_keywords_column and not has_review_focus_pills_column:
+            return
+
+        print("[DB] Migrating reviews table schema...")
+        cursor.execute('PRAGMA foreign_keys = OFF')
+        cursor.execute('BEGIN')
+        cursor.execute('''
+            CREATE TABLE reviews_new (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                shop_id INTEGER NOT NULL,
+                place_id TEXT NOT NULL,
+                rating REAL NOT NULL CHECK(rating >= 1 AND rating <= 5),
+                review_text TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                rating_makanan INTEGER,
+                rating_layanan INTEGER,
+                rating_suasana INTEGER,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (shop_id) REFERENCES coffee_shops(id) ON DELETE CASCADE
+            )
+        ''')
+        cursor.execute('''
+            INSERT INTO reviews_new (
+                id, user_id, shop_id, place_id, rating, review_text,
+                created_at, updated_at, rating_makanan, rating_layanan, rating_suasana
+            )
+            SELECT
+                id, user_id, shop_id, place_id, rating, review_text,
+                created_at, updated_at, rating_makanan, rating_layanan, rating_suasana
+            FROM reviews
+        ''')
+        cursor.execute('DROP TABLE reviews')
+        cursor.execute('ALTER TABLE reviews_new RENAME TO reviews')
+        cursor.execute(
+            "UPDATE sqlite_sequence SET seq = (SELECT COALESCE(MAX(id), 0) FROM reviews) WHERE name = 'reviews'"
+        )
+        cursor.execute('COMMIT')
+        cursor.execute('PRAGMA foreign_keys = ON')
+        print("[DB] Reviews migration completed.")
+    except Exception as e:
+        if conn is not None:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+        print(f"[DB] Failed to migrate reviews table: {e}")
+        raise
+    finally:
+        if conn is not None:
+            conn.close()
+
+ensure_reviews_schema()
+
 # Configure Hugging Face Inference API (gunakan env, jangan hardcode token)
 HF_API_TOKEN = os.getenv('HF_API_TOKEN')  # Pastikan diset di environment (.env)
 HF_MODEL = os.getenv('HF_MODEL', "meta-llama/Meta-Llama-3-8B")  # default model
+HF_KEYWORD_MODEL = os.getenv('HF_KEYWORD_MODEL', HF_MODEL)  # model ringan opsional untuk keyword expansion
 
 # Initialize Hugging Face Inference Client dengan Featherless AI provider
 hf_client = None
@@ -466,13 +557,1118 @@ def auth_update_password():
             'message': str(e)
         }), 500
 
+
+# ============================================================================
+# ADMIN API ENDPOINTS
+# ============================================================================
+
+def _extract_bearer_token():
+    return request.headers.get('Authorization', '').replace('Bearer ', '').strip()
+
+
+def _require_admin():
+    token = _extract_bearer_token()
+    if not token:
+        return None, (jsonify({'status': 'error', 'message': 'No token provided'}), 401)
+
+    auth_result = verify_token(token)
+    if not auth_result.get('valid'):
+        return None, (jsonify({'status': 'error', 'message': 'Invalid or expired token'}), 401)
+
+    user = auth_result.get('user') or {}
+    if not user.get('is_admin'):
+        return None, (jsonify({'status': 'error', 'message': 'Admin access required'}), 403)
+
+    return user, None
+
+
+def _load_facilities_index():
+    facilities_path = os.path.join('frontend-cofind', 'src', 'data', 'facilities.json')
+    if not os.path.exists(facilities_path):
+        return {}
+    try:
+        with open(facilities_path, 'r', encoding='utf-8') as f:
+            return json.load(f).get('facilities_by_place_id', {})
+    except Exception as e:
+        print(f"[ADMIN] Failed to load facilities.json: {e}")
+        return {}
+
+
+def _save_facilities_index(facilities_index):
+    facilities_path = os.path.join('frontend-cofind', 'src', 'data', 'facilities.json')
+    with open(facilities_path, 'w', encoding='utf-8') as f:
+        json.dump({'facilities_by_place_id': facilities_index}, f, ensure_ascii=False, indent=2)
+
+
+def _default_facilities_entry(place_id, shop_name=''):
+    return {
+        'place_id': place_id,
+        'name': shop_name or '',
+        'facilities': {
+            'service_options': {},
+            'accessibility': {},
+            'highlights': {},
+            'popular_for': {},
+            'atmosphere': [],
+            'crowd': [],
+            'dining_options': {},
+            'offerings': {},
+            'amenities': {},
+            'planning': {},
+            'parking': {},
+            'payments': {},
+            'meta': {
+                'source': 'admin_editor',
+                'last_updated': datetime.utcnow().strftime('%Y-%m-%d'),
+            },
+        },
+    }
+
+
+def _paginate_query(cursor, base_query, params, page, per_page):
+    offset = (page - 1) * per_page
+    rows = cursor.execute(
+        f"{base_query} LIMIT ? OFFSET ?",
+        [*params, per_page, offset]
+    ).fetchall()
+    return rows
+
+
+def _count_enabled_facilities(facilities_obj):
+    if not facilities_obj:
+        return 0
+    count = 0
+    for value in facilities_obj.values():
+        if isinstance(value, dict):
+            count += sum(1 for item in value.values() if item is True)
+        elif isinstance(value, list):
+            count += len(value)
+    return count
+
+
+@app.route('/api/admin/dashboard', methods=['GET'])
+def admin_dashboard():
+    admin_user, error_response = _require_admin()
+    if error_response:
+        return error_response
+
+    try:
+        conn = sqlite3.connect(DATABASE_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        stats = {
+            'total_users': cursor.execute('SELECT COUNT(*) FROM users').fetchone()[0],
+            'total_facilities': cursor.execute('SELECT COUNT(*) FROM coffee_shops').fetchone()[0],
+            'total_reviews': cursor.execute('SELECT COUNT(*) FROM reviews').fetchone()[0],
+            'total_suggestions': cursor.execute('SELECT COUNT(*) FROM preference_suggestions').fetchone()[0],
+            'total_favorites': cursor.execute('SELECT COUNT(*) FROM favorites').fetchone()[0],
+            'total_want_to_visit': cursor.execute('SELECT COUNT(*) FROM want_to_visit').fetchone()[0],
+            'total_review_reports': cursor.execute('SELECT COUNT(*) FROM review_reports').fetchone()[0],
+        }
+
+        activities = []
+
+        recent_users = cursor.execute('''
+            SELECT id, username, created_at
+            FROM users
+            ORDER BY created_at DESC
+            LIMIT 5
+        ''').fetchall()
+        for row in recent_users:
+            activities.append({
+                'type': 'user',
+                'title': f"User baru: {row['username']}",
+                'description': 'Akun baru terdaftar',
+                'created_at': row['created_at'],
+            })
+
+        recent_reviews = cursor.execute('''
+            SELECT r.id, u.username, c.name AS shop_name, r.created_at
+            FROM reviews r
+            LEFT JOIN users u ON u.id = r.user_id
+            LEFT JOIN coffee_shops c ON c.place_id = r.place_id
+            ORDER BY r.created_at DESC
+            LIMIT 5
+        ''').fetchall()
+        for row in recent_reviews:
+            activities.append({
+                'type': 'review',
+                'title': f"Review baru untuk {row['shop_name'] or 'Coffee Shop'}",
+                'description': f"Oleh {row['username'] or 'Anonim'}",
+                'created_at': row['created_at'],
+            })
+
+        recent_suggestions = cursor.execute('''
+            SELECT ps.id, u.username, ps.preference_text, ps.created_at
+            FROM preference_suggestions ps
+            LEFT JOIN users u ON u.id = ps.user_id
+            ORDER BY ps.created_at DESC
+            LIMIT 5
+        ''').fetchall()
+        for row in recent_suggestions:
+            activities.append({
+                'type': 'suggestion',
+                'title': f"Saran preferensi: {row['preference_text']}",
+                'description': f"Dikirim oleh {row['username'] or 'User'}",
+                'created_at': row['created_at'],
+            })
+
+        recent_reports = cursor.execute('''
+            SELECT rr.id, rr.report_reason, rr.status, rr.created_at, c.name AS shop_name
+            FROM review_reports rr
+            LEFT JOIN reviews r ON r.id = rr.review_id
+            LEFT JOIN coffee_shops c ON c.place_id = r.place_id
+            ORDER BY rr.created_at DESC
+            LIMIT 5
+        ''').fetchall()
+        for row in recent_reports:
+            activities.append({
+                'type': 'report',
+                'title': f"Laporan review: {row['report_reason'] or 'Tanpa alasan'}",
+                'description': f"{row['shop_name'] or 'Coffee Shop'} • status {row['status'] or 'pending'}",
+                'created_at': row['created_at'],
+            })
+
+        activities = sorted(
+            activities,
+            key=lambda item: item.get('created_at') or '',
+            reverse=True
+        )[:8]
+
+        conn.close()
+
+        return jsonify({
+            'status': 'success',
+            'stats': stats,
+            'recent_activity': activities,
+            'admin': {
+                'id': admin_user.get('id'),
+                'username': admin_user.get('username'),
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/admin/users', methods=['GET'])
+def admin_get_users():
+    _, error_response = _require_admin()
+    if error_response:
+        return error_response
+
+    try:
+        page = max(int(request.args.get('page', 1)), 1)
+        per_page = min(max(int(request.args.get('per_page', 10)), 1), 100)
+        search = (request.args.get('search') or '').strip().lower()
+        role_filter = (request.args.get('role') or '').strip().lower()
+        status_filter = (request.args.get('status') or '').strip().lower()
+
+        conn = sqlite3.connect(DATABASE_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        where_clauses = []
+        params = []
+
+        if search:
+            where_clauses.append('(LOWER(u.username) LIKE ? OR LOWER(u.email) LIKE ? OR LOWER(COALESCE(p.full_name, "")) LIKE ?)')
+            like = f'%{search}%'
+            params.extend([like, like, like])
+
+        if role_filter == 'admin':
+            where_clauses.append('u.is_admin = 1')
+        elif role_filter == 'user':
+            where_clauses.append('u.is_admin = 0')
+
+        if status_filter == 'active':
+            where_clauses.append('u.is_active = 1')
+        elif status_filter == 'inactive':
+            where_clauses.append('u.is_active = 0')
+
+        where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ''
+
+        count_row = cursor.execute(
+            f'''
+            SELECT COUNT(*)
+            FROM users u
+            LEFT JOIN user_profiles p ON p.user_id = u.id
+            {where_sql}
+            ''',
+            params
+        ).fetchone()
+        total = count_row[0] if count_row else 0
+
+        rows = _paginate_query(
+            cursor,
+            f'''
+            SELECT u.id, u.email, u.username, u.is_admin, u.is_active, u.created_at, u.updated_at,
+                   p.full_name, p.bio, p.phone
+            FROM users u
+            LEFT JOIN user_profiles p ON p.user_id = u.id
+            {where_sql}
+            ORDER BY u.created_at DESC
+            ''',
+            params,
+            page,
+            per_page
+        )
+
+        users = []
+        for row in rows:
+            review_count = cursor.execute('SELECT COUNT(*) FROM reviews WHERE user_id = ?', (row['id'],)).fetchone()[0]
+            favorite_count = cursor.execute('SELECT COUNT(*) FROM favorites WHERE user_id = ?', (row['id'],)).fetchone()[0]
+            want_count = cursor.execute('SELECT COUNT(*) FROM want_to_visit WHERE user_id = ?', (row['id'],)).fetchone()[0]
+            users.append({
+                'id': row['id'],
+                'email': row['email'],
+                'username': row['username'],
+                'is_admin': bool(row['is_admin']),
+                'is_active': bool(row['is_active']),
+                'created_at': row['created_at'],
+                'updated_at': row['updated_at'],
+                'full_name': row['full_name'],
+                'bio': row['bio'],
+                'phone': row['phone'],
+                'review_count': review_count,
+                'favorite_count': favorite_count,
+                'want_to_visit_count': want_count,
+            })
+
+        conn.close()
+
+        return jsonify({
+            'status': 'success',
+            'items': users,
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': total,
+                'total_pages': max((total + per_page - 1) // per_page, 1),
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/admin/users/<int:user_id>', methods=['PUT'])
+def admin_update_user(user_id):
+    admin_user, error_response = _require_admin()
+    if error_response:
+        return error_response
+
+    try:
+        data = request.get_json() or {}
+
+        conn = sqlite3.connect(DATABASE_PATH)
+        cursor = conn.cursor()
+
+        existing = cursor.execute('SELECT id FROM users WHERE id = ?', (user_id,)).fetchone()
+        if not existing:
+            conn.close()
+            return jsonify({'status': 'error', 'message': 'User not found'}), 404
+
+        new_username = (data.get('username') or '').strip()
+        if new_username:
+            cursor.execute('UPDATE users SET username = ?, updated_at = ? WHERE id = ?', (
+                new_username,
+                datetime.utcnow().isoformat(),
+                user_id,
+            ))
+
+        if 'is_admin' in data:
+            if user_id == admin_user.get('id') and not data.get('is_admin'):
+                conn.close()
+                return jsonify({'status': 'error', 'message': 'Anda tidak dapat mencabut role admin dari akun sendiri.'}), 400
+            cursor.execute('UPDATE users SET is_admin = ?, updated_at = ? WHERE id = ?', (
+                1 if data.get('is_admin') else 0,
+                datetime.utcnow().isoformat(),
+                user_id,
+            ))
+
+        if 'is_active' in data:
+            if user_id == admin_user.get('id') and not data.get('is_active'):
+                conn.close()
+                return jsonify({'status': 'error', 'message': 'Anda tidak dapat menonaktifkan akun sendiri.'}), 400
+            cursor.execute('UPDATE users SET is_active = ?, updated_at = ? WHERE id = ?', (
+                1 if data.get('is_active') else 0,
+                datetime.utcnow().isoformat(),
+                user_id,
+            ))
+
+        conn.commit()
+        conn.close()
+
+        update_user_profile(
+            user_id=user_id,
+            full_name=data.get('full_name'),
+            bio=data.get('bio'),
+            avatar_url=data.get('avatar_url'),
+            phone=data.get('phone'),
+        )
+        return jsonify({'status': 'success', 'message': 'User updated successfully'}), 200
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/admin/users', methods=['POST'])
+def admin_create_user():
+    from auth_utils import hash_password as _hash_password
+    admin_user, error_response = _require_admin()
+    if error_response:
+        return error_response
+
+    try:
+        data = request.get_json() or {}
+        email = (data.get('email') or '').strip().lower()
+        username = (data.get('username') or '').strip()
+        password = (data.get('password') or '').strip()
+        full_name = (data.get('full_name') or '').strip()
+        is_admin_flag = bool(data.get('is_admin', False))
+
+        if not email or not username or not password:
+            return jsonify({'status': 'error', 'message': 'Email, username, dan password wajib diisi.'}), 400
+        if len(password) < 6:
+            return jsonify({'status': 'error', 'message': 'Password minimal 6 karakter.'}), 400
+
+        conn = sqlite3.connect(DATABASE_PATH)
+        cursor = conn.cursor()
+
+        if cursor.execute('SELECT id FROM users WHERE email = ?', (email,)).fetchone():
+            conn.close()
+            return jsonify({'status': 'error', 'message': 'Email sudah terdaftar.'}), 400
+        if cursor.execute('SELECT id FROM users WHERE username = ?', (username,)).fetchone():
+            conn.close()
+            return jsonify({'status': 'error', 'message': 'Username sudah digunakan.'}), 400
+
+        pwd_hash = _hash_password(password)
+        cursor.execute(
+            'INSERT INTO users (email, username, password_hash, is_admin, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, 1, ?, ?)',
+            (email, username, pwd_hash, 1 if is_admin_flag else 0,
+             datetime.utcnow().isoformat(), datetime.utcnow().isoformat())
+        )
+        user_id = cursor.lastrowid
+        cursor.execute(
+            'INSERT INTO user_profiles (user_id, full_name) VALUES (?, ?)',
+            (user_id, full_name or username)
+        )
+        conn.commit()
+        conn.close()
+
+        return jsonify({'status': 'success', 'message': 'User berhasil dibuat.', 'id': user_id}), 201
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/admin/users/<int:user_id>', methods=['DELETE'])
+def admin_delete_user(user_id):
+    admin_user, error_response = _require_admin()
+    if error_response:
+        return error_response
+
+    try:
+        if user_id == admin_user.get('id'):
+            return jsonify({'status': 'error', 'message': 'Anda tidak dapat menghapus akun admin sendiri.'}), 400
+
+        conn = sqlite3.connect(DATABASE_PATH)
+        cursor = conn.cursor()
+
+        existing = cursor.execute('SELECT id FROM users WHERE id = ?', (user_id,)).fetchone()
+        if not existing:
+            conn.close()
+            return jsonify({'status': 'error', 'message': 'User tidak ditemukan.'}), 404
+
+        for table in ('sessions', 'reviews', 'review_photos', 'review_likes', 'review_reports',
+                      'favorites', 'want_to_visit', 'user_profiles'):
+            cursor.execute(f'DELETE FROM {table} WHERE user_id = ?', (user_id,))
+        cursor.execute('DELETE FROM users WHERE id = ?', (user_id,))
+        conn.commit()
+        conn.close()
+
+        return jsonify({'status': 'success', 'message': 'User berhasil dihapus.'}), 200
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/admin/shops', methods=['GET'])
+def admin_get_shops():
+    _, error_response = _require_admin()
+    if error_response:
+        return error_response
+
+    try:
+        page = max(int(request.args.get('page', 1)), 1)
+        per_page = min(max(int(request.args.get('per_page', 10)), 1), 100)
+        search = (request.args.get('search') or '').strip().lower()
+
+        conn = sqlite3.connect(DATABASE_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        facilities_index = _load_facilities_index()
+
+        where_sql = ''
+        params = []
+        if search:
+            where_sql = 'WHERE LOWER(c.name) LIKE ? OR LOWER(c.address) LIKE ?'
+            like = f'%{search}%'
+            params = [like, like]
+
+        total = cursor.execute(
+            f'''
+            SELECT COUNT(*)
+            FROM coffee_shops c
+            {where_sql}
+            ''',
+            params
+        ).fetchone()[0]
+
+        rows = _paginate_query(
+            cursor,
+            f'''
+            SELECT c.*, COALESCE(o.hours_display, '') AS opening_hours_display
+            FROM coffee_shops c
+            LEFT JOIN opening_hours o ON o.place_id = c.place_id
+            {where_sql}
+            ORDER BY c.name ASC
+            ''',
+            params,
+            page,
+            per_page
+        )
+
+        items = []
+        for row in rows:
+            facility_entry = facilities_index.get(row['place_id'], {})
+            facilities_text = _format_facilities_to_text(facility_entry)
+            facilities_obj = facility_entry.get('facilities', {})
+            items.append({
+                'id': row['id'],
+                'place_id': row['place_id'],
+                'name': row['name'],
+                'address': row['address'],
+                'rating': row['rating'],
+                'total_reviews': row['total_reviews'],
+                'latitude': row['latitude'],
+                'longitude': row['longitude'],
+                'map_embed_url': row['map_embed_url'],
+                'opening_hours_display': row['opening_hours_display'],
+                'has_facilities': bool(facility_entry),
+                'facilities_text': facilities_text,
+                'facility_count': _count_enabled_facilities(facilities_obj),
+            })
+
+        conn.close()
+
+        return jsonify({
+            'status': 'success',
+            'items': items,
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': total,
+                'total_pages': max((total + per_page - 1) // per_page, 1),
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/admin/facilities/<place_id>', methods=['GET'])
+def admin_get_facility_entry(place_id):
+    _, error_response = _require_admin()
+    if error_response:
+        return error_response
+
+    try:
+        facilities_index = _load_facilities_index()
+
+        conn = sqlite3.connect(DATABASE_PATH)
+        cursor = conn.cursor()
+        shop_row = cursor.execute('SELECT name FROM coffee_shops WHERE place_id = ?', (place_id,)).fetchone()
+        conn.close()
+
+        shop_name = shop_row[0] if shop_row else ''
+        entry = facilities_index.get(place_id) or _default_facilities_entry(place_id, shop_name)
+        if shop_name and not entry.get('name'):
+            entry['name'] = shop_name
+
+        return jsonify({'status': 'success', 'item': entry}), 200
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/admin/facilities/<place_id>', methods=['PUT'])
+def admin_update_facility_entry(place_id):
+    _, error_response = _require_admin()
+    if error_response:
+        return error_response
+
+    try:
+        data = request.get_json() or {}
+        entry = data.get('item')
+        if not isinstance(entry, dict):
+            return jsonify({'status': 'error', 'message': 'item harus berupa object JSON'}), 400
+
+        facilities_index = _load_facilities_index()
+
+        entry['place_id'] = place_id
+        entry.setdefault('name', '')
+        facilities = entry.get('facilities')
+        if not isinstance(facilities, dict):
+            return jsonify({'status': 'error', 'message': 'facilities harus berupa object JSON'}), 400
+
+        facilities.setdefault('meta', {})
+        if not isinstance(facilities['meta'], dict):
+            facilities['meta'] = {}
+        facilities['meta']['last_updated'] = datetime.utcnow().strftime('%Y-%m-%d')
+        facilities['meta'].setdefault('source', 'admin_editor')
+
+        facilities_index[place_id] = entry
+        _save_facilities_index(facilities_index)
+
+        return jsonify({'status': 'success', 'message': 'Facilities JSON berhasil diperbarui'}), 200
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/admin/shops', methods=['POST'])
+def admin_create_shop():
+    _, error_response = _require_admin()
+    if error_response:
+        return error_response
+
+    try:
+        data = request.get_json() or {}
+        name = (data.get('name') or '').strip()
+        address = (data.get('address') or '').strip()
+        if not name or not address:
+            return jsonify({'status': 'error', 'message': 'Name and address are required'}), 400
+
+        place_id = (data.get('place_id') or '').strip()
+        if not place_id:
+            slug = re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-')
+            place_id = f"admin-{slug or 'coffee-shop'}-{int(time.time())}"
+
+        conn = sqlite3.connect(DATABASE_PATH)
+        cursor = conn.cursor()
+
+        exists = cursor.execute('SELECT 1 FROM coffee_shops WHERE place_id = ?', (place_id,)).fetchone()
+        if exists:
+            conn.close()
+            return jsonify({'status': 'error', 'message': 'place_id already exists'}), 400
+
+        now = datetime.utcnow().isoformat()
+        cursor.execute('''
+            INSERT INTO coffee_shops (
+                place_id, name, address, rating, total_reviews, created_at, updated_at,
+                map_embed_url, latitude, longitude
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            place_id,
+            name,
+            address,
+            data.get('rating', 0) or 0,
+            data.get('total_reviews', 0) or 0,
+            now,
+            now,
+            data.get('map_embed_url'),
+            data.get('latitude'),
+            data.get('longitude'),
+        ))
+
+        hours_display = (data.get('opening_hours_display') or '').strip()
+        if hours_display:
+            cursor.execute('''
+                INSERT OR REPLACE INTO opening_hours (place_id, hours_display, created_at, updated_at)
+                VALUES (?, ?, ?, ?)
+            ''', (place_id, hours_display, now, now))
+
+        conn.commit()
+        conn.close()
+
+        return jsonify({'status': 'success', 'message': 'Coffee shop created successfully'}), 201
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/admin/shops/<place_id>', methods=['PUT'])
+def admin_update_shop(place_id):
+    _, error_response = _require_admin()
+    if error_response:
+        return error_response
+
+    try:
+        data = request.get_json() or {}
+        conn = sqlite3.connect(DATABASE_PATH)
+        cursor = conn.cursor()
+
+        existing = cursor.execute('SELECT id FROM coffee_shops WHERE place_id = ?', (place_id,)).fetchone()
+        if not existing:
+            conn.close()
+            return jsonify({'status': 'error', 'message': 'Coffee shop not found'}), 404
+
+        cursor.execute('''
+            UPDATE coffee_shops
+            SET name = ?, address = ?, rating = ?, total_reviews = ?, map_embed_url = ?,
+                latitude = ?, longitude = ?, updated_at = ?
+            WHERE place_id = ?
+        ''', (
+            (data.get('name') or '').strip(),
+            (data.get('address') or '').strip(),
+            data.get('rating', 0) or 0,
+            data.get('total_reviews', 0) or 0,
+            data.get('map_embed_url'),
+            data.get('latitude'),
+            data.get('longitude'),
+            datetime.utcnow().isoformat(),
+            place_id,
+        ))
+
+        hours_display = (data.get('opening_hours_display') or '').strip()
+        now = datetime.utcnow().isoformat()
+        if hours_display:
+            cursor.execute('''
+                INSERT OR REPLACE INTO opening_hours (place_id, hours_display, created_at, updated_at)
+                VALUES (?, ?, COALESCE((SELECT created_at FROM opening_hours WHERE place_id = ?), ?), ?)
+            ''', (place_id, hours_display, place_id, now, now))
+        else:
+            cursor.execute('DELETE FROM opening_hours WHERE place_id = ?', (place_id,))
+
+        conn.commit()
+        conn.close()
+        return jsonify({'status': 'success', 'message': 'Coffee shop updated successfully'}), 200
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/admin/shops/<place_id>', methods=['DELETE'])
+def admin_delete_shop(place_id):
+    _, error_response = _require_admin()
+    if error_response:
+        return error_response
+
+    try:
+        conn = sqlite3.connect(DATABASE_PATH)
+        cursor = conn.cursor()
+
+        review_rows = cursor.execute('SELECT id FROM reviews WHERE place_id = ?', (place_id,)).fetchall()
+        review_ids = [row[0] for row in review_rows]
+        if review_ids:
+            placeholders = ','.join('?' * len(review_ids))
+            cursor.execute(f'DELETE FROM review_likes WHERE review_id IN ({placeholders})', review_ids)
+            cursor.execute(f'DELETE FROM review_photos WHERE review_id IN ({placeholders})', review_ids)
+            cursor.execute(f'DELETE FROM review_reports WHERE review_id IN ({placeholders})', review_ids)
+            cursor.execute(f'DELETE FROM reviews WHERE id IN ({placeholders})', review_ids)
+
+        cursor.execute('DELETE FROM favorites WHERE place_id = ?', (place_id,))
+        cursor.execute('DELETE FROM want_to_visit WHERE place_id = ?', (place_id,))
+        cursor.execute('DELETE FROM opening_hours WHERE place_id = ?', (place_id,))
+        cursor.execute('DELETE FROM coffee_shops WHERE place_id = ?', (place_id,))
+
+        conn.commit()
+        conn.close()
+        return jsonify({'status': 'success', 'message': 'Coffee shop deleted successfully'}), 200
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/admin/reviews', methods=['GET'])
+def admin_get_reviews():
+    _, error_response = _require_admin()
+    if error_response:
+        return error_response
+
+    try:
+        page = max(int(request.args.get('page', 1)), 1)
+        per_page = min(max(int(request.args.get('per_page', 10)), 1), 100)
+        search = (request.args.get('search') or '').strip().lower()
+        place_id = (request.args.get('place_id') or '').strip()
+
+        conn = sqlite3.connect(DATABASE_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        where_clauses = []
+        params = []
+        if search:
+            where_clauses.append('('
+                'LOWER(COALESCE(r.review_text, "")) LIKE ? '
+                'OR LOWER(COALESCE(u.username, "")) LIKE ? '
+                'OR LOWER(COALESCE(c.name, "")) LIKE ?'
+            ')')
+            like = f'%{search}%'
+            params.extend([like, like, like])
+
+        if place_id:
+            where_clauses.append('r.place_id = ?')
+            params.append(place_id)
+
+        where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ''
+
+        total = cursor.execute(
+            f'''
+            SELECT COUNT(*)
+            FROM reviews r
+            LEFT JOIN users u ON u.id = r.user_id
+            LEFT JOIN coffee_shops c ON c.place_id = r.place_id
+            {where_sql}
+            ''',
+            params
+        ).fetchone()[0]
+
+        rows = _paginate_query(
+            cursor,
+            f'''
+            SELECT r.id, r.place_id, r.rating, r.review_text, r.created_at,
+                   r.rating_makanan, r.rating_layanan, r.rating_suasana,
+                   u.username, c.name AS shop_name
+            FROM reviews r
+            LEFT JOIN users u ON u.id = r.user_id
+            LEFT JOIN coffee_shops c ON c.place_id = r.place_id
+            {where_sql}
+            ORDER BY r.created_at DESC
+            ''',
+            params,
+            page,
+            per_page
+        )
+
+        items = []
+        for row in rows:
+            photo_count = cursor.execute('SELECT COUNT(*) FROM review_photos WHERE review_id = ?', (row['id'],)).fetchone()[0]
+            like_count = cursor.execute('SELECT COUNT(*) FROM review_likes WHERE review_id = ?', (row['id'],)).fetchone()[0]
+            items.append({
+                'id': row['id'],
+                'place_id': row['place_id'],
+                'shop_name': row['shop_name'],
+                'username': row['username'],
+                'rating': row['rating'],
+                'text': row['review_text'],
+                'created_at': row['created_at'],
+                'rating_makanan': row['rating_makanan'],
+                'rating_layanan': row['rating_layanan'],
+                'rating_suasana': row['rating_suasana'],
+                'photo_count': photo_count,
+                'like_count': like_count,
+            })
+
+        conn.close()
+
+        return jsonify({
+            'status': 'success',
+            'items': items,
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': total,
+                'total_pages': max((total + per_page - 1) // per_page, 1),
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/admin/review-reports', methods=['GET'])
+def admin_get_review_reports():
+    _, error_response = _require_admin()
+    if error_response:
+        return error_response
+
+    try:
+        page = max(int(request.args.get('page', 1)), 1)
+        per_page = min(max(int(request.args.get('per_page', 10)), 1), 100)
+        search = (request.args.get('search') or '').strip().lower()
+        status_filter = (request.args.get('status') or '').strip().lower()
+
+        conn = sqlite3.connect(DATABASE_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        where_clauses = []
+        params = []
+
+        if search:
+            where_clauses.append('('
+                                 'LOWER(COALESCE(rr.report_reason, "")) LIKE ? OR '
+                                 'LOWER(COALESCE(rr.report_text, "")) LIKE ? OR '
+                                 'LOWER(COALESCE(u.username, "")) LIKE ? OR '
+                                 'LOWER(COALESCE(c.name, "")) LIKE ?'
+                                 ')')
+            like = f'%{search}%'
+            params.extend([like, like, like, like])
+
+        if status_filter:
+            where_clauses.append('LOWER(COALESCE(rr.status, "pending")) = ?')
+            params.append(status_filter)
+
+        where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ''
+
+        total = cursor.execute(
+            f'''
+            SELECT COUNT(*)
+            FROM review_reports rr
+            LEFT JOIN reviews r ON r.id = rr.review_id
+            LEFT JOIN users u ON u.id = rr.reported_by_user_id
+            LEFT JOIN coffee_shops c ON c.place_id = r.place_id
+            {where_sql}
+            ''',
+            params
+        ).fetchone()[0]
+
+        rows = _paginate_query(
+            cursor,
+            f'''
+            SELECT rr.id, rr.review_id, rr.report_reason, rr.report_text, rr.reported_by_user_id,
+                   COALESCE(rr.status, 'pending') AS status, rr.admin_notes, rr.created_at, rr.resolved_at,
+                   u.username AS reported_by_username,
+                   r.review_text, r.rating, r.place_id,
+                   c.name AS shop_name
+            FROM review_reports rr
+            LEFT JOIN reviews r ON r.id = rr.review_id
+            LEFT JOIN users u ON u.id = rr.reported_by_user_id
+            LEFT JOIN coffee_shops c ON c.place_id = r.place_id
+            {where_sql}
+            ORDER BY rr.created_at DESC
+            ''',
+            params,
+            page,
+            per_page
+        )
+
+        items = [dict(row) for row in rows]
+        conn.close()
+
+        return jsonify({
+            'status': 'success',
+            'items': items,
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': total,
+                'total_pages': max((total + per_page - 1) // per_page, 1),
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/admin/review-reports/<int:report_id>', methods=['PUT'])
+def admin_update_review_report(report_id):
+    _, error_response = _require_admin()
+    if error_response:
+        return error_response
+
+    try:
+        data = request.get_json() or {}
+        status = (data.get('status') or 'pending').strip()
+        admin_notes = (data.get('admin_notes') or '').strip()
+
+        conn = sqlite3.connect(DATABASE_PATH)
+        cursor = conn.cursor()
+
+        existing = cursor.execute('SELECT id FROM review_reports WHERE id = ?', (report_id,)).fetchone()
+        if not existing:
+            conn.close()
+            return jsonify({'status': 'error', 'message': 'Review report not found'}), 404
+
+        resolved_at = datetime.utcnow().isoformat() if status in ['resolved', 'dismissed', 'reviewed'] else None
+        cursor.execute('''
+            UPDATE review_reports
+            SET status = ?, admin_notes = ?, resolved_at = ?
+            WHERE id = ?
+        ''', (status, admin_notes or None, resolved_at, report_id))
+        conn.commit()
+        conn.close()
+
+        return jsonify({'status': 'success', 'message': 'Review report berhasil diperbarui'}), 200
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/admin/reviews/<int:review_id>', methods=['DELETE'])
+def admin_delete_review(review_id):
+    _, error_response = _require_admin()
+    if error_response:
+        return error_response
+
+    try:
+        conn = sqlite3.connect(DATABASE_PATH)
+        cursor = conn.cursor()
+
+        cursor.execute('DELETE FROM review_likes WHERE review_id = ?', (review_id,))
+        cursor.execute('DELETE FROM review_photos WHERE review_id = ?', (review_id,))
+        cursor.execute('DELETE FROM review_reports WHERE review_id = ?', (review_id,))
+        cursor.execute('DELETE FROM reviews WHERE id = ?', (review_id,))
+
+        conn.commit()
+        conn.close()
+        return jsonify({'status': 'success', 'message': 'Review deleted successfully'}), 200
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/admin/preference-suggestions', methods=['GET'])
+def admin_get_preference_suggestions():
+    _, error_response = _require_admin()
+    if error_response:
+        return error_response
+
+    try:
+        page = max(int(request.args.get('page', 1)), 1)
+        per_page = min(max(int(request.args.get('per_page', 10)), 1), 100)
+        search = (request.args.get('search') or '').strip().lower()
+
+        conn = sqlite3.connect(DATABASE_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        where_sql = ''
+        params = []
+        if search:
+            where_sql = '''
+            WHERE LOWER(COALESCE(ps.preference_text, "")) LIKE ?
+               OR LOWER(COALESCE(ps.reason_text, "")) LIKE ?
+               OR LOWER(COALESCE(u.username, "")) LIKE ?
+            '''
+            like = f'%{search}%'
+            params = [like, like, like]
+
+        total = cursor.execute(
+            f'''
+            SELECT COUNT(*)
+            FROM preference_suggestions ps
+            LEFT JOIN users u ON u.id = ps.user_id
+            {where_sql}
+            ''',
+            params
+        ).fetchone()[0]
+
+        rows = _paginate_query(
+            cursor,
+            f'''
+            SELECT ps.id, ps.preference_text, ps.reason_text, ps.created_at,
+                   u.username, u.email
+            FROM preference_suggestions ps
+            LEFT JOIN users u ON u.id = ps.user_id
+            {where_sql}
+            ORDER BY ps.created_at DESC
+            ''',
+            params,
+            page,
+            per_page
+        )
+
+        items = [dict(row) for row in rows]
+        conn.close()
+
+        return jsonify({
+            'status': 'success',
+            'items': items,
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': total,
+                'total_pages': max((total + per_page - 1) // per_page, 1),
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/admin/preference-suggestions/<int:suggestion_id>', methods=['DELETE'])
+def admin_delete_preference_suggestion(suggestion_id):
+    _, error_response = _require_admin()
+    if error_response:
+        return error_response
+
+    try:
+        conn = sqlite3.connect(DATABASE_PATH)
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM preference_suggestions WHERE id = ?', (suggestion_id,))
+        conn.commit()
+        conn.close()
+        return jsonify({'status': 'success', 'message': 'Preference suggestion deleted successfully'}), 200
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/admin/ai/cache', methods=['GET'])
+def admin_get_ai_cache():
+    _, error_response = _require_admin()
+    if error_response:
+        return error_response
+
+    try:
+        sentiment_cache = load_sentiment_cache()
+        conn = sqlite3.connect(DATABASE_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        shop_lookup = {
+            row['place_id']: row['name']
+            for row in cursor.execute('SELECT place_id, name FROM coffee_shops').fetchall()
+        }
+        conn.close()
+
+        items = []
+        for place_id, entry in sentiment_cache.items():
+            items.append({
+                'place_id': place_id,
+                'shop_name': shop_lookup.get(place_id, place_id),
+                'review_count': entry.get('review_count', 0),
+                'timestamp': entry.get('timestamp', 0),
+                'data': entry.get('data', {}),
+            })
+
+        items.sort(key=lambda item: item.get('timestamp', 0), reverse=True)
+
+        return jsonify({'status': 'success', 'items': items}), 200
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/admin/ai/cache/<place_id>', methods=['DELETE'])
+def admin_delete_ai_cache_entry(place_id):
+    _, error_response = _require_admin()
+    if error_response:
+        return error_response
+
+    try:
+        sentiment_cache = load_sentiment_cache()
+        if place_id in sentiment_cache:
+            del sentiment_cache[place_id]
+            save_sentiment_cache(sentiment_cache)
+        return jsonify({'status': 'success', 'message': 'Cache entry deleted successfully'}), 200
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/admin/settings', methods=['GET'])
+def admin_get_settings_summary():
+    _, error_response = _require_admin()
+    if error_response:
+        return error_response
+
+    try:
+        return jsonify({
+            'status': 'success',
+            'settings': {
+                'llm_available': hf_client is not None,
+                'llm_model': HF_MODEL,
+                'api_base_note': 'Frontend memakai VITE_API_BASE untuk mengakses Flask API',
+                'cache_expiry_days': CACHE_EXPIRY_DAYS,
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
 # ============================================================================
 # REVIEWS API ENDPOINTS (Local SQLite)
 # ============================================================================
 
 @app.route('/api/reviews', methods=['POST'])
 def api_create_review():
-    """Create a new review (rating tempat + optional makanan/layanan/suasana + photos)."""
+    """Create a new review (rating tempat + optional layanan/suasana + photos)."""
     try:
         data = request.get_json()
         user_id = data.get('user_id')
@@ -492,7 +1688,7 @@ def api_create_review():
             rating_makanan=rating_makanan,
             rating_layanan=rating_layanan,
             rating_suasana=rating_suasana,
-            photos=photos
+            photos=photos,
         )
         
         if result['success']:
@@ -545,7 +1741,7 @@ def api_update_review(review_id):
             rating_makanan=data.get('rating_makanan'),
             rating_layanan=data.get('rating_layanan'),
             rating_suasana=data.get('rating_suasana'),
-            photos=data.get('photos')
+            photos=data.get('photos'),
         )
         
         if result['success']:
@@ -944,7 +2140,10 @@ def api_create_preference_suggestion():
 
 @app.route('/api/coffeeshops/<place_id>/summarize', methods=['POST'])
 def api_summarize_coffeeshop(place_id):
-    """Generate AI summary for a coffee shop with 3 positive keywords (max 100 chars). Memerlukan login."""
+    """AI Summary feature removed. LLM focused on recommendations."""
+    return jsonify({'status': 'error', 'message': 'Fitur AI Summary sudah dihapus.'}), 410
+
+def _old_summarize_stub():
     conn = None
     try:
         # Wajib login untuk fitur AI Summary
@@ -1023,6 +2222,23 @@ def api_summarize_coffeeshop(place_id):
                     facilities_text = _format_facilities_to_text(shop_fac)
         except Exception as e:
             print(f"[WARN] Failed to load facilities: {e}")
+
+        analysis = _get_structured_review_analysis(
+            place_id,
+            shop_name,
+            reviews,
+            facilities_text=facilities_text,
+            use_cache=True,
+        )
+        keywords = analysis.get('highlights') or [item.get('term') for item in analysis.get('top_terms', [])[:3]]
+        return jsonify({
+            'status': 'success',
+            'summary': analysis.get('summary') or "Belum cukup review berkualitas untuk dibuatkan ringkasan AI.",
+            'keywords': [keyword for keyword in keywords if keyword],
+            'analysis': analysis,
+            'from_cache': analysis.get('_from_cache', False),
+            'cache_age_days': analysis.get('_cache_age_days'),
+        }), 200
 
         # === STEP 1: Extract Keywords from Reviews ===
         extracted_keywords = []
@@ -1765,6 +2981,15 @@ def _get_keyword_synonyms(keyword):
                        'parkiran', 'parkir nyaman', 'parkir mobil', 'parkir motor'],
         'parkir': ['parkiran luas', 'parkir luas', 'parkir mobil nyaman', 'tempat parkir luas',
                   'parkiran', 'parkir nyaman', 'parkir mobil', 'parkir motor'],
+
+        # Keluarga / Family Friendly
+        'keluarga': ['ramah keluarga', 'ramah_keluarga', 'family', 'family friendly',
+                     'cocok untuk keluarga', 'cocok keluarga', 'anak-anak', 'anak',
+                     'bawa keluarga', 'untuk keluarga'],
+        'ramah keluarga': ['keluarga', 'ramah_keluarga', 'family', 'family friendly',
+                           'cocok untuk keluarga', 'cocok keluarga', 'anak-anak', 'anak'],
+        'family': ['keluarga', 'ramah keluarga', 'ramah_keluarga', 'family friendly',
+                   'cocok untuk keluarga', 'cocok keluarga', 'anak-anak'],
         
         # Gaming / Ngegame
         'gaming': ['ngegame', 'main game', 'bermain game', 'untuk gaming', 'cocok gaming',
@@ -1840,6 +3065,86 @@ def _format_facilities_to_text(shop_facilities):
 
     return " ".join(parts)
 
+
+_FACILITY_POPULAR_FOR_LABELS = {
+    'breakfast': 'sarapan',
+    'lunch': 'makan siang',
+    'dinner': 'makan malam',
+    'brunch': 'brunch',
+    'solo_dining': 'makan sendiri',
+    'good_for_working_on_laptop': 'wfc / kerja laptop',
+    'good_for_kids': 'ramah anak',
+    'good_for_groups': 'berkelompok',
+}
+_FACILITY_HIGHLIGHT_LABELS = {
+    'good_coffee': 'kopi enak',
+    'good_desserts': 'dessert enak',
+    'good_tea_selection': 'pilihan teh beragam',
+    'sports': 'cocok nonton olahraga',
+    'live_music': 'live music',
+    'fast_service': 'layanan cepat',
+    'great_cocktails': 'cocktail recommended',
+}
+_FACILITY_POPULAR_FOR_ORDER = [
+    'breakfast', 'brunch', 'lunch', 'dinner',
+    'solo_dining', 'good_for_working_on_laptop', 'good_for_groups', 'good_for_kids',
+]
+_FACILITY_HIGHLIGHT_ORDER = [
+    'good_coffee', 'good_desserts', 'good_tea_selection', 'live_music', 'sports',
+]
+
+
+def _ordered_true_facility_keys(source_obj, preferred_order=None):
+    if not isinstance(source_obj, dict):
+        return []
+    preferred_order = preferred_order or []
+    keys = [k for k, v in source_obj.items() if v is True]
+    if not keys:
+        return []
+    order_idx = {k: i for i, k in enumerate(preferred_order)}
+    return sorted(keys, key=lambda k: (order_idx.get(k, len(preferred_order)), k))
+
+
+def _format_facilities_tab_signals(shop_facilities):
+    """
+    Format subset facilities yang dipakai FacilitiesTab:
+    - popular_for
+    - highlights
+    - atmosphere
+    """
+    facilities = (shop_facilities or {}).get('facilities') or {}
+    popular_keys = _ordered_true_facility_keys(
+        facilities.get('popular_for'),
+        _FACILITY_POPULAR_FOR_ORDER,
+    )
+    highlight_keys = _ordered_true_facility_keys(
+        facilities.get('highlights'),
+        _FACILITY_HIGHLIGHT_ORDER,
+    )
+    atmosphere_items = [
+        str(item).strip().replace('_', ' ')
+        for item in (facilities.get('atmosphere') or [])
+        if str(item).strip()
+    ]
+
+    popular_labels = [_FACILITY_POPULAR_FOR_LABELS.get(k, k.replace('_', ' ')) for k in popular_keys]
+    highlight_labels = [_FACILITY_HIGHLIGHT_LABELS.get(k, k.replace('_', ' ')) for k in highlight_keys]
+
+    parts = []
+    if popular_labels:
+        parts.append(f"Populer untuk: {', '.join(popular_labels)}.")
+    if highlight_labels:
+        parts.append(f"Keunggulan: {', '.join(highlight_labels)}.")
+    if atmosphere_items:
+        parts.append(f"Suasana: {', '.join(atmosphere_items)}.")
+
+    return {
+        'popular_for': popular_labels,
+        'highlights': highlight_labels,
+        'atmosphere': atmosphere_items,
+        'text': " ".join(parts).strip(),
+    }
+
 def _filter_irrelevant_keywords(keywords):
     """
     Filter keywords yang tidak relevan dengan konteks coffee shop.
@@ -1909,7 +3214,7 @@ def _expand_keywords_with_synonyms(keywords):
     return list(expanded)
 
 
-def _summarize_reviews_with_llm(review_texts):
+def _summarize_reviews_text_generation(review_texts):
     """
     Ringkas beberapa teks review menjadi 2-4 kalimat dalam Bahasa Indonesia.
     Digunakan agar LLM analisis rekomendasi mendapat input yang ringkas dan mudah dianalisis.
@@ -1946,8 +3251,880 @@ Ringkasan:"""
         return combined[:500] + "..."
 
 
+REVIEW_ANALYSIS_CACHE_VERSION = 6
+REVIEW_ANALYSIS_STOPWORDS = {
+    'yang', 'dan', 'atau', 'dengan', 'untuk', 'karena', 'juga', 'saja', 'banget', 'sekali',
+    'sudah', 'udah', 'nih', 'nya', 'aja', 'sih', 'kok', 'deh', 'kan', 'dari', 'para', 'saat',
+    'sangat', 'lebih', 'cukup', 'agak', 'jadi', 'tetap', 'pada', 'dalam', 'seperti', 'bikin',
+    'tempat', 'coffee', 'shop', 'cafe', 'kafe', 'sini', 'situ', 'itu', 'ini', 'ada', 'tidak',
+    'nggak', 'ga', 'gak', 'the', 'dan', 'buat', 'biar', 'masih', 'kalo', 'kalau', 'sama', 'sangat',
+}
+
+REVIEW_ANALYSIS_ASPECT_KEYWORDS = {
+    'suasana': ['nyaman', 'cozy', 'tenang', 'ramai', 'berisik', 'aesthetic', 'estetik', 'adem', 'dingin', 'luas', 'sempit', 'outdoor', 'indoor'],
+    'fasilitas': ['wifi', 'wi-fi', 'internet', 'colokan', 'stopkontak', 'ac', 'parkir', 'toilet', 'musholla', 'sofa', 'smoking', 'outlet'],
+    'makanan_minuman': ['kopi', 'coffee', 'espresso', 'latte', 'americano', 'matcha', 'makanan', 'minuman', 'snack', 'croffle', 'dessert', 'menu'],
+    'harga': ['harga', 'murah', 'mahal', 'worth', 'terjangkau', 'pricing', 'price'],
+    'pelayanan': ['pelayanan', 'service', 'ramah', 'kasir', 'barista', 'cepat', 'lama', 'slow'],
+    'lokasi': ['lokasi', 'jalan', 'akses', 'strategis', 'pusat', 'pinggir', 'dekat'],
+}
+
+
+def _normalize_whitespace(text):
+    return re.sub(r'\s+', ' ', str(text or '')).strip()
+
+
+def _extract_json_block(text):
+    if not text:
+        return None
+    cleaned = str(text).strip()
+    if '```' in cleaned:
+        for part in cleaned.split('```'):
+            part = part.strip()
+            if part.startswith('json'):
+                part = part[4:].strip()
+            if part.startswith('{') and part.endswith('}'):
+                return part
+    match = re.search(r'\{[\s\S]*\}', cleaned)
+    return match.group(0) if match else None
+
+
+def _is_low_quality_review_text(text):
+    text = _normalize_whitespace(text)
+    if len(text) < 20:
+        return True, 'too_short'
+
+    if re.search(r'(.)\1{6,}', text.lower()):
+        return True, 'excessive_character_repeat'
+
+    letters = len(re.findall(r'[A-Za-zÀ-ÿ]', text))
+    alnum = len(re.findall(r'[A-Za-zÀ-ÿ0-9]', text))
+    if alnum > 0 and (letters / alnum) < 0.5:
+        return True, 'too_many_non_letters'
+
+    lower = text.lower()
+    if 'http://' in lower or 'https://' in lower or 'www.' in lower:
+        return True, 'contains_link'
+
+    tokens = re.findall(r'[A-Za-zÀ-ÿ0-9]+', lower)
+    if len(tokens) < 4:
+        return True, 'too_few_words'
+
+    unique_tokens = set(tokens)
+    if len(unique_tokens) < 3:
+        return True, 'too_few_unique_words'
+
+    token_counts = Counter(tokens)
+    top_token, top_count = token_counts.most_common(1)[0]
+    if top_count >= 4 and (top_count / max(len(tokens), 1)) >= 0.45:
+        return True, f'repetitive_token:{top_token}'
+
+    return False, None
+
+
+def _extract_review_analysis_features(review_items, max_reviews=10):
+    prepared_reviews = []
+    seen_texts = set()
+    rejected_reasons = Counter()
+    aspect_counts = {aspect: 0 for aspect in REVIEW_ANALYSIS_ASPECT_KEYWORDS}
+    aspect_keyword_hits = {aspect: Counter() for aspect in REVIEW_ANALYSIS_ASPECT_KEYWORDS}
+    term_counter = Counter()
+
+    for original_index, review in enumerate(review_items or []):
+        if isinstance(review, dict):
+            text = _normalize_whitespace(review.get('text', ''))
+            rating = review.get('rating', 0) or 0
+            author = review.get('author_name') or review.get('username') or 'Anonim'
+        else:
+            text = _normalize_whitespace(review)
+            rating = 0
+            author = 'Anonim'
+
+        if not text:
+            rejected_reasons['empty'] += 1
+            continue
+
+        normalized_text = _normalize_match_text(text)
+        if normalized_text in seen_texts:
+            rejected_reasons['duplicate'] += 1
+            continue
+
+        is_low_quality, reason = _is_low_quality_review_text(text)
+        if is_low_quality:
+            rejected_reasons[reason or 'low_quality'] += 1
+            continue
+
+        seen_texts.add(normalized_text)
+        token_set = set(re.findall(r'[A-Za-zÀ-ÿ0-9]+', normalized_text))
+
+        for token in token_set:
+            if len(token) < 3 or token.isdigit() or token in REVIEW_ANALYSIS_STOPWORDS:
+                continue
+            term_counter[token] += 1
+
+        for aspect, keywords in REVIEW_ANALYSIS_ASPECT_KEYWORDS.items():
+            matched = [keyword for keyword in keywords if keyword in normalized_text]
+            if matched:
+                aspect_counts[aspect] += 1
+                for keyword in matched:
+                    aspect_keyword_hits[aspect][keyword] += 1
+
+        prepared_reviews.append({
+            'index': original_index,
+            'text': text,
+            'rating': rating,
+            'author': author,
+        })
+
+    prepared_reviews = prepared_reviews[:max_reviews]
+    top_terms = [
+        {'term': term, 'count': count}
+        for term, count in term_counter.most_common(8)
+        if count >= 2
+    ]
+    aspect_keywords = {
+        aspect: [term for term, _count in counter.most_common(5)]
+        for aspect, counter in aspect_keyword_hits.items()
+    }
+
+    return {
+        'total_reviews': len(review_items or []),
+        'used_reviews': len(prepared_reviews),
+        'prepared_reviews': prepared_reviews,
+        'rejected_reasons': dict(rejected_reasons),
+        'aspect_counts': aspect_counts,
+        'aspect_keywords': aspect_keywords,
+        'top_terms': top_terms,
+    }
+
+
+def _extract_facilities_popular_keywords(facilities_text):
+    if not facilities_text:
+        return []
+    lowered = facilities_text.lower()
+    keyword_map = {
+        'wifi': 'WiFi', 'wi-fi': 'WiFi', 'internet': 'WiFi',
+        'parkir': 'parkir luas', 'colokan': 'colokan', 'stopkontak': 'colokan',
+        'musholla': 'musholla', 'toilet': 'toilet', 'ac': 'ruangan sejuk',
+        'outdoor': 'area outdoor', 'indoor': 'area indoor',
+        'live music': 'live music', 'musik': 'live music',
+        'sofa': 'sofa nyaman',
+        'dine in': 'dine in', 'takeaway': 'takeaway', 'delivery': 'delivery',
+        'cozy': 'suasana cozy', 'nyaman': 'suasana nyaman', 'tenang': 'suasana tenang',
+        'aesthetic': 'aesthetic',
+    }
+    found = []
+    seen = set()
+    for token, label in keyword_map.items():
+        if token in lowered and label.lower() not in seen:
+            found.append(label)
+            seen.add(label.lower())
+    return found
+
+
+def _pick_review_keywords(prepared, facilities_text='', target=3):
+    reviews = prepared.get('prepared_reviews', [])
+    aspect_keywords = prepared.get('aspect_keywords', {})
+    top_terms = prepared.get('top_terms', [])
+
+    all_aspect_kws = []
+    for aspect in ['suasana', 'makanan_minuman', 'fasilitas', 'pelayanan', 'harga', 'lokasi']:
+        for kw in aspect_keywords.get(aspect, []):
+            if kw and kw not in all_aspect_kws:
+                all_aspect_kws.append(kw)
+
+    keywords_from_reviews = []
+    seen = set()
+
+    if len(reviews) == 1:
+        for kw in all_aspect_kws:
+            if kw.lower() not in seen:
+                keywords_from_reviews.append(kw)
+                seen.add(kw.lower())
+            if len(keywords_from_reviews) >= target:
+                break
+    elif len(reviews) >= 2:
+        per_review_tokens = []
+        for review in reviews:
+            text_lower = _normalize_match_text(review.get('text', ''))
+            tokens = set(re.findall(r'[A-Za-z\u00C0-\u024F0-9]+', text_lower))
+            per_review_tokens.append(tokens)
+
+        for review_tokens in per_review_tokens:
+            picked = False
+            for kw in all_aspect_kws:
+                if kw.lower() in review_tokens and kw.lower() not in seen:
+                    keywords_from_reviews.append(kw)
+                    seen.add(kw.lower())
+                    picked = True
+                    break
+            if not picked:
+                for item in top_terms:
+                    term = item.get('term', '')
+                    if term.lower() in review_tokens and term.lower() not in seen:
+                        keywords_from_reviews.append(term)
+                        seen.add(term.lower())
+                        break
+            if len(keywords_from_reviews) >= target:
+                break
+
+    if len(keywords_from_reviews) < target:
+        for item in top_terms:
+            term = item.get('term', '')
+            if term and term.lower() not in seen:
+                keywords_from_reviews.append(term)
+                seen.add(term.lower())
+            if len(keywords_from_reviews) >= target:
+                break
+
+    if len(keywords_from_reviews) < target:
+        facility_kws = _extract_facilities_popular_keywords(facilities_text)
+        for kw in facility_kws:
+            if kw.lower() not in seen:
+                keywords_from_reviews.append(kw)
+                seen.add(kw.lower())
+            if len(keywords_from_reviews) >= target:
+                break
+
+    return keywords_from_reviews[:target]
+
+
+def _detect_review_keyword_aspect(keyword):
+    normalized = _normalize_match_text(keyword)
+    for aspect, keywords in REVIEW_ANALYSIS_ASPECT_KEYWORDS.items():
+        if normalized in {_normalize_match_text(item) for item in keywords}:
+            return aspect
+    return None
+
+
+def _humanize_summary_keyword(keyword):
+    keyword = _normalize_whitespace(keyword)
+    if not keyword:
+        return ""
+
+    normalized = _normalize_match_text(keyword)
+    direct_phrases = {
+        'kopi': 'kopi yang disukai pengunjung',
+        'coffee': 'kopi yang disukai pengunjung',
+        'espresso': 'racikan espresso yang enak',
+        'latte': 'latte yang terasa nikmat',
+        'americano': 'americano yang terasa pas',
+        'matcha': 'matcha yang cukup digemari',
+        'makanan': 'makanan yang cukup variatif',
+        'minuman': 'minuman yang cukup variatif',
+        'snack': 'snack yang cocok menemani nongkrong',
+        'croffle': 'croffle yang banyak disukai',
+        'dessert': 'dessert yang cukup menarik',
+        'menu': 'pilihan menu yang beragam',
+        'nyaman': 'suasana yang terasa nyaman',
+        'cozy': 'suasana yang terasa cozy',
+        'tenang': 'suasana yang cenderung tenang',
+        'ramai': 'suasana yang hidup',
+        'berisik': 'suasana yang cukup ramai',
+        'aesthetic': 'tempat yang terlihat aesthetic',
+        'estetik': 'tempat yang terlihat estetik',
+        'adem': 'ruangan yang terasa adem',
+        'dingin': 'ruangan yang terasa sejuk',
+        'luas': 'tempat yang terasa luas',
+        'sempit': 'area duduk yang cukup terbatas',
+        'outdoor': 'area outdoor yang nyaman',
+        'indoor': 'area indoor yang nyaman',
+        'wifi': 'WiFi yang cukup membantu',
+        'wi fi': 'WiFi yang cukup membantu',
+        'internet': 'internet yang cukup mendukung',
+        'colokan': 'colokan yang mudah dijangkau',
+        'stopkontak': 'stopkontak yang tersedia',
+        'ac': 'ruangan ber-AC yang nyaman',
+        'parkir': 'area parkir yang memadai',
+        'toilet': 'toilet yang tersedia',
+        'musholla': 'musholla yang tersedia',
+        'sofa': 'sofa yang nyaman dipakai duduk lama',
+        'smoking': 'area smoking yang tersedia',
+        'outlet': 'banyak outlet yang tersedia',
+        'harga': 'harga yang terasa pas',
+        'murah': 'harga yang cukup terjangkau',
+        'mahal': 'harga yang cenderung premium',
+        'worth': 'harga yang terasa worth it',
+        'terjangkau': 'harga yang cukup terjangkau',
+        'pelayanan': 'pelayanan yang cukup baik',
+        'service': 'service yang cukup baik',
+        'ramah': 'pelayanan yang terasa ramah',
+        'kasir': 'pelayanan kasir yang cukup baik',
+        'barista': 'barista yang ramah',
+        'cepat': 'pelayanan yang cukup cepat',
+        'lama': 'pelayanan yang kadang terasa lama',
+        'slow': 'pelayanan yang kadang terasa lambat',
+        'lokasi': 'lokasi yang mudah dijangkau',
+        'jalan': 'akses jalan yang cukup mudah',
+        'akses': 'akses yang cukup mudah',
+        'strategis': 'lokasi yang cukup strategis',
+        'pusat': 'lokasi yang dekat area pusat',
+        'pinggir': 'lokasi yang cukup mudah ditemukan',
+        'dekat': 'lokasi yang terasa dekat dijangkau',
+        'parkir luas': 'area parkir yang cukup luas',
+        'suasana nyaman': 'suasana yang terasa nyaman',
+        'suasana tenang': 'suasana yang cenderung tenang',
+        'suasana cozy': 'suasana yang terasa cozy',
+        'ruangan sejuk': 'ruangan yang terasa sejuk',
+        'sofa nyaman': 'sofa yang nyaman dipakai duduk lama',
+        'live music': 'live music yang menambah suasana',
+        'area outdoor': 'area outdoor yang nyaman',
+        'area indoor': 'area indoor yang nyaman',
+        'dine in': 'area dine in yang nyaman',
+        'takeaway': 'layanan takeaway yang tersedia',
+        'delivery': 'layanan delivery yang tersedia',
+    }
+    if normalized in direct_phrases:
+        return direct_phrases[normalized]
+
+    aspect = _detect_review_keyword_aspect(keyword)
+    if aspect == 'suasana':
+        return f"suasana dengan nuansa {keyword.lower()}"
+    if aspect == 'fasilitas':
+        return f"fasilitas {keyword.lower()} yang tersedia"
+    if aspect == 'makanan_minuman':
+        return f"{keyword.lower()} yang cukup disukai"
+    if aspect == 'harga':
+        return f"harga yang terasa {keyword.lower()}"
+    if aspect == 'pelayanan':
+        return f"pelayanan yang terasa {keyword.lower()}"
+    if aspect == 'lokasi':
+        return f"lokasi yang {keyword.lower()}"
+    return keyword.lower()
+
+
+def _build_ideal_ai_summary(prepared=None, facilities_text='', **_kwargs):
+    prepared = prepared or {}
+    keywords = _pick_review_keywords(prepared, facilities_text=facilities_text, target=3)
+    phrases = []
+    seen = set()
+    for keyword in keywords:
+        phrase = _humanize_summary_keyword(keyword)
+        normalized = _normalize_match_text(phrase)
+        if phrase and normalized and normalized not in seen:
+            phrases.append(phrase)
+            seen.add(normalized)
+
+    if not phrases:
+        return "Belum cukup data review untuk ringkasan AI."
+    if len(phrases) == 1:
+        return f"Coffee shop ini dikenal dengan {phrases[0]}."
+    if len(phrases) == 2:
+        return f"Coffee shop ini dikenal dengan {phrases[0]} dan {phrases[1]}."
+    return f"Coffee shop ini dikenal dengan {phrases[0]}, {phrases[1]}, dan {phrases[2]}."
+
+
+def _fallback_review_analysis(shop_name, prepared, facilities_text=''):
+    top_terms = prepared.get('top_terms', [])
+    aspect_counts = prepared.get('aspect_counts', {})
+    highlights = [item['term'] for item in top_terms[:3]]
+    aspects = {}
+    for aspect in REVIEW_ANALYSIS_ASPECT_KEYWORDS:
+        if aspect_counts.get(aspect, 0) > 0:
+            aspects[aspect] = {
+                'sentiment': 'netral',
+                'summary': f"Aspek {aspect.replace('_', ' ')} sering muncul di review.",
+                'evidence': None,
+            }
+        else:
+            aspects[aspect] = None
+
+    summary = _build_ideal_ai_summary(prepared=prepared, facilities_text=facilities_text)
+
+    return {
+        'review_relevance': [
+            {'index': review['index'], 'relevant': True}
+            for review in prepared.get('prepared_reviews', [])
+        ],
+        'aspects': aspects,
+        'overall_sentiment': 'netral',
+        'highlights': highlights,
+        'warnings': [],
+        'cocok_untuk': [],
+        'summary': summary[:220],
+        'top_terms': top_terms,
+        'aspect_counts': aspect_counts,
+        'aspect_keywords': prepared.get('aspect_keywords', {}),
+        'quality': {
+            'total_reviews': prepared.get('total_reviews', 0),
+            'used_reviews': prepared.get('used_reviews', 0),
+            'rejected_reasons': prepared.get('rejected_reasons', {}),
+        },
+    }
+
+
+def _sanitize_structured_review_analysis(result, prepared, facilities_text=''):
+    fallback = _fallback_review_analysis('Coffee Shop', prepared, facilities_text=facilities_text)
+    allowed_sentiments = {'positif', 'negatif', 'netral'}
+    raw_aspects = result.get('aspects', {}) if isinstance(result.get('aspects'), dict) else {}
+
+    sanitized_aspects = {}
+    for aspect in REVIEW_ANALYSIS_ASPECT_KEYWORDS:
+        value = raw_aspects.get(aspect)
+        if not isinstance(value, dict):
+            sanitized_aspects[aspect] = None
+            continue
+
+        sentiment = str(value.get('sentiment', 'netral')).strip().lower()
+        if sentiment not in allowed_sentiments:
+            sentiment = 'netral'
+
+        summary = _normalize_whitespace(value.get('summary', ''))[:180]
+        evidence = _normalize_whitespace(value.get('evidence', ''))[:180] or None
+        if not summary:
+            sanitized_aspects[aspect] = None
+            continue
+
+        sanitized_aspects[aspect] = {
+            'sentiment': sentiment,
+            'summary': summary,
+            'evidence': evidence,
+        }
+
+    overall_sentiment = str(result.get('overall_sentiment', 'netral')).strip().lower()
+    if overall_sentiment not in allowed_sentiments:
+        overall_sentiment = fallback['overall_sentiment']
+
+    def _sanitize_list(key, limit):
+        raw = result.get(key, [])
+        if not isinstance(raw, list):
+            return []
+        items = []
+        for item in raw:
+            text = _normalize_whitespace(item)
+            if text and text not in items:
+                items.append(text[:80])
+        return items[:limit]
+
+    summary = _build_ideal_ai_summary(prepared=prepared, facilities_text=facilities_text)
+    if not summary:
+        summary = fallback['summary']
+
+    review_relevance = []
+    raw_relevance = result.get('review_relevance', [])
+    if isinstance(raw_relevance, list):
+        for entry in raw_relevance[: len(prepared.get('prepared_reviews', []))]:
+            if not isinstance(entry, dict):
+                continue
+            try:
+                review_index = int(entry.get('index'))
+            except (TypeError, ValueError):
+                continue
+            review_relevance.append({
+                'index': review_index,
+                'relevant': bool(entry.get('relevant', True)),
+                'reason': _normalize_whitespace(entry.get('reason', ''))[:120] or None,
+            })
+    if not review_relevance:
+        review_relevance = fallback['review_relevance']
+
+    return {
+        'review_relevance': review_relevance,
+        'aspects': sanitized_aspects,
+        'overall_sentiment': overall_sentiment,
+        'highlights': _sanitize_list('highlights', 3) or fallback['highlights'],
+        'warnings': _sanitize_list('warnings', 2),
+        'cocok_untuk': _sanitize_list('cocok_untuk', 4),
+        'summary': summary,
+        'top_terms': prepared.get('top_terms', []),
+        'aspect_counts': prepared.get('aspect_counts', {}),
+        'aspect_keywords': prepared.get('aspect_keywords', {}),
+        'quality': {
+            'total_reviews': prepared.get('total_reviews', 0),
+            'used_reviews': prepared.get('used_reviews', 0),
+            'rejected_reasons': prepared.get('rejected_reasons', {}),
+        },
+    }
+
+
+def _get_structured_review_analysis(place_id, shop_name, review_items, facilities_text='', use_cache=True):
+    current_review_count = len(review_items or [])
+    cache_age_days = None
+
+    if use_cache and place_id:
+        try:
+            sentiment_cache = load_sentiment_cache()
+            cache_entry = sentiment_cache.get(place_id)
+            if (
+                is_cache_valid(cache_entry, current_review_count)
+                and cache_entry.get('analysis_version') == REVIEW_ANALYSIS_CACHE_VERSION
+                and isinstance(cache_entry.get('data'), dict)
+                and cache_entry['data'].get('summary')
+            ):
+                cache_age_days = (time.time() - cache_entry.get('timestamp', 0)) / (60 * 60 * 24)
+                cached = dict(cache_entry['data'])
+                cached['_from_cache'] = True
+                cached['_cache_age_days'] = round(cache_age_days, 1)
+                return cached
+        except Exception as cache_err:
+            print(f"[REVIEW ANALYSIS] Cache read error: {cache_err}")
+
+    prepared = _extract_review_analysis_features(review_items, max_reviews=10)
+    fallback = _fallback_review_analysis(shop_name, prepared, facilities_text=facilities_text)
+
+    if prepared.get('used_reviews', 0) == 0 or hf_client is None:
+        fallback['_from_cache'] = False
+        fallback['_cache_age_days'] = None
+        return fallback
+
+    review_lines = []
+    for review in prepared['prepared_reviews']:
+        review_lines.append(
+            f"[{review['index']}] ({review['rating']}⭐) {review['author']}: \"{review['text']}\""
+        )
+
+    aspect_lines = []
+    for aspect, count in prepared['aspect_counts'].items():
+        keywords = prepared['aspect_keywords'].get(aspect, [])
+        keyword_text = ", ".join(keywords[:5]) if keywords else "-"
+        aspect_lines.append(f"- {aspect}: {count} mention | keyword dominan: {keyword_text}")
+
+    top_terms_text = ", ".join(
+        f"{item['term']} ({item['count']}x)"
+        for item in prepared['top_terms']
+    ) or "-"
+
+    rejected_text = ", ".join(
+        f"{reason}: {count}"
+        for reason, count in prepared['rejected_reasons'].items()
+    ) or "-"
+
+    system_prompt = """Anda adalah analis review coffee shop. Tugas Anda adalah membuat analisis TERSTRUKTUR dalam JSON VALID.
+
+ATURAN KETAT:
+- Gunakan HANYA informasi yang benar-benar ada di review dan data pendukung.
+- Jika sebuah aspek tidak punya bukti yang cukup, isi null.
+- Untuk setiap aspek yang diisi, evidence harus berupa kutipan atau frasa yang benar-benar muncul di review.
+- Jangan menambah fakta baru, jangan mengarang fasilitas yang tidak disebut.
+- Review yang tidak relevan/spam harus ditandai relevant=false.
+- Output HANYA JSON object, tanpa markdown, tanpa penjelasan tambahan.
+
+SCHEMA JSON:
+{
+  "review_relevance": [
+    {"index": 0, "relevant": true, "reason": "opsional"}
+  ],
+  "aspects": {
+    "suasana": {"sentiment": "positif|negatif|netral", "summary": "...", "evidence": "..."} atau null,
+    "fasilitas": {"sentiment": "positif|negatif|netral", "summary": "...", "evidence": "..."} atau null,
+    "makanan_minuman": {"sentiment": "positif|negatif|netral", "summary": "...", "evidence": "..."} atau null,
+    "harga": {"sentiment": "positif|negatif|netral", "summary": "...", "evidence": "..."} atau null,
+    "pelayanan": {"sentiment": "positif|negatif|netral", "summary": "...", "evidence": "..."} atau null,
+    "lokasi": {"sentiment": "positif|negatif|netral", "summary": "...", "evidence": "..."} atau null
+  },
+  "overall_sentiment": "positif|negatif|netral",
+  "highlights": ["maks 3 poin kuat, 2-5 kata"],
+  "warnings": ["maks 2 poin lemah, 2-6 kata"],
+  "cocok_untuk": ["maks 4 aktivitas"],
+  "summary": "3 kata kunci utama dipisah koma, contoh: kopi enak, suasana nyaman, WiFi"
+}"""
+
+    user_prompt = f"""Coffee shop: {shop_name}
+Place ID: {place_id or '-'}
+
+STATISTIK REVIEW:
+- total_review_masuk: {prepared['total_reviews']}
+- total_review_lolos_filter: {prepared['used_reviews']}
+- review_ditolak: {rejected_text}
+
+TOP KATA PENGUNJUNG:
+{top_terms_text}
+
+ASPEK TERDETEKSI:
+{chr(10).join(aspect_lines)}
+
+DATA FASILITAS TAMBAHAN:
+{facilities_text or '-'}
+
+REVIEW TERFILTER:
+{chr(10).join(review_lines)}
+
+Buat JSON sesuai schema. Jika summary akhir terlalu umum atau tidak punya bukti, gunakan kata/istilah yang paling sering muncul di review."""
+
+    full_prompt = f"""{system_prompt}
+
+{user_prompt}
+
+Output JSON:"""
+
+    generated_text = None
+    last_error = None
+    for attempt in range(3):
+        try:
+            generated_text = hf_client.text_generation(
+                full_prompt,
+                model=(HF_MODEL or "meta-llama/Meta-Llama-3-8B").strip(),
+                max_new_tokens=700,
+                temperature=0.2,
+                return_full_text=False,
+            )
+            generated_text = (generated_text or '').strip()
+            break
+        except Exception as api_err:
+            last_error = api_err
+            print(f"[REVIEW ANALYSIS] Attempt {attempt + 1}/3 failed: {api_err}")
+            if attempt < 2:
+                time.sleep(2 * (attempt + 1))
+
+    if generated_text is None:
+        print(f"[REVIEW ANALYSIS] All attempts failed: {last_error}")
+        fallback['_from_cache'] = False
+        fallback['_cache_age_days'] = None
+        return fallback
+
+    try:
+        json_block = _extract_json_block(generated_text)
+        if not json_block:
+            raise ValueError('No JSON object found in LLM response')
+        parsed = json.loads(json_block)
+        sanitized = _sanitize_structured_review_analysis(parsed, prepared, facilities_text=facilities_text)
+    except Exception as parse_err:
+        print(f"[REVIEW ANALYSIS] Parse error: {parse_err}")
+        print(f"[REVIEW ANALYSIS] Raw response: {generated_text[:400]}")
+        sanitized = fallback
+
+    sanitized['_from_cache'] = False
+    sanitized['_cache_age_days'] = None
+
+    if use_cache and place_id:
+        try:
+            sentiment_cache = load_sentiment_cache()
+            sentiment_cache[place_id] = {
+                'data': {k: v for k, v in sanitized.items() if not k.startswith('_')},
+                'timestamp': time.time(),
+                'review_count': current_review_count,
+                'shop_name': shop_name,
+                'analysis_version': REVIEW_ANALYSIS_CACHE_VERSION,
+            }
+            save_sentiment_cache(sentiment_cache)
+        except Exception as cache_err:
+            print(f"[REVIEW ANALYSIS] Cache save error: {cache_err}")
+
+    return sanitized
+
+
+def _build_fallback_preference_recommendations(candidate_shops, prefs, limit=5):
+    recommendations = []
+    preference_text = ", ".join(prefs[:2]) if prefs else "preferensi yang dipilih"
+
+    for shop in candidate_shops[:limit]:
+        place_id = str(shop.get('place_id', '')).strip()
+        name = str(shop.get('name', '')).strip()
+        if not place_id or not name:
+            continue
+
+        matched_keywords = shop.get('matched_keywords') or []
+        matched_text = ", ".join(matched_keywords[:2]) if matched_keywords else preference_text
+        evidence_label = str(shop.get('evidence_label', '')).strip().lower()
+        evidence_text = _normalize_whitespace(shop.get('evidence_text', ''))
+
+        source_intro = "review pengunjung" if "review" in evidence_label else "data fasilitas"
+        if evidence_text:
+            evidence_snippet = evidence_text.split('.')[0].strip().rstrip('.,;:')
+            explanation = f"Cocok untuk {preference_text} karena {source_intro} menyorot {evidence_snippet[:140]}."
+        else:
+            explanation = f"Cocok untuk {preference_text} karena coffee shop ini paling relevan dengan kata kunci {matched_text}."
+
+        recommendations.append({
+            'place_id': place_id,
+            'name': name,
+            'explanation': explanation,
+        })
+
+    return recommendations
+
+
+def _summarize_reviews_with_llm(review_texts, place_id=None, shop_name='Coffee Shop', facilities_text=''):
+    review_items = [{'text': text, 'rating': 0, 'author_name': 'Anonim'} for text in review_texts]
+    analysis = _get_structured_review_analysis(
+        place_id,
+        shop_name,
+        review_items,
+        facilities_text=facilities_text,
+        use_cache=bool(place_id),
+    )
+    return analysis.get('summary', '')
+
+
+def _normalize_match_text(value):
+    return str(value or '').strip().lower()
+
+
+def _get_shop_rating_value(shop):
+    rating = shop.get('rating', 0)
+    if isinstance(rating, str):
+        try:
+            rating = float(rating)
+        except (ValueError, TypeError):
+            rating = 0
+    elif rating is None:
+        rating = 0
+    return rating
+
+
+def _get_shop_review_count_value(shop):
+    total_ratings = shop.get('total_reviews', shop.get('user_ratings_total', 0))
+    if isinstance(total_ratings, str):
+        try:
+            total_ratings = int(float(total_ratings))
+        except (ValueError, TypeError):
+            total_ratings = 0
+    elif total_ratings is None:
+        total_ratings = 0
+    return total_ratings
+
+
+
+def _score_shop_for_keywords(review_texts, facilities_text, keywords, review_items=None):
+    """
+    Prioritaskan review sebagai sumber relevansi.
+    Skor mempertimbangkan jumlah keyword yang match, jumlah review yang relevan,
+    dan rating review agar ranking lebih stabil daripada substring count biasa.
+    """
+    normalized_keywords = []
+    for keyword in keywords or []:
+        kw = _normalize_match_text(keyword)
+        if len(kw) >= 3:
+            normalized_keywords.append(kw)
+
+    if not normalized_keywords:
+        return {
+            'score': 0.0,
+            'matched_keywords': [],
+            'matched_source': 'review' if review_texts else ('facilities' if facilities_text else 'none'),
+            'relevant_review_count': 0,
+        }
+
+    unique_keywords = list(dict.fromkeys(normalized_keywords))
+    matched_keywords = []
+    matched_keyword_set = set()
+    review_score = 0.0
+    relevant_review_count = 0
+
+    iterable_reviews = review_items or [{'text': text, 'rating': 0} for text in (review_texts or [])]
+    for review in iterable_reviews:
+        if isinstance(review, dict):
+            review_text = _normalize_whitespace(review.get('text', ''))
+            review_rating = review.get('rating', 0)
+        else:
+            review_text = _normalize_whitespace(review)
+            review_rating = 0
+
+        if not review_text:
+            continue
+
+        review_lower = review_text.lower()
+        review_hits = [keyword for keyword in unique_keywords if keyword in review_lower]
+        if not review_hits:
+            continue
+
+        relevant_review_count += 1
+        try:
+            rating_value = float(review_rating or 0)
+        except (TypeError, ValueError):
+            rating_value = 0.0
+
+        review_score += (len(review_hits) * 3.0) + min(1.5, len(review_text) / 180.0) + (max(0.0, rating_value) / 5.0)
+
+        for keyword in review_hits:
+            if keyword not in matched_keyword_set:
+                matched_keywords.append(keyword)
+                matched_keyword_set.add(keyword)
+
+    facility_hits = []
+    if facilities_text:
+        facilities_lower = facilities_text.lower()
+        for keyword in unique_keywords:
+            if keyword in facilities_lower and keyword not in matched_keyword_set:
+                facility_hits.append(keyword)
+                matched_keyword_set.add(keyword)
+                matched_keywords.append(keyword)
+
+    facility_score = len(facility_hits) * 0.75
+    matched_source = 'review' if review_score > 0 else ('facilities' if facility_score > 0 else 'none')
+
+    return {
+        'score': round(review_score + facility_score, 4),
+        'matched_keywords': matched_keywords,
+        'matched_source': matched_source,
+        'relevant_review_count': relevant_review_count,
+    }
+
+
+def _get_shop_address(shop):
+    for key in ('formatted_address', 'address', 'vicinity', 'formattedAddress'):
+        value = _normalize_whitespace(shop.get(key, ''))
+        if value:
+            return value
+    return 'Alamat tidak tersedia'
+
+
+def _pick_relevant_reviews_for_keywords(reviews, keywords, limit=2):
+    normalized_keywords = []
+    for keyword in keywords or []:
+        kw = _normalize_match_text(keyword)
+        if len(kw) >= 3 and kw not in normalized_keywords:
+            normalized_keywords.append(kw)
+
+    if not reviews:
+        return []
+
+    scored_reviews = []
+    seen_quotes = set()
+    for review in reviews:
+        if isinstance(review, dict):
+            review_text = _normalize_whitespace(review.get('text', ''))
+            author_name = review.get('author_name') or review.get('username') or 'Anonim'
+            rating_value = review.get('rating', 0)
+        else:
+            review_text = _normalize_whitespace(review)
+            author_name = 'Anonim'
+            rating_value = 0
+
+        if len(review_text) < 20:
+            continue
+
+        review_lower = review_text.lower()
+        matched_keywords = [kw for kw in normalized_keywords if kw in review_lower]
+        if normalized_keywords and not matched_keywords:
+            continue
+
+        try:
+            rating_number = float(rating_value or 0)
+        except (TypeError, ValueError):
+            rating_number = 0.0
+
+        relevance_score = (
+            len(matched_keywords) * 3.0
+            + min(1.0, len(review_text) / 220.0)
+            + (max(0.0, rating_number) / 5.0)
+        )
+
+        quote_key = review_text.lower()
+        if quote_key in seen_quotes:
+            continue
+        seen_quotes.add(quote_key)
+        scored_reviews.append({
+            'quote': review_text,
+            'author_name': author_name,
+            'rating': round(rating_number, 1) if rating_number else 0,
+            'matched_keywords': matched_keywords or matched_review_pills,
+            'match_score': round(relevance_score, 3),
+        })
+
+    scored_reviews.sort(
+        key=lambda item: (
+            -item['match_score'],
+            -float(item.get('rating') or 0),
+            -len(item.get('quote', '')),
+        )
+    )
+    return scored_reviews[:limit]
+
+
 # Helper function untuk fetch coffee shops dengan REVIEWS dari file JSON lokal
-def _fetch_coffeeshops_with_reviews_from_json(location_str, max_shops=15, keywords=None):
+
+def _fetch_coffeeshops_with_reviews_from_json(location_str, max_shops=15, keywords=None, return_metadata=False):
     """
     Fetch coffee shops DENGAN REVIEWS dari file JSON lokal (places.json) dan database (reviews) untuk LLM context.
     Reviews digunakan sebagai bukti/evidence dalam rekomendasi.
@@ -1965,115 +4142,35 @@ def _fetch_coffeeshops_with_reviews_from_json(location_str, max_shops=15, keywor
     try:
         print(f"[JSON+REVIEWS] Loading coffee shops with reviews from local JSON files")
         
-        # Path ke file JSON (relatif dari app.py di root)
+        coffee_shops = []
         places_json_path = os.path.join('frontend-cofind', 'src', 'data', 'places.json')
-        # Baca places.json
-        if not os.path.exists(places_json_path):
-            print(f"[JSON+REVIEWS] Error: File {places_json_path} tidak ditemukan")
-            return "Error: File places.json tidak ditemukan."
-        
-        with open(places_json_path, 'r', encoding='utf-8') as f:
-            places_data = json.load(f)
-        
-        coffee_shops = places_data.get('data', [])
+        if os.path.exists(places_json_path):
+            with open(places_json_path, 'r', encoding='utf-8') as f:
+                places_data = json.load(f)
+            coffee_shops = places_data.get('data', [])
+            print(f"[JSON+REVIEWS] Loaded {len(coffee_shops)} shops from places.json")
+        else:
+            print(f"[JSON+REVIEWS] places.json tidak ditemukan, fallback ke SQLite coffee_shops")
+
         if not coffee_shops:
-            print(f"[JSON+REVIEWS] Error: Tidak ada data coffee shop di places.json")
+            conn = sqlite3.connect(DATABASE_PATH)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            rows = cursor.execute("""
+                SELECT c.*, COALESCE(o.hours_display, '') AS opening_hours_display
+                FROM coffee_shops c
+                LEFT JOIN opening_hours o ON c.place_id = o.place_id
+                ORDER BY c.rating DESC
+            """).fetchall()
+            conn.close()
+            coffee_shops = [dict(row) for row in rows]
+            print(f"[JSON+REVIEWS] Loaded {len(coffee_shops)} shops from SQLite fallback")
+
+        if not coffee_shops:
+            print(f"[JSON+REVIEWS] Error: Tidak ada data coffee shop di sumber manapun")
+            if return_metadata:
+                return "Tidak ada data coffee shop yang ditemukan.", []
             return "Tidak ada data coffee shop yang ditemukan."
-        
-        # Reviews sekarang hanya dari database, tidak dari reviews.json
-        # Kita akan fetch reviews dari database saat dibutuhkan per coffee shop
-        reviews_by_place_id = {}  # Akan diisi dari database saat loop
-        
-        # PENTING: Jika ada keywords, prioritaskan coffee shop yang memiliki review relevan
-        relevant_shops = []
-        other_shops = []
-        
-        if keywords and len(keywords) > 0:
-            print(f"[JSON+REVIEWS] Pre-filtering coffee shops dengan keywords: {keywords[:10]}... (total: {len(keywords)})")
-            
-            for shop in coffee_shops:
-                place_id = shop.get('place_id', '')
-                shop_reviews = reviews_by_place_id.get(place_id, [])
-                
-                # Cek apakah ada review yang relevan dengan keywords
-                # PENTING: Untuk keyword spesifik seperti musholla, WAJIB ada di review
-                has_relevant_review = False
-                for review in shop_reviews:
-                    review_text = (review.get('text', '') or '').strip().lower()
-                    if review_text and len(review_text) > 20:
-                        # Cek apakah review mengandung minimal salah satu keyword
-                        # Untuk keyword spesifik (musholla, tempat sholat, dll), harus exact match atau sinonim
-                        for kw in keywords:
-                            kw_lower = kw.lower().strip()
-                            if len(kw_lower) >= 3:
-                                # Cek exact match atau substring match
-                                if kw_lower in review_text:
-                                    has_relevant_review = True
-                                    print(f"[JSON+REVIEWS] ✅ Found relevant shop: {shop.get('name', 'Unknown')} (keyword: '{kw}')")
-                                    break
-                                # Cek sinonim untuk keyword spesifik
-                                elif kw_lower in ['musholla', 'mushola', 'tempat sholat', 'ruang sholat', 'tempat ibadah']:
-                                    # Cek sinonim musholla (termasuk variasi dengan "ada", "lokasi", dll)
-                                    musholla_synonyms = ['musholla', 'mushola', 'tempat sholat', 'tempat sholat tersedia', 'ada musholla', 'ruang sholat', 'tempat ibadah', 'lokasi musholla', 'musholla yang', 'musholla nyaman']
-                                    if any(syn in review_text for syn in musholla_synonyms):
-                                        has_relevant_review = True
-                                        print(f"[JSON+REVIEWS] ✅ Found relevant shop: {shop.get('name', 'Unknown')} (keyword: '{kw}' via synonym)")
-                                        break
-                                # Cek jika keyword adalah bagian dari frasa yang lebih panjang (misal: "ada musholla" dalam review)
-                                elif 'musholla' in kw_lower or 'mushola' in kw_lower:
-                                    # Jika keyword mengandung "musholla", cek apakah review mengandung "musholla" atau variasi
-                                    if 'musholla' in review_text or 'mushola' in review_text or 'tempat sholat' in review_text:
-                                        has_relevant_review = True
-                                        print(f"[JSON+REVIEWS] ✅ Found relevant shop: {shop.get('name', 'Unknown')} (keyword: '{kw}' contains musholla)")
-                                        break
-                        if has_relevant_review:
-                            break
-                
-                if has_relevant_review:
-                    relevant_shops.append(shop)
-                else:
-                    other_shops.append(shop)
-            
-            print(f"[JSON+REVIEWS] Found {len(relevant_shops)} coffee shops with relevant reviews, {len(other_shops)} other shops")
-        else:
-            # Jika tidak ada keywords, semua coffee shops masuk ke other_shops
-            other_shops = coffee_shops
-        
-        # Sort coffee shops berdasarkan rating (descending) dan jumlah review (descending)
-        # Priority: Rating lebih tinggi > Jumlah review lebih banyak
-        def sort_key(shop):
-            rating = shop.get('rating', 0)
-            if isinstance(rating, str):
-                try:
-                    rating = float(rating)
-                except (ValueError, TypeError):
-                    rating = 0
-            elif rating is None:
-                rating = 0
-            
-            total_ratings = shop.get('user_ratings_total', 0)
-            if total_ratings is None:
-                total_ratings = 0
-            
-            # Return tuple untuk sorting: (rating descending, total_ratings descending)
-            # Negatif untuk descending order
-            return (-rating, -total_ratings)
-        
-        # Sort relevant shops dan other shops terpisah
-        relevant_shops_sorted = sorted(relevant_shops, key=sort_key)
-        other_shops_sorted = sorted(other_shops, key=sort_key)
-        
-        # Gabungkan: relevant shops di depan, lalu top other shops
-        # Prioritaskan relevant shops, tapi tetap ambil top other shops untuk konteks lengkap
-        relevant_count = len(relevant_shops_sorted)
-        other_count = max(0, max_shops - relevant_count)
-        
-        coffee_shops = relevant_shops_sorted + other_shops_sorted[:other_count]
-        
-        if keywords and len(keywords) > 0:
-            print(f"[JSON+REVIEWS] Final selection: {len(relevant_shops_sorted)} relevant shops + {other_count} top-rated shops = {len(coffee_shops)} total")
-        else:
-            print(f"[JSON+REVIEWS] Selected top {len(coffee_shops)} coffee shops (sorted by rating & review count), preparing context...")
         
         # Load facilities sekali untuk fallback saat tidak ada review
         facilities_by_place_id = {}
@@ -2084,6 +4181,65 @@ def _fetch_coffeeshops_with_reviews_from_json(location_str, max_shops=15, keywor
                     facilities_by_place_id = json.load(f).get('facilities_by_place_id', {})
             except Exception as e:
                 print(f"[JSON+REVIEWS] Warning: could not load facilities: {e}")
+
+        prepared_shops = []
+        if keywords and len(keywords) > 0:
+            print(f"[JSON+REVIEWS] Pre-filtering coffee shops dengan keywords: {keywords[:10]}... (total: {len(keywords)})")
+
+        for shop in coffee_shops:
+            place_id = shop.get('place_id', '')
+            reviews_result = get_reviews_for_shop(place_id, limit=10)
+            reviews = reviews_result.get('reviews', []) if reviews_result.get('success') else []
+            review_texts = [
+                (r.get('text') or '').strip()
+                for r in reviews
+                if (r.get('text') or '').strip() and len((r.get('text') or '').strip()) > 20
+            ]
+
+            shop_fac = facilities_by_place_id.get(place_id, {})
+            facilities_text = _format_facilities_to_text(shop_fac)
+
+            keyword_result = _score_shop_for_keywords(review_texts, facilities_text, keywords, review_items=reviews)
+            prepared_shops.append({
+                **shop,
+                '_reviews': reviews,
+                '_review_texts': review_texts,
+                '_facilities_text': facilities_text,
+                '_keyword_score': keyword_result['score'],
+                '_matched_keywords': keyword_result['matched_keywords'],
+                '_matched_source': keyword_result['matched_source'],
+                '_relevant_review_count': keyword_result['relevant_review_count'],
+            })
+
+        relevant_shops = [shop for shop in prepared_shops if shop.get('_keyword_score', 0) > 0]
+        other_shops = [shop for shop in prepared_shops if shop.get('_keyword_score', 0) == 0]
+
+        def base_sort_key(shop):
+            return (-_get_shop_rating_value(shop), -_get_shop_review_count_value(shop))
+
+        def relevant_sort_key(shop):
+            has_review_evidence = 1 if shop.get('_review_texts') else 0
+            return (
+                -float(shop.get('_keyword_score', 0) or 0),
+                -has_review_evidence,
+                -_get_shop_rating_value(shop),
+                -_get_shop_review_count_value(shop),
+            )
+
+        relevant_shops_sorted = sorted(relevant_shops, key=relevant_sort_key)
+        other_shops_sorted = sorted(other_shops, key=base_sort_key)
+        
+        # Gabungkan: relevant shops di depan, lalu top other shops
+        # Prioritaskan relevant shops, tapi tetap ambil top other shops untuk konteks lengkap
+        selected_relevant_shops = relevant_shops_sorted[:max_shops]
+        other_count = max(0, max_shops - len(selected_relevant_shops))
+        
+        coffee_shops = selected_relevant_shops + other_shops_sorted[:other_count]
+        
+        if keywords and len(keywords) > 0:
+            print(f"[JSON+REVIEWS] Final selection: {len(selected_relevant_shops)} relevant shops + {other_count} top-rated shops = {len(coffee_shops)} total")
+        else:
+            print(f"[JSON+REVIEWS] Selected top {len(coffee_shops)} coffee shops (sorted by rating & review count), preparing context...")
         
         # Format context: utamakan REVIEW; jika tidak ada review gunakan DATA FASILITAS (seperti di FacilitiesTab)
         context_lines = [
@@ -2099,41 +4255,83 @@ def _fetch_coffeeshops_with_reviews_from_json(location_str, max_shops=15, keywor
             total_ratings = shop.get('user_ratings_total', 0)
             
             maps_url = f"https://www.google.com/maps/place/?q=place_id:{place_id}"
+            address = _get_shop_address(shop)
             
             context_lines.append(f"{i}. {name}")
+            context_lines.append(f"   • Place ID: {place_id}")
             context_lines.append(f"   • Rating: {rating}/5.0 ({total_ratings} reviews)")
+            context_lines.append(f"   • Alamat: {address}")
             context_lines.append(f"   • Google Maps: {maps_url}")
-            
-            # REVIEWS dari database (prioritas analisis)
-            reviews_result = get_reviews_for_shop(place_id, limit=10)
-            reviews = reviews_result.get('reviews', []) if reviews_result.get('success') else []
-            review_texts = [r.get('text', '').strip() for r in reviews if (r.get('text') or '').strip() and len((r.get('text') or '').strip()) > 20]
-            
+
+            if shop.get('_keyword_score', 0) > 0:
+                matched_keywords = ", ".join(shop.get('_matched_keywords', [])[:8])
+                context_lines.append(f"   • Keyword relevan terdeteksi: {matched_keywords}")
+
+            review_texts = shop.get('_review_texts', [])
+            relevant_reviews = _pick_relevant_reviews_for_keywords(shop.get('_reviews', []), keywords, limit=2)
+            facilities_text = shop.get('_facilities_text', '')
             if review_texts:
-                # Ada review: summarization jika beberapa komentar agar LLM mudah analisis
                 if len(review_texts) >= 2 or sum(len(t) for t in review_texts) > 400:
-                    summary = _summarize_reviews_with_llm(review_texts)
-                    context_lines.append(f"   • Sumber: Review pengunjung (ringkasan): {summary}")
+                    evidence_label = 'Review pengunjung'
+                    evidence_text = _summarize_reviews_with_llm(
+                        review_texts,
+                        place_id=place_id,
+                        shop_name=name,
+                        facilities_text=facilities_text,
+                    )
+                    suffix = " (ringkasan)"
                 else:
-                    single = review_texts[0][:400] + ("..." if len(review_texts[0]) > 400 else "")
-                    context_lines.append(f"   • Sumber: Review pengunjung: \"{single}\"")
+                    evidence_label = 'Review pengunjung'
+                    single = review_texts[0]
+                    evidence_text = single[:400] + ("..." if len(single) > 400 else "")
+                    suffix = ""
+            elif facilities_text:
+                evidence_label = 'Data fasilitas'
+                evidence_text = facilities_text
+                suffix = ""
             else:
-                # Tidak ada review: gunakan data fasilitas (sama seperti yang ditampilkan di FacilitiesTab)
-                shop_fac = facilities_by_place_id.get(place_id, {})
-                facilities_text = _format_facilities_to_text(shop_fac)
-                if facilities_text:
-                    context_lines.append(f"   • Sumber: Data fasilitas: {facilities_text}")
-                else:
-                    context_lines.append(f"   • Sumber: (Tidak ada review maupun data fasilitas)")
-            
+                evidence_label = 'Tidak ada data'
+                evidence_text = ''
+                suffix = ""
+
+            shop['_relevant_reviews'] = relevant_reviews
+            shop['_maps_url'] = maps_url
+            shop['_address'] = address
+            shop['_evidence_label'] = evidence_label
+            shop['_evidence_text'] = evidence_text
+
+            if evidence_text:
+                context_lines.append(f"   • Sumber: {evidence_label}{suffix}: {evidence_text}")
+            else:
+                context_lines.append(f"   • Sumber: (Tidak ada review maupun data fasilitas)")
+
             context_lines.append("")  # Separator
         
         context = "\n".join(context_lines)
         
         print(f"[JSON+REVIEWS] Context prepared: {len(coffee_shops)} shops, {len(context)} characters (sumber: review atau data fasilitas)")
-        print(f"[JSON+REVIEWS] 📊 SUMMARY: {len(coffee_shops)} coffee shops akan dianalisis oleh LLM")
+        print(f"[JSON+REVIEWS] SUMMARY: {len(coffee_shops)} coffee shops akan dianalisis oleh LLM")
         if keywords and len(keywords) > 0:
-            print(f"[JSON+REVIEWS] 📊 Pre-filtered: {len(relevant_shops_sorted)} relevant shops + {len(other_shops_sorted[:other_count])} top-rated shops")
+            print(f"[JSON+REVIEWS] Pre-filtered: {len(selected_relevant_shops)} relevant shops + {len(other_shops_sorted[:other_count])} top-rated shops")
+        if return_metadata:
+            selected_shops = [
+                {
+                    'place_id': shop.get('place_id', ''),
+                    'name': shop.get('name', 'Unknown'),
+                    'address': shop.get('_address', ''),
+                    'maps_url': shop.get('_maps_url', ''),
+                    'rating': _get_shop_rating_value(shop),
+                    'matched_keywords': shop.get('_matched_keywords', []),
+                    'evidence_label': shop.get('_evidence_label', ''),
+                    'evidence_text': shop.get('_evidence_text', ''),
+                    'keyword_score': shop.get('_keyword_score', 0),
+                    'reviews': shop.get('_reviews', [])[:5],
+                    'relevant_reviews': shop.get('_relevant_reviews', [])[:2],
+                    'facilities_text': shop.get('_facilities_text', ''),
+                }
+                for shop in coffee_shops
+            ]
+            return context, selected_shops
         return context
         
     except Exception as e:
@@ -2141,79 +4339,2319 @@ def _fetch_coffeeshops_with_reviews_from_json(location_str, max_shops=15, keywor
         error_detail = traceback.format_exc()
         print(f"[JSON+REVIEWS] Error: {str(e)}")
         print(f"[JSON+REVIEWS] Traceback: {error_detail}")
+        if return_metadata:
+            return f"Error mengambil data coffee shop dengan review dari JSON: {str(e)}", []
         return f"Error mengambil data coffee shop dengan review dari JSON: {str(e)}"
 
-# Endpoint rekomendasi berdasarkan preferensi (pill) - LLM analisis + 1 kalimat penjelasan per toko
-@app.route('/api/recommend-by-preferences', methods=['POST'])
-def api_recommend_by_preferences():
+# ============================================================================
+# NEW RECOMMENDATION PIPELINE - Weighted Multi-Signal Scoring + LLM Reasoning
+# ============================================================================
+
+PILL_MAPPING = {
+    'cozy': {
+        'facility_fields': {
+            'atmosphere': ['nyaman', 'santai', 'tenang', 'cozy', 'hangat'],
+            'popular_for': ['solo_dining'],
+            'amenities': ['sofa'],
+        },
+        'review_keywords': ['nyaman', 'cozy', 'santai', 'tenang', 'hangat', 'adem',
+                            'homey', 'rileks', 'betah', 'enak duduk'],
+        'review_pills': ['cozy'],
+    },
+    'belajar': {
+        'facility_fields': {
+            'popular_for': ['good_for_working_on_laptop'],
+            'amenities': ['wifi', 'free_wifi'],
+            'crowd': ['mahasiswa'],
+        },
+        'review_keywords': ['belajar', 'kerja', 'tugas', 'laptop', 'wfc', 'work from cafe',
+                            'ngerjain', 'produktif', 'fokus', 'ruang belajar'],
+        'review_pills': ['belajar'],
+    },
+    'wifi stabil': {
+        'facility_fields': {
+            'amenities': ['wifi', 'free_wifi'],
+        },
+        'review_keywords': ['wifi', 'wi-fi', 'internet', 'koneksi', 'wifi kencang',
+                            'wifi stabil', 'wifi cepat', 'sinyal'],
+        'review_pills': ['wifi stabil'],
+    },
+    'stopkontak': {
+        'facility_fields': {
+            'amenities': ['wifi', 'free_wifi'],
+            'popular_for': ['good_for_working_on_laptop'],
+        },
+        'review_keywords': ['stopkontak', 'colokan', 'charger', 'terminal listrik',
+                            'outlet', 'colok', 'cas', 'charge', 'terminal' ],
+        'review_pills': ['stopkontak'],
+    },
+    'ruang ibadah': {
+        'facility_fields': {
+            'amenities': ['prayer_room', 'musholla'],
+        },
+        'review_keywords': ['musholla', 'mushola', 'tempat sholat', 'sholat', 'solat',
+                            'tempat salat', 'salat', 'ibadah', 'ruang sholat',
+                            'ruang salat', 'tempat ibadah', 'prayer', 'masjid',
+                            'dekat masjid', 'sebelah masjid', 'mau solat'],
+        'review_pills': ['ruang ibadah'],
+    },
+    'fotogenik': {
+        'facility_fields': {
+            'atmosphere': ['trendi', 'artistic'],
+        },
+        'review_keywords': ['aesthetic', 'estetik', 'foto', 'instagram', 'instagramable',
+                            'kekinian', 'desain', 'dekor', 'fotogenik', 'kece',
+                            'interiornya bagus', 'tempatnya bagus'],
+        'review_pills': ['fotogenik'],
+    },
+    'live music': {
+        'facility_fields': {
+            'highlights': ['live_music', 'live_performances'],
+        },
+        'review_keywords': ['live music', 'musik', 'akustik', 'band', 'pertunjukan',
+                            'musiknya', 'live musik', 'nyanyi'],
+        'review_pills': ['live music'],
+    },
+    'parkiran luas': {
+        'facility_fields': {
+            'parking': ['free_parking_lot', 'paid_parking_lot', 'free_street_parking'],
+        },
+        'review_keywords': ['parkir', 'parkiran', 'parkir luas', 'parkir mobil',
+                            'tempat parkir', 'parkir nyaman', 'area parkir'],
+        'review_pills': ['parkiran luas'],
+    },
+    '24 jam': {
+        'facility_fields': {},
+        'review_keywords': ['24 jam', 'buka malam', 'larut malam', 'sampai subuh',
+                            'tengah malam', 'dini hari', 'buka sampai larut'],
+        'review_pills': ['24 jam'],
+    },
+    'keluarga': {
+        'facility_fields': {
+            'children': ['good_for_kids', 'kids_menu', 'high_chairs'],
+            'popular_for': ['good_for_groups'],
+            'crowd': ['keluarga', 'ramah_keluarga', 'berkelompok'],
+        },
+        'review_keywords': ['keluarga', 'anak', 'family', 'anak-anak', 'ramah keluarga',
+                            'cocok keluarga', 'bawa anak', 'family friendly',
+                            'orang sayang', 'orang tersayang', 'berkumpul bersama',
+                            'kumpul bersama', 'quality time'],
+        'review_pills': ['keluarga'],
+    },
+}
+
+PILL_LABELS = {
+    'cozy': 'Ruangan yang nyaman',
+    'belajar': 'Nyaman untuk belajar',
+    'wifi stabil': 'WiFi stabil',
+    'stopkontak': 'Tersedia stopkontak',
+    'ruang ibadah': 'Tersedia ruang ibadah',
+    'fotogenik': 'Banyak spot foto',
+    'live music': 'Pertunjukan musik',
+    'parkiran luas': 'Parkiran luas',
+    '24 jam': 'Buka 24 jam',
+    'keluarga': 'Cocok untuk keluarga',
+}
+
+
+def _collect_intent_strings_for_facilities(pills, custom_query, search_keywords):
+    """Teks gabungan preferensi (pill + keyword review + manual + search_keywords) untuk cocokkan ke label fasilitas."""
+    parts = []
+    for p in pills or []:
+        parts.append(str(PILL_LABELS.get(p, p) or ''))
+        mapping = PILL_MAPPING.get(p, {}) or {}
+        for kw in mapping.get('review_keywords', []) or []:
+            parts.append(str(kw))
+    cq = (custom_query or '').strip()
+    if cq:
+        parts.append(cq)
+    for kw in search_keywords or []:
+        parts.append(str(kw))
+    return ' '.join(x for x in parts if x).lower()
+
+
+def _facilities_item_matches_intent(item_label, intent_blob_lower):
+    if not item_label or not intent_blob_lower:
+        return False
+    blob = intent_blob_lower
+    label = str(item_label).strip().lower()
+    label_norm = re.sub(r'[^\w\s]', ' ', label)
+    for token in label_norm.split():
+        tok = token.strip()
+        if len(tok) >= 3 and tok in blob:
+            return True
+        if len(tok) <= 2 and tok and re.search(r'\b' + re.escape(tok) + r'\b', blob):
+            return True
+    compact = re.sub(r'\s+', ' ', label_norm).strip()
+    if len(compact) >= 5 and compact in blob:
+        return True
+    return False
+
+
+def _facilities_tab_display_for_intent(facilities_tab, intent_blob_lower):
     """
-    Request: { "preferences": ["cozy", "wifi stabil", "belajar"] }  (1-3 item)
-    Response: { "status": "success", "recommendations": [ { "name": "...", "explanation": "Satu kalimat." } ] }
+    Jika ada label fasilitas yang overlap dengan intent user, kembalikan subset itu;
+    jika tidak, kembalikan penuh (tetap sebagai konteks profil tempat).
     """
+    full = facilities_tab or {}
+
+    def _filt(items):
+        if not isinstance(items, list):
+            return []
+        return [x for x in items if _facilities_item_matches_intent(x, intent_blob_lower)]
+
+    if not (intent_blob_lower or '').strip():
+        return full, False
+
+    rel = {
+        'popular_for': _filt(full.get('popular_for')),
+        'highlights': _filt(full.get('highlights')),
+        'atmosphere': _filt(full.get('atmosphere')),
+    }
+    if any(rel.get(k) for k in ('popular_for', 'highlights', 'atmosphere')):
+        return rel, True
+    return full, False
+
+
+def _build_facilities_evidence_summary(display_tab, intent_aligned):
+    """Kalimat bukti berbasis tab fasilitas (popular_for, atmosphere, highlights)."""
+    pop = list(display_tab.get('popular_for') or [])
+    atm = list(display_tab.get('atmosphere') or [])
+    hi = list(display_tab.get('highlights') or [])
+    if not (pop or atm or hi):
+        return ''
+    parts = []
+    if pop:
+        parts.append(f"terkenal dengan {', '.join(pop[:6])}")
+    if atm:
+        parts.append(f"memiliki suasana {', '.join(atm[:6])}")
+    if hi:
+        parts.append(f"memiliki keunggulan {', '.join(hi[:6])}")
+    if len(parts) == 1:
+        body = parts[0]
+    elif len(parts) == 2:
+        body = f"{parts[0]} dan {parts[1]}"
+    else:
+        body = f"{parts[0]}, {parts[1]}, dan {parts[2]}"
+    text = f"Berdasarkan tab fasilitas, coffee shop ini {body}."
+    if intent_aligned:
+        text += " Ini selaras dengan preferensi yang Anda masukkan."
+    return text
+
+
+FACILITY_VALUE_LABELS = {
+    'solo_dining': 'cocok untuk datang sendiri',
+    'good_for_working_on_laptop': 'nyaman untuk bekerja dengan laptop',
+    'wifi': 'WiFi',
+    'free_wifi': 'WiFi gratis',
+    'sofa': 'sofa',
+    'prayer_room': 'ruang ibadah',
+    'musholla': 'musholla',
+    'live_music': 'live music',
+    'live_performances': 'pertunjukan live',
+    'free_parking_lot': 'parkir gratis',
+    'paid_parking_lot': 'lahan parkir',
+    'free_street_parking': 'parkir jalan gratis',
+    'good_for_kids': 'ramah anak',
+    'kids_menu': 'menu anak',
+    'high_chairs': 'kursi anak',
+    'good_for_groups': 'cocok untuk rombongan',
+    'ramah_keluarga': 'ramah keluarga',
+    'berkelompok': 'berkelompok',
+    'keluarga': 'keluarga',
+    'nyaman': 'nyaman',
+    'santai': 'santai',
+    'tenang': 'tenang',
+    'trendi': 'trendi',
+    'cozy': 'cozy',
+    'hangat': 'hangat',
+    'artistic': 'artistik',
+}
+def _humanize_facility_value(value):
+    return FACILITY_VALUE_LABELS.get(value, str(value or '').replace('_', ' ').strip())
+
+
+def _format_facility_evidence_label(category, key):
+    readable = _humanize_facility_value(key)
+    if not readable:
+        return ''
+    if category == 'atmosphere':
+        return f"Suasana {readable}"
+    if category == 'crowd':
+        return f"Cocok untuk {readable}"
+    if category == 'popular_for':
+        return f"Populer untuk {readable}"
+    if category == 'amenities':
+        return f"Tersedia {readable}"
+    if category == 'children':
+        return f"Mendukung kebutuhan {readable}"
+    if category == 'highlights':
+        return f"Highlight: {readable}"
+    if category == 'parking':
+        return readable[:1].upper() + readable[1:]
+    if category == 'service_options':
+        return f"Layanan {readable}"
+    return f"{category.replace('_', ' ').title()}: {readable}"
+
+
+def _truncate_evidence_text(text, limit=180):
+    cleaned = _normalize_whitespace(text)
+    if len(cleaned) <= limit:
+        return cleaned
+    return cleaned[: max(0, limit - 3)].rstrip() + '...'
+
+
+def _build_empty_supporting_evidence():
+    return {
+        'facilities': [],
+        'facilities_tab': {'popular_for': [], 'highlights': [], 'atmosphere': []},
+        'facilities_tab_intent': {'popular_for': [], 'highlights': [], 'atmosphere': []},
+        'facilities_intent_aligned': False,
+        'facilities_evidence_summary': '',
+        'review_pills': [],
+        'review_quotes': [],
+        'custom_matches': [],
+        'search_keywords': [],
+        'search_keyword_matches': [],
+        'pill_stats': [],
+        'category_ratings': {'makanan': None, 'layanan': None, 'suasana': None},
+        'avg_user_rating': None,
+        'review_count': 0,
+        'is_low_confidence': False,
+    }
+
+
+def _flatten_supporting_evidence(supporting_evidence):
+    if not isinstance(supporting_evidence, dict):
+        return []
+
+    flattened = []
+    for item in supporting_evidence.get('facilities', [])[:4]:
+        label = item.get('label')
+        if label:
+            flattened.append(f"[fasilitas] {label}")
+
+    for item in supporting_evidence.get('review_pills', [])[:3]:
+        label = item.get('label')
+        if label:
+            flattened.append(f"[review pill] {label}")
+
+    for item in supporting_evidence.get('review_quotes', [])[:3]:
+        reason = item.get('reason') or 'komentar pengguna'
+        quote = item.get('quote')
+        if quote:
+            flattened.append(f"[review] {reason}: '{quote}'")
+
+    for item in supporting_evidence.get('custom_matches', [])[:2]:
+        label = item.get('label')
+        if label:
+            flattened.append(f"[teks] {label}")
+
+    return flattened
+
+
+def _build_supporting_evidence(shop_profile, pills=None, custom_query=''):
+    facilities = shop_profile.get('facilities', {}) or {}
+    reviews = shop_profile.get('reviews', []) or []
+    valid_pills = [pill for pill in (pills or []) if pill in PILL_MAPPING]
+    supporting_evidence = _build_empty_supporting_evidence()
+
+    seen_facilities = set()
+    seen_quote_keys = set()
+    quote_candidates = []
+
+    for pill in valid_pills:
+        mapping = PILL_MAPPING.get(pill, {})
+        for category, keys in mapping.get('facility_fields', {}).items():
+            cat_data = facilities.get(category, {})
+            if isinstance(cat_data, list):
+                lowered_values = {str(item).strip().lower() for item in cat_data if str(item).strip()}
+                for key in keys:
+                    if key.lower() in lowered_values:
+                        source = f"{category}.{key}"
+                        if source in seen_facilities:
+                            continue
+                        seen_facilities.add(source)
+                        supporting_evidence['facilities'].append({
+                            'pill': pill,
+                            'pill_label': PILL_LABELS.get(pill, pill),
+                            'label': _format_facility_evidence_label(category, key),
+                            'source': source,
+                        })
+            elif isinstance(cat_data, dict):
+                for key in keys:
+                    if cat_data.get(key):
+                        source = f"{category}.{key}"
+                        if source in seen_facilities:
+                            continue
+                        seen_facilities.add(source)
+                        supporting_evidence['facilities'].append({
+                            'pill': pill,
+                            'pill_label': PILL_LABELS.get(pill, pill),
+                            'label': _format_facility_evidence_label(category, key),
+                            'source': source,
+                        })
+
+        for review in reviews:
+            text = _normalize_whitespace(review.get('text') or '')
+            if len(text) < 15:
+                continue
+
+            text_lower = text.lower()
+
+            matched_keywords = [
+                keyword for keyword in mapping.get('review_keywords', [])
+                if keyword.lower() in text_lower
+            ]
+
+            has_family_signal = False
+            family_signal_label = None
+            if pill == 'keluarga':
+                has_family_signal, family_signal_label = _has_semantic_family_signal(text)
+
+            reasons = []
+            if matched_keywords:
+                reasons.append(
+                    'komentar menyebut '
+                    + ', '.join(f'"{keyword}"' for keyword in matched_keywords[:3])
+                )
+            if has_family_signal and family_signal_label:
+                reasons.append(f'komentar menyinggung {family_signal_label}')
+
+            if not reasons:
+                continue
+
+            quote_key = (review.get('id') or text[:80], pill)
+            if quote_key in seen_quote_keys:
+                continue
+            seen_quote_keys.add(quote_key)
+            quote_candidates.append({
+                'pill': pill,
+                'pill_label': PILL_LABELS.get(pill, pill),
+                'quote': _truncate_evidence_text(text),
+                'reason': '; '.join(reasons),
+                'match_score': len(matched_keywords) + int(has_family_signal),
+            })
+
+    custom_tokens = set(_text_overlap_tokens(custom_query)) if custom_query else set()
+    if custom_tokens:
+        facility_tokens = set(_text_overlap_tokens(shop_profile.get('facilities_text') or ''))
+        matched_facility_tokens = sorted(custom_tokens & facility_tokens)
+        if matched_facility_tokens:
+            supporting_evidence['custom_matches'].append({
+                'label': 'Data fasilitas menyebut '
+                + ', '.join(f'"{token}"' for token in matched_facility_tokens[:4]),
+                'matched_tokens': matched_facility_tokens[:4],
+            })
+
+        for review in reviews:
+            text = _normalize_whitespace(review.get('text') or '')
+            if len(text) < 15:
+                continue
+            matched_tokens = sorted(custom_tokens & set(_text_overlap_tokens(text)))
+            if not matched_tokens:
+                continue
+
+            quote_key = (review.get('id') or text[:80], 'custom_query')
+            if quote_key in seen_quote_keys:
+                continue
+            seen_quote_keys.add(quote_key)
+            quote_candidates.append({
+                'pill': '',
+                'pill_label': 'Referensi lain',
+                'quote': _truncate_evidence_text(text),
+                'reason': 'komentar menyebut '
+                + ', '.join(f'"{token}"' for token in matched_tokens[:4]),
+                'match_score': len(matched_tokens),
+            })
+
+    quote_candidates.sort(
+        key=lambda item: (
+            -int(item.get('match_score') or 0),
+            0 if item.get('pill') else 1,
+            item.get('quote') or '',
+        )
+    )
+    supporting_evidence['review_quotes'] = [
+        {
+            'pill': item.get('pill') or '',
+            'pill_label': item.get('pill_label') or '',
+            'quote': item.get('quote') or '',
+            'reason': item.get('reason') or '',
+        }
+        for item in quote_candidates[:3]
+    ]
+
+    supporting_evidence['facilities'] = supporting_evidence['facilities'][:4]
+    supporting_evidence['review_pills'] = supporting_evidence['review_pills'][:3]
+    supporting_evidence['custom_matches'] = supporting_evidence['custom_matches'][:2]
+    return supporting_evidence
+
+
+# ============================================================================
+# REVIEW-ONLY RECOMMENDATION PIPELINE
+# ----------------------------------------------------------------------------
+# Semua ranking, evidence, dan summary rekomendasi HANYA dibangun dari review
+# user di tabel `reviews`. Tidak menggunakan facilities.json ataupun rating
+# Google Maps sebagai sinyal peringkat. Data Google hanya untuk fallback
+# tampilan nama/rating ketika toko belum punya review.
+# ============================================================================
+
+# Pemetaan pill -> kategori rating review (makanan/layanan/suasana) sebagai
+# sinyal tambahan. Tidak semua pill punya kategori rating yang cocok.
+PILL_TO_REVIEW_CATEGORY = {
+    'cozy': 'rating_suasana',
+    'belajar': 'rating_suasana',
+    'fotogenik': 'rating_suasana',
+    'live music': 'rating_suasana',
+    'keluarga': 'rating_suasana',
+}
+
+# Batas minimal review agar sebuah toko ikut ranking berbasis review.
+REVIEW_BASED_MIN_REVIEWS = 1
+
+
+def _avg_or_none(values):
+    vals = [v for v in values if v is not None]
+    if not vals:
+        return None
+    return round(sum(float(v) for v in vals) / len(vals), 2)
+
+
+def _build_review_only_profile(place_id, facilities_index=None):
+    """
+    Bangun profil toko hanya dari SQLite reviews user.
+    Returns:
+        {
+            'place_id', 'name',
+            'reviews': [...],              # user reviews
+            'review_count': int,
+            'avg_user_rating': float|None, # rata-rata rating user (BUKAN Google)
+            'avg_category_ratings': {
+                'makanan': float|None,
+                'layanan': float|None,
+                'suasana': float|None,
+            },
+            'google_rating': float,        # display only
+            'google_total_reviews': int,   # display only
+        }
+    Returns None jika toko tidak ditemukan sama sekali.
+    """
+    shop_data = {}
+    conn = sqlite3.connect(DATABASE_PATH, timeout=10)
+    conn.row_factory = sqlite3.Row
     try:
-        if hf_client is None:
-            return jsonify({'status': 'error', 'message': 'LLM tidak tersedia. HF_API_TOKEN tidak dikonfigurasi.'}), 503
-        data = request.get_json() or {}
-        prefs = data.get('preferences') or []
-        if not isinstance(prefs, list):
-            prefs = [prefs] if prefs else []
-        prefs = [str(p).strip() for p in prefs if str(p).strip()][:3]
-        if not prefs:
-            return jsonify({'status': 'error', 'message': 'Pilih minimal 1 preferensi.'}), 400
-        location = data.get('location', 'Pontianak')
-        expanded = _expand_keywords_with_synonyms(prefs)
-        places_context = _fetch_coffeeshops_with_reviews_from_json(location, max_shops=12, keywords=expanded)
-        if places_context.startswith('Error') or not places_context.strip():
-            return jsonify({'status': 'error', 'message': 'Data coffee shop tidak tersedia.'}), 500
-        prompt = f"""Berdasarkan data coffee shop di bawah, user memilih preferensi: {', '.join(prefs)}.
+        row = conn.execute(
+            "SELECT place_id, name, rating, total_reviews FROM coffee_shops WHERE place_id = ?",
+            (place_id,)
+        ).fetchone()
+        if row:
+            shop_data = dict(row)
+    finally:
+        conn.close()
 
-Setiap toko punya sumber analisis: "Sumber: Review pengunjung" (prioritas, dari ulasan pengunjung) atau "Sumber: Data fasilitas" (jika tidak ada review, dari data fasilitas seperti highlights, suasana, parkir, WiFi, dll). Gunakan sumber tersebut untuk alasan rekomendasi.
+    if not shop_data:
+        return None
 
-DATA COFFEE SHOP:
-{places_context}
+    if facilities_index is None:
+        facilities_index = _load_facilities_index()
+    facility_entry = (facilities_index or {}).get(place_id) or {}
+    facilities_tab = _format_facilities_tab_signals(facility_entry)
 
-Tugas: Pilih 1-5 coffee shop yang PALING SESUAI dengan preferensi user. Untuk setiap coffee shop yang Anda rekomendasikan, tulis SATU KALIMAT dalam Bahasa Indonesia yang menjelaskan mengapa coffee shop tersebut cocok dengan preferensi user. Sebutkan bukti dari "Review pengunjung" atau "Data fasilitas" yang sesuai.
+    # Ambil lebih banyak review agar evidence lama yang relevan tetap ikut terbaca
+    # dalam scoring (mis. komentar terkait ruang ibadah yang bukan 50 terbaru).
+    reviews_result = get_reviews_for_shop(place_id, limit=200)
+    reviews = reviews_result.get('reviews', []) if reviews_result.get('success') else []
 
-ATURAN:
-- Hanya rekomendasikan coffee shop yang NAMA-nya muncul persis di data di atas.
-- Nama harus persis seperti di data (copy-paste).
-- Satu kalimat penjelasan per coffee shop, tanpa emoji.
-- Output HANYA dalam format JSON array, tidak ada teks lain. Contoh format:
-[{{"name": "Nama Coffee Shop Persis", "explanation": "Satu kalimat penjelasan mengapa cocok dengan preferensi."}}]
+    user_ratings = []
+    makanan_ratings = []
+    layanan_ratings = []
+    suasana_ratings = []
+    for r in reviews:
+        if r.get('rating') is not None:
+            user_ratings.append(float(r['rating']))
+        if r.get('rating_makanan') is not None:
+            makanan_ratings.append(float(r['rating_makanan']))
+        if r.get('rating_layanan') is not None:
+            layanan_ratings.append(float(r['rating_layanan']))
+        if r.get('rating_suasana') is not None:
+            suasana_ratings.append(float(r['rating_suasana']))
 
-Output JSON:"""
-        response_text = hf_client.text_generation(
+    return {
+        'place_id': place_id,
+        'name': shop_data.get('name') or '',
+        'reviews': reviews,
+        'review_count': len(reviews),
+        'avg_user_rating': (round(sum(user_ratings) / len(user_ratings), 2) if user_ratings else None),
+        'avg_category_ratings': {
+            'makanan': _avg_or_none(makanan_ratings),
+            'layanan': _avg_or_none(layanan_ratings),
+            'suasana': _avg_or_none(suasana_ratings),
+        },
+        'facilities_tab': facilities_tab,
+        'facilities_tab_text': facilities_tab.get('text') or '',
+        'google_rating': float(shop_data.get('rating') or 0),
+        'google_total_reviews': int(shop_data.get('total_reviews') or 0),
+    }
+
+
+def _load_all_place_ids():
+    """Return list of all place_ids from SQLite, fallback to places.json."""
+    place_ids = []
+    try:
+        conn = sqlite3.connect(DATABASE_PATH, timeout=10)
+        rows = conn.execute("SELECT place_id FROM coffee_shops").fetchall()
+        conn.close()
+        place_ids = [r[0] for r in rows if r[0]]
+    except Exception:
+        pass
+
+    if not place_ids:
+        places_path = os.path.join('frontend-cofind', 'src', 'data', 'places.json')
+        if os.path.exists(places_path):
+            with open(places_path, 'r', encoding='utf-8') as f:
+                for s in json.load(f).get('data', []):
+                    pid = s.get('place_id')
+                    if pid:
+                        place_ids.append(pid)
+    return place_ids
+
+
+def _has_semantic_family_signal(review_text):
+    """
+    Detect family-friendly intent from natural phrasing, not just exact keywords.
+    Example: 'berkumpul bersama orang sayang' should count as family/family-friendly.
+    """
+    normalized = _normalize_match_text(review_text)
+    if not normalized:
+        return False, None
+
+    direct_patterns = [
+        'orang sayang',
+        'orang tersayang',
+        'family friendly',
+        'ramah keluarga',
+        'cocok keluarga',
+        'bawa anak',
+        'anak-anak',
+        'quality time',
+    ]
+    for pattern in direct_patterns:
+        if pattern in normalized:
+            return True, pattern
+
+    together_patterns = ['berkumpul', 'kumpul', 'kebersamaan', 'quality time', 'bersama']
+    close_people_patterns = ['orang sayang', 'orang tersayang', 'keluarga', 'family', 'anak', 'pasangan']
+
+    if any(a in normalized for a in together_patterns) and any(b in normalized for b in close_people_patterns):
+        return True, 'kebersamaan dengan orang terdekat'
+
+    return False, None
+
+
+# Normalisasi frasa agar keyword match lebih tahan terhadap variasi ejaan umum.
+_TEXT_CANONICAL_REPLACEMENTS = {
+    'wi fi': 'wifi',
+    'wi-fi': 'wifi',
+    'wifi': 'wifi',
+    'shalat': 'salat',
+    'sholat': 'salat',
+    'solat': 'salat',
+    'mushola': 'musholla',
+    'musola': 'musholla',
+    'musolla': 'musholla',
+    'colokan': 'stopkontak',
+    'cas': 'charge',
+    'ngecas': 'charge',
+    'parkiran': 'parkir',
+}
+
+_ID_STEMMER = None
+_MANUAL_INPUT_ALLOWED_RE = re.compile(r'^[a-zA-Z0-9\s,]+$')
+_MANUAL_PROFANITY_WORDS = {
+    'anjing', 'bangsat', 'kontol', 'memek', 'ngentot', 'tai', 'bajingan', 'tolol', 'goblok', 'asu'
+}
+_MANUAL_MAX_CHARS = 80
+_MANUAL_UNCLEAR_MESSAGE = 'Sistem belum mengerti preferensi Anda. Coba gunakan preferensi lain.'
+_MANUAL_REJECT_MESSAGE = (
+    'Maaf, data dan review kami tidak relevan untuk preferensi bernada negatif. '
+    'Coba tulis preferensi coffee shop yang baik dan ingin Anda rekomendasikan, '
+    'misalnya "tempat nyaman untuk nugas dengan wifi kencang".'
+)
+_NEGATIVE_MANUAL_QUERY_FRAGMENTS = frozenset({
+    'paling buruk', 'terburuk', 'yang buruk', 'yang jelek', 'jelek', 'buruk',
+    'paling jelek', 'sampah', 'kotor', 'jorok', 'berisik', 'bising',
+    'mahal banget', 'pelayanan buruk', 'gak enak', 'tidak enak', 'ga enak',
+    'kecewa', 'zonk', 'parah',
+})
+
+
+def _get_id_stemmer():
+    global _ID_STEMMER
+    if _ID_STEMMER is None and StemmerFactory is not None:
+        try:
+            _ID_STEMMER = StemmerFactory().create_stemmer()
+        except Exception:
+            _ID_STEMMER = False
+    return _ID_STEMMER if _ID_STEMMER is not False else None
+
+
+def _normalize_keyword_phrase(value):
+    text = str(value or '').strip().lower()
+    if not text:
+        return ''
+    text = unicodedata.normalize('NFKD', text)
+    text = ''.join(ch for ch in text if not unicodedata.combining(ch))
+    text = text.replace('-', ' ')
+    text = re.sub(r'[^a-z0-9\s]', ' ', text)
+    text = re.sub(r'\s+', ' ', text).strip()
+    if not text:
+        return ''
+    for src, dest in _TEXT_CANONICAL_REPLACEMENTS.items():
+        text = re.sub(rf'\b{re.escape(src)}\b', dest, text)
+    return re.sub(r'\s+', ' ', text).strip()
+
+
+def _stem_indonesian_text(value):
+    normalized = _normalize_keyword_phrase(value)
+    if not normalized:
+        return ''
+    stemmer = _get_id_stemmer()
+    if not stemmer:
+        return normalized
+    try:
+        stemmed = stemmer.stem(normalized)
+        return _normalize_keyword_phrase(stemmed)
+    except Exception:
+        return normalized
+
+
+def _keyword_variants(value):
+    normalized = _normalize_keyword_phrase(value)
+    if not normalized:
+        return []
+    variants = [normalized]
+    stemmed = _stem_indonesian_text(normalized)
+    if stemmed and stemmed not in variants:
+        variants.append(stemmed)
+    return variants
+
+
+def _matches_keyword_phrase(text, keyword):
+    normalized_text = _normalize_keyword_phrase(text)
+    if not normalized_text:
+        return False
+    stemmed_text = _stem_indonesian_text(normalized_text)
+    for variant in _keyword_variants(keyword):
+        if variant and (variant in normalized_text or variant in stemmed_text):
+            return True
+    return False
+
+
+def _detect_custom_query_contexts(custom_query):
+    query = _normalize_keyword_phrase(custom_query)
+    if not query:
+        return []
+    matched_contexts = []
+    for pill in PILL_MAPPING:
+        keywords = _expand_pill_to_keywords(pill)
+        if any(_matches_keyword_phrase(query, keyword) for keyword in keywords):
+            matched_contexts.append(pill)
+    return matched_contexts
+
+
+def _custom_query_has_review_signal(custom_query):
+    q_tokens = list(dict.fromkeys(_text_overlap_tokens(custom_query)))
+    if not q_tokens:
+        return False
+
+    conn = None
+    try:
+        conn = sqlite3.connect(DATABASE_PATH, timeout=10)
+        where_sql = " OR ".join("LOWER(COALESCE(review_text, '')) LIKE ?" for _ in q_tokens)
+        row = conn.execute(
+            f"SELECT 1 FROM reviews WHERE {where_sql} LIMIT 1",
+            [f"%{token.lower()}%" for token in q_tokens],
+        ).fetchone()
+        return row is not None
+    except Exception:
+        return True
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+def _contains_manual_profanity(query):
+    tokens = [t for t in _normalize_keyword_phrase(query).split() if t]
+    return any(t in _MANUAL_PROFANITY_WORDS for t in tokens)
+
+
+def _is_likely_gibberish_token(token):
+    if not token or len(token) < 7:
+        return False
+    if token.isdigit():
+        return True
+    vowel_count = len(re.findall(r'[aiueo]', token))
+    has_long_consonant_cluster = bool(re.search(r'[bcdfghjklmnpqrstvwxyz]{5,}', token))
+    return vowel_count <= 1 or has_long_consonant_cluster
+
+
+def _looks_like_absurd_manual_query(query):
+    tokens = [t for t in _normalize_keyword_phrase(query).split() if t]
+    if not tokens:
+        return False
+    if len(tokens) == 1 and len(tokens[0]) >= 10:
+        single = tokens[0]
+        if not _detect_custom_query_contexts(single) and not _custom_query_has_review_signal(single):
+            return True
+    gibberish_count = sum(1 for t in tokens if _is_likely_gibberish_token(t))
+    threshold = max(1, math.ceil(len(tokens) * 0.6))
+    return gibberish_count >= threshold
+
+
+def _is_negative_or_reject_manual_query(custom_query):
+    """
+    Klasifikasi reject option untuk input manual:
+    - True  => jangan lanjutkan rekomendasi (intent negatif / tidak layak)
+    - False => lanjut normal
+    """
+    query = _normalize_keyword_phrase(custom_query)
+    if not query:
+        return False
+
+    # Guardrail lokal cepat (tanpa LLM) sebagai fallback awal.
+    for fragment in _NEGATIVE_MANUAL_QUERY_FRAGMENTS:
+        if fragment in query:
+            return True
+
+    if hf_client is None:
+        return False
+
+    prompt = f'''Anda adalah validator intent preferensi coffee shop.
+Tentukan apakah input user harus DITOLAK untuk sistem rekomendasi.
+
+Tolak (REJECT) jika:
+- intent bernada negatif / mencari yang paling buruk / jelek / mengejek
+- bukan preferensi yang masuk akal untuk rekomendasi coffee shop
+
+Terima (ALLOW) jika:
+- intent adalah kebutuhan positif/netral yang masuk akal untuk rekomendasi
+
+Jawab SATU kata saja: REJECT atau ALLOW.
+
+Input user: "{query}"
+Jawaban:'''
+
+    try:
+        raw = hf_client.text_generation(
+            prompt,
+            model=(HF_KEYWORD_MODEL or HF_MODEL or 'meta-llama/Meta-Llama-3-8B').strip(),
+            max_new_tokens=8,
+            temperature=0.0,
+            return_full_text=False,
+        )
+        answer = _normalize_keyword_phrase(raw).upper()
+        return answer.startswith('REJECT')
+    except Exception as err:
+        print(f'[RECOMMEND] Manual reject classifier fallback: {err}')
+        return False
+
+
+def _build_manual_query_terms(custom_query):
+    query = _normalize_keyword_phrase(custom_query)
+    if not query:
+        return []
+
+    terms = []
+    seen = set()
+
+    def add_term(term):
+        normalized = _normalize_keyword_phrase(term)
+        if not normalized:
+            return
+        if len(normalized) > 40:
+            return
+        if len(normalized.split()) > 4:
+            return
+        banned_fragments = {'output', 'input', 'user', 'kata', 'kunci', 'jawaban'}
+        if any(fragment in normalized.split() for fragment in banned_fragments):
+            return
+        if normalized in seen:
+            return
+        seen.add(normalized)
+        terms.append(normalized)
+
+    add_term(query)
+    for token in _text_overlap_tokens(query):
+        add_term(token)
+
+    extracted = _extract_recommendation_keywords_from_input(query)
+    if extracted and extracted.upper() != 'TIDAK_ADA_KEYWORDS':
+        for item in str(extracted).split(','):
+            add_term(item)
+            for token in _text_overlap_tokens(item):
+                add_term(token)
+
+    return terms
+
+
+def _validate_single_custom_query(custom_query):
+    raw_query = str(custom_query or '').strip()
+    query = _normalize_keyword_phrase(custom_query)
+    if not query:
+        return None
+    char_count = len(str(custom_query or ''))
+
+    # 1) Normalisasi input (sudah dilakukan oleh _normalize_keyword_phrase)
+    # 2) Basic validation
+    if len(query) < 3:
+        return 'Input opsi Lainnya terlalu pendek. Masukkan minimal 3 karakter.'
+    if len(query) > _MANUAL_MAX_CHARS:
+        return f'Input opsi Lainnya terlalu panjang. Gunakan maksimal {_MANUAL_MAX_CHARS} karakter.'
+    if not _MANUAL_INPUT_ALLOWED_RE.match(raw_query):
+        return 'Input opsi Lainnya hanya boleh berisi huruf, angka, spasi, dan koma (,).'
+    if char_count > _MANUAL_MAX_CHARS:
+        return f'Input opsi Lainnya maksimal {_MANUAL_MAX_CHARS} karakter.'
+
+    if _contains_manual_profanity(query):
+        return _MANUAL_UNCLEAR_MESSAGE
+
+    if _looks_like_absurd_manual_query(query):
+        return _MANUAL_UNCLEAR_MESSAGE
+
+    return None
+
+
+# Tokens stopword sederhana untuk text-overlap custom query.
+_TEXT_OVERLAP_STOP = frozenset({
+    'dan', 'atau', 'yang', 'dengan', 'untuk', 'di', 'ke', 'dari', 'pada', 'ini', 'itu',
+    'ada', 'tidak', 'juga', 'lebih', 'sangat', 'banget', 'saja', 'akan', 'sudah', 'bisa', 'agar',
+    'the', 'a', 'an', 'is', 'are', 'was', 'were', 'to', 'of', 'in', 'on', 'for', 'and', 'or', 'with', 'as', 'by',
+})
+_SEARCH_KEYWORD_MAX = 14
+_PROMPT_EVIDENCE_CHAR_LIMIT = 600
+_NEGATIVE_KEYWORD_FRAGMENTS = frozenset({
+    'buruk', 'jelek', 'kotor', 'jorok', 'berisik', 'bising', 'mahal',
+    'pelit', 'lambat', 'lemot', 'kecewa', 'zonk', 'parah', 'sampah',
+    'ga enak', 'nggak enak', 'tidak enak', 'gak enak', 'bau', 'sumpek',
+})
+
+
+def _text_overlap_tokens(text):
+    """Tokenize sederhana (lowercase alnum) tanpa stopword."""
+    if not text:
+        return []
+    raw = re.findall(r'[a-zA-Z0-9]+', _stem_indonesian_text(text))
+    return [t for t in raw if len(t) > 1 and t not in _TEXT_OVERLAP_STOP]
+
+
+def _expand_pill_to_keywords(pill):
+    """Gabungan keyword dari PILL_MAPPING + pill itu sendiri (lowercase)."""
+    mapping = PILL_MAPPING.get(pill, {}) or {}
+    out = [pill.lower()]
+    out.extend([kw.lower() for kw in mapping.get('review_keywords', [])])
+    return list(dict.fromkeys(out))
+
+
+def _build_preference_description(valid_pills, custom_query):
+    """Label preferensi user untuk prompt LLM / fallback."""
+    parts = []
+    if valid_pills:
+        parts.append(", ".join(valid_pills))
+    cq = (custom_query or "").strip()
+    if cq:
+        parts.append(f"referensi pengguna: {cq[:280]}")
+    return " | ".join(parts) if parts else "preferensi umum"
+
+
+def _sanitize_search_keywords(values, max_items=_SEARCH_KEYWORD_MAX):
+    """Bersihkan output keyword expansion agar aman dipakai untuk matching review."""
+    chunks = []
+    if isinstance(values, (list, tuple, set)):
+        for value in values:
+            chunks.extend(str(value or '').split(','))
+    else:
+        chunks = re.split(r'[,;\n]+', str(values or ''))
+
+    keywords = []
+    seen = set()
+    banned_tokens = {
+        'output', 'format', 'keyword', 'keywords', 'kata', 'kunci', 'user',
+        'preferensi', 'database', 'ulasan', 'review', 'reviews', 'coffee', 'shop',
+        'cafe', 'kafe', 'daftar',
+    }
+
+    for chunk in chunks:
+        item = re.sub(r'^\s*[-*\d.)]+', '', str(chunk or '')).strip()
+        if ':' in item and len(item.split(':', 1)[0].split()) <= 3:
+            item = item.split(':', 1)[1].strip()
+        normalized = _normalize_keyword_phrase(item)
+        if not normalized:
+            continue
+        tokens = normalized.split()
+        if len(normalized) < 2 or len(normalized) > 40 or len(tokens) > 4:
+            continue
+        if normalized in _TEXT_OVERLAP_STOP:
+            continue
+        if any(token in banned_tokens for token in tokens):
+            continue
+        if normalized in seen:
+            continue
+        seen.add(normalized)
+        keywords.append(normalized)
+        if len(keywords) >= max_items:
+            break
+    return keywords
+
+
+def _looks_negative_keyword(keyword):
+    normalized = _normalize_keyword_phrase(keyword)
+    if not normalized:
+        return False
+    for fragment in _NEGATIVE_KEYWORD_FRAGMENTS:
+        if fragment in normalized:
+            return True
+    return False
+
+
+def _filter_negative_search_keywords(keywords):
+    """Filter lokal untuk menahan keyword bernada negatif/keluhan."""
+    output = []
+    for keyword in _sanitize_search_keywords(keywords):
+        if _looks_negative_keyword(keyword):
+            continue
+        output.append(keyword)
+    return output
+
+
+def _seed_search_keywords(valid_pills, custom_query):
+    """Fallback non-LLM dari pill mapping dan input manual yang sudah divalidasi."""
+    seeds = []
+    for pill in valid_pills or []:
+        seeds.extend(_expand_pill_to_keywords(pill))
+    query = _normalize_keyword_phrase(custom_query)
+    if query:
+        seeds.append(query)
+        seeds.extend(part.strip() for part in str(custom_query or '').split(','))
+        seeds.extend(_text_overlap_tokens(query))
+    return _filter_negative_search_keywords(seeds)
+
+
+def _validate_search_keywords_with_llm(preference_text, candidate_keywords):
+    """
+    Validasi keyword agar tetap relevan dengan intent user, masuk akal untuk
+    pencarian review coffee shop, dan tidak mengandung sentimen negatif.
+    """
+    cleaned_candidates = _sanitize_search_keywords(candidate_keywords)
+    if not cleaned_candidates or hf_client is None:
+        return cleaned_candidates
+
+    prompt = f'''Saring daftar keyword berikut agar hanya tersisa keyword preferensi coffee shop yang masuk akal untuk pencarian review.
+Hapus keyword yang berupa keluhan atau sentimen negatif (contoh: berisik, mahal, kotor, pelayanan buruk, kecewa).
+Hapus juga keyword yang tidak relevan dengan intent user.
+Jangan tambah penjelasan, jangan pakai JSON, jangan pakai nomor.
+Keluarkan hanya daftar keyword dipisah koma.
+
+Preference user: "{preference_text}"
+Candidate keywords: "{", ".join(cleaned_candidates)}"
+Output format comma separated:'''
+
+    try:
+        raw = hf_client.text_generation(
+            prompt,
+            model=(HF_KEYWORD_MODEL or HF_MODEL or 'meta-llama/Meta-Llama-3-8B').strip(),
+            max_new_tokens=90,
+            temperature=0.0,
+            return_full_text=False,
+        )
+        validated = _sanitize_search_keywords(raw)
+        return validated or cleaned_candidates
+    except Exception as err:
+        print(f'[RECOMMEND] Keyword validation fallback triggered: {err}')
+        return cleaned_candidates
+
+
+def _expand_search_keywords_with_llm(valid_pills, custom_query):
+    """
+    Satu panggilan LLM di awal API untuk menerjemahkan intent user menjadi
+    keyword target pencarian review. Jika gagal, pakai seed lokal.
+    """
+    fallback = _seed_search_keywords(valid_pills, custom_query)
+    preference_text = _build_preference_description(valid_pills, custom_query)
+    if hf_client is None:
+        return fallback
+
+    prompt = f'''Ubah preferensi user berikut menjadi daftar kata kunci relevan untuk dicari di database ulasan coffee shop.
+Fokus pada kata yang mungkin benar-benar muncul di review pengguna Indonesia.
+Tambahkan sinonim dekat bila membantu, misalnya "nugas" -> "kerja, laptop, wifi, colokan, tenang".
+Jangan tulis penjelasan, jangan tulis nomor, jangan tulis JSON.
+Maksimal {_SEARCH_KEYWORD_MAX} kata/frasa pendek.
+
+User: "{preference_text}"
+Output format comma separated:'''
+
+    try:
+        raw = hf_client.text_generation(
+            prompt,
+            model=(HF_KEYWORD_MODEL or HF_MODEL or 'meta-llama/Meta-Llama-3-8B').strip(),
+            max_new_tokens=90,
+            temperature=0.1,
+            return_full_text=False,
+        )
+        expanded = _sanitize_search_keywords(raw)
+        merged = _sanitize_search_keywords(expanded + fallback)
+        validated = _validate_search_keywords_with_llm(preference_text, merged)
+        final_keywords = _filter_negative_search_keywords(validated)
+        return final_keywords or _filter_negative_search_keywords(merged) or fallback
+    except Exception as err:
+        print(f'[RECOMMEND] Keyword expansion fallback triggered: {err}')
+        return fallback
+
+
+def _pick_keyword_matched_reviews(reviews, search_keywords, limit=3):
+    """Pilih review paling kuat berdasarkan search_keywords hasil ekspansi."""
+    keywords = _sanitize_search_keywords(search_keywords)
+    if not reviews or not keywords:
+        return []
+
+    scored_reviews = []
+    seen_quotes = set()
+    for review in reviews:
+        text = (review.get('text') or '').strip() if isinstance(review, dict) else str(review or '').strip()
+        if len(text) < 15:
+            continue
+        matched_terms = [kw for kw in keywords if _matches_keyword_phrase(text, kw)]
+        if not matched_terms:
+            continue
+        quote_key = _normalize_whitespace(text).lower()
+        if quote_key in seen_quotes:
+            continue
+        seen_quotes.add(quote_key)
+        try:
+            rating_value = float((review or {}).get('rating') or 0) if isinstance(review, dict) else 0.0
+        except (TypeError, ValueError):
+            rating_value = 0.0
+        scored_reviews.append({
+            'quote': _truncate_evidence_text(text, _PROMPT_EVIDENCE_CHAR_LIMIT),
+            'rating': (review or {}).get('rating') if isinstance(review, dict) else None,
+            'username': (review or {}).get('username') or (review or {}).get('full_name') if isinstance(review, dict) else None,
+            'matched_terms': matched_terms[:6],
+            'score': len(matched_terms) * 3.0 + min(1.5, len(text) / 240.0) + (max(0.0, rating_value) / 5.0),
+        })
+
+    scored_reviews.sort(key=lambda item: -item['score'])
+    return scored_reviews[:limit]
+
+
+def _review_rating_category_scores(reviews, pills):
+    """
+    Sinyal kategori rating (makanan/layanan/suasana) per pill.
+    Return: (avg_score_0to1, per_pill_detail).
+    Hanya pill yang punya mapping kategori yang dihitung; kalau tidak ada data
+    kategori sama sekali, return (0.0, {}).
+    """
+    per_pill = {}
+    contributing = []
+    for pill in pills:
+        field = PILL_TO_REVIEW_CATEGORY.get(pill)
+        if not field:
+            continue
+        vals = [r.get(field) for r in reviews if r.get(field) is not None]
+        if not vals:
+            continue
+        avg = sum(float(v) for v in vals) / len(vals)
+        norm = max(0.0, min(1.0, (avg - 3.0) / 2.0))  # map 3.0..5.0 -> 0..1
+        per_pill[pill] = {
+            'field': field,
+            'avg': round(avg, 2),
+            'sample_size': len(vals),
+            'score': round(norm, 4),
+        }
+        contributing.append(norm)
+    if not contributing:
+        return 0.0, per_pill
+    return sum(contributing) / len(contributing), per_pill
+
+
+def _score_shop_by_user_reviews(profile, pills, custom_query='', search_keywords=None):
+    """
+    Scoring 100% berbasis user review:
+        70% keyword match di teks review (pill expansion + custom_query tokens)
+        20% alignment rating kategori (rating_suasana/makanan/layanan)
+        10% rata-rata rating user (dari review, bukan Google)
+
+    Return dict berisi total_score, per-sinyal, dan per_pill_stats yang kaya
+    untuk dipakai di evidence dan LLM summary.
+    """
+    reviews = profile.get('reviews') or []
+    review_count = len(reviews)
+    search_keywords = _sanitize_search_keywords(search_keywords)
+    if review_count == 0 or (not pills and not custom_query and not search_keywords):
+        return {
+            'total_score': 0.0,
+            'keyword_score': 0.0,
+            'expanded_keyword_score': 0.0,
+            'category_score': 0.0,
+            'rating_score': 0.0,
+            'per_pill_stats': {},
+            'custom_query_matches': [],
+            'expanded_keyword_matches': [],
+            'search_keywords': search_keywords,
+            'category_detail': {},
+            'review_count': review_count,
+            'avg_user_rating': profile.get('avg_user_rating'),
+        }
+
+    avg_user_rating = profile.get('avg_user_rating')
+    rating_score = 0.0
+    if avg_user_rating is not None:
+        rating_score = max(0.0, min(1.0, (float(avg_user_rating) - 3.0) / 2.0))
+
+    per_pill_stats = {}
+    keyword_scores = []
+
+    for pill in pills:
+        keywords = _expand_pill_to_keywords(pill)
+        keyword_review_hits = 0
+        sample_quotes = []
+
+        for review in reviews:
+            text = (review.get('text') or '').strip()
+            matched_terms = []
+
+            if text:
+                matched_terms = [kw for kw in keywords if _matches_keyword_phrase(text, kw)]
+                # Sinyal semantik khusus keluarga
+                if pill == 'keluarga' and not matched_terms:
+                    has_family_signal, _ = _has_semantic_family_signal(text)
+                    if has_family_signal:
+                        matched_terms = ['kebersamaan keluarga']
+                if matched_terms:
+                    keyword_review_hits += 1
+
+            if matched_terms:
+                if text and len(text) >= 15 and len(sample_quotes) < 3:
+                    sample_quotes.append({
+                        'quote': _truncate_evidence_text(text, _PROMPT_EVIDENCE_CHAR_LIMIT),
+                        'rating': review.get('rating'),
+                        'username': review.get('username') or review.get('full_name'),
+                        'matched_terms': matched_terms,
+                    })
+
+        kw_norm = min(1.0, keyword_review_hits / max(1, min(review_count, 5)))
+
+        per_pill_stats[pill] = {
+            'pill': pill,
+            'pill_label': PILL_LABELS.get(pill, pill),
+            'keyword_review_hits': keyword_review_hits,
+            'review_count': review_count,
+            'keyword_score': round(kw_norm, 4),
+            'sample_quotes': sample_quotes,
+        }
+        keyword_scores.append(kw_norm)
+
+    keyword_score_avg = sum(keyword_scores) / len(keyword_scores) if keyword_scores else 0.0
+    category_score_avg, category_detail = _review_rating_category_scores(reviews, pills)
+
+    expanded_keyword_matches = _pick_keyword_matched_reviews(reviews, search_keywords, limit=3)
+    expanded_keyword_hits = 0
+    if search_keywords:
+        for review in reviews:
+            text = (review.get('text') or '').strip()
+            if text and any(_matches_keyword_phrase(text, kw) for kw in search_keywords):
+                expanded_keyword_hits += 1
+        expanded_keyword_score = min(1.0, expanded_keyword_hits / max(1, min(review_count, 5)))
+        keyword_scores.append(expanded_keyword_score)
+        keyword_score_avg = sum(keyword_scores) / len(keyword_scores) if keyword_scores else 0.0
+    else:
+        expanded_keyword_score = 0.0
+
+    custom_query_matches = []
+    if custom_query:
+        if search_keywords:
+            manual_terms = _sanitize_search_keywords([custom_query] + list(search_keywords))
+        else:
+            manual_terms = _build_manual_query_terms(custom_query)
+        if manual_terms:
+            for review in reviews:
+                text = (review.get('text') or '').strip()
+                if len(text) < 15:
+                    continue
+                matched = [term for term in manual_terms if _matches_keyword_phrase(text, term)]
+                if not matched:
+                    continue
+                custom_query_matches.append({
+                    'quote': _truncate_evidence_text(text, _PROMPT_EVIDENCE_CHAR_LIMIT),
+                    'matched_tokens': matched[:6],
+                    'query_terms': manual_terms[:8],
+                    'rating': review.get('rating'),
+                    'username': review.get('username') or review.get('full_name'),
+                })
+                if len(custom_query_matches) >= 3:
+                    break
+
+    W_KEYWORD = 0.70
+    W_CATEGORY = 0.20
+    W_RATING = 0.10
+
+    total = (
+        keyword_score_avg * W_KEYWORD
+        + category_score_avg * W_CATEGORY
+        + rating_score * W_RATING
+    )
+
+    has_relevance_signal = (
+        keyword_score_avg > 0
+        or category_score_avg > 0
+        or bool(custom_query_matches)
+        or bool(expanded_keyword_matches)
+    )
+    if not has_relevance_signal:
+        total = 0.0
+
+    # Bonus kecil untuk custom_query match supaya query bebas tetap berkontribusi.
+    if custom_query_matches:
+        total = min(1.0, total + 0.05 * min(1.0, len(custom_query_matches) / 3.0))
+
+    return {
+        'total_score': round(total, 4),
+        'keyword_score': round(keyword_score_avg, 4),
+        'expanded_keyword_score': round(expanded_keyword_score, 4),
+        'category_score': round(category_score_avg, 4),
+        'rating_score': round(rating_score, 4),
+        'per_pill_stats': per_pill_stats,
+        'custom_query_matches': custom_query_matches,
+        'expanded_keyword_matches': expanded_keyword_matches,
+        'search_keywords': search_keywords,
+        'category_detail': category_detail,
+        'review_count': review_count,
+        'avg_user_rating': avg_user_rating,
+    }
+
+
+def _build_review_based_evidence(profile, score_detail, pills, custom_query='', search_keywords=None):
+    """
+    Bangun supporting_evidence hanya dari review user.
+    Mengikuti key lama (review_pills, review_quotes, custom_matches) untuk
+    kompatibilitas UI, dan menambah key baru: pill_stats, category_ratings,
+    avg_user_rating, review_count.
+    """
+    per_pill_stats = (score_detail or {}).get('per_pill_stats') or {}
+    category_detail = (score_detail or {}).get('category_detail') or {}
+    custom_query_matches = (score_detail or {}).get('custom_query_matches') or []
+    expanded_keyword_matches = (score_detail or {}).get('expanded_keyword_matches') or []
+    search_keywords = _sanitize_search_keywords(search_keywords or (score_detail or {}).get('search_keywords') or [])
+
+    review_pills_out = []
+    pill_stats_out = []
+    review_quotes_out = []
+    seen_quote_keys = set()
+
+    for pill in pills:
+        stats = per_pill_stats.get(pill)
+        if not stats:
+            continue
+        pill_label = stats['pill_label']
+        keyword_hits = stats['keyword_review_hits']
+        total_reviews = stats['review_count']
+
+        pill_stats_out.append({
+            'pill': pill,
+            'pill_label': pill_label,
+            'keyword_review_hits': keyword_hits,
+            'review_count': total_reviews,
+            'keyword_ratio': round(keyword_hits / total_reviews, 3) if total_reviews else 0,
+            'category_avg': (category_detail.get(pill) or {}).get('avg'),
+            'category_field': (category_detail.get(pill) or {}).get('field'),
+            'sample_quote': (stats.get('sample_quotes') or [{}])[0].get('quote') if stats.get('sample_quotes') else None,
+        })
+
+        for sq in stats.get('sample_quotes') or []:
+            quote_text = sq.get('quote')
+            if not quote_text:
+                continue
+            key = _normalize_whitespace(quote_text).lower()[:120]
+            if key in seen_quote_keys:
+                continue
+            seen_quote_keys.add(key)
+            if sq.get('matched_terms'):
+                reason = ", ".join(str(t).strip() for t in sq['matched_terms'][:3] if str(t).strip())
+            else:
+                reason = f"terkait {pill_label.lower()}"
+            review_quotes_out.append({
+                'pill': pill,
+                'pill_label': pill_label,
+                'quote': quote_text,
+                'reason': reason,
+                'rating': sq.get('rating'),
+                'username': sq.get('username'),
+            })
+
+    search_keyword_matches_out = []
+    for match in expanded_keyword_matches[:3]:
+        quote_text = match.get('quote')
+        matched_terms = [str(t).strip() for t in (match.get('matched_terms') or []) if str(t).strip()]
+        if not quote_text or not matched_terms:
+            continue
+        key = _normalize_whitespace(quote_text).lower()[:120]
+        if key not in seen_quote_keys:
+            seen_quote_keys.add(key)
+            review_quotes_out.append({
+                'pill': 'search_keywords',
+                'pill_label': 'kata kunci target',
+                'quote': quote_text,
+                'reason': ', '.join(matched_terms[:3]),
+                'rating': match.get('rating'),
+                'username': match.get('username'),
+            })
+        search_keyword_matches_out.append({
+            'matched_terms': matched_terms[:6],
+            'quote': quote_text,
+            'rating': match.get('rating'),
+            'username': match.get('username'),
+        })
+
+    custom_matches_out = []
+    for cm in custom_query_matches[:2]:
+        matched = cm.get('matched_tokens') or []
+        if not matched:
+            continue
+        custom_matches_out.append({
+            'label': 'Review user menyebut '
+            + ', '.join(f'"{t}"' for t in matched[:4])
+            + ' (sesuai kolom Lainnya)',
+            'matched_tokens': matched[:4],
+            'quote': cm.get('quote'),
+        })
+
+    # Pertahankan urutan quote sesuai kecocokan kata kunci yang ditemukan.
+
+    facilities_tab_full = profile.get('facilities_tab') or {
+        'popular_for': [], 'highlights': [], 'atmosphere': []
+    }
+    intent_blob = _collect_intent_strings_for_facilities(pills, custom_query, search_keywords)
+    facilities_tab_display, facilities_intent_aligned = _facilities_tab_display_for_intent(
+        facilities_tab_full, intent_blob
+    )
+    facilities_evidence_summary = _build_facilities_evidence_summary(
+        facilities_tab_display, facilities_intent_aligned
+    )
+
+    return {
+        'facilities': [],  # tidak dipakai: ranking hanya dari review user
+        'facilities_tab': facilities_tab_full,
+        'facilities_tab_intent': facilities_tab_display,
+        'facilities_intent_aligned': facilities_intent_aligned,
+        'facilities_evidence_summary': facilities_evidence_summary,
+        'review_pills': review_pills_out[:3],
+        'review_quotes': review_quotes_out[:3],
+        'custom_matches': custom_matches_out,
+        'search_keywords': search_keywords,
+        'search_keyword_matches': search_keyword_matches_out,
+        'pill_stats': pill_stats_out,
+        'category_ratings': profile.get('avg_category_ratings') or {
+            'makanan': None, 'layanan': None, 'suasana': None
+        },
+        'avg_user_rating': profile.get('avg_user_rating'),
+        'review_count': profile.get('review_count', 0),
+        'is_low_confidence': False,
+    }
+
+
+def _llm_semantic_rerank(candidates, pills, custom_query, search_keywords=None):
+    """
+    Rerank kandidat top-N dengan LLM berdasarkan INTENT user (pills + custom_query).
+    Konteks utama tetap review user, dengan tambahan sinyal fasilitas subset
+    (popular_for/highlights/atmosphere dari FacilitiesTab) agar analisis lebih relevan.
+    Jika LLM tidak
+    tersedia atau gagal, kembalikan urutan asli.
+    candidates: list of dict {place_id, name, score, profile, score_detail, evidence}
+    """
+    if not candidates:
+        return candidates
+    search_keywords = _sanitize_search_keywords(search_keywords)
+    if hf_client is None or (not pills and not custom_query and not search_keywords):
+        return candidates
+
+    pill_labels = [PILL_LABELS.get(p, p) for p in pills]
+    intent_parts = pill_labels[:]
+    if custom_query:
+        intent_parts.append(f'kebutuhan tambahan: "{custom_query[:200]}"')
+    intent_line = " | ".join(intent_parts) if intent_parts else "preferensi umum"
+    keyword_line = ", ".join(search_keywords) if search_keywords else "tidak ada"
+
+    shop_blocks = []
+    for idx, cand in enumerate(candidates[:10], 1):
+        profile = cand['profile']
+        reviews = profile.get('reviews') or []
+        review_lines = []
+        keyword_reviews = _pick_keyword_matched_reviews(reviews, search_keywords, limit=5) if search_keywords else []
+        review_source = keyword_reviews or reviews
+        # ambil maksimal 5 review paling relevan yang punya teks
+        for r in review_source:
+            if isinstance(r, dict) and r.get('quote'):
+                text = (r.get('quote') or '').strip()
+                matched_terms = r.get('matched_terms') or []
+            else:
+                text = (r.get('text') or '').strip()
+                matched_terms = []
+            if len(text) < 15:
+                continue
+            rating = r.get('rating')
+            match_info = f", match: {', '.join(matched_terms[:4])}" if matched_terms else ""
+            review_lines.append(
+                f'  - "{_truncate_evidence_text(text, _PROMPT_EVIDENCE_CHAR_LIMIT)}" '
+                f'(rating: {rating}{match_info})'
+            )
+            if len(review_lines) >= 5:
+                break
+        if not review_lines:
+            review_lines = ['  - (tidak ada review bertext panjang)']
+        shop_blocks.append(
+            f"{idx}. {cand['name']} (place_id: {cand['place_id']}) - "
+            f"total review: {profile.get('review_count', 0)}, "
+            f"avg rating user: {profile.get('avg_user_rating')}\n"
+            + (f"  Sinyal fasilitas tab: {profile.get('facilities_tab_text')}\n" if profile.get('facilities_tab_text') else "")
+            + "\n".join(review_lines)
+        )
+
+    role = (
+        "ROLE / PERSONA:\n"
+        "Kamu adalah sistem pemeringkat internal Cofind untuk rekomendasi coffee shop. "
+        "Tugasmu hanya mengurutkan kandidat berdasarkan bukti review user, bukan menulis promosi."
+    )
+    style = (
+        "STYLE INSTRUCTION:\n"
+        "- Berpikir objektif dan ringkas.\n"
+        "- Nilai kecocokan dari review yang eksplisit menyebut kebutuhan user.\n"
+        "- Dahulukan bukti review yang konkret, spesifik, dan relevan."
+    )
+    context = (
+        "CONTEXT:\n"
+        f"Kebutuhan user: {intent_line}\n\n"
+        f"Kata kunci target pencarian review: {keyword_line}\n\n"
+        "Kandidat coffee shop dan review user:\n"
+        + "\n\n".join(shop_blocks)
+    )
+    guardrail = (
+        "GUARDRAIL:\n"
+        "- Ranking HARUS berdasarkan isi review user di atas saja, bukan nama toko atau asumsi.\n"
+        "- Jika dua kandidat sama relevannya, dahulukan yang bukti reviewnya paling konkret.\n"
+        "- Jangan mengarang place_id; place_id harus PERSIS sama seperti data di atas.\n"
+        "- Output HANYA JSON array 3 teratas, contoh:\n"
+        "[{\"place_id\":\"xxx\",\"rank\":1,\"reason\":\"alasan singkat\"}]\n\nJSON:"
+    )
+
+    prompt = "\n\n".join([role, style, context, guardrail])
+
+    try:
+        raw = hf_client.text_generation(
+            prompt,
+            model=(HF_MODEL or "meta-llama/Meta-Llama-3-8B").strip(),
+            max_new_tokens=400,
+            temperature=0.2,
+            return_full_text=False,
+        )
+        text = (raw or '').strip()
+        if '```' in text:
+            for part in text.split('```'):
+                part = part.strip()
+                if part.startswith('json'):
+                    part = part[4:].strip()
+                if part.startswith('['):
+                    text = part
+                    break
+        if not text.startswith('['):
+            m = re.search(r'\[[\s\S]*\]', text)
+            if m:
+                text = m.group(0).strip()
+        parsed = json.loads(text)
+        if not isinstance(parsed, list):
+            raise ValueError("rerank: not a list")
+
+        rank_map = {}
+        reason_map = {}
+        for item in parsed:
+            if not isinstance(item, dict):
+                continue
+            pid = str(item.get('place_id') or '').strip()
+            if not pid:
+                continue
+            rank_val = item.get('rank')
+            try:
+                rank_val = int(rank_val)
+            except (TypeError, ValueError):
+                rank_val = 999
+            rank_map[pid] = rank_val
+            if item.get('reason'):
+                reason_map[pid] = _normalize_whitespace(str(item['reason']))[:200]
+
+        if not rank_map:
+            return candidates
+
+        reranked = []
+        seen = set()
+        for pid, rank in sorted(rank_map.items(), key=lambda x: x[1]):
+            match = next((c for c in candidates if c['place_id'] == pid), None)
+            if match and pid not in seen:
+                reranked.append({**match, 'llm_rerank_reason': reason_map.get(pid)})
+                seen.add(pid)
+        for c in candidates:
+            if c['place_id'] not in seen:
+                reranked.append(c)
+        return reranked
+    except Exception as e:
+        print(f"[RECOMMEND] LLM rerank error: {e}. Fallback to rule-based order.")
+        return candidates
+
+
+def _build_review_summary_deterministic(shop, pills, custom_query=''):
+    """Fallback summary (tanpa LLM) dengan gaya rekomendasi yang lebih natural."""
+    pill_labels = [PILL_LABELS.get(p, p).lower() for p in pills]
+    pref_parts = pill_labels[:]
+    cq = (custom_query or '').strip()
+    if cq:
+        pref_parts.append(cq.lower())
+    pref = ", ".join(pref_parts) if pref_parts else 'preferensimu'
+    evidence = shop.get('evidence') or {}
+    review_count = evidence.get('review_count') or shop.get('profile', {}).get('review_count', 0)
+    pill_stats = evidence.get('pill_stats') or []
+    review_quotes = evidence.get('review_quotes') or []
+    avg = evidence.get('avg_user_rating')
+
+    is_manual_mode = bool(cq)
+    if is_manual_mode:
+        opening = (
+            f"Kalau yang Anda cari adalah tempat yang cocok untuk \"{cq}\", "
+            f"coffee shop ini termasuk opsi yang paling mendekati dari review user yang tersedia."
+        )
+    else:
+        opening = (
+            f"Kalau Anda mencari tempat dengan preferensi {pref}, "
+            f"coffee shop ini bisa menjadi opsi yang cukup cocok."
+        )
+
+    support_parts = []
+    top_signal = None
+    if any(s.get('keyword_review_hits') for s in pill_stats):
+        top_signal = max(pill_stats, key=lambda s: s.get('keyword_review_hits', 0))
+        support_parts.append(
+            f"Ada {top_signal['keyword_review_hits']} dari {top_signal['review_count']} review user "
+            f"yang menyinggung hal terkait {top_signal['pill_label'].lower()}"
+        )
+    elif review_count:
+        support_parts.append(f"Kesimpulan ini dirangkum dari sekitar {review_count} review user")
+
+    if review_quotes:
+        q = review_quotes[0]
+        if is_manual_mode:
+            support_parts.append(f'Salah satu komentar yang paling relevan menyebut, "{q["quote"]}"')
+        else:
+            support_parts.append(f'salah satu pengulas bahkan menulis, "{q["quote"]}"')
+    elif avg is not None:
+        support_parts.append(f"rata-rata rating dari user juga berada di angka {avg:.1f}/5")
+
+    if not support_parts:
+        return opening
+
+    return opening + " " + ". ".join(support_parts) + "."
+
+
+def _generate_llm_review_summary(top_shops, pills, custom_query, search_keywords=None):
+    """
+    NLP summary 1-2 kalimat per shop. Prompt MEWAJIBKAN mengutip isi review
+    user. Jika LLM tidak tersedia / gagal parse, pakai fallback deterministik
+    yang juga berbasis angka review.
+    """
+    if not top_shops:
+        return []
+
+    pill_labels = [PILL_LABELS.get(p, p) for p in pills]
+    intent_parts = pill_labels[:]
+    if custom_query:
+        intent_parts.append(f'kebutuhan tambahan: "{custom_query[:200]}"')
+    intent_line = " | ".join(intent_parts) if intent_parts else "preferensi umum"
+    search_keywords = _sanitize_search_keywords(search_keywords)
+    keyword_line = ", ".join(search_keywords) if search_keywords else "tidak ada"
+    is_manual_mode = bool(custom_query)
+
+    if hf_client is None:
+        return [
+            {
+                'place_id': s['place_id'],
+                'name': s['name'],
+                'score': s.get('score', 0),
+                'explanation': _build_review_summary_deterministic(s, pills, custom_query),
+                'supporting_evidence': s.get('evidence') or _build_empty_supporting_evidence(),
+                'review_count': (s.get('evidence') or {}).get('review_count', 0),
+                'avg_user_rating': (s.get('evidence') or {}).get('avg_user_rating'),
+                'is_low_confidence': (s.get('evidence') or {}).get('is_low_confidence', False),
+            }
+            for s in top_shops
+        ]
+
+    shop_blocks = []
+    for idx, shop in enumerate(top_shops, 1):
+        evidence = shop.get('evidence') or {}
+        pill_stats = evidence.get('pill_stats') or []
+        review_quotes = evidence.get('review_quotes') or []
+        facilities_tab = evidence.get('facilities_tab') or {}
+        review_count = evidence.get('review_count', 0)
+        avg = evidence.get('avg_user_rating')
+        cat = evidence.get('category_ratings') or {}
+
+        stats_lines = []
+        for s in pill_stats:
+            stats_lines.append(
+                f"  - {s['pill_label']}: {s['keyword_review_hits']} review menyebut kata terkait"
+                + (f", rata-rata {s['category_field']}={s['category_avg']}" if s.get('category_avg') is not None else '')
+            )
+        if not stats_lines:
+            stats_lines.append('  - (tidak ada sinyal pill yang cocok)')
+
+        quote_lines = []
+        for q in review_quotes[:3]:
+            quote_lines.append(
+                f"  - \"{q['quote']}\" (untuk {q.get('pill_label') or 'preferensi'}, rating: {q.get('rating')})"
+            )
+        if not quote_lines:
+            quote_lines.append('  - (tidak ada kutipan review yang cocok)')
+
+        cat_info = ", ".join(
+            f"{k}: {v}" for k, v in cat.items() if v is not None
+        ) or 'tidak ada'
+        facility_lines = []
+        if facilities_tab.get('popular_for'):
+            facility_lines.append("  - Populer: " + ", ".join(facilities_tab.get('popular_for')[:5]))
+        if facilities_tab.get('highlights'):
+            facility_lines.append("  - Keunggulan: " + ", ".join(facilities_tab.get('highlights')[:5]))
+        if facilities_tab.get('atmosphere'):
+            facility_lines.append("  - Suasana: " + ", ".join(facilities_tab.get('atmosphere')[:5]))
+        if not facility_lines:
+            facility_lines.append("  - (tidak ada data fasilitas tab)")
+
+        shop_blocks.append(
+            f"{idx}. {shop['name']} (place_id: {shop['place_id']})\n"
+            f"  Total review user: {review_count}, avg rating user: {avg}\n"
+            f"  Rating kategori: {cat_info}\n"
+            f"  Sinyal fasilitas tab:\n" + "\n".join(facility_lines) + "\n"
+            f"  Statistik pill:\n" + "\n".join(stats_lines) + "\n"
+            f"  Kutipan review:\n" + "\n".join(quote_lines)
+        )
+
+    role = (
+        "ROLE / PERSONA:\n"
+        "Kamu adalah Cofind Assistant, teman ngopi digital yang membantu user memilih coffee shop "
+        "berdasarkan review pengguna nyata. Kamu berbicara hangat, jujur, dan tidak melebih-lebihkan."
+    )
+    style = (
+        "STYLE INSTRUCTION:\n"
+        "- Tulis dalam Bahasa Indonesia yang natural, ringan, dan personal.\n"
+        "- Tulis 1 sampai 2 kalimat pendek per coffee shop.\n"
+        "- Awali dari kebutuhan user, misalnya 'Kalau Anda mencari...' atau 'Tempat ini terasa cocok...'.\n"
+        "- Hindari gaya iklan, kalimat kaku seperti 'Cocok untuk X:', daftar poin, nomor urut, dan emoji.\n"
+        "- Jangan gunakan istilah teknis seperti place_id, evidence, skor, JSON, [fasilitas], atau [review]."
+    )
+    context = (
+        "CONTEXT:\n"
+        f"User ingin coffee shop yang: {intent_line}\n"
+        f"Kata kunci target dari intent user: {keyword_line}\n"
+        f"Mode input: {'manual bebas' if is_manual_mode else 'pilihan preferensi'}\n\n"
+        "Berikut 3 kandidat beserta DATA REVIEW USER + SINYAL FASILITAS TAB "
+        "(popular_for, highlights, atmosphere). Jangan gunakan rating Google sebagai alasan utama.\n\n"
+        + "\n\n".join(shop_blocks)
+    )
+    guardrail = (
+        "GUARDRAIL:\n"
+        "- WAJIB merujuk atau mengutip data review user di atas, misalnya jumlah review yang menandai, "
+        "isi komentar, atau rata-rata rating kategori.\n"
+        "- JANGAN mengarang fakta di luar data yang diberikan.\n"
+        "- Jika bukti review untuk preferensi user tipis, tulis secara hati-hati dan jangan memaksakan klaim.\n"
+        "- place_id di output HARUS persis sama seperti data.\n"
+        "- Output HANYA JSON array, contoh:\n"
+        "[{\"place_id\":\"xxx\",\"name\":\"Nama\",\"summary\":\"Kalimat...\"}]\n\nJSON:"
+    )
+
+    prompt = "\n\n".join([role, style, context, guardrail])
+
+    try:
+        raw = hf_client.text_generation(
             prompt,
             model=(HF_MODEL or "meta-llama/Meta-Llama-3-8B").strip(),
             max_new_tokens=600,
             temperature=0.3,
-            return_full_text=False
+            return_full_text=False,
         )
-        text = (response_text or '').strip()
+        text = (raw or '').strip()
         if '```' in text:
             for part in text.split('```'):
                 part = part.strip()
-                if part.startswith('json') or part.startswith('['):
-                    text = part[4:].strip() if part.startswith('json') else part
+                if part.startswith('json'):
+                    part = part[4:].strip()
+                if part.startswith('['):
+                    text = part
                     break
-        text = text.strip()
         if not text.startswith('['):
-            return jsonify({'status': 'error', 'message': 'Format respons LLM tidak valid.', 'recommendations': []}), 200
-        try:
-            recommendations = json.loads(text)
-        except json.JSONDecodeError:
-            return jsonify({'status': 'error', 'message': 'Gagal memparse rekomendasi LLM.', 'recommendations': []}), 200
-        if not isinstance(recommendations, list):
-            recommendations = []
-        out = []
-        for r in recommendations:
-            if isinstance(r, dict) and r.get('name') and r.get('explanation'):
-                out.append({'name': str(r['name']).strip(), 'explanation': str(r['explanation']).strip()})
-        return jsonify({'status': 'success', 'recommendations': out}), 200
+            m = re.search(r'\[[\s\S]*\]', text)
+            if m:
+                text = m.group(0).strip()
+        parsed = json.loads(text)
+        if isinstance(parsed, dict):
+            parsed = parsed.get('recommendations', [])
+        if not isinstance(parsed, list):
+            raise ValueError("summary: not a list")
+
+        summary_map = {}
+        for item in parsed:
+            if not isinstance(item, dict):
+                continue
+            pid = str(item.get('place_id') or '').strip()
+            summary = _normalize_whitespace(str(item.get('summary') or item.get('explanation') or ''))
+            if pid and summary:
+                summary_map[pid] = summary
+
+        output = []
+        for shop in top_shops:
+            evidence = shop.get('evidence') or _build_empty_supporting_evidence()
+            summary = summary_map.get(shop['place_id'])
+            if not summary or any(bad in summary.lower() for bad in ['place_id', '[fasilitas]', '[review]', 'json']):
+                summary = _build_review_summary_deterministic(shop, pills, custom_query)
+            if summary and summary[-1] not in '.!?':
+                summary += '.'
+            output.append({
+                'place_id': shop['place_id'],
+                'name': shop['name'],
+                'score': shop.get('score', 0),
+                'explanation': summary,
+                'supporting_evidence': evidence,
+                'review_count': evidence.get('review_count', 0),
+                'avg_user_rating': evidence.get('avg_user_rating'),
+                'is_low_confidence': evidence.get('is_low_confidence', False),
+            })
+        return output
     except Exception as e:
+        print(f"[RECOMMEND] LLM summary error: {e}. Fallback to deterministic.")
+        return [
+            {
+                'place_id': s['place_id'],
+                'name': s['name'],
+                'score': s.get('score', 0),
+                'explanation': _build_review_summary_deterministic(s, pills, custom_query),
+                'supporting_evidence': s.get('evidence') or _build_empty_supporting_evidence(),
+                'review_count': (s.get('evidence') or {}).get('review_count', 0),
+                'avg_user_rating': (s.get('evidence') or {}).get('avg_user_rating'),
+                'is_low_confidence': (s.get('evidence') or {}).get('is_low_confidence', False),
+            }
+            for s in top_shops
+        ]
+
+
+def _fallback_low_review_shops(exclude_place_ids, needed, all_place_ids):
+    """
+    Fallback: kembalikan shops yang punya sedikit/tanpa review, diurut
+    popularitas Google. Dipakai kalau review-based ranking tidak
+    menghasilkan cukup kandidat. DITANDAI is_low_confidence=True.
+    """
+    if needed <= 0:
+        return []
+    rows = []
+    conn = sqlite3.connect(DATABASE_PATH, timeout=10)
+    conn.row_factory = sqlite3.Row
+    try:
+        qmarks = ','.join('?' * len(all_place_ids))
+        cur = conn.execute(
+            f"SELECT place_id, name, rating, total_reviews FROM coffee_shops "
+            f"WHERE place_id IN ({qmarks})",
+            all_place_ids,
+        )
+        rows = [dict(r) for r in cur.fetchall()]
+    finally:
+        conn.close()
+    rows = [r for r in rows if r['place_id'] not in exclude_place_ids]
+    rows.sort(
+        key=lambda r: (
+            -(float(r['rating'] or 0) or 0.0),
+            -(int(r['total_reviews'] or 0) or 0),
+        )
+    )
+    fallback = []
+    for r in rows[:needed]:
+        evidence = _build_empty_supporting_evidence()
+        evidence.update({
+            'pill_stats': [],
+            'category_ratings': {'makanan': None, 'layanan': None, 'suasana': None},
+            'avg_user_rating': None,
+            'review_count': 0,
+            'is_low_confidence': True,
+        })
+        fallback.append({
+            'place_id': r['place_id'],
+            'name': r['name'] or '',
+            'score': 0.0,
+            'profile': {
+                'place_id': r['place_id'],
+                'name': r['name'] or '',
+                'reviews': [],
+                'review_count': 0,
+                'avg_user_rating': None,
+                'avg_category_ratings': {'makanan': None, 'layanan': None, 'suasana': None},
+                'google_rating': float(r['rating'] or 0),
+                'google_total_reviews': int(r['total_reviews'] or 0),
+            },
+            'score_detail': None,
+            'evidence': evidence,
+        })
+    return fallback
+
+
+@app.route('/api/recommend-by-preferences', methods=['POST'])
+def api_recommend_by_preferences():
+    """
+    Rekomendasi 100% berbasis user review.
+    Pipeline:
+      1. Build profil review-only tiap toko (hanya reviews dari tabel `reviews`)
+      2. LLM keyword expansion untuk menerjemahkan intent user menjadi search_keywords
+      3. Rule-based scoring (keyword review, kategori rating, avg rating) memakai search_keywords
+      4. LLM semantic rerank top-10 -> maksimal top-3 (jika LLM tersedia)
+      5. Hanya kembalikan toko yang memang lolos evidensi review
+      6. LLM NLP summary WAJIB mengutip review user
+    Request: { "preferences": ["cozy"], "custom_query": "opsional" }
+    """
+    try:
+        data = request.get_json() or {}
+        prefs = data.get('preferences') or []
+        if not isinstance(prefs, list):
+            prefs = [prefs] if prefs else []
+        prefs = [str(p).strip().lower() for p in prefs if str(p).strip()][:3]
+
+        custom_query = str(data.get('custom_query') or '').strip()[:600]
+        custom_query_error = _validate_single_custom_query(custom_query)
+
+        if not prefs and not custom_query:
+            return jsonify({
+                'status': 'error',
+                'message': 'Pilih minimal satu pill preferensi atau isi kolom Lainnya.',
+            }), 400
+
+        if custom_query_error:
+            return jsonify({
+                'status': 'error',
+                'message': custom_query_error,
+            }), 400
+
+        valid_pills = [p for p in prefs if p in PILL_MAPPING]
+        if prefs and not valid_pills:
+            return jsonify({
+                'status': 'error',
+                'message': f'Preferensi tidak dikenali: {", ".join(prefs)}',
+            }), 400
+
+        custom_query_contexts = _detect_custom_query_contexts(custom_query) if custom_query else []
+        effective_custom_query = custom_query
+        if custom_query and valid_pills and custom_query_contexts and all(ctx in valid_pills for ctx in custom_query_contexts):
+            # Contoh: pill "ruang ibadah" + custom "masjid" -> preferensi yang sama.
+            effective_custom_query = ''
+
+        if effective_custom_query and _is_negative_or_reject_manual_query(effective_custom_query):
+            return jsonify({
+                'status': 'success',
+                'message': _MANUAL_REJECT_MESSAGE,
+                'preferences': valid_pills,
+                'custom_query': effective_custom_query,
+                'search_keywords': [],
+                'recommendations': [],
+            }), 200
+
+        print(
+            f"[RECOMMEND] Pills: {valid_pills} | custom_query: {bool(custom_query)} | "
+            f"effective_custom_query: {bool(effective_custom_query)}"
+        )
+
+        # Satu panggilan LLM awal untuk query expansion; scoring tetap fallback-safe.
+        search_keywords = _expand_search_keywords_with_llm(valid_pills, effective_custom_query)
+        print(f"[RECOMMEND] Search keywords: {search_keywords}")
+
+        all_place_ids = _load_all_place_ids()
+        if not all_place_ids:
+            return jsonify({'status': 'error', 'message': 'Data coffee shop kosong.'}), 500
+        facilities_index = _load_facilities_index()
+
+        MAX_REC = 3
+        TOP_CANDIDATES_FOR_RERANK = 10
+        THRESHOLD = 0.05  # ambang minimal skor review-based
+
+        # --- Step 1 & 2: Build profile + rule-based scoring ---
+        scored_candidates = []
+        shops_without_reviews = []
+        for pid in all_place_ids:
+            profile = _build_review_only_profile(pid, facilities_index=facilities_index)
+            if not profile:
+                continue
+            if profile['review_count'] < REVIEW_BASED_MIN_REVIEWS:
+                shops_without_reviews.append(pid)
+                continue
+
+            if valid_pills:
+                score_detail = _score_shop_by_user_reviews(
+                    profile,
+                    valid_pills,
+                    effective_custom_query,
+                    search_keywords=search_keywords,
+                )
+                total = score_detail['total_score']
+            else:
+                # Hanya custom_query, tanpa pill: wajib ada bukti overlap review.
+                # Rating user tidak boleh meloloskan kandidat jika tidak ada review yang
+                # relevan sama sekali dengan query bebas user.
+                manual_terms = search_keywords or _build_manual_query_terms(effective_custom_query)
+                overlap_ratio = 0.0
+                matches_count = 0
+                if manual_terms:
+                    for rv in profile['reviews']:
+                        review_text = rv.get('text') or ''
+                        if any(_matches_keyword_phrase(review_text, term) for term in manual_terms):
+                            matches_count += 1
+                    overlap_ratio = matches_count / max(1, min(profile['review_count'], 5))
+                    overlap_ratio = min(1.0, overlap_ratio)
+                rating_norm = 0.0
+                if profile.get('avg_user_rating') is not None:
+                    rating_norm = max(0.0, min(1.0, (float(profile['avg_user_rating']) - 3.0) / 2.0))
+                score_detail = _score_shop_by_user_reviews(
+                    profile,
+                    [],
+                    effective_custom_query,
+                    search_keywords=search_keywords,
+                )
+                if matches_count == 0:
+                    total = 0.0
+                else:
+                    total = overlap_ratio * 0.80 + rating_norm * 0.20
+                score_detail['total_score'] = round(total, 4)
+
+            if total < THRESHOLD:
+                continue
+
+            evidence = _build_review_based_evidence(
+                profile,
+                score_detail,
+                valid_pills,
+                effective_custom_query,
+                search_keywords=search_keywords,
+            )
+            scored_candidates.append({
+                'place_id': pid,
+                'name': profile.get('name', ''),
+                'score': round(total, 4),
+                'profile': profile,
+                'score_detail': score_detail,
+                'evidence': evidence,
+            })
+
+        scored_candidates.sort(key=lambda x: -x['score'])
+        print(f"[RECOMMEND] Review-based: {len(scored_candidates)} kandidat di atas ambang (total shops with reviews: {len(all_place_ids) - len(shops_without_reviews)})")
+
+        # --- Step 3: LLM semantic rerank top-10 -> maksimal top-3 ---
+        top_candidates = scored_candidates[:TOP_CANDIDATES_FOR_RERANK]
+        if (valid_pills or effective_custom_query) and len(top_candidates) > MAX_REC:
+            top_candidates = _llm_semantic_rerank(
+                top_candidates,
+                valid_pills,
+                effective_custom_query,
+                search_keywords=search_keywords,
+            )
+            print(f"[RECOMMEND] LLM rerank applied on {len(top_candidates)} candidates")
+
+        top_shops = top_candidates[:MAX_REC]
+
+        if not top_shops:
+            return jsonify({
+                'status': 'success',
+                'message': _MANUAL_UNCLEAR_MESSAGE,
+                'recommendations': [],
+            }), 200
+
+        # --- Step 4: LLM NLP summary wajib mengutip review ---
+        recommendations = _generate_llm_review_summary(
+            top_shops,
+            valid_pills,
+            effective_custom_query,
+            search_keywords=search_keywords,
+        )
+
+        return jsonify({
+            'status': 'success',
+            'preferences': valid_pills,
+            'custom_query': effective_custom_query,
+            'search_keywords': search_keywords,
+            'recommendations': recommendations,
+        }), 200
+
+    except Exception as e:
+        import traceback
         print(f"[recommend-by-preferences] Error: {e}")
+        print(traceback.format_exc())
         return jsonify({'status': 'error', 'message': str(e), 'recommendations': []}), 500
 
+
+
+def _extract_json_array_block(text):
+    if not text:
+        return None
+    cleaned = str(text).strip()
+    if '```' in cleaned:
+        for part in cleaned.split('```'):
+            part = part.strip()
+            if part.startswith('json'):
+                part = part[4:].strip()
+            if part.startswith('[') and part.endswith(']'):
+                return part
+    match = re.search(r'\[[\s\S]*\]', cleaned)
+    return match.group(0).strip() if match else None
+
+
+def _extract_recommendation_keywords_from_input(user_text):
+    fallback_words = user_text.lower().split()
+    fallback_stop_words = {
+        'saya', 'ingin', 'mencari', 'yang', 'untuk', 'dan', 'atau', 'dengan', 'ada',
+        'adalah', 'ini', 'itu', 'di', 'ke', 'dari', 'pada', 'oleh', 'coffee', 'shop',
+        'tempat', 'cafe', 'kafe', 'butuh', 'perlu', 'mau', 'cari',
+    }
+    fallback = ', '.join([word for word in fallback_words if word not in fallback_stop_words and len(word) > 2])
+    if hf_client is None:
+        return fallback
+
+    prompt = f'''Ekstrak maksimal 8 kata kunci preferensi coffee shop dari input user berikut.
+Fokus hanya pada atribut yang relevan seperti suasana, fasilitas, jam buka, parkir, belajar, kerja, gaming, keluarga, aesthetic, live music, dan kebutuhan serupa.
+Jika tidak ada atribut coffee shop yang relevan, jawab hanya: TIDAK_ADA_KEYWORDS
+Output hanya daftar kata kunci dipisah koma.
+
+Input user:
+"{user_text}"
+
+Kata kunci:'''
+
+    try:
+        raw = hf_client.text_generation(
+            prompt,
+            model=(HF_MODEL or 'meta-llama/Meta-Llama-3-8B').strip(),
+            max_new_tokens=80,
+            temperature=0.2,
+            return_full_text=False,
+        )
+        cleaned = _normalize_whitespace(raw).replace('**', '').replace('*', '').replace('"', '').replace("'", '')
+        return cleaned or fallback
+    except Exception as err:
+        print(f'[LLM] Keyword extraction fallback triggered: {err}')
+        return fallback
+
+
+def _run_lightweight_llm_task(user_text, task):
+    if hf_client is None:
+        return user_text
+
+    if task == 'summarize':
+        instruction = (
+            'Ringkas isi berikut menjadi 1 kalimat singkat berbahasa Indonesia, '
+            'maksimal 25 kata, tanpa emoji, tanpa pembuka.'
+        )
+        max_tokens = 80
+    else:
+        instruction = (
+            'Berikan analisis singkat dalam Bahasa Indonesia tentang kebutuhan user terhadap coffee shop '
+            'berdasarkan teks berikut. Maksimal 3 kalimat dan jangan mengarang fakta.'
+        )
+        max_tokens = 220
+
+    prompt = f'''{instruction}
+
+Teks:
+{user_text}
+
+Jawaban:'''
+    raw = hf_client.text_generation(
+        prompt,
+        model=(HF_MODEL or 'meta-llama/Meta-Llama-3-8B').strip(),
+        max_new_tokens=max_tokens,
+        temperature=0.2,
+        return_full_text=False,
+    )
+    return _normalize_whitespace(raw)
+
+
+def _build_recommendation_cache_key(task, location, user_text, keywords, candidate_shops):
+    key_payload = {
+        'task': task,
+        'location': location,
+        'user_text': _normalize_whitespace(user_text),
+        'keywords': list(dict.fromkeys(keywords or [])),
+        'candidate_shops': [
+            {
+                'place_id': shop.get('place_id'),
+                'name': shop.get('name'),
+                'keyword_score': shop.get('keyword_score', 0),
+                'matched_keywords': shop.get('matched_keywords', []),
+                'evidence_text': shop.get('evidence_text', ''),
+                'review_quotes': [review.get('quote') for review in shop.get('relevant_reviews', [])],
+            }
+            for shop in candidate_shops
+        ],
+    }
+    digest = hashlib.sha256(json.dumps(key_payload, sort_keys=True, ensure_ascii=False).encode('utf-8')).hexdigest()
+    return digest
+
+
+def _highlight_keywords_in_text(text, keywords):
+    unique_keywords = []
+    for keyword in keywords or []:
+        normalized = _normalize_whitespace(keyword)
+        if len(normalized) >= 3 and normalized.lower() not in [item.lower() for item in unique_keywords]:
+            unique_keywords.append(normalized)
+    if not unique_keywords:
+        return text
+
+    pattern = re.compile(
+        '(' + '|'.join(re.escape(keyword) for keyword in sorted(unique_keywords, key=len, reverse=True)) + ')',
+        flags=re.IGNORECASE,
+    )
+    return pattern.sub(lambda match: f'**{match.group(0)}**', text)
+
+
+def _build_candidate_shop_payload(candidate_shops):
+    payload = []
+    for shop in candidate_shops[:8]:
+        payload.append({
+            'place_id': shop.get('place_id'),
+            'name': shop.get('name'),
+            'rating': shop.get('rating'),
+            'address': shop.get('address'),
+            'maps_url': shop.get('maps_url'),
+            'matched_keywords': shop.get('matched_keywords', []),
+            'keyword_score': shop.get('keyword_score', 0),
+            'facilities_text': _truncate_evidence_text(shop.get('facilities_text', ''), 220),
+            'review_candidates': [
+                {
+                    'quote': _truncate_evidence_text(review.get('quote', ''), 180),
+                    'author_name': review.get('author_name', 'Anonim'),
+                    'rating': review.get('rating', 0),
+                    'matched_keywords': review.get('matched_keywords', []),
+                }
+                for review in (shop.get('relevant_reviews') or [])[:2]
+            ],
+        })
+    return json.dumps(payload, ensure_ascii=False, indent=2)
+
+
+def _parse_llm_recommendation_selection(raw_text, candidate_shops, keywords):
+    json_block = _extract_json_array_block(raw_text)
+    if not json_block:
+        return []
+
+    parsed = json.loads(json_block)
+    if isinstance(parsed, dict):
+        parsed = parsed.get('recommendations', [])
+    if not isinstance(parsed, list):
+        return []
+
+    candidate_map = {}
+    for shop in candidate_shops:
+        candidate_map[str(shop.get('place_id', '')).strip()] = shop
+        candidate_map[str(shop.get('name', '')).strip().lower()] = shop
+
+    selected = []
+    seen_place_ids = set()
+    for item in parsed:
+        if not isinstance(item, dict):
+            continue
+
+        candidate = None
+        place_id = str(item.get('place_id', '')).strip()
+        name_key = str(item.get('name', '')).strip().lower()
+        if place_id:
+            candidate = candidate_map.get(place_id)
+        if candidate is None and name_key:
+            candidate = candidate_map.get(name_key)
+        if candidate is None:
+            continue
+
+        candidate_place_id = str(candidate.get('place_id', '')).strip()
+        if not candidate_place_id or candidate_place_id in seen_place_ids:
+            continue
+
+        relevant_reviews = candidate.get('relevant_reviews') or _pick_relevant_reviews_for_keywords(
+            candidate.get('reviews', []),
+            keywords,
+            limit=2,
+        )
+        if not relevant_reviews:
+            continue
+
+        enriched_candidate = dict(candidate)
+        enriched_candidate['relevant_reviews'] = relevant_reviews
+        enriched_candidate['llm_reason'] = _normalize_whitespace(item.get('reason', ''))
+        selected.append(enriched_candidate)
+        seen_place_ids.add(candidate_place_id)
+
+        if len(selected) >= 3:
+            break
+
+    return selected
+
+
+def _fallback_candidate_recommendations(candidate_shops, keywords, limit=3):
+    fallback = []
+    for shop in candidate_shops:
+        relevant_reviews = shop.get('relevant_reviews') or _pick_relevant_reviews_for_keywords(
+            shop.get('reviews', []),
+            keywords,
+            limit=2,
+        )
+        if not relevant_reviews:
+            continue
+        enriched_shop = dict(shop)
+        enriched_shop['relevant_reviews'] = relevant_reviews
+        fallback.append(enriched_shop)
+
+    fallback.sort(
+        key=lambda shop: (
+            -float(shop.get('keyword_score', 0) or 0),
+            -_get_shop_rating_value(shop),
+        )
+    )
+    return fallback[:limit]
+
+
+def _format_recommendation_analysis(selected_shops, keywords):
+    sections = []
+    for index, shop in enumerate(selected_shops[:3], 1):
+        reviews = shop.get('relevant_reviews') or []
+        if not reviews:
+            continue
+
+        rating_value = _get_shop_rating_value(shop)
+        rating_text = f'{rating_value:.1f}' if rating_value else 'N/A'
+        address = shop.get('address') or 'Alamat tidak tersedia'
+        maps_url = shop.get('maps_url') or f"https://www.google.com/maps/place/?q=place_id:{shop.get('place_id', '')}"
+
+        lines = [
+            f"{index}. **{shop.get('name', 'Unknown')}**",
+            f'Rating: {rating_text}',
+            f'Alamat: {address}',
+            f'Google Maps: {maps_url}',
+        ]
+
+        for review in reviews[:2]:
+            matched_keywords = review.get('matched_keywords') or keywords
+            highlighted_quote = _highlight_keywords_in_text(review.get('quote', ''), matched_keywords)
+            author_name = review.get('author_name') or 'Anonim'
+            review_rating = review.get('rating', 0)
+            verification_suffix = f' [Verifikasi: {maps_url}]' if maps_url else ''
+            lines.append(
+                f'Berdasarkan Ulasan Pengunjung: "{highlighted_quote}" - {author_name} ({review_rating}⭐){verification_suffix}'
+            )
+
+        sections.append('\n'.join(lines))
+
+    return '\n\n'.join(sections)
 
 # Endpoint untuk cek status LLM availability (lightweight, no token usage)
 @app.route('/api/llm/status', methods=['GET'])
@@ -2227,152 +6665,42 @@ def llm_status():
 # Endpoint untuk LLM Text Generation & Analysis menggunakan Hugging Face
 @app.route('/api/llm/analyze', methods=['POST'])
 def llm_analyze():
-    """
-    Endpoint untuk menganalisis user input dengan context dari file JSON lokal
-    
-    Request JSON:
-    {
-        "text": "user input untuk dianalisis",
-        "task": "analyze" | "summarize" | "recommend" (optional, default: analyze),
-        "location": "lokasi untuk search coffee shop" (optional)
-    }
-    """
     try:
         if hf_client is None:
             return jsonify({
                 'status': 'error',
                 'message': 'HF_API_TOKEN tidak dikonfigurasi. LLM analyze endpoint nonaktif.'
             }), 503
+
         data = request.get_json()
         if not data or 'text' not in data:
             return jsonify({
                 'status': 'error',
                 'message': 'Missing required field: text'
             }), 400
-        
+
         user_text = data.get('text', '').strip()
         task = data.get('task', 'analyze').lower()
-        location = data.get('location', 'Pontianak')  # Default location
-        
+        location = data.get('location', 'Pontianak')
+
         if not user_text:
             return jsonify({
                 'status': 'error',
                 'message': 'Text cannot be empty'
             }), 400
-        
-        # Step 1: Ekstraksi keywords dari user input berdasarkan review data
-        # Langkah ini akan menganalisis review data untuk mengekstrak keywords yang relevan
-        print(f"[LLM] Step 1: Extracting keywords from user input based on review data...")
-        
-        # Reviews sekarang dari database, tidak dari reviews.json
-        # Untuk context ekstraksi keywords, kita akan menggunakan sample reviews dari database
-        reviews_context_for_extraction = ""
-        
-        # Ambil sample reviews dari database untuk context ekstraksi
-        try:
-            conn = sqlite3.connect(DATABASE_PATH, timeout=10)
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            
-            # Ambil maksimal 20 review terbaru dari berbagai coffee shop
-            sample_reviews_db = cursor.execute('''
-                SELECT r.place_id, r.review_text, r.rating, u.username
-                FROM reviews r
-                LEFT JOIN users u ON r.user_id = u.id
-                WHERE r.review_text IS NOT NULL AND LENGTH(r.review_text) > 20
-                ORDER BY r.created_at DESC
-                LIMIT 20
-            ''').fetchall()
-            
-            if sample_reviews_db:
-                sample_reviews = []
-                for review in sample_reviews_db:
-                    sample_reviews.append({
-                        'text': review['review_text'],
-                        'rating': review['rating'],
-                        'author_name': review['username'] or 'Anonim'
-                    })
-                
-                    break
-                
-                # Buat context untuk ekstraksi keywords
-                reviews_context_for_extraction = "\n".join([
-                    f"- {review.get('text', '')}" for review in sample_reviews[:20]
-                ])
-            
-            conn.close()
-        except Exception as e:
-            print(f"[WARN] Failed to load sample reviews from database for keyword extraction: {e}")
-            reviews_context_for_extraction = ""
-        
-        # Buat prompt untuk ekstraksi keywords berdasarkan review data
-        extraction_prompt = f"""Anda adalah asisten yang ahli dalam menganalisis preferensi user berdasarkan review coffee shop yang tersedia.
 
-REVIEW DATA YANG TERSEDIA (contoh dari berbagai coffee shop):
-{reviews_context_for_extraction[:2000]}
+        if task != 'recommend':
+            generated_text = _run_lightweight_llm_task(user_text, task)
+            return jsonify({
+                'status': 'success',
+                'task': task,
+                'input': user_text,
+                'analysis': generated_text,
+                'timestamp': time.time(),
+            }), 200
 
-INPUT USER:
-"{user_text}"
-
-Tugas Anda: 
-1. Analisis input user dan identifikasi keywords yang relevan dengan atribut coffee shop (fasilitas, suasana, kebutuhan spesifik)
-2. Cek apakah keywords tersebut ada di review data yang tersedia atau relevan dengan atribut coffee shop yang umum
-3. Hanya ekstrak keywords yang BENAR-BENAR relevan dengan atribut coffee shop yang ada di review data
-4. Abaikan kata-kata yang tidak relevan atau tidak ada di review data (seperti hewan, benda, aktivitas yang tidak berhubungan)
-
-ATURAN:
-- Keywords harus relevan dengan atribut coffee shop yang ada di review data: wifi, wifi bagus, wifi kencang, colokan, colokan banyak, cozy, nyaman, tenang, hangat, musholla, parkir, parkir luas, 24 jam, buka malam, aesthetic, live music, ac, dingin, sejuk, sofa, kursi, belajar, kerja, gaming, ngegame, dll
-- Abaikan kata-kata umum: "saya", "ingin", "mencari", "yang", "untuk", "dan", "atau", "dengan", "ada", "adalah", "ini", "itu", "di", "ke", "dari", "pada", "oleh", "coffee", "shop", "tempat", "cafe"
-- Abaikan kata-kata yang tidak relevan dengan coffee shop: hewan (dinosaurus, musang, kijang, dll), benda yang tidak berhubungan, aktivitas yang tidak relevan
-- Output HANYA keywords yang dipisah koma, tanpa penjelasan
-- Gunakan bahasa Indonesia
-- Maksimal 10 keywords
-- Jika tidak ada keywords yang relevan, output: "TIDAK_ADA_KEYWORDS"
-
-CONTOH:
-Input: "Saya ingin coffee shop yang cozy untuk nugas dengan wifi yang bagus dan banyak colokan"
-Output: cozy, wifi bagus, colokan banyak, belajar
-
-Input: "Tempat yang nyaman dengan musholla dan parkir luas"
-Output: nyaman, musholla, parkir luas
-
-Input: "Coffee shop aesthetic dengan live music dan ruangan dingin"
-Output: aesthetic, live music, ruangan dingin
-
-Input: "Saya butuh tempat yang ada dinosaurus dan musang"
-Output: TIDAK_ADA_KEYWORDS
-
-Sekarang analisis input user dan ekstrak keywords yang relevan:"""
-
-        # Ekstraksi keywords menggunakan LLM
-        extracted_keywords_text = ""
-        try:
-            if hf_client:
-                extraction_response = hf_client.text_generation(
-                    extraction_prompt,
-                    max_new_tokens=100,
-                    temperature=0.3,
-                    return_full_text=False
-                )
-                extracted_keywords_text = extraction_response.strip()
-                # Bersihkan dari format markdown atau karakter aneh
-                extracted_keywords_text = extracted_keywords_text.replace('**', '').replace('*', '').replace('"', '').replace("'", '').strip()
-                print(f"[LLM] Extracted keywords text: {extracted_keywords_text}")
-            else:
-                # Fallback: gunakan metode sederhana
-                words = user_text.lower().split()
-                stop_words = {'saya', 'ingin', 'mencari', 'yang', 'untuk', 'dan', 'atau', 'dengan', 'ada', 'adalah', 'ini', 'itu', 'di', 'ke', 'dari', 'pada', 'oleh', 'coffee', 'shop', 'tempat', 'cafe'}
-                extracted_keywords_text = ', '.join([w for w in words if w not in stop_words and len(w) > 2])
-        except Exception as e:
-            print(f"[LLM] Error extracting keywords: {e}")
-            # Fallback: gunakan metode sederhana
-            words = user_text.lower().split()
-            stop_words = {'saya', 'ingin', 'mencari', 'yang', 'untuk', 'dan', 'atau', 'dengan', 'ada', 'adalah', 'ini', 'itu', 'di', 'ke', 'dari', 'pada', 'oleh', 'coffee', 'shop', 'tempat', 'cafe'}
-            extracted_keywords_text = ', '.join([w for w in words if w not in stop_words and len(w) > 2])
-        
-        # Parse keywords dari hasil ekstraksi
-        if extracted_keywords_text.upper() == "TIDAK_ADA_KEYWORDS" or not extracted_keywords_text:
-            print(f"[LLM] ⚠️ Tidak ada keywords yang relevan ditemukan")
+        extracted_keywords_text = _extract_recommendation_keywords_from_input(user_text)
+        if extracted_keywords_text.upper() == 'TIDAK_ADA_KEYWORDS' or not extracted_keywords_text:
             return jsonify({
                 'status': 'success',
                 'task': task,
@@ -2380,18 +6708,22 @@ Sekarang analisis input user dan ekstrak keywords yang relevan:"""
                 'extracted_keywords': '',
                 'preferences_ai': 'Tidak ada keywords yang relevan dengan preferensi coffee shop',
                 'analysis': 'Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini.',
-                'timestamp': time.time()
+                'timestamp': time.time(),
             }), 200
-        
-        # Parse keywords dari hasil ekstraksi
+
         keywords = [kw.strip().lower() for kw in extracted_keywords_text.split(',') if kw.strip()]
-        
-        # Filter keywords yang tidak relevan dengan konteks coffee shop
         keywords, irrelevant_found = _filter_irrelevant_keywords(keywords)
-        
-        # Jika semua keywords tidak relevan setelah filtering, kembalikan error
+        stop_words_final = {
+            'butuh', 'perlu', 'ingin', 'mau', 'cari', 'mencari', 'ada', 'yang', 'untuk',
+            'dengan', 'dan', 'atau', 'dari', 'pada', 'oleh', 'saya', 'aku', 'kita', 'kami',
+        }
+        keywords = [
+            keyword for keyword in keywords
+            if len(keyword) >= 3 and not (keyword in stop_words_final and len(keyword.split()) == 1)
+        ]
+        keywords = list(dict.fromkeys(keywords))
+
         if not keywords:
-            print(f"[LLM] ⚠️ Semua keywords tidak relevan setelah filtering")
             return jsonify({
                 'status': 'success',
                 'task': task,
@@ -2399,1180 +6731,134 @@ Sekarang analisis input user dan ekstrak keywords yang relevan:"""
                 'extracted_keywords': ', '.join(irrelevant_found) if irrelevant_found else '',
                 'preferences_ai': 'Tidak ada keywords yang relevan dengan preferensi coffee shop',
                 'analysis': 'Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini.',
-                'timestamp': time.time()
+                'timestamp': time.time(),
             }), 200
-        
-        # Filter "butuh" dan stop words lainnya dari keywords sebelum digunakan
-        # Pastikan hanya keyword yang relevan yang digunakan
-        stop_words_final = {'butuh', 'perlu', 'ingin', 'mau', 'cari', 'mencari', 'ada', 'yang', 'untuk', 'dengan', 'dan', 'atau', 'dari', 'pada', 'oleh', 'saya', 'aku', 'kita', 'kami'}
-        final_keywords = []
-        for kw in keywords:
-            kw_lower = kw.lower().strip()
-            # Jika keyword adalah stop word tunggal, skip
-            if kw_lower in stop_words_final and len(kw.split()) == 1:
-                continue
-            # Jika keyword mengandung stop word sebagai bagian dari frasa (misal: "ada musholla"), pertahankan
-            if len(kw) >= 3:
-                final_keywords.append(kw)
-        # Jika setelah filtering keywords kosong, gunakan keywords asli (untuk safety)
-        if not final_keywords:
-            final_keywords = keywords
-        keywords = final_keywords
-        
-        # Buat preferences_ai untuk ditampilkan di frontend
+
         preferences_ai = f"Preferensi berdasarkan analisis AI: {', '.join(keywords)}"
-        print(f"[LLM] ✅ Preferences AI: {preferences_ai}")
-        print(f"[LLM] ✅ Final keywords (after filtering stop words): {keywords}")
-        
-        # Gunakan keywords yang sudah diekstrak untuk analisis selanjutnya
-        # Filtered user text sekarang hanya berisi keywords yang relevan
-        filtered_user_text = ', '.join(keywords)
-        
-        # Expand keywords dengan sinonim untuk pre-filtering yang lebih baik
-        if keywords:
-            expanded_keywords_for_filter = _expand_keywords_with_synonyms(keywords)
-            print(f"[LLM] Pre-filtering with expanded keywords: {expanded_keywords_for_filter[:10]}... (total: {len(expanded_keywords_for_filter)})")
-        else:
-            expanded_keywords_for_filter = []
-        
-        # Step 2: Fetch coffee shops DENGAN REVIEWS dari file JSON lokal
-        # PENTING: Gunakan expanded keywords untuk pre-filtering coffee shops yang relevan
-        # Jika ada keywords spesifik (seperti musholla), prioritaskan coffee shop yang relevan
-        # Kurangi max_shops jika ada keywords untuk mengurangi context size dan menghindari melebihi token limit
-        # Jika ada keywords relevan, prioritaskan hanya coffee shop yang relevan (max 5-8 shops)
-        max_shops_for_context = 8 if keywords and len(keywords) > 0 else 15  # Kurangi jika ada keywords spesifik
-        print(f"[LLM] Fetching coffee shops WITH REVIEWS from local JSON files for location: {location}")
-        print(f"[LLM] Using max_shops={max_shops_for_context} to reduce context size (keywords: {len(keywords) if keywords else 0})")
-        places_context = _fetch_coffeeshops_with_reviews_from_json(location, max_shops=max_shops_for_context, keywords=expanded_keywords_for_filter)
-        
-        # Debug: Print sample reviews untuk verify data
-        print(f"[LLM] Context preview (first 500 chars):")
-        print(places_context[:500] if len(places_context) > 500 else places_context)
-        print(f"[LLM] Total context length: {len(places_context)} characters")
-        
-        # Hitung jumlah coffee shop yang ada di context
-        shop_count_in_context = len(re.findall(r'^\d+\.\s+', places_context, re.MULTILINE))
-        print(f"[LLM] 📊 Coffee shops dalam context untuk LLM: {shop_count_in_context} shops")
-        
-        # Log informasi tentang apa yang dikirim ke LLM
-        print(f"[LLM] ========== INFORMASI ANALISIS LLM ==========")
-        print(f"[LLM] ✅ Irrelevant keywords SUDAH DIFILTER sebelum dikirim ke LLM")
-        print(f"[LLM] ✅ Irrelevant keywords yang difilter: {irrelevant_found if irrelevant_found else 'Tidak ada'}")
-        print(f"[LLM] ✅ Keywords relevan yang digunakan: {keywords}")
-        print(f"[LLM] ✅ Filtered user text yang dikirim ke LLM: '{filtered_user_text}'")
-        print(f"[LLM] ✅ Expanded keywords untuk pre-filtering: {expanded_keywords_for_filter[:10]}... (total: {len(expanded_keywords_for_filter)})")
-        print(f"[LLM] ============================================")
-        
-        # Step 2: Build system prompt dengan context REVIEWS untuk bukti rekomendasi
-        system_prompt = f"""Anda adalah asisten rekomendasi coffee shop yang AKURAT dan JUJUR. Anda menggunakan data NYATA dari file JSON lokal dan menganalisis input user menggunakan Natural Language Processing (NLP).
+        expanded_keywords = _expand_keywords_with_synonyms(keywords)
 
-DATA COFFEE SHOP DI {location.upper()} DENGAN INFORMASI LENGKAP:
-{places_context}
-
-🎯 ATURAN UTAMA - ANALISIS MENDALAM SEBELUM REKOMENDASI:
-⚠️ PENTING: SEBELUM memberikan rekomendasi, WAJIB lakukan analisis mendalam terlebih dahulu untuk mengekstrak HANYA atribut pilihan/kriteria coffee shop yang relevan.
-
-1. Analisis input user menggunakan Natural Language Processing untuk memahami maksud dan preferensi
-2. Identifikasi HANYA kata-kata yang berkaitan dengan atribut pilihan/kriteria coffee shop:
-   - Sifat-sifat: nyaman, cozy, tenang, hangat, santai, ramai, sepi, dll
-   - Fasilitas: wifi, colokan, terminal listrik, musholla, printer, scanner, AC, sofa, kursi nyaman, dll
-   - Jam operasional: 24 jam, buka malam, buka sampai larut, dll
-   - Lokasi/parkir: parkir luas, parkir mudah, akses mudah, dll
-   - Suasana/atmosfer: aesthetic, instagramable, live music, akustik, dll
-   - Kebutuhan spesifik: cocok untuk kerja, belajar, meeting, gaming, dll
-3. ABAIKAN semua kata yang TIDAK relevan dengan atribut pilihan/kriteria coffee shop (hewan, benda, aktivitas yang tidak berhubungan, dll)
-4. Input user bisa berupa kalimat natural language (tidak terstruktur) atau kata kunci
-5. Pahami konteks, sinonim, dan makna dari input user (bukan hanya keyword matching)
-6. HANYA rekomendasikan jika ADA review yang relevan dengan atribut pilihan yang sudah diekstrak
-7. Review harus BENAR-BENAR menyebutkan atau berhubungan erat dengan atribut pilihan yang sudah diekstrak
-8. Jika tidak ada review yang relevan, JANGAN rekomendasikan - langsung jawab: "Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini."
-9. JANGAN memberikan rekomendasi yang dipaksakan atau diada-adakan
-
-🚨 WAJIB - REVIEW SEBAGAI BUKTI:
-- SETIAP coffee shop yang direkomendasikan WAJIB disertai dengan review pengunjung yang relevan
-- Review adalah BUKTI bahwa coffee shop sesuai dengan kata kunci user
-- TANPA review = TIDAK BOLEH direkomendasikan
-- Review HARUS dikutip PERSIS dari data (copy-paste, tidak boleh diubah)
-- Format review: "Teks review lengkap" - Nama User (Rating⭐)
-- Jika tidak ada review yang relevan untuk coffee shop tertentu, JANGAN rekomendasikan coffee shop tersebut
-
-⚠️ ATURAN ANTI-HALUSINASI:
-1. COPY PASTE review PERSIS dari data - DILARANG mengubah
-2. DILARANG membuat nama user palsu - gunakan nama ASLI dari data
-3. DILARANG menambah-nambah informasi yang tidak ada di data
-4. DILARANG memberikan penjelasan "Logika Rekomendasi" atau "Mengapa Cocok"
-
-🚫 FORMAT OUTPUT - DILARANG:
-- JANGAN gunakan emoji apapun (🏆📍📝🗺️🎯☕💡 dll)
-- JANGAN gunakan format "Nama - Rating X/5.0"
-
-✅ FORMAT OUTPUT - WAJIB:
-Nomor. **Nama Coffee Shop**
-Rating: X.X
-Alamat: [alamat lengkap - ambil dari Google Maps URL atau data yang tersedia]
-Google Maps: [URL dari data - WAJIB ada]
-Berdasarkan Ulasan Pengunjung: "review text dengan **kata kunci** bold" - Nama User (Rating⭐) [Verifikasi: URL]
-Berdasarkan Ulasan Pengunjung: "review text kedua dengan **kata kunci** bold" - Nama User (Rating⭐) [Verifikasi: URL] (OPSIONAL - hanya jika ada 2+ review yang relevan)
-
-CATATAN: Alamat tidak ada di context data untuk mengurangi token, tapi Anda bisa menggunakan Google Maps URL untuk mendapatkan informasi lokasi, atau gunakan alamat yang sudah Anda ketahui dari data coffee shop.
-
-⚠️ PENTING: Baris "Berdasarkan Ulasan Pengunjung" adalah WAJIB dan TIDAK BOLEH DILEWATKAN!
-- Setiap rekomendasi HARUS memiliki review sebagai bukti
-- Jika tidak ada review yang relevan, JANGAN rekomendasikan coffee shop tersebut
-- Review harus dikutip LENGKAP dari data, tidak boleh dipotong atau diubah
-
-⚠️ BATASAN JUMLAH REKOMENDASI:
-- JUMLAH FLEKSIBEL: 1-3 coffee shop (TIDAK WAJIB 3)
-- Jika hanya ada 1 yang relevan → output 1 saja
-- Jika ada 2 yang relevan → output 2 saja
-- Jika ada 3+ yang relevan → output SEMUA yang relevan (maksimal 3 TERBAIK berdasarkan rating dan relevansi review)
-- PENTING: Jika ada BANYAK coffee shop dengan review yang relevan, prioritaskan yang memiliki rating lebih tinggi dan review lebih banyak
-- JANGAN memaksa output 3 jika tidak ada yang relevan
-- JANGAN hanya output 1 jika ada lebih banyak yang relevan - output SEMUA yang relevan (maksimal 3)
-- SETIAP coffee shop yang direkomendasikan HARUS memiliki review yang menyebutkan kata kunci
-
-📋 CARA MENGUTIP REVIEW (WAJIB UNTUK SETIAP REKOMENDASI):
-- COPY PASTE teks review PERSIS kata per kata dari data
-- Gunakan nama user ASLI dan rating ASLI
-- Jika ada link [Verifikasi: URL], sertakan juga untuk bukti
-- Format: "Teks review asli" - Nama User (Rating⭐) [Verifikasi: URL]
-- Review adalah BUKTI WAJIB - tidak ada review = tidak ada rekomendasi
-- Setiap coffee shop yang direkomendasikan HARUS memiliki minimal 1 review yang relevan
-- JIKA ADA 2+ REVIEW YANG RELEVAN: Tampilkan 2 review untuk bukti yang lebih kuat
-- Prioritas: Review yang paling relevan dengan kata kunci user (yang paling banyak menyebutkan kata kunci)
-
-🔍 KRITERIA RELEVANSI KETAT:
-- Review HARUS menyebutkan kata kunci atau sinonim/makna yang sangat dekat
-- Untuk keyword SPESIFIK seperti "musholla", review WAJIB menyebutkan musholla atau sinonimnya (tempat sholat, ruang sholat, tempat ibadah, ada musholla, mushola)
-- JANGAN merekomendasikan coffee shop jika review TIDAK menyebutkan keyword spesifik yang diminta user
-- Contoh RELEVAN: 
-  * User cari "wifi bagus" → Review: "wifinya kencang" ✅
-  * User cari "musholla" → Review: "ada musholla" atau "tempat sholat tersedia" atau "musholla yang nyaman" ✅
-  * User cari "musholla" → Review: "tempatnya nyaman" ❌ (TIDAK RELEVAN - tidak menyebutkan musholla)
-  * User cari "24 jam" → Review: "buka 24 jam", "buka sampai larut", "larut malam", "buka malam", "buka sampai subuh" ✅
-  * User cari "buka malam" → Review: "24 jam", "buka sampai larut", "larut malam", "buka sampai subuh" ✅
-  * User cari "cozy" → Review: "nyaman", "hangat", "tenang", "atmosfernya hangat", "suasananya cozy" ✅
-  * User cari "ruang belajar" → Review: "belajar", "kerja", "wfc", "ngerjain tugas", "cocok buat belajar", "Tempat favorit buat ruang belajar", "cocok sebagai ruang belajar" ✅
-  * User cari "belajar" → Review: "belajar", "cocok buat belajar", "ruang belajar", "Tempat favorit buat ruang belajar", "cocok sebagai ruang belajar" ✅
-  * User cari "sofa" → Review: "kursi nyaman", "kursi empuk", "ruas sofa" ✅
-  * User cari "ruangan dingin" → Review: "ac", "dingin", "sejuk", "ruangan sejuk" ✅
-  * User cari "aesthetic" → Review: "estetik", "kekinian", "desain", "dekor" ✅
-  * User cari "live music" → Review: "musik", "akustik", "pertunjukan live music", "musiknya santai" ✅
-  * User cari "parkiran luas" → Review: "parkir luas", "parkir mobil nyaman", "parkir" ✅
-  * User cari "gaming" atau "ngegame" → Review: "gaming", "ngegame", "main game", "bermain game", "enak untuk ngegame" ✅
-  * User cari "gaming" atau "ngegame" → Review: "wifi bagus", "wifi kencang", "stopkontak banyak", "colokan banyak", "24 jam", "buka malam" ✅ (RELEVAN karena gaming membutuhkan fasilitas tersebut)
-- Contoh TIDAK RELEVAN:
-  * User cari "musholla" → Review: "tempatnya nyaman" ❌
-  * User cari "buka malam" → Review: "kopinya enak" ❌
-  * User cari "24 jam" → Review: "tempatnya nyaman" ❌
-  * User cari "cozy" → Review: "kopinya enak" ❌
-
-PENTING: 
-- Prioritas: KEJUJURAN > Memberikan rekomendasi
-- Jika tidak ada yang sesuai, JUJUR katakan tidak ada
-- JANGAN paksa rekomendasi yang tidak relevan
-- OUTPUT: nama (bold), rating, alamat, Google Maps URL, review (minimal 1, maksimal 2 review jika ada yang relevan)
-- Alamat dan Google Maps URL WAJIB diambil dari data yang tersedia
-- REVIEW ADALAH BUKTI WAJIB - Setiap rekomendasi HARUS disertai review pengunjung yang relevan
-- Jika coffee shop tidak memiliki review yang relevan dengan kata kunci, JANGAN rekomendasikan"""
-
-        # Step 3: Extract keywords dari user input (mendukung natural language dan comma-separated)
-        # CATATAN: Keywords sudah difilter di Step 1, jadi kita gunakan keywords yang sudah relevan
-        # Untuk task 'analyze', kita tetap perlu extract keywords untuk display, tapi sudah menggunakan filtered_user_text
-        # Cek apakah input adalah comma-separated keywords atau natural language
-        if ',' in filtered_user_text and len(filtered_user_text.split(',')) > 1:
-            # Format: comma-separated keywords
-            keywords = [kw.strip().lower() for kw in filtered_user_text.split(',') if kw.strip()]
-        else:
-            # Format: natural language - extract keywords untuk pre-filtering (LLM akan melakukan deep NLP analysis)
-            # Buat prompt untuk ekstraksi keyword dari natural language dengan fokus pada understanding
-            extraction_prompt = f"""Anda adalah asisten yang ahli dalam memahami maksud user dari kalimat natural language.
-
-KALIMAT USER:
-"{filtered_user_text}"
-
-Tugas Anda: Pahami maksud dan preferensi user, lalu ekstrak kata kunci penting yang relevan untuk mencari coffee shop.
-
-ATURAN:
-1. Pahami konteks dan maksud dari kalimat user (bukan hanya keyword matching)
-2. Identifikasi preferensi inti: fasilitas, suasana, kebutuhan spesifik, dll
-3. Ekstrak kata kunci yang relevan dengan coffee shop (wifi, musholla, colokan, cozy, belajar, kerja, sofa, ac, aesthetic, live music, parkir, 24 jam, dll)
-4. Abaikan kata-kata umum seperti "saya", "ingin", "mencari", "yang", "untuk", "dan", "atau", dll
-5. Output HANYA kata kunci yang dipisah koma, tanpa penjelasan
-6. Gunakan bahasa Indonesia
-7. Maksimal 10 kata kunci
-
-CONTOH:
-Input: "Saya ingin mencari coffee shop yang cozy, ada wifi kencang, dan cocok untuk kerja"
-Output: cozy, wifi kencang, kerja
-
-Input: "Tempat yang nyaman dengan musholla dan parkir luas"
-Output: nyaman, musholla, parkir luas
-
-Input: "Saya butuh coffee shop yang ada musholla"
-Output: musholla
-
-Input: "Coffee shop aesthetic dengan live music dan ruangan dingin"
-Output: aesthetic, live music, ruangan dingin
-
-Input: "Saya butuh tempat yang buka sampai larut malam"
-Output: 24 jam, buka malam, buka sampai larut
-
-Sekarang pahami maksud user dan ekstrak kata kunci dari kalimat di atas:"""
-
-            try:
-                # Gunakan LLM untuk extract keywords (hanya jika hf_client tersedia)
-                if hf_client:
-                    extraction_response = hf_client.text_generation(
-                        extraction_prompt,
-                        max_new_tokens=50,
-                        temperature=0.3,
-                        return_full_text=False
-                    )
-                    
-                    # Parse hasil ekstraksi
-                    extracted_text = extraction_response.strip()
-                    # Bersihkan dari format markdown atau karakter aneh
-                    extracted_text = extracted_text.replace('**', '').replace('*', '').replace('"', '').replace("'", '').strip()
-                    
-                    # Split berdasarkan koma dan ambil keywords
-                    keywords = [kw.strip().lower() for kw in extracted_text.split(',') if kw.strip()]
-                    
-                    # Filter stop words dari keywords yang diekstrak
-                    stop_words_keywords = {'butuh', 'perlu', 'ingin', 'mau', 'cari', 'mencari', 'ada', 'yang', 'untuk', 'dengan', 'dan', 'atau', 'dari', 'pada', 'oleh', 'saya', 'aku', 'kita', 'kami'}
-                    # Filter: hapus stop words tunggal, tapi pertahankan jika menjadi bagian dari keyword multi-word
-                    filtered_extracted_keywords = []
-                    for kw in keywords:
-                        kw_lower = kw.lower().strip()
-                        # Jika keyword adalah stop word tunggal, skip
-                        if kw_lower in stop_words_keywords and len(kw.split()) == 1:
-                            continue
-                        # Jika keyword mengandung stop word sebagai bagian dari frasa (misal: "ada musholla"), pertahankan
-                        if len(kw) >= 3:
-                            filtered_extracted_keywords.append(kw)
-                    keywords = filtered_extracted_keywords
-                    
-                    # Jika ekstraksi gagal atau kosong, fallback ke split berdasarkan spasi
-                    if not keywords:
-                        print(f"[LLM] Keyword extraction returned empty, using fallback")
-                        words = user_text.lower().split()
-                        stop_words = {'saya', 'ingin', 'mencari', 'yang', 'untuk', 'dan', 'atau', 'dengan', 'adalah', 'ini', 'itu', 'di', 'ke', 'dari', 'pada', 'oleh', 'coffee', 'shop', 'tempat', 'cafe', 'yang', 'dengan', 'untuk'}
-                        # CATATAN: "ada" TIDAK dihapus dari stop_words karena bisa menjadi bagian dari keyword seperti "ada musholla"
-                        # Tapi jika "ada" berdiri sendiri tanpa keyword lain, akan difilter nanti
-                        keywords = [w for w in words if w not in stop_words and len(w) > 2]
-                    else:
-                        print(f"[LLM] Extracted keywords: {keywords}")
-                else:
-                    # Jika hf_client tidak tersedia, gunakan fallback
-                    print(f"[LLM] HF client not available, using fallback extraction")
-                    words = filtered_user_text.lower().split()
-                    stop_words = {'saya', 'ingin', 'mencari', 'yang', 'untuk', 'dan', 'atau', 'dengan', 'ada', 'adalah', 'ini', 'itu', 'di', 'ke', 'dari', 'pada', 'oleh', 'coffee', 'shop', 'tempat', 'cafe', 'yang', 'dengan', 'untuk', 'butuh', 'perlu', 'mau', 'cari'}
-                    keywords = [w for w in words if w not in stop_words and len(w) > 2]
-            except Exception as e:
-                print(f"[LLM] Error extracting keywords: {e}")
-                # Fallback: split berdasarkan spasi
-                words = filtered_user_text.lower().split()
-                stop_words = {'saya', 'ingin', 'mencari', 'yang', 'untuk', 'dan', 'atau', 'dengan', 'ada', 'adalah', 'ini', 'itu', 'di', 'ke', 'dari', 'pada', 'oleh', 'coffee', 'shop', 'tempat', 'cafe', 'yang', 'dengan', 'untuk'}
-                keywords = [w for w in words if w not in stop_words and len(w) > 2]
-        
-        # Validasi: Pastikan keywords yang diekstrak benar-benar relevan dan memiliki instruksi yang jelas
-        # Jika keywords tidak jelas atau hanya deskripsi umum tanpa instruksi spesifik, return pesan tidak ada
-        def _validate_keywords_relevance(keywords_list):
-            """
-            Validasi apakah keywords yang diekstrak benar-benar relevan dan memiliki instruksi yang jelas.
-            Keywords harus berupa atribut pilihan/kriteria coffee shop yang spesifik, bukan hanya deskripsi umum.
-            
-            Returns:
-                Tuple: (is_valid, reason)
-            """
-            if not keywords_list or len(keywords_list) == 0:
-                return False, "Tidak ada keywords yang diekstrak"
-            
-            # Daftar keywords yang valid (atribut pilihan/kriteria coffee shop)
-            valid_keyword_patterns = [
-                # Sifat-sifat/Suasana
-                'nyaman', 'cozy', 'tenang', 'hangat', 'santai', 'ramai', 'sepi', 'asri', 'hijau', 'teduh',
-                # Fasilitas Internet
-                'wifi', 'internet', 'koneksi',
-                # Fasilitas Listrik
-                'colokan', 'terminal', 'stopkontak', 'listrik',
-                # Fasilitas Ibadah
-                'musholla', 'sholat', 'ibadah',
-                # Fasilitas Kerja/Belajar
-                'printer', 'scanner', 'fotocopy', 'meeting', 'kerja', 'belajar',
-                # Fasilitas Tempat Duduk
-                'sofa', 'kursi', 'meja',
-                # Fasilitas Suhu
-                'ac', 'dingin', 'sejuk', 'adem',
-                # Jam Operasional
-                '24 jam', 'buka', 'malam', 'larut', 'subuh',
-                # Lokasi/Parkir
-                'parkir', 'akses',
-                # Suasana/Atmosfer
-                'aesthetic', 'instagramable', 'estetik', 'kekinian', 'desain', 'dekor',
-                # Hiburan
-                'music', 'musik', 'akustik', 'live',
-                # Kebutuhan Spesifik
-                'gaming', 'ngegame', 'game', 'nongkrong', 'wfc', 'tugas'
-            ]
-            
-            # Kata-kata umum yang tidak memiliki instruksi spesifik (hanya deskripsi)
-            general_words = ['coffee', 'shop', 'tempat', 'cafe', 'kopi', 'minum', 'makan', 'enak', 'bagus', 'baik', 'saya', 'ingin', 'mencari', 'yang', 'untuk', 'dan', 'atau', 'dengan', 'ada', 'adalah', 'ini', 'itu', 'di', 'ke', 'dari', 'pada', 'oleh', 'butuh', 'perlu', 'mau', 'cari']
-            
-            # Cek apakah minimal salah satu keyword mengandung pattern yang valid
-            has_valid_keyword = False
-            valid_keywords_found = []
-            
-            for kw in keywords_list:
-                kw_lower = kw.lower().strip()
-                
-                # Skip jika keyword hanya berisi kata-kata umum
-                is_general = any(gw in kw_lower for gw in general_words) and len(kw_lower.split()) <= 2
-                if is_general:
-                    continue
-                
-                # Cek apakah keyword mengandung minimal salah satu pattern yang valid
-                for pattern in valid_keyword_patterns:
-                    if pattern in kw_lower or kw_lower in pattern:
-                        has_valid_keyword = True
-                        valid_keywords_found.append(kw)
-                        break
-            
-            if not has_valid_keyword:
-                return False, f"Keywords yang diekstrak tidak relevan dengan atribut pilihan coffee shop atau hanya berisi deskripsi umum: {keywords_list}"
-            
-            # Cek apakah keywords hanya berisi kata-kata umum tanpa instruksi spesifik
-            # Jika semua keywords adalah general words, maka tidak valid
-            all_general = all(any(gw in kw.lower() for gw in general_words) for kw in keywords_list if len(kw) > 0)
-            
-            if all_general and len(keywords_list) > 0:
-                return False, f"Keywords hanya berisi kata-kata umum tanpa instruksi spesifik: {keywords_list}"
-            
-            return True, f"Keywords valid: {valid_keywords_found}"
-        
-        # Validasi keywords sebelum melanjutkan
-        # CATATAN: Validasi ini hanya untuk memastikan keywords tidak kosong setelah filtering
-        # Untuk natural language, LLM akan melakukan analisis mendalam sendiri
-        # Jadi validasi ini tidak boleh terlalu ketat untuk natural language
-        is_keywords_valid = True
-        validation_reason = "Keywords akan dianalisis oleh LLM"
-        
-        # Hanya validasi jika keywords benar-benar kosong atau hanya berisi stop words
-        if not keywords or len(keywords) == 0:
-            is_keywords_valid = False
-            validation_reason = "Tidak ada keywords yang relevan setelah filtering"
-        else:
-            # Untuk natural language, biarkan LLM yang menganalisis
-            # Validasi ketat hanya untuk comma-separated keywords
-            if ',' in filtered_user_text and len(filtered_user_text.split(',')) > 1:
-                # Untuk comma-separated, lakukan validasi lebih ketat
-                is_keywords_valid, validation_reason = _validate_keywords_relevance(keywords)
-        
-        if not is_keywords_valid:
-            print(f"[LLM] ⚠️ Keywords validation failed: {validation_reason}")
-            print(f"[LLM] Keywords extracted: {keywords}")
-            print(f"[LLM] Returning empty result with message: 'tidak ada coffee shop yang sesuai preferensi'")
+        _places_context, candidate_shops = _fetch_coffeeshops_with_reviews_from_json(
+            location,
+            max_shops=8 if keywords else 15,
+            keywords=expanded_keywords,
+            return_metadata=True,
+        )
+        candidate_shops = [shop for shop in candidate_shops if shop.get('place_id') and shop.get('name')]
+        if not candidate_shops:
             return jsonify({
                 'status': 'success',
                 'task': task,
                 'input': user_text,
-                'extracted_keywords': ', '.join(keywords) if keywords else '',
+                'extracted_keywords': ', '.join(keyword.title() for keyword in keywords),
+                'preferences_ai': preferences_ai,
                 'analysis': 'Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini.',
-                'timestamp': time.time()
+                'timestamp': time.time(),
             }), 200
-        
-        print(f"[LLM] ✅ Keywords validation passed: {validation_reason}")
-        print(f"[LLM] Keywords yang akan digunakan: {keywords}")
-        print(f"[LLM] Filtered user text yang dikirim ke LLM: '{filtered_user_text}'")
-        
-        # Expand keywords dengan sinonim untuk membantu LLM memahami variasi kata
-        expanded_keywords = _expand_keywords_with_synonyms(keywords)
-        
-        # Buat display untuk keywords (termasuk sinonim yang relevan)
-        keywords_display = ', '.join([f'"{kw}"' for kw in keywords])
-        if expanded_keywords and len(expanded_keywords) > len(keywords):
-            synonyms_display = ', '.join([f'"{syn}"' for syn in expanded_keywords if syn not in keywords])
-            keywords_display += f' (atau sinonim: {synonyms_display})'
-        
-        # Step 4: Build user prompt khusus untuk KEYWORD-BASED RECOMMENDATION dengan BOLD
-        if task == 'summarize':
-            user_content = f"""Kata kunci preferensi user:
-{filtered_user_text}
 
-🔗 PENTING - SINONIM YANG RELEVAN:
-- Kata kunci "24 jam" = "buka sampai larut" = "larut malam" = "buka malam" = "buka sampai subuh" = "buka tengah malam"
-- Kata kunci "wifi bagus" = "wifi kencang" = "wifi stabil" = "koneksi internet lancar"
-- Kata kunci "musholla" = "tempat sholat" = "tempat sholat tersedia" = "ada musholla"
-- Kata kunci "colokan banyak" = "terminal listrik" = "stopkontak tersedia" = "colokan di setiap meja"
-- Kata kunci "cozy" = "nyaman" = "hangat" = "tenang" = "santai" = "atmosfernya hangat" = "suasananya cozy"
-- Kata kunci "ruang belajar" = "belajar" = "kerja" = "wfc" = "ngerjain tugas" = "cocok buat belajar" = "enak buat kerja"
-- Kata kunci "sofa" = "kursi nyaman" = "kursi empuk" = "ruas sofa" = "kursi cukup nyaman"
-- Kata kunci "ruangan dingin" = "ac" = "dingin" = "sejuk" = "adem" = "ruangan sejuk"
-- Kata kunci "aesthetic" = "estetik" = "kekinian" = "desain" = "dekor" = "instagramable"
-- Kata kunci "live music" = "musik" = "akustik" = "pertunjukan live music" = "musiknya santai" = "musiknya tenang"
-- Kata kunci "parkiran luas" = "parkir luas" = "parkir mobil nyaman" = "parkir" = "tempat parkir luas"
-- Kata kunci "gaming" = "ngegame" = "main game" = "bermain game" = "untuk gaming" = "cocok gaming" = "enak untuk ngegame"
-- PENTING: Jika user mencari "gaming" atau "ngegame", review yang menyebutkan "wifi bagus", "wifi kencang", "stopkontak banyak", "colokan banyak", "24 jam", "buka malam" TETAP RELEVAN karena gaming membutuhkan fasilitas tersebut
-- Jika user mencari salah satu variasi di atas, review yang menyebutkan variasi lain TETAP RELEVAN dan BOLEH direkomendasikan
+        cache_key = _build_recommendation_cache_key(task, location, user_text, keywords, candidate_shops)
+        recommendation_cache = load_recommendation_cache()
+        cache_entry = recommendation_cache.get(cache_key)
+        if (
+            cache_entry
+            and cache_entry.get('version') == RECOMMENDATION_CACHE_VERSION
+            and isinstance(cache_entry.get('payload'), dict)
+            and ((time.time() - cache_entry.get('timestamp', 0)) / (60 * 60 * 24)) <= CACHE_EXPIRY_DAYS
+        ):
+            cached_payload = dict(cache_entry['payload'])
+            cached_payload['timestamp'] = time.time()
+            return jsonify(cached_payload), 200
 
-⚠️ VALIDASI KETAT UNTUK KEYWORD SPESIFIK:
-- Untuk keyword SPESIFIK seperti "musholla", coffee shop HANYA boleh direkomendasikan jika review BENAR-BENAR menyebutkan "musholla", "mushola", "tempat sholat", "ruang sholat", "tempat ibadah", atau "ada musholla"
-- JANGAN merekomendasikan coffee shop jika review TIDAK menyebutkan keyword spesifik yang diminta user
-- Jika user mencari "musholla" dan review hanya menyebutkan "tempatnya nyaman" atau "wifi bagus" TANPA menyebutkan musholla, JANGAN rekomendasikan coffee shop tersebut
+        system_prompt = '''Anda memilih maksimal 3 coffee shop dari daftar kandidat JSON.
+Pilih hanya jika review_candidates benar-benar relevan dengan preferensi user.
+Gunakan hanya place_id atau name yang sudah ada di kandidat.
+Jika tidak ada kandidat yang cocok, keluarkan JSON array kosong [].
+Output HANYA JSON array dengan format:
+[{"place_id":"...", "reason":"alasan singkat"}]'''
 
-Cari coffee shop yang reviewnya BENAR-BENAR menyebutkan kata kunci di atas atau sinonimnya. Jika tidak ada yang sesuai, jawab: "Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini." Jangan tambahkan penjelasan pembuka atau logika rekomendasi."""
-        elif task == 'recommend':
-            user_content = f"""PREFERENSI SAYA (Natural Language):
-"{filtered_user_text}"
+        user_content = f'''Preferensi asli user: "{user_text}"
+Kata kunci utama: {', '.join(keywords)}
+Sinonim bantu: {', '.join([kw for kw in expanded_keywords if kw not in keywords][:12]) or '-'}
 
-⚠️ PENTING - ANALISIS MENDALAM SEBELUM REKOMENDASI:
-Sebelum memberikan rekomendasi, WAJIB lakukan analisis mendalam terlebih dahulu untuk mengekstrak HANYA atribut pilihan/kriteria coffee shop yang relevan.
+Daftar kandidat coffee shop:
+{_build_candidate_shop_payload(candidate_shops)}
 
-🔍 STEP 1: ANALISIS INPUT USER (WAJIB DILAKUKAN TERLEBIH DAHULU):
-1. Baca dan pahami kalimat user dengan teliti menggunakan Natural Language Processing (NLP)
-2. Identifikasi HANYA kata-kata yang berkaitan dengan:
-   - ✅ Sifat-sifat coffee shop: nyaman, cozy, tenang, hangat, santai, ramai, sepi, dll
-   - ✅ Fasilitas coffee shop: wifi, colokan, terminal listrik, musholla, tempat sholat, printer, scanner, AC, ruangan dingin, sofa, kursi nyaman, dll
-   - ✅ Kebutuhan spesifik: cocok untuk kerja, belajar, meeting, nongkrong, gaming, dll
-   - ✅ Jam operasional: 24 jam, buka malam, buka sampai larut, buka sampai subuh, dll
-   - ✅ Lokasi/parkir: parkir luas, parkir mudah, akses mudah, dll
-   - ✅ Suasana/atmosfer: aesthetic, instagramable, live music, akustik, dll
-3. ABAIKAN semua kata yang TIDAK relevan dengan atribut pilihan/kriteria coffee shop:
-   - ❌ Hewan, benda, atau objek yang tidak berhubungan dengan coffee shop
-   - ❌ Aktivitas yang tidak relevan dengan konteks coffee shop
-   - ❌ Kata-kata umum seperti "saya", "ingin", "mencari", "yang", "untuk", "dan", "atau", dll
-4. Ekstrak HANYA keywords/atribut pilihan yang relevan dengan coffee shop
-5. Identifikasi sinonim dan variasi kata yang relevan dengan atribut pilihan yang diekstrak
+Pilih coffee shop yang paling relevan dan paling kuat buktinya dari review_candidates.'''
 
-📋 CONTOH ANALISIS:
-Input: "Saya butuh coffee shop yang ada dinosaurus, musang, dan kijang"
-Analisis: ❌ TIDAK ADA atribut pilihan yang relevan - semua keywords tidak relevan dengan coffee shop
-Kesimpulan: Tidak ada rekomendasi yang bisa diberikan
-
-Input: "Saya ingin tempat yang nyaman dengan wifi bagus dan parkir luas"
-Analisis: ✅ Atribut pilihan yang relevan: nyaman, wifi bagus, parkir luas
-Kesimpulan: Cari coffee shop dengan review yang menyebutkan nyaman, wifi bagus, atau parkir luas
-
-Input: "Coffee shop yang cozy, ada musholla, dan menyediakan printer"
-Analisis: ✅ Atribut pilihan yang relevan: cozy, musholla, printer
-Kesimpulan: Cari coffee shop dengan review yang menyebutkan cozy, musholla, atau printer
-
-🎯 STEP 2: CARI COFFEE SHOP YANG RELEVAN:
-Setelah analisis selesai dan atribut pilihan sudah diekstrak:
-1. Cari coffee shop yang reviewnya BENAR-BENAR relevan dengan atribut pilihan yang sudah diekstrak
-2. Review harus menyebutkan atau berhubungan erat dengan atribut pilihan yang relevan
-3. HANYA rekomendasikan jika ada review yang relevan dengan atribut pilihan yang sudah diekstrak
-4. Jika tidak ada review yang relevan, LANGSUNG jawab: "Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini."
-
-📝 DAFTAR ATRIBUT PILIHAN/KRITERIA COFFEE SHOP YANG RELEVAN:
-✅ Sifat-sifat/Suasana: nyaman, cozy, tenang, hangat, santai, ramai, sepi, asri, hijau, teduh, dll
-✅ Fasilitas Internet: wifi, wifi bagus, wifi kencang, wifi stabil, koneksi internet lancar, internet cepat, dll
-✅ Fasilitas Listrik: colokan, colokan banyak, terminal listrik, stopkontak, stopkontak banyak, colokan di setiap meja, dll
-✅ Fasilitas Ibadah: musholla, tempat sholat, tempat sholat tersedia, ada musholla, dll
-✅ Fasilitas Kerja/Belajar: printer, scanner, fotocopy, ruang meeting, ruang kerja, ruang belajar, dll
-✅ Fasilitas Tempat Duduk: sofa, kursi nyaman, kursi empuk, ruas sofa, meja besar, meja kecil, dll
-✅ Fasilitas Suhu: AC, ruangan dingin, sejuk, adem, ruangan sejuk, dll
-✅ Jam Operasional: 24 jam, buka malam, buka sampai larut, buka sampai subuh, buka tengah malam, dll
-✅ Lokasi/Parkir: parkir luas, parkir mudah, parkir mobil nyaman, akses mudah, dll
-✅ Suasana/Atmosfer: aesthetic, instagramable, estetik, kekinian, desain bagus, dekor bagus, dll
-✅ Hiburan: live music, musik, akustik, pertunjukan live music, dll
-✅ Kebutuhan Spesifik: cocok untuk kerja, belajar, meeting, nongkrong, gaming, ngegame, dll
-
-⚠️ ATURAN KETAT - WAJIB DIIKUTI (TIDAK BOLEH DILANGGAR):
-1. WAJIB lakukan analisis mendalam terlebih dahulu (Step 1) sebelum memberikan rekomendasi (Step 2)
-2. HANYA ekstrak atribut pilihan/kriteria yang relevan dengan coffee shop (lihat daftar di atas)
-3. ABAIKAN semua kata yang TIDAK ada dalam daftar atribut pilihan yang relevan
-4. HANYA rekomendasikan jika ada review yang BENAR-BENAR relevan dengan atribut pilihan yang sudah diekstrak
-5. Review harus RELEVAN secara semantik - bukan sekedar review positif biasa
-6. Pahami sinonim dan variasi kata yang relevan (contoh: "wifi bagus" = "wifi kencang" = "internet lancar")
-7. JANGAN rekomendasikan coffee shop jika tidak ada review yang relevan dengan atribut pilihan yang sudah diekstrak
-8. Jika tidak ada review yang relevan, LANGSUNG jawab: "Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini."
-9. JANGAN memberikan rekomendasi yang dipaksakan
-10. JANGAN tambahkan penjelasan pembuka seperti "Berdasarkan preferensi Anda..."
-11. JANGAN tambahkan section "LOGIKA REKOMENDASI"
-12. ⚠️ PENTING: Jika coffee shop tidak memiliki review yang relevan, JANGAN rekomendasikan coffee shop tersebut, meskipun ratingnya tinggi atau populer
-13. ⚠️ PENTING - JUMLAH REKOMENDASI: Jika ada BANYAK coffee shop dengan review yang relevan, output SEMUA yang relevan (maksimal 3 terbaik berdasarkan rating). JANGAN hanya output 1 jika ada lebih banyak yang relevan!
-14. ⚠️ CONTOH ANALISIS NLP: 
-    - User: "Saya ingin tempat yang buka sampai larut" → Analisis: atribut pilihan = jam operasional (24 jam, buka malam, buka sampai subuh)
-    - User: "Tempat yang cocok untuk kerja" → Analisis: atribut pilihan = kebutuhan spesifik (kerja) → butuh wifi, colokan, suasana tenang
-    - User: "Coffee shop yang cozy dan ada musholla" → Analisis: atribut pilihan = sifat-sifat (cozy) + fasilitas ibadah (musholla)
-    - User: "Saya butuh coffee shop yang ada dinosaurus, musang, dan kijang" → Analisis: TIDAK ADA atribut pilihan yang relevan → Tidak ada rekomendasi
-
-🚨 WAJIB - SETIAP REKOMENDASI HARUS DISERTAI REVIEW:
-- Setiap coffee shop yang direkomendasikan WAJIB memiliki baris "Berdasarkan Ulasan Pengunjung"
-- Review adalah BUKTI bahwa coffee shop sesuai dengan kata kunci
-- TANPA review = TIDAK BOLEH direkomendasikan
-- Review harus dikutip LENGKAP dan PERSIS dari data
-- Jika tidak ada review yang relevan untuk coffee shop tertentu, JANGAN rekomendasikan coffee shop tersebut
-
-🔗 PENTING - SINONIM YANG RELEVAN:
-- Kata kunci "24 jam" = "buka sampai larut" = "larut malam" = "buka malam" = "buka sampai subuh" = "buka tengah malam"
-- Kata kunci "wifi bagus" = "wifi kencang" = "wifi stabil" = "koneksi internet lancar"
-- Kata kunci "musholla" = "tempat sholat" = "tempat sholat tersedia" = "ada musholla"
-- Kata kunci "colokan banyak" = "terminal listrik" = "stopkontak tersedia" = "colokan di setiap meja"
-- Kata kunci "cozy" = "nyaman" = "hangat" = "tenang" = "santai" = "atmosfernya hangat" = "suasananya cozy"
-- Kata kunci "ruang belajar" = "belajar" = "kerja" = "wfc" = "ngerjain tugas" = "cocok buat belajar" = "enak buat kerja"
-- Kata kunci "sofa" = "kursi nyaman" = "kursi empuk" = "ruas sofa" = "kursi cukup nyaman"
-- Kata kunci "ruangan dingin" = "ac" = "dingin" = "sejuk" = "adem" = "ruangan sejuk"
-- Kata kunci "aesthetic" = "estetik" = "kekinian" = "desain" = "dekor" = "instagramable"
-- Kata kunci "live music" = "akustik" = "pertunjukan live music" = "live musicnya santai" = "live musik"
-- Kata kunci "parkiran luas" = "parkir luas" = "parkir mobil nyaman" = "parkir" = "tempat parkir luas"
-- Kata kunci "gaming" = "ngegame" = "main game" = "bermain game" = "untuk gaming" = "cocok gaming" = "enak untuk ngegame"
-- PENTING: Jika user mencari "gaming" atau "ngegame", review yang menyebutkan "wifi bagus", "wifi kencang", "stopkontak banyak", "colokan banyak", "24 jam", "buka malam" TETAP RELEVAN karena gaming membutuhkan fasilitas tersebut
-- Jika user mencari salah satu variasi di atas, review yang menyebutkan variasi lain TETAP RELEVAN dan BOLEH direkomendasikan
-
-🚫 DILARANG KERAS:
-- JANGAN gunakan emoji apapun (🏆📍📝🗺️🎯☕💡 dll)
-- JANGAN tulis "Alamat:" atau alamat lengkap
-- JANGAN tulis "Google Maps:" atau link maps
-- JANGAN tulis format "Toko Kami - Rating X/5.0"
-
-✅ FORMAT OUTPUT WAJIB (COPY PERSIS):
-⚠️ JUMLAH COFFEE SHOP: FLEKSIBEL (1-3) - TIDAK WAJIB 3!
-- Jika hanya ada 1 coffee shop yang relevan → output 1 saja
-- Jika ada 2 coffee shop yang relevan → output 2 saja (JANGAN hanya output 1!)
-- Jika ada 3+ coffee shop yang relevan → output SEMUA yang relevan (maksimal 3 terbaik berdasarkan rating dan relevansi review)
-- PENTING: Jangan hanya output 1 coffee shop jika ada lebih banyak yang relevan - output SEMUA yang relevan (maksimal 3)
-- JANGAN memaksa output 3 jika tidak ada yang relevan
-- SETIAP coffee shop yang direkomendasikan HARUS memiliki review yang menyebutkan kata kunci
-
-1. **Nama Coffee Shop**
-Rating: X.X
-Alamat: [alamat lengkap - gunakan alamat yang sudah Anda ketahui atau dari Google Maps URL]
-Google Maps: [URL dari data]
-Berdasarkan Ulasan Pengunjung: "Review yang menyebutkan **kata kunci**" - Nama User (Rating⭐) [Verifikasi: URL jika ada]
-
-2. **Nama Coffee Shop Kedua** (OPSIONAL - hanya jika ada yang relevan)
-Rating: X.X
-Alamat: [alamat lengkap - gunakan alamat yang sudah Anda ketahui atau dari Google Maps URL]
-Google Maps: [URL dari data]
-Berdasarkan Ulasan Pengunjung: "Review yang menyebutkan **kata kunci**" - Nama User (Rating⭐) [Verifikasi: URL jika ada]
-
-3. **Nama Coffee Shop Ketiga** (OPSIONAL - hanya jika ada yang relevan)
-Rating: X.X
-Alamat: [alamat lengkap - gunakan alamat yang sudah Anda ketahui atau dari Google Maps URL]
-Google Maps: [URL dari data]
-Berdasarkan Ulasan Pengunjung: "Review yang menyebutkan **kata kunci**" - Nama User (Rating⭐) [Verifikasi: URL jika ada]
-
-CATATAN: Alamat tidak ada di context data untuk mengurangi token. Gunakan alamat yang sudah Anda ketahui dari data coffee shop atau dari Google Maps URL.
-
-ATURAN FORMAT KETAT (WAJIB IKUTI - TIDAK BOLEH DILEWATKAN):
-1. Mulai dengan nomor urut + titik + spasi + **Nama** (WAJIB diapit dua asterisk)
-2. Baris kedua: "Rating: " + angka (contoh: "Rating: 4.5")
-3. Baris ketiga: "Alamat: " + alamat lengkap dari data (WAJIB ada)
-4. Baris keempat: "Google Maps: " + URL dari data (WAJIB ada)
-5. Baris kelima: "Berdasarkan Ulasan Pengunjung: " + review lengkap (WAJIB - TIDAK BOLEH DILEWATKAN!)
-6. Baris keenam (OPSIONAL): "Berdasarkan Ulasan Pengunjung: " + review kedua lengkap (HANYA jika ada 2+ review yang relevan)
-7. Gunakan **bold** untuk kata dalam review yang MATCH dengan kata kunci
-8. Format: Minimal 5 baris (dengan 1 review), maksimal 6 baris (dengan 2 reviews jika ada)
-8. TIDAK ADA informasi tambahan lain
-9. ⚠️ PENTING: Baris review adalah BUKTI WAJIB - jika tidak ada review yang relevan, JANGAN rekomendasikan coffee shop tersebut
-
-🚨 PERINGATAN PENTING - OUTPUT TIDAK LENGKAP:
-- Jika output Anda terpotong karena batas token, PASTIKAN untuk menyelesaikan baris "Berdasarkan Ulasan Pengunjung" untuk SETIAP coffee shop yang sudah Anda mulai
-- JANGAN mulai rekomendasi coffee shop baru jika Anda tidak yakin bisa menyelesaikannya dengan review
-- LEBIH BAIK output 1-2 coffee shop LENGKAP dengan review daripada 3 coffee shop TANPA review
-- Jika Anda merasa output akan terpotong, HENTIKAN di coffee shop yang sudah lengkap dan jangan mulai yang baru
-
-CONTOH OUTPUT YANG BENAR (COPY FORMAT INI):
-1. **Toko Kami**
-Rating: 4.8
-Alamat: Jl. Kh.A.Dahlan Gg. Margosari No.3, Sungai Bangkong, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78121, Indonesia
-Google Maps: https://www.google.com/maps/place/?q=place_id:ChJM5X-4vIZHS4Rqyyj2I6Xh4U
-Berdasarkan Ulasan Pengunjung: "**cozy**, enak bgt kopi sederhana favy" - Dzaky Farhan (5⭐)
-Berdasarkan Ulasan Pengunjung: "Tempatnya **nyaman** dan hangat, cocok buat nongkrong" - Sarah (4⭐) (OPSIONAL - hanya jika ada 2+ review yang relevan)
-
-2. **Kopi Santai**
-Rating: 4.5
-Alamat: Jl. Ahmad Yani No. 123, Pontianak, Kalimantan Barat, Indonesia
-Google Maps: https://www.google.com/maps/place/?q=place_id:ChABCDEF123456
-Berdasarkan Ulasan Pengunjung: "Tempatnya **cozy** banget, **wifi** kencang" - Budi (5⭐) [Verifikasi: https://...]
-
-CONTOH SALAH (JANGAN IKUTI):
-❌ 🏆 Toko Kami - Rating 4.8/5.0
-📍 Alamat: Jl. Ahmad Yani No. 123
-📝 Berdasarkan Ulasan Pengunjung: ...
-
-❌ Toko Kami (tanpa nomor dan **)
-
-❌ 1. Toko Kami (tanpa **)
-
-❌ 1. **Toko Kami**
-Rating: 4.8
-Berdasarkan Ulasan Pengunjung: ... (SALAH - tidak ada Alamat dan Google Maps URL)
-
-❌ 1. **Toko Kami**
-Rating: 4.8
-Alamat: Jl. Ahmad Yani No. 123
-Google Maps: https://...
-(SALAH - TIDAK ADA REVIEW! Setiap rekomendasi WAJIB memiliki review sebagai bukti)
-
-MULAI OUTPUT SEKARANG (langsung tulis tanpa penjelasan):"""
-        else:  # analyze (default)
-            user_content = f"""PREFERENSI SAYA (Natural Language):
-"{filtered_user_text}"
-
-⚠️ PENTING - FILTER KEYWORDS TIDAK RELEVAN:
-- Hanya analisis keywords yang relevan dengan konteks coffee shop (fasilitas, suasana, kebutuhan)
-- Abaikan keywords yang tidak relevan seperti hewan, benda, atau aktivitas yang tidak berhubungan dengan coffee shop
-- Fokus pada atribut pilihan yang relevan: wifi, cozy, colokan, musholla, live music, parkir, 24 jam, dll
-
-Tugas Anda:
-1. Analisis preferensi saya menggunakan Natural Language Processing (NLP)
-2. Pahami maksud, konteks, dan kebutuhan yang saya inginkan
-3. Identifikasi preferensi inti (fasilitas, suasana, kebutuhan spesifik)
-4. Cari coffee shop yang reviewnya BENAR-BENAR relevan dengan preferensi yang saya maksud
-
-🔗 PENTING - SINONIM YANG RELEVAN (untuk membantu pemahaman NLP):
-- Kata kunci "24 jam" = "buka sampai larut" = "larut malam" = "buka malam" = "buka sampai subuh" = "buka tengah malam"
-- Kata kunci "wifi bagus" = "wifi kencang" = "wifi stabil" = "koneksi internet lancar"
-- Kata kunci "musholla" = "tempat sholat" = "tempat sholat tersedia" = "ada musholla"
-- Kata kunci "colokan banyak" = "terminal listrik" = "stopkontak tersedia" = "colokan di setiap meja"
-- Kata kunci "cozy" = "nyaman" = "hangat" = "tenang" = "santai" = "atmosfernya hangat" = "suasananya cozy"
-- Kata kunci "ruang belajar" = "belajar" = "kerja" = "wfc" = "ngerjain tugas" = "cocok buat belajar" = "enak buat kerja"
-- Kata kunci "sofa" = "kursi nyaman" = "kursi empuk" = "ruas sofa" = "kursi cukup nyaman"
-- Kata kunci "ruangan dingin" = "ac" = "dingin" = "sejuk" = "adem" = "ruangan sejuk"
-- Kata kunci "aesthetic" = "estetik" = "kekinian" = "desain" = "dekor" = "instagramable"
-- Kata kunci "live music" = "akustik" = "pertunjukan live music" = "live musicnya santai" = "live musik"
-- Kata kunci "parkiran luas" = "parkir luas" = "parkir mobil nyaman" = "parkir" = "tempat parkir luas"
-- Jika user mencari salah satu variasi di atas, review yang menyebutkan variasi lain TETAP RELEVAN dan BOLEH direkomendasikan
-
-⚠️ PENTING - VALIDASI KETAT UNTUK KEYWORD SPESIFIK:
-- Untuk keyword SPESIFIK seperti "musholla", coffee shop HANYA boleh direkomendasikan jika review BENAR-BENAR menyebutkan "musholla", "mushola", "tempat sholat", "ruang sholat", "tempat ibadah", atau "ada musholla"
-- JANGAN merekomendasikan coffee shop jika review TIDAK menyebutkan keyword spesifik yang diminta user
-- Jika user mencari "musholla" dan review hanya menyebutkan "tempatnya nyaman" atau "wifi bagus" TANPA menyebutkan musholla, JANGAN rekomendasikan coffee shop tersebut
-- Review HARUS menyebutkan keyword spesifik atau sinonimnya secara eksplisit
-
-Cari coffee shop yang reviewnya BENAR-BENAR relevan dengan preferensi yang saya maksud (gunakan pemahaman NLP, bukan hanya keyword matching).
-
-🚨 PENTING - JUMLAH REKOMENDASI:
-- Jika ada 1 coffee shop yang relevan → output 1
-- Jika ada 2 coffee shop yang relevan → output 2 (JANGAN hanya output 1!)
-- Jika ada 3+ coffee shop yang relevan → output SEMUA yang relevan (maksimal 3 terbaik berdasarkan rating)
-- Jangan hanya output 1 jika ada lebih banyak yang relevan - output SEMUA yang relevan (maksimal 3)
-
-Jika tidak ada review yang relevan, jawab: "Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini." Gunakan **bold** untuk highlight kata dalam review yang relevan dengan preferensi saya. Jangan tambahkan penjelasan pembuka atau logika rekomendasi.
-
-🚨 WAJIB - SETIAP REKOMENDASI HARUS DISERTAI REVIEW:
-- Setiap coffee shop yang direkomendasikan WAJIB memiliki review pengunjung yang relevan sebagai bukti
-- Review harus dikutip LENGKAP dan PERSIS dari data
-- Format: "Teks review lengkap" - Nama User (Rating⭐)
-- TANPA review = TIDAK BOLEH direkomendasikan
-- Jika tidak ada review yang relevan untuk coffee shop tertentu, JANGAN rekomendasikan coffee shop tersebut"""
-        
-        # Estimate token count (rough: 1 token ≈ 4 characters)
-        estimated_context_tokens = len(places_context) // 4
-        estimated_system_tokens = len(system_prompt) // 4
-        estimated_user_tokens = len(str(user_content)) // 4
-        estimated_total_input_tokens = estimated_context_tokens + estimated_system_tokens + estimated_user_tokens
-        print(f"[LLM] Estimated input tokens - Context: {estimated_context_tokens}, System: {estimated_system_tokens}, User: {estimated_user_tokens}, Total: {estimated_total_input_tokens}")
-        
-        # Warning jika context terlalu besar
-        # PENTING: Model Llama 3.1 8B memiliki context window 8,192 tokens (TOTAL: input + output)
-        # Context window = batas maksimal TOTAL tokens yang bisa diproses dalam satu request
-        # Input tokens = system prompt + user prompt + context data (coffee shops + reviews)
-        # Output tokens = response yang dihasilkan LLM (dibatasi oleh max_tokens)
-        # Total usage = input tokens + output tokens (HARUS <= 8,192)
-        
-        # Hitung estimasi total usage (input + output maksimal)
-        requested_max_output_tokens = 3072  # Batas maksimal output yang kita minta (ditingkatkan untuk memastikan cukup ruang untuk review)
-        estimated_total_usage = estimated_total_input_tokens + requested_max_output_tokens
-        
-        # Minimal output tokens yang diperlukan untuk output lengkap dengan review
-        # Estimasi: 1 rekomendasi lengkap (nama, rating, alamat, maps, review) ≈ 200-300 tokens
-        # Untuk 3 rekomendasi lengkap dengan review: minimal 900-1200 tokens
-        MIN_OUTPUT_TOKENS_FOR_COMPLETE_RESPONSE = 1200  # Minimal untuk 3 rekomendasi lengkap dengan review
-        
-        # Sesuaikan max_tokens jika input terlalu besar (untuk menghindari melebihi context window)
-        available_for_output = 8192 - estimated_total_input_tokens
-        if available_for_output < 512:  # Sangat kritis - hampir tidak ada ruang untuk output
-            print(f"[ERROR] Input terlalu besar! Hanya {available_for_output} tokens tersedia untuk output.")
-            print(f"[ERROR] Output akan sangat terbatas atau request mungkin gagal!")
-            actual_max_tokens = max(256, available_for_output - 100)  # Minimal 256, sisakan 100 untuk buffer
-            print(f"[ERROR] ⚠️ PERINGATAN: max_tokens ({actual_max_tokens}) terlalu kecil untuk output lengkap dengan review!")
-            print(f"[ERROR] Output mungkin terpotong sebelum review ditulis. Pertimbangkan mengurangi max_shops atau jumlah review.")
-        elif available_for_output < MIN_OUTPUT_TOKENS_FOR_COMPLETE_RESPONSE:
-            # Input besar, tapi masih ada ruang untuk output (meskipun terbatas)
-            print(f"[WARNING] Input besar, mengurangi max_tokens dari {requested_max_output_tokens} ke {available_for_output - 100}")
-            actual_max_tokens = available_for_output - 100  # Sisakan 100 tokens untuk buffer
-            if actual_max_tokens < MIN_OUTPUT_TOKENS_FOR_COMPLETE_RESPONSE:
-                print(f"[WARNING] ⚠️ PERINGATAN: max_tokens ({actual_max_tokens}) mungkin tidak cukup untuk output lengkap dengan review!")
-                print(f"[WARNING] Output mungkin terpotong atau review tidak lengkap. Pertimbangkan mengurangi max_shops atau jumlah review.")
-        elif available_for_output < requested_max_output_tokens:
-            # Input cukup besar, tapi masih bisa menggunakan requested tokens
-            print(f"[INFO] Input cukup besar, mengurangi max_tokens dari {requested_max_output_tokens} ke {available_for_output - 100}")
-            actual_max_tokens = available_for_output - 100  # Sisakan 100 tokens untuk buffer
-        else:
-            actual_max_tokens = requested_max_output_tokens
-        
-        print(f"[LLM] ========== TOKEN BREAKDOWN ==========")
-        print(f"[LLM] INPUT TOKENS (yang dikirim ke LLM):")
-        print(f"  - Context data (coffee shops + reviews): ~{estimated_context_tokens} tokens")
-        print(f"  - System prompt (aturan & format): ~{estimated_system_tokens} tokens")
-        print(f"  - User prompt (kata kunci user): ~{estimated_user_tokens} tokens")
-        print(f"  - TOTAL INPUT: {estimated_total_input_tokens} tokens")
-        print(f"[LLM] OUTPUT TOKENS (response dari LLM):")
-        print(f"  - Max output (requested): {requested_max_output_tokens} tokens")
-        print(f"  - Max output (actual): {actual_max_tokens} tokens")
-        print(f"[LLM] TOTAL USAGE:")
-        print(f"  - Estimated total: {estimated_total_input_tokens + actual_max_tokens} tokens")
-        print(f"  - Model context window: 8,192 tokens")
-        print(f"  - Available space: {8192 - (estimated_total_input_tokens + actual_max_tokens)} tokens")
-        print(f"[LLM] =====================================")
-        
-        # Warning jika total usage melebihi context window
-        if estimated_total_input_tokens + actual_max_tokens > 8192:
-            print(f"[ERROR] Total usage ({estimated_total_input_tokens + actual_max_tokens} tokens) MELEBIHI context window (8,192 tokens)!")
-            print(f"[ERROR] URGENT: Kurangi max_shops atau jumlah review per shop!")
-        elif estimated_total_input_tokens + actual_max_tokens > 7500:
-            print(f"[WARNING] Total usage ({estimated_total_input_tokens + actual_max_tokens} tokens) mendekati context window (8,192 tokens)!")
-            print(f"[WARNING] Pertimbangkan mengurangi max_shops atau jumlah review per shop.")
-        elif estimated_total_input_tokens > 5000:
-            print(f"[INFO] Input tokens cukup besar ({estimated_total_input_tokens} tokens). Masih dalam batas aman.")
-        
-        # Step 4: Call Hugging Face Inference API dengan context
-        print(f"[LLM] Calling HF API with task: {task}")
-        print(f"[LLM] Model: {HF_MODEL}")
-        
         try:
             response = hf_client.chat.completions.create(
                 model=HF_MODEL,
                 messages=[
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_content}
+                    {"role": "user", "content": user_content},
                 ],
-                max_tokens=actual_max_tokens,  # Gunakan max_tokens yang sudah disesuaikan dengan context window
-                temperature=0.2,  # Ditingkatkan dari 0.1 untuk output yang lebih natural namun tetap akurat
-                top_p=0.85  # Sedikit lebih fleksibel untuk variasi output yang lebih baik
+                max_tokens=600,
+                temperature=0.2,
+                top_p=0.85,
             )
-            
-            print(f"[LLM] Response received successfully")
-            generated_text = response.choices[0].message.content
+            raw_selection = response.choices[0].message.content
         except Exception as api_error:
             error_str = str(api_error)
             print(f"[LLM] API Error: {error_str}")
-            
-            # Handle specific error cases
-            if "402" in error_str or "quota" in error_str.lower() or "payment" in error_str.lower():
+            if '402' in error_str or 'quota' in error_str.lower() or 'payment' in error_str.lower():
                 return jsonify({
                     'status': 'error',
                     'message': 'Kuota token LLM telah habis. Silakan cek akun Hugging Face Anda atau upgrade tier untuk mendapatkan lebih banyak token.',
                     'error_code': 'QUOTA_EXCEEDED',
                     'error_details': 'Hugging Face API quota has been exceeded. Please check your account or upgrade your tier.'
                 }), 402
-            elif "429" in error_str or "rate limit" in error_str.lower():
+            if '429' in error_str or 'rate limit' in error_str.lower():
                 return jsonify({
                     'status': 'error',
                     'message': 'Terlalu banyak request. Silakan tunggu beberapa saat sebelum mencoba lagi.',
                     'error_code': 'RATE_LIMIT',
                     'error_details': 'Rate limit exceeded. Please wait before trying again.'
                 }), 429
-            elif "401" in error_str or "unauthorized" in error_str.lower():
+            if '401' in error_str or 'unauthorized' in error_str.lower():
                 return jsonify({
                     'status': 'error',
                     'message': 'Token API Hugging Face tidak valid atau tidak dikonfigurasi dengan benar.',
                     'error_code': 'UNAUTHORIZED',
                     'error_details': 'Invalid or missing Hugging Face API token.'
                 }), 401
-            else:
-                # Generic error
-                return jsonify({
-                    'status': 'error',
-                    'message': f'Terjadi kesalahan saat memanggil LLM API: {error_str}',
-                    'error_code': 'API_ERROR',
-                    'error_details': error_str
-                }), 500
-        print(f"[LLM] Generated text length: {len(generated_text)} characters")
-        print(f"[LLM] Generated text preview (first 200 chars): {generated_text[:200]}")
-        print(f"[LLM] Generated text preview (last 200 chars): {generated_text[-200:]}")
-        
-        # Validasi dan Post-processing: Pastikan setiap rekomendasi memiliki review
-        try:
-            # Baca data untuk post-processing
-            places_json_path = os.path.join('frontend-cofind', 'src', 'data', 'places.json')
-            # Baca places.json (reviews sekarang dari database, tidak dari reviews.json)
-            coffee_shops_data = []
-            if os.path.exists(places_json_path):
-                with open(places_json_path, 'r', encoding='utf-8') as f:
-                    places_data = json.load(f)
-                    coffee_shops_data = places_data.get('data', [])
-            
-            # Reviews akan diambil dari database saat dibutuhkan per coffee shop
-            reviews_by_place_id = {}
-        except Exception as e:
-            print(f"[ERROR] Failed to load data for post-processing: {e}")
-            coffee_shops_data = []
-            reviews_by_place_id = {}
-        
-        # Parse coffee shop recommendations dari response
-        shop_pattern = r'(\d+)\.\s*\*\*([^*]+)\*\*'
-        shop_matches = list(re.finditer(shop_pattern, generated_text))
-        num_recommended_shops = len(shop_matches)
-        
-        # Hitung jumlah coffee shop yang ada di context (dari places_context yang sudah dibuat sebelumnya)
-        shop_count_in_context = len(re.findall(r'^\d+\.\s+', places_context, re.MULTILINE)) if 'places_context' in locals() else 0
-        
-        print(f"[LLM] Validation: Found {num_recommended_shops} recommended shops")
-        # Tampilkan summary analisis LLM
-        print(f"[LLM] 📊 SUMMARY ANALISIS LLM:")
-        print(f"[LLM] 📊   - Coffee shops yang dianalisis oleh LLM: {shop_count_in_context} shops")
-        print(f"[LLM] 📊   - Coffee shops yang direkomendasikan: {num_recommended_shops} shops")
-        
-        # Process setiap coffee shop untuk memastikan ada review
-        if num_recommended_shops > 0:
-            # Process dari belakang ke depan untuk menghindari masalah index saat insert
-            for match_idx in range(len(shop_matches) - 1, -1, -1):
-                shop_match = shop_matches[match_idx]
-                shop_number = int(shop_match.group(1))
-                shop_name = shop_match.group(2).strip()
-                
-                # Tentukan batas section (dari match ini sampai match berikutnya atau akhir)
-                section_start = shop_match.start()
-                section_end = shop_matches[match_idx + 1].start() if match_idx + 1 < len(shop_matches) else len(generated_text)
-                shop_section = generated_text[section_start:section_end]
-                
-                # Cek apakah sudah ada review
-                has_review = 'Berdasarkan Ulasan Pengunjung:' in shop_section or 'Berdasarkan ulasan pengunjung:' in shop_section.lower()
-                
-                if not has_review:
-                    print(f"[LLM] ⚠️ Coffee shop #{shop_number} ({shop_name}) TIDAK memiliki review, attempting to add...")
-                    
-                    # Cari coffee shop di data berdasarkan nama (dengan fuzzy matching)
-                    shop_found = None
-                    shop_name_lower = shop_name.lower().strip()
-                    
-                    # Exact match first
-                    for shop in coffee_shops_data:
-                        if shop.get('name', '').strip().lower() == shop_name_lower:
-                            shop_found = shop
-                            break
-                    
-                    # Fuzzy match jika exact match tidak ditemukan
-                    if not shop_found:
-                        for shop in coffee_shops_data:
-                            shop_data_name = shop.get('name', '').strip().lower()
-                            # Cek apakah nama mengandung kata-kata penting dari shop_name
-                            shop_name_words = set(shop_name_lower.split())
-                            shop_data_words = set(shop_data_name.split())
-                            # Jika minimal 2 kata match, anggap sama
-                            if len(shop_name_words & shop_data_words) >= 2:
-                                shop_found = shop
-                                break
-                            # Atau jika shop_name adalah substring dari shop_data_name atau sebaliknya
-                            if shop_name_lower in shop_data_name or shop_data_name in shop_name_lower:
-                                shop_found = shop
-                                break
-                    
-                    if shop_found:
-                        place_id = shop_found.get('place_id', '')
-                        shop_reviews = reviews_by_place_id.get(place_id, [])
-                        
-                        if shop_reviews:
-                            # Cari review yang relevan dengan keywords user
-                            relevant_review = None
-                            
-                            # Ambil keywords dari expanded_keywords jika ada
-                            user_keywords = []
-                            if 'expanded_keywords' in locals() and expanded_keywords:
-                                user_keywords = expanded_keywords
-                            elif 'keywords' in locals() and keywords:
-                                user_keywords = keywords
-                            
-                            # PENTING: Hanya tambahkan review jika BENAR-BENAR relevan dengan keywords user
-                            # JANGAN tambahkan review yang tidak relevan
-                            if user_keywords:
-                                # Cari review yang mengandung minimal salah satu keyword (maksimal 2 reviews)
-                                relevant_reviews_list = []
-                                for review in shop_reviews:
-                                    review_text = review.get('text', '').strip()
-                                    if review_text and len(review_text) > 20:
-                                        review_lower = review_text.lower()
-                                        # Cek apakah review mengandung salah satu keyword
-                                        is_relevant = False
-                                        # Filter keywords: hapus stop words seperti "butuh", "perlu", dll
-                                        filtered_user_keywords = [kw for kw in user_keywords if kw.lower() not in ['butuh', 'perlu', 'ingin', 'mau', 'cari', 'mencari', 'ada', 'yang', 'untuk', 'dengan', 'dan', 'atau']]
-                                        
-                                        for kw in filtered_user_keywords:
-                                            kw_lower = kw.lower().strip()
-                                            # Minimal 3 karakter untuk menghindari false positive
-                                            if len(kw_lower) >= 3:
-                                                # Cek substring match (termasuk untuk multi-word keywords seperti "live music")
-                                                # Contoh: "live music" akan match dengan "live music-nya", "live music", "musik", dll
-                                                if kw_lower in review_lower:
-                                                    is_relevant = True
-                                                    print(f"[LLM] ✅ Found relevant review for {shop_name}: keyword '{kw}' found in review")
-                                                    print(f"[LLM] Review snippet: {review_text[:100]}...")
-                                                    break
-                                                # Cek sinonim untuk keyword spesifik seperti musholla
-                                                elif kw_lower in ['musholla', 'mushola', 'tempat sholat', 'ruang sholat', 'tempat ibadah']:
-                                                    musholla_synonyms = ['musholla', 'mushola', 'tempat sholat', 'tempat sholat tersedia', 'ada musholla', 'ruang sholat', 'tempat ibadah']
-                                                    if any(syn in review_lower for syn in musholla_synonyms):
-                                                        is_relevant = True
-                                                        print(f"[LLM] ✅ Found relevant review for {shop_name}: keyword '{kw}' found via synonym")
-                                                        print(f"[LLM] Review snippet: {review_text[:100]}...")
-                                                        break
-                                        
-                                        if is_relevant:
-                                            relevant_reviews_list.append(review)
-                                            # Maksimal 2 reviews per coffee shop
-                                            if len(relevant_reviews_list) >= 2:
-                                                break
-                                
-                                if not relevant_reviews_list:
-                                    print(f"[LLM] ⚠️ No relevant review found for {shop_name} with keywords: {user_keywords}")
-                                    print(f"[LLM] ⚠️ SKIPPING review addition - coffee shop should not be recommended without relevant review")
-                                    print(f"[LLM] ⚠️ Coffee shop ini akan dihapus dari response oleh filter karena tidak ada review relevan")
-                            else:
-                                # Jika tidak ada keywords, JANGAN tambahkan review (untuk keamanan)
-                                print(f"[LLM] ⚠️ No keywords available - SKIPPING review addition for safety")
-                                print(f"[LLM] ⚠️ Coffee shop ini akan dihapus dari response oleh filter karena tidak ada keywords untuk validasi")
-                            
-                            if relevant_reviews_list:
-                                # Insert maksimal 2 reviews
-                                reviews_to_insert = relevant_reviews_list[:2]
-                                
-                                # Cari posisi untuk insert (setelah Google Maps URL)
-                                maps_pattern = r'Google Maps:\s*[^\n]+'
-                                maps_match = re.search(maps_pattern, shop_section)
-                                
-                                if maps_match:
-                                    # Insert setelah Google Maps (pastikan ada newline)
-                                    insert_pos = section_start + maps_match.end()
-                                    
-                                    # Format semua review lines
-                                    review_lines = []
-                                    for review in reviews_to_insert:
-                                        review_text = review.get('text', '').strip()
-                                        if len(review_text) > 150:
-                                            review_text = review_text[:147] + "..."
-                                        author_name = review.get('author_name', 'Anonim')
-                                        review_rating = review.get('rating', 0)
-                                        
-                                        # Format review line (sesuai format yang diharapkan frontend)
-                                        review_line = f"\nBerdasarkan Ulasan Pengunjung: \"{review_text}\" - {author_name} ({review_rating}⭐)"
-                                        review_lines.append(review_line)
-                                    
-                                    # Gabungkan semua review lines
-                                    all_reviews_text = ''.join(review_lines)
-                                    
-                                    # Pastikan ada newline sebelum review
-                                    if generated_text[insert_pos:insert_pos+1] != '\n':
-                                        all_reviews_text = '\n' + all_reviews_text.lstrip('\n')
-                                    
-                                    generated_text = generated_text[:insert_pos] + all_reviews_text + generated_text[insert_pos:]
-                                    print(f"[LLM] ✅ Added {len(reviews_to_insert)} review(s) for {shop_name} (after Google Maps at position {insert_pos})")
-                                    for idx, review in enumerate(reviews_to_insert, 1):
-                                        print(f"[LLM] Review #{idx} preview: {review.get('text', '')[:100]}...")
-                                else:
-                                    # Jika tidak ada Google Maps, cari setelah Alamat
-                                    address_pattern = r'Alamat:\s*[^\n]+'
-                                    address_match = re.search(address_pattern, shop_section)
-                                    if address_match:
-                                        insert_pos = section_start + address_match.end()
-                                        if generated_text[insert_pos:insert_pos+1] != '\n':
-                                            review_line = '\n' + review_line.lstrip('\n')
-                                        generated_text = generated_text[:insert_pos] + review_line + generated_text[insert_pos:]
-                                        print(f"[LLM] ✅ Added review for {shop_name} (after address at position {insert_pos})")
-                                        print(f"[LLM] Review preview: {review_line[:100]}...")
-                                    else:
-                                        # Fallback: insert setelah rating
-                                        rating_pattern = r'Rating:\s*[^\n]+'
-                                        rating_match = re.search(rating_pattern, shop_section)
-                                        if rating_match:
-                                            insert_pos = section_start + rating_match.end()
-                                            if generated_text[insert_pos:insert_pos+1] != '\n':
-                                                review_line = '\n' + review_line.lstrip('\n')
-                                            generated_text = generated_text[:insert_pos] + review_line + generated_text[insert_pos:]
-                                            print(f"[LLM] ✅ Added review for {shop_name} (after rating at position {insert_pos})")
-                                            print(f"[LLM] Review preview: {review_line[:100]}...")
-                                        else:
-                                            # Last resort: insert di akhir section
-                                            if generated_text[section_end-1:section_end] != '\n':
-                                                review_line = '\n' + review_line.lstrip('\n')
-                                            generated_text = generated_text[:section_end] + review_line + generated_text[section_end:]
-                                            print(f"[LLM] ✅ Added review for {shop_name} (at end of section)")
-                                            print(f"[LLM] Review preview: {review_line[:100]}...")
-                            else:
-                                print(f"[LLM] ❌ No relevant reviews found for {shop_name} with keywords: {user_keywords if user_keywords else 'N/A'}")
-                                print(f"[LLM] ⚠️ Coffee shop ini TIDAK BOLEH direkomendasikan karena tidak ada review yang relevan!")
-                                print(f"[LLM] ⚠️ LLM seharusnya TIDAK merekomendasikan coffee shop ini. Ini adalah masalah di output LLM.")
-                        else:
-                            print(f"[LLM] ❌ No reviews in data for {shop_name} (place_id: {place_id})")
-                            print(f"[LLM] ⚠️ Coffee shop ini TIDAK BOLEH direkomendasikan karena tidak ada review di data!")
-                    else:
-                        print(f"[LLM] ❌ Coffee shop {shop_name} not found in places.json")
-                        print(f"[LLM] ⚠️ Coffee shop ini tidak ditemukan di data, mungkin nama tidak match.")
-                else:
-                    print(f"[LLM] ✅ Coffee shop #{shop_number} ({shop_name}) already has review")
-        
-        # Re-validate setelah post-processing
-        final_review_matches = re.findall(r'Berdasarkan Ulasan Pengunjung:', generated_text, re.IGNORECASE)
-        final_num_reviews = len(final_review_matches)
-        print(f"[LLM] Final validation: {num_recommended_shops} shops, {final_num_reviews} reviews")
-        print(f"[LLM] Final text length: {len(generated_text)} characters")
-        
-        # Filter: Hapus coffee shop yang tidak memiliki review relevan dari response
-        # PENTING: Filter ini akan menghapus coffee shop yang reviewnya tidak relevan dengan keywords user
-        print(f"[LLM] ========== FILTERING COFFEE SHOPS ==========")
-        print(f"[LLM] Total recommended shops: {num_recommended_shops}")
-        print(f"[LLM] Total reviews found: {final_num_reviews}")
-        
-        if num_recommended_shops > 0 and final_num_reviews < num_recommended_shops:
-            missing_count = num_recommended_shops - final_num_reviews
-            print(f"[WARNING] ⚠️ Masih ada {missing_count} coffee shop(s) tanpa review setelah post-processing!")
-            print(f"[WARNING] Removing coffee shops without relevant reviews from response...")
-            
-            # Parse semua coffee shop dari response
-            shop_pattern_final = r'(\d+)\.\s*\*\*([^*]+)\*\*'
-            all_shop_matches = list(re.finditer(shop_pattern_final, generated_text))
-            
-            # Filter: Hanya keep coffee shop yang memiliki review RELEVAN dengan keywords
-            filtered_sections = []
-            shop_counter = 1
-            
-            # Ambil keywords untuk validasi relevansi (PENTING: gunakan expanded_keywords untuk matching yang lebih baik)
-            user_keywords_for_filter = []
-            if 'expanded_keywords' in locals() and expanded_keywords:
-                user_keywords_for_filter = expanded_keywords
-                print(f"[LLM] Using expanded_keywords for filter: {user_keywords_for_filter[:10]}... (total: {len(user_keywords_for_filter)})")
-            elif 'keywords' in locals() and keywords:
-                user_keywords_for_filter = keywords
-                print(f"[LLM] Using keywords for filter: {user_keywords_for_filter}")
-            else:
-                print(f"[LLM] ⚠️ No keywords available for filter validation!")
-            
-            for idx, match in enumerate(all_shop_matches):
-                shop_number = int(match.group(1))
-                shop_name = match.group(2).strip()
-                
-                # Tentukan batas section
-                section_start = match.start()
-                section_end = all_shop_matches[idx + 1].start() if idx + 1 < len(all_shop_matches) else len(generated_text)
-                shop_section = generated_text[section_start:section_end]
-                
-                # Cek apakah memiliki review
-                has_review = 'Berdasarkan Ulasan Pengunjung:' in shop_section or 'Berdasarkan ulasan pengunjung:' in shop_section.lower()
-                
-                if has_review:
-                    # PENTING: Cek apakah review BENAR-BENAR relevan dengan keywords user
-                    is_relevant = False
-                    if user_keywords_for_filter:
-                        # Extract review text dari section (bisa ada 1 atau 2 review)
-                        review_matches = re.findall(r'Berdasarkan Ulasan Pengunjung:\s*"([^"]+)"', shop_section, re.IGNORECASE)
-                        if review_matches:
-                            # Gabungkan semua review text untuk validasi
-                            all_review_text = ' '.join(review_matches).lower()
-                            
-                            # Filter keywords: hapus stop words seperti "butuh", "perlu", dll
-                            # CATATAN: "ada" TIDAK difilter jika menjadi bagian dari keyword multi-word seperti "ada musholla"
-                            filtered_keywords = []
-                            for kw in user_keywords_for_filter:
-                                kw_lower = kw.lower().strip()
-                                # Jika keyword adalah stop word tunggal, skip
-                                if kw_lower in ['butuh', 'perlu', 'ingin', 'mau', 'cari', 'mencari', 'yang', 'untuk', 'dengan', 'dan', 'atau'] and len(kw.split()) == 1:
-                                    continue
-                                # Jika keyword mengandung "ada" sebagai bagian dari frasa (misal: "ada musholla"), pertahankan
-                                if len(kw) >= 3:
-                                    filtered_keywords.append(kw)
-                            
-                            # Cek apakah review mengandung minimal salah satu keyword yang relevan
-                            for kw in filtered_keywords:
-                                kw_lower = kw.lower().strip()
-                                if len(kw_lower) >= 3:
-                                    # Cek exact match atau substring match
-                                    if kw_lower in all_review_text:
-                                        is_relevant = True
-                                        print(f"[LLM] ✅ Review is relevant for {shop_name}: keyword '{kw}' found")
-                                        break
-                                    # Cek sinonim untuk keyword spesifik seperti musholla
-                                    elif kw_lower in ['musholla', 'mushola', 'tempat sholat', 'ruang sholat', 'tempat ibadah']:
-                                        musholla_synonyms = ['musholla', 'mushola', 'tempat sholat', 'tempat sholat tersedia', 'ada musholla', 'ruang sholat', 'tempat ibadah', 'lokasi musholla', 'musholla yang', 'musholla nyaman']
-                                        if any(syn in all_review_text for syn in musholla_synonyms):
-                                            is_relevant = True
-                                            print(f"[LLM] ✅ Review is relevant for {shop_name}: keyword '{kw}' found via synonym")
-                                            break
-                                    # Cek jika keyword adalah bagian dari frasa yang lebih panjang (misal: "ada musholla" dalam review)
-                                    elif 'musholla' in kw_lower or 'mushola' in kw_lower:
-                                        # Jika keyword mengandung "musholla", cek apakah review mengandung "musholla" atau variasi
-                                        if 'musholla' in all_review_text or 'mushola' in all_review_text or 'tempat sholat' in all_review_text:
-                                            is_relevant = True
-                                            print(f"[LLM] ✅ Review is relevant for {shop_name}: keyword '{kw}' contains musholla")
-                                            break
-                        else:
-                            # Jika tidak bisa extract review text, HAPUS coffee shop (untuk keamanan)
-                            is_relevant = False
-                            print(f"[LLM] ⚠️ Could not extract review text for {shop_name} - REMOVING for safety")
-                    else:
-                        # Jika tidak ada keywords, HAPUS coffee shop (untuk keamanan)
-                        is_relevant = False
-                        print(f"[LLM] ⚠️ No keywords available for validation - REMOVING {shop_name} for safety")
-                    
-                    if is_relevant:
-                        # Renumber shop jika perlu
-                        if shop_counter != shop_number:
-                            shop_section = re.sub(rf'^{shop_number}\.', f'{shop_counter}.', shop_section, flags=re.MULTILINE)
-                        filtered_sections.append(shop_section)
-                        print(f"[LLM] ✅ Keeping coffee shop #{shop_counter} ({shop_name}) - has relevant review")
-                        shop_counter += 1
-                    else:
-                        print(f"[LLM] ❌ Removing coffee shop #{shop_number} ({shop_name}) - review NOT relevant with keywords: {user_keywords_for_filter}")
-                else:
-                    print(f"[LLM] ❌ Removing coffee shop #{shop_number} ({shop_name}) - NO review at all")
-            
-            # Rebuild response dengan hanya coffee shop yang memiliki review
-            if filtered_sections:
-                # Ambil bagian sebelum coffee shop pertama (jika ada)
-                first_shop_match = all_shop_matches[0] if all_shop_matches else None
-                prefix = generated_text[:first_shop_match.start()] if first_shop_match else ""
-                
-                # Gabungkan semua section yang valid dengan newline
-                generated_text = prefix + "\n\n".join(filtered_sections)
-                print(f"[LLM] ✅ Filtered response: {len(filtered_sections)} coffee shop(s) with reviews kept (removed {missing_count} without reviews)")
-            else:
-                # Jika tidak ada coffee shop dengan review, return message
-                generated_text = "Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini."
-                print(f"[LLM] ⚠️ No coffee shops with relevant reviews found. Returning default message.")
-        else:
-            print(f"[LLM] ✅ Semua coffee shop memiliki review!")
-        
-        # Format keywords untuk ditampilkan (dengan format yang lebih readable)
-        # Capitalize first letter of each keyword untuk tampilan yang lebih baik
-        # Pastikan keywords sudah didefinisikan (dari ekstraksi sebelumnya)
-        if 'keywords' in locals() and keywords:
-            formatted_keywords = []
-            for kw in keywords:
-                # Capitalize setiap kata dalam keyword (untuk multi-word seperti "wifi kencang")
-                words = kw.split()
-                capitalized_words = [w.capitalize() for w in words]
-                formatted_keywords.append(' '.join(capitalized_words))
-            extracted_keywords_display = ', '.join(formatted_keywords)
-        else:
-            # Fallback ke input asli jika keywords tidak tersedia
-            extracted_keywords_display = user_text
-        
-        # Pastikan preferences_ai sudah didefinisikan
-        if 'preferences_ai' not in locals():
-            # Fallback jika preferences_ai belum didefinisikan
-            if 'keywords' in locals() and keywords:
-                preferences_ai = f"Preferensi berdasarkan analisis AI: {', '.join(keywords)}"
-            else:
-                preferences_ai = f"Preferensi berdasarkan analisis AI: {extracted_keywords_display}"
-        
-        return jsonify({
+            return jsonify({
+                'status': 'error',
+                'message': f'Terjadi kesalahan saat memanggil LLM API: {error_str}',
+                'error_code': 'API_ERROR',
+                'error_details': error_str
+            }), 500
+
+        selected_shops = _parse_llm_recommendation_selection(raw_selection, candidate_shops, expanded_keywords)
+        if not selected_shops:
+            selected_shops = _fallback_candidate_recommendations(candidate_shops, expanded_keywords, limit=3)
+
+        generated_text = _format_recommendation_analysis(selected_shops, expanded_keywords)
+        if not generated_text:
+            generated_text = 'Maaf, tidak ada coffee shop yang sesuai dengan preferensi Anda saat ini.'
+
+        extracted_keywords_display = ', '.join(keyword.title() for keyword in keywords)
+        payload = {
             'status': 'success',
             'task': task,
-            'input': user_text,  # Input asli dari user
-            'extracted_keywords': extracted_keywords_display,  # Keywords yang sudah diekstrak oleh LLM
-            'preferences_ai': preferences_ai,  # Preferensi berdasarkan analisis AI
+            'input': user_text,
+            'extracted_keywords': extracted_keywords_display,
+            'preferences_ai': preferences_ai,
             'analysis': generated_text,
-            'timestamp': time.time()
-        }), 200
-    
+            'timestamp': time.time(),
+        }
+
+        recommendation_cache[cache_key] = {
+            'version': RECOMMENDATION_CACHE_VERSION,
+            'timestamp': time.time(),
+            'payload': payload,
+        }
+        save_recommendation_cache(recommendation_cache)
+        return jsonify(payload), 200
+
     except Exception as e:
         import traceback
-        error_message = f"LLM Analysis Error: {str(e)}"
+        error_message = f'LLM Analysis Error: {str(e)}'
         traceback_str = traceback.format_exc()
-        print(f"[ERROR] {error_message}")
+        print(f'[ERROR] {error_message}')
         print(f"[TRACEBACK]\n{traceback_str}")
         return jsonify({
             'status': 'error',
@@ -3859,130 +7145,31 @@ def summarize_review():
                 'status': 'error',
                 'message': 'Tidak ada review yang valid untuk di-summarize'
             }), 404
-        
-        reviews_context = '\n'.join(reviews_text)
-        
-        # Build system prompt untuk summarize
-        system_prompt = f"""Anda adalah asisten yang ahli dalam meringkas review coffee shop. Tugas Anda adalah membuat ringkasan SINGKAT (maksimal 1 kalimat, 15-30 kata) yang menonjolkan keunikan atau hal otentik dari coffee shop berdasarkan review pengunjung.
 
-ATURAN KETAT:
-1. Ringkasan HARUS singkat (maksimal 1 kalimat, 15-30 kata)
-2. Fokus pada keunikan, keistimewaan, atau hal otentik yang disebutkan di review
-3. Gunakan bahasa Indonesia yang natural dan menarik
-4. JANGAN gunakan emoji
-5. JANGAN gunakan nama coffee shop di awal kalimat
-6. JANGAN gunakan frasa pembuka seperti:
-   - "{shop_name} menawarkan..."
-   - "Coffee shop ini menawarkan..."
-   - "Tempat ini menawarkan..."
-   - "Menawarkan suasana..."
-   - "Dengan suasana..."
-   - "Memiliki..."
-   - "Berlokasi di..."
-7. LANGSUNG ke poin utama tanpa pembuka apapun
-8. Contoh format yang BENAR:
-   - "Interior mewah dengan area outdoor yang cozy"
-   - "Suasana tenang dengan wifi kencang, cocok untuk ruang belajar"
-   - "Desain aesthetic dengan live music dan ruangan ber-AC"
-   - "Tempat favorit untuk WFC dengan colokan banyak dan sofa nyaman"
-9. Contoh format yang SALAH (JANGAN IKUTI):
-   - "{shop_name} menawarkan interior mewah..." ❌
-   - "Menawarkan suasana tenang..." ❌
-   - "Coffee shop ini memiliki desain aesthetic..." ❌
+        facilities_text = ""
+        facilities_path = os.path.join('frontend-cofind', 'src', 'data', 'facilities.json')
+        try:
+            if os.path.exists(facilities_path):
+                with open(facilities_path, 'r', encoding='utf-8') as f:
+                    facilities_data = json.load(f)
+                    shop_fac = facilities_data.get('facilities_by_place_id', {}).get(place_id, {})
+                    facilities_text = _format_facilities_to_text(shop_fac)
+        except Exception as facilities_err:
+            print(f"[SUMMARIZE] Failed to load facilities fallback: {facilities_err}")
 
-REVIEW PENGUNJUNG:
-{reviews_context}
-
-Buat ringkasan SINGKAT (maksimal 1 kalimat, 15-30 kata) yang menonjolkan keunikan atau hal otentik dari coffee shop berdasarkan review di atas. LANGSUNG mulai dengan poin utama, TANPA nama coffee shop atau frasa pembuka apapun."""
-        
-        # Build user prompt
-        user_prompt = f"Buat ringkasan singkat (maksimal 1 kalimat, 15-30 kata) yang menonjolkan keunikan atau hal otentik dari coffee shop \"{shop_name}\" berdasarkan review pengunjung di atas."
-        
-        # Call Hugging Face Inference API
-        print(f"[SUMMARIZE] Summarizing reviews for place_id: {place_id}")
-        print(f"[SUMMARIZE] Total reviews: {len(reviews_for_summary)}")
-        
-        response = hf_client.chat.completions.create(
-            model=HF_MODEL,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
-            max_tokens=100,  # Ringkas, cukup untuk 1 kalimat
-            temperature=0.3,  # Lebih deterministik untuk konsistensi
-            top_p=0.85
+        analysis = _get_structured_review_analysis(
+            place_id,
+            shop_name,
+            reviews,
+            facilities_text=facilities_text,
+            use_cache=True,
         )
-        
-        generated_text = response.choices[0].message.content.strip()
-        
-        # Clean up: hapus quotes jika ada, trim whitespace
-        generated_text = generated_text.replace('"', '').replace("'", '').strip()
-        
-        # Post-processing: Hapus nama coffee shop dan frasa pembuka yang tidak diinginkan
-        shop_name_lower = shop_name.lower()
-        generated_text_lower = generated_text.lower()
-        
-        # Hapus nama coffee shop di awal jika ada
-        if generated_text_lower.startswith(shop_name_lower):
-            generated_text = generated_text[len(shop_name):].strip()
-            # Hapus koma, titik, atau spasi di awal
-            generated_text = generated_text.lstrip('.,;: ')
-        
-        # Hapus frasa pembuka yang tidak diinginkan
-        unwanted_prefixes = [
-            f"{shop_name} menawarkan",
-            f"{shop_name} memiliki",
-            f"{shop_name} dengan",
-            "menawarkan suasana",
-            "menawarkan",
-            "memiliki suasana",
-            "memiliki",
-            "dengan suasana",
-            "coffee shop ini menawarkan",
-            "coffee shop ini memiliki",
-            "tempat ini menawarkan",
-            "tempat ini memiliki",
-            "berlokasi di",
-        ]
-        
-        for prefix in unwanted_prefixes:
-            if generated_text_lower.startswith(prefix.lower()):
-                generated_text = generated_text[len(prefix):].strip()
-                # Hapus koma, titik, atau spasi di awal
-                generated_text = generated_text.lstrip('.,;: ')
-                break
-        
-        # Capitalize huruf pertama
-        if generated_text:
-            generated_text = generated_text[0].upper() + generated_text[1:] if len(generated_text) > 1 else generated_text.upper()
-        
-        # Jika terlalu panjang, potong di titik atau koma terakhir sebelum 30 kata
-        words = generated_text.split()
-        if len(words) > 30:
-            # Ambil 30 kata pertama dan cari titik/koma terakhir
-            first_30 = ' '.join(words[:30])
-            last_period = first_30.rfind('.')
-            last_comma = first_30.rfind(',')
-            cut_point = max(last_period, last_comma)
-            if cut_point > 0:
-                generated_text = first_30[:cut_point + 1]
-            else:
-                generated_text = first_30
-        
-        print(f"[SUMMARIZE] Generated summary: {generated_text}")
-        
-        # Hitung hash dari reviews untuk cache invalidation
-        import hashlib
-        reviews_hash = hashlib.md5(json.dumps(shop_reviews, sort_keys=True).encode('utf-8')).hexdigest()[:8]
-        
         return jsonify({
             'status': 'success',
-            'place_id': place_id,
-            'shop_name': shop_name,
-            'summary': generated_text,
-            'reviews_count': len(reviews_for_summary),
-            'reviews_hash': reviews_hash,  # Hash untuk cache invalidation
-            'timestamp': time.time()
+            'summary': analysis.get('summary', ''),
+            'data': analysis,
+            'from_cache': analysis.get('_from_cache', False),
+            'cache_age_days': analysis.get('_cache_age_days'),
         }), 200
     
     except Exception as e:
@@ -3999,6 +7186,8 @@ Buat ringkasan SINGKAT (maksimal 1 kalimat, 15-30 kata) yang menonjolkan keunika
 # Path untuk cache sentiment analysis
 SENTIMENT_CACHE_PATH = os.path.join('frontend-cofind', 'src', 'data', 'sentiment_cache.json')
 CACHE_EXPIRY_DAYS = 7  # Cache berlaku 7 hari
+RECOMMENDATION_CACHE_PATH = os.path.join('frontend-cofind', 'src', 'data', 'llm_recommendation_cache.json')
+RECOMMENDATION_CACHE_VERSION = 1
 
 def load_sentiment_cache():
     """Load sentiment cache dari file"""
@@ -4017,6 +7206,24 @@ def save_sentiment_cache(cache):
             json.dump(cache, f, ensure_ascii=False, indent=2)
     except Exception as e:
         print(f"[CACHE] Error saving cache: {e}")
+
+
+def load_recommendation_cache():
+    if os.path.exists(RECOMMENDATION_CACHE_PATH):
+        try:
+            with open(RECOMMENDATION_CACHE_PATH, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception:
+            return {}
+    return {}
+
+
+def save_recommendation_cache(cache):
+    try:
+        with open(RECOMMENDATION_CACHE_PATH, 'w', encoding='utf-8') as f:
+            json.dump(cache, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"[CACHE] Error saving recommendation cache: {e}")
 
 def is_cache_valid(cache_entry, current_review_count):
     """Cek apakah cache masih valid"""
@@ -4119,203 +7326,44 @@ def analyze_sentiment():
                 'status': 'error',
                 'message': 'Tidak ada review untuk coffee shop ini'
             }), 404
-        
-        current_review_count = len(shop_reviews)
-        
-        # ========== CEK CACHE ==========
-        sentiment_cache = load_sentiment_cache()
-        cache_entry = sentiment_cache.get(place_id)
-        
-        if is_cache_valid(cache_entry, current_review_count):
-            # Return dari cache
-            cache_age_days = (time.time() - cache_entry.get('timestamp', 0)) / (60 * 60 * 24)
-            print(f"[CACHE] HIT for {place_id} (age: {cache_age_days:.1f} days)")
-            return jsonify({
-                'status': 'success',
-                'data': cache_entry.get('data', {}),
-                'from_cache': True,
-                'cache_age_days': round(cache_age_days, 1),
-                'reviews_analyzed': cache_entry.get('review_count', 0)
-            })
-        
-        print(f"[CACHE] MISS for {place_id}, generating new analysis...")
-        
-        # ========== GENERATE DENGAN LLM ==========
-        if hf_client is None:
-            return jsonify({
-                'status': 'error',
-                'message': 'HF_API_TOKEN tidak dikonfigurasi. LLM endpoint nonaktif.'
-            }), 503
-        
-        # Ambil maksimal 10 review untuk context (hemat token)
-        reviews_for_analysis = shop_reviews[:10]
-        
-        # Format reviews untuk context
-        reviews_text = []
-        for review in reviews_for_analysis:
-            if isinstance(review, dict):
-                review_text = review.get('text', '').strip()
-                rating = review.get('rating', 0)
-            else:
-                review_text = str(review).strip()
-                rating = 0
-            
-            if review_text and len(review_text) > 15:
-                reviews_text.append(f"({rating}⭐) {review_text}")
-        
-        if not reviews_text:
-            return jsonify({
-                'status': 'error',
-                'message': 'Tidak ada review yang valid untuk dianalisis'
-            }), 404
-        
-        reviews_context = '\n'.join(reviews_text)
-        
-        # System prompt untuk analisis sentimen terstruktur
-        system_prompt = """Anda adalah asisten analisis review coffee shop. Tugas Anda adalah menganalisis review pengunjung dan mengekstrak insight dalam format JSON yang KETAT.
 
-INSTRUKSI:
-1. Analisis SEMUA review dengan memahami KONTEKS kalimat
-2. Perhatikan negasi (tidak, bukan, belum) yang mengubah makna
-3. Bedakan antara pujian dan kritik berdasarkan konteks
-4. Output HARUS dalam format JSON yang valid
-
-FORMAT OUTPUT (JSON):
-{
-  "positif": ["poin positif 1", "poin positif 2", ...],
-  "negatif": ["poin negatif 1", ...],
-  "fasilitas": ["fasilitas 1", "fasilitas 2", ...],
-  "cocok_untuk": ["aktivitas 1", "aktivitas 2", ...],
-  "ringkasan": "satu kalimat ringkasan 15-25 kata"
-}
-
-ATURAN ANALISIS:
-- positif: Hal-hal yang DIPUJI pengunjung (maks 5 item, singkat 2-4 kata per item)
-- negatif: Hal-hal yang DIKRITIK pengunjung (maks 3 item, singkat 2-4 kata per item). Kosongkan [] jika tidak ada kritik.
-- fasilitas: Fasilitas yang DISEBUTKAN ada (WiFi, AC, colokan, parkir, musholla, toilet, outdoor)
-- cocok_untuk: Aktivitas yang COCOK berdasarkan review (kerja, belajar, meeting, nongkrong, kencan, foto)
-- ringkasan: Satu kalimat yang menggambarkan coffee shop ini
-
-CONTOH ANALISIS KONTEKS:
-- "WiFi tidak kencang" → negatif (ada negasi)
-- "WiFi kencang" → positif
-- "Tempatnya tidak pernah ramai" → positif (tidak ramai = nyaman)
-- "Tempatnya ramai" → negatif (ramai = kurang nyaman)
-
-Output HANYA JSON, tanpa penjelasan tambahan."""
-
-        user_prompt = f"""Analisis review berikut untuk "{shop_name}":
-
-{reviews_context}
-
-Berikan output dalam format JSON sesuai instruksi."""
-
-        print(f"[SENTIMENT] Analyzing sentiment for place_id: {place_id}")
-        print(f"[SENTIMENT] Total reviews: {len(reviews_for_analysis)}")
-        
-        # Call LLM with retry mechanism
-        import time
-        MAX_RETRIES = 3
-        RETRY_DELAY = 2  # seconds
-        
-        generated_text = None
-        last_error = None
-        
-        for attempt in range(MAX_RETRIES):
-            try:
-                response = hf_client.chat.completions.create(
-                    model=HF_MODEL,
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt}
-                    ],
-                    max_tokens=400,  # Cukup untuk JSON output
-                    temperature=0.2,  # Lebih deterministik untuk format JSON
-                    top_p=0.9
-                )
-                generated_text = response.choices[0].message.content.strip()
-                print(f"[SENTIMENT] Raw response: {generated_text[:200]}...")
-                break  # Success, exit retry loop
-                
-            except Exception as api_err:
-                last_error = api_err
-                print(f"[SENTIMENT] Attempt {attempt + 1}/{MAX_RETRIES} failed: {str(api_err)}")
-                if attempt < MAX_RETRIES - 1:
-                    print(f"[SENTIMENT] Retrying in {RETRY_DELAY * (attempt + 1)} seconds...")
-                    time.sleep(RETRY_DELAY * (attempt + 1))
-        
-        if generated_text is None:
-            print(f"[SENTIMENT] All retries failed, last error: {str(last_error)}")
-            error_str = str(last_error).lower()
-            
-            # Cek apakah error karena kuota habis (402)
-            if "402" in error_str or "quota" in error_str or "payment" in error_str or "limit" in error_str:
-                return jsonify({
-                    'status': 'error',
-                    'message': 'Kuota LLM gratis sudah habis. Silakan upgrade akun HuggingFace.',
-                    'error_code': 'QUOTA_EXCEEDED'
-                }), 402
-            
-            return jsonify({
-                'status': 'error',
-                'message': f'LLM API tidak tersedia: {str(last_error)}'
-            }), 503
-        
-        # Parse JSON response
+        facilities_text = ""
+        facilities_path = os.path.join('frontend-cofind', 'src', 'data', 'facilities.json')
         try:
-            # Coba ekstrak JSON dari response
-            json_match = re.search(r'\{[\s\S]*\}', generated_text)
-            if json_match:
-                result = json.loads(json_match.group())
-            else:
-                raise ValueError("No JSON found in response")
-            
-            # Validasi dan sanitasi hasil
-            sanitized_result = {
-                'positif': result.get('positif', [])[:5] if isinstance(result.get('positif'), list) else [],
-                'negatif': result.get('negatif', [])[:3] if isinstance(result.get('negatif'), list) else [],
-                'fasilitas': result.get('fasilitas', [])[:6] if isinstance(result.get('fasilitas'), list) else [],
-                'cocok_untuk': result.get('cocok_untuk', [])[:4] if isinstance(result.get('cocok_untuk'), list) else [],
-                'ringkasan': str(result.get('ringkasan', ''))[:200] if result.get('ringkasan') else ''
-            }
-            
-            print(f"[SENTIMENT] Parsed result: {sanitized_result}")
-            
-            # ========== SAVE TO CACHE ==========
-            sentiment_cache[place_id] = {
-                'data': sanitized_result,
-                'timestamp': time.time(),
-                'review_count': current_review_count,
-                'shop_name': shop_name
-            }
-            save_sentiment_cache(sentiment_cache)
-            print(f"[CACHE] Saved analysis for {place_id} ({current_review_count} reviews)")
-            
-            return jsonify({
-                'status': 'success',
-                'data': sanitized_result,
-                'from_cache': False,
-                'reviews_analyzed': len(reviews_for_analysis)
-            })
-            
-        except (json.JSONDecodeError, ValueError) as parse_err:
-            print(f"[SENTIMENT] JSON parse error: {parse_err}")
-            print(f"[SENTIMENT] Raw text was: {generated_text}")
-            
-            # Fallback: coba ekstrak informasi secara manual
-            fallback_result = {
-                'positif': [],
-                'negatif': [],
-                'fasilitas': [],
-                'cocok_untuk': [],
-                'ringkasan': generated_text[:150] if len(generated_text) > 0 else ''
-            }
-            
-            return jsonify({
-                'status': 'partial',
-                'message': 'Parsing JSON gagal, menggunakan fallback',
-                'data': fallback_result
-            })
+            if os.path.exists(facilities_path):
+                with open(facilities_path, 'r', encoding='utf-8') as f:
+                    facilities_data = json.load(f)
+                    shop_fac = facilities_data.get('facilities_by_place_id', {}).get(place_id, {})
+                    facilities_text = _format_facilities_to_text(shop_fac)
+        except Exception as facilities_err:
+            print(f"[SENTIMENT] Failed to load facilities fallback: {facilities_err}")
+
+        analysis = _get_structured_review_analysis(
+            place_id,
+            shop_name,
+            shop_reviews,
+            facilities_text=facilities_text,
+            use_cache=True,
+        )
+        legacy_data = {
+            'positif': analysis.get('highlights', [])[:5],
+            'negatif': analysis.get('warnings', [])[:3],
+            'fasilitas': analysis.get('aspect_keywords', {}).get('fasilitas', [])[:6],
+            'cocok_untuk': analysis.get('cocok_untuk', [])[:4],
+            'ringkasan': analysis.get('summary', ''),
+            'multi_aspect': analysis.get('aspects', {}),
+            'overall_sentiment': analysis.get('overall_sentiment', 'netral'),
+            'top_terms': analysis.get('top_terms', []),
+            'quality': analysis.get('quality', {}),
+        }
+        return jsonify({
+            'status': 'success',
+            'data': legacy_data,
+            'structured': analysis,
+            'from_cache': analysis.get('_from_cache', False),
+            'cache_age_days': analysis.get('_cache_age_days'),
+            'reviews_analyzed': analysis.get('quality', {}).get('used_reviews', 0),
+        })
             
     except Exception as e:
         print(f"[SENTIMENT] Error: {str(e)}")

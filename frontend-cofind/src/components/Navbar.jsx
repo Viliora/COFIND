@@ -1,29 +1,94 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import cofindImg from '../assets/cofind.svg?url';
 import { useAuth } from '../context/authContext';
+
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
 const Navbar = () => {
   const { user, profile, isAuthenticated, isAdmin, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchableShops, setSearchableShops] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [collectionDropdownOpen, setCollectionDropdownOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const desktopSearchRef = useRef(null);
+  const mobileSearchRef = useRef(null);
 
-  // Sync search query with URL params
   useEffect(() => {
-    const query = searchParams.get('search') || '';
-    setSearchQuery(query);
-  }, [searchParams]);
+    let isMounted = true;
+
+    const loadSearchableShops = async () => {
+      try {
+        setSearchLoading(true);
+        const response = await fetch(`${API_BASE}/api/coffeeshops`);
+        const result = await response.json();
+        if (!isMounted) return;
+        if (response.ok && result.status === 'success' && Array.isArray(result.data)) {
+          setSearchableShops(result.data);
+        }
+      } catch (error) {
+        console.error('[Navbar] Failed to load search suggestions:', error);
+      } finally {
+        if (isMounted) setSearchLoading(false);
+      }
+    };
+
+    loadSearchableShops();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const searchSuggestions = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return [];
+
+    return searchableShops
+      .filter((shop) => (shop.name || '').toLowerCase().includes(query))
+      .sort((a, b) => {
+        const aName = (a.name || '').toLowerCase();
+        const bName = (b.name || '').toLowerCase();
+        const aStarts = aName.startsWith(query) ? 1 : 0;
+        const bStarts = bName.startsWith(query) ? 1 : 0;
+        if (bStarts !== aStarts) return bStarts - aStarts;
+
+        const ratingDiff = (Number(b.rating) || 0) - (Number(a.rating) || 0);
+        if (ratingDiff !== 0) return ratingDiff;
+
+        const reviewDiff =
+          (Number(b.total_reviews ?? b.user_ratings_total) || 0) -
+          (Number(a.total_reviews ?? a.user_ratings_total) || 0);
+        if (reviewDiff !== 0) return reviewDiff;
+
+        return aName.localeCompare(bName);
+      })
+      .slice(0, 6);
+  }, [searchQuery, searchableShops]);
 
   // Close dropdown saat pindah halaman (navbar link lain diklik)
   useEffect(() => {
     setUserDropdownOpen(false);
     setCollectionDropdownOpen(false);
+    setShowSearchDropdown(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      const clickedDesktop = desktopSearchRef.current?.contains(event.target);
+      const clickedMobile = mobileSearchRef.current?.contains(event.target);
+      if (!clickedDesktop && !clickedMobile) {
+        setShowSearchDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Close user dropdown when clicking outside
   useEffect(() => {
@@ -60,32 +125,30 @@ const Navbar = () => {
   // Handle search submission
   const handleSearch = (e) => {
     e.preventDefault();
-    if (location.pathname !== '/') {
-      navigate(`/?search=${encodeURIComponent(searchQuery)}`);
-    } else {
-      const url = new URL(window.location);
-      url.searchParams.set('search', searchQuery);
-      window.history.pushState({}, '', url);
-      window.dispatchEvent(new Event('popstate'));
+    if (searchSuggestions.length > 0) {
+      const shop = searchSuggestions[0];
+      setSearchQuery(shop.name || '');
+      setShowSearchDropdown(false);
+      setMobileMenuOpen(false);
+      navigate(`/shop/${shop.place_id}`);
+      return;
     }
+
+    setShowSearchDropdown(searchQuery.trim().length > 0);
   };
 
   // Handle search input change
   const handleSearchChange = (e) => {
     const value = e.target.value;
     setSearchQuery(value);
-    
-    // Update URL in real-time if on home page
-    if (location.pathname === '/') {
-      const url = new URL(window.location);
-      if (value) {
-        url.searchParams.set('search', value);
-      } else {
-        url.searchParams.delete('search');
-      }
-      window.history.replaceState({}, '', url);
-      window.dispatchEvent(new Event('popstate'));
-    }
+    setShowSearchDropdown(value.trim().length > 0);
+  };
+
+  const handleSelectSearchSuggestion = (shop) => {
+    setSearchQuery(shop.name || '');
+    setShowSearchDropdown(false);
+    setMobileMenuOpen(false);
+    navigate(`/shop/${shop.place_id}`);
   };
   
   // Theme state management
@@ -160,11 +223,12 @@ const Navbar = () => {
             </Link>
 
             {/* Search Bar */}
-            <form onSubmit={handleSearch} className="hidden sm:flex items-center relative">
+            <form onSubmit={handleSearch} className="hidden sm:flex items-center relative" ref={desktopSearchRef}>
               <input
                 type="text"
                 value={searchQuery}
                 onChange={handleSearchChange}
+                onFocus={() => setShowSearchDropdown(searchQuery.trim().length > 0)}
                 placeholder="Coffee shop yang ingin dituju.."
                 className="w-48 md:w-64 lg:w-80 px-4 py-2 pl-10 text-sm bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-all"
               />
@@ -179,6 +243,36 @@ const Navbar = () => {
               >
                 <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
               </svg>
+              {showSearchDropdown ? (
+                <div className="absolute top-full left-0 right-0 mt-2 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 shadow-xl overflow-hidden z-50">
+                  {searchSuggestions.length > 0 ? (
+                    <div className="py-2">
+                      {searchSuggestions.map((shop) => {
+                        const totalReviews = Number(shop.total_reviews ?? shop.user_ratings_total ?? 0);
+                        return (
+                          <button
+                            key={shop.place_id}
+                            type="button"
+                            onClick={() => handleSelectSearchSuggestion(shop)}
+                            className="group w-full text-left px-4 py-3 hover:bg-amber-50 dark:hover:bg-zinc-700/80 transition-colors"
+                          >
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-amber-700 dark:group-hover:text-amber-400 transition-colors">
+                              {shop.name}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 group-hover:text-amber-600/80 dark:group-hover:text-amber-300 transition-colors">
+                              ⭐ {Number(shop.rating || 0).toFixed(1)} • {totalReviews.toLocaleString('id-ID')} reviews
+                            </p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                      {searchLoading ? 'Memuat daftar coffee shop...' : 'Tidak ada coffee shop yang cocok.'}
+                    </div>
+                  )}
+                </div>
+              ) : null}
             </form>
           </div>
 
@@ -488,11 +582,12 @@ const Navbar = () => {
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-gray-100 dark:border-zinc-800 py-3 max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
             {/* Mobile Search Bar */}
-            <form onSubmit={handleSearch} className="sm:hidden mb-3 relative">
+            <form onSubmit={handleSearch} className="sm:hidden mb-3 relative" ref={mobileSearchRef}>
               <input
                 type="text"
                 value={searchQuery}
                 onChange={handleSearchChange}
+                onFocus={() => setShowSearchDropdown(searchQuery.trim().length > 0)}
                 placeholder="Coffee shop yang ingin dituju.."
                 className="w-full px-4 py-2 pl-10 text-sm bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
               />
@@ -507,6 +602,36 @@ const Navbar = () => {
               >
                 <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
               </svg>
+              {showSearchDropdown ? (
+                <div className="absolute top-full left-0 right-0 mt-2 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 shadow-xl overflow-hidden z-50">
+                  {searchSuggestions.length > 0 ? (
+                    <div className="py-2">
+                      {searchSuggestions.map((shop) => {
+                        const totalReviews = Number(shop.total_reviews ?? shop.user_ratings_total ?? 0);
+                        return (
+                          <button
+                            key={shop.place_id}
+                            type="button"
+                            onClick={() => handleSelectSearchSuggestion(shop)}
+                            className="group w-full text-left px-4 py-3 hover:bg-amber-50 dark:hover:bg-zinc-700/80 transition-colors"
+                          >
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-amber-700 dark:group-hover:text-amber-400 transition-colors">
+                              {shop.name}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 group-hover:text-amber-600/80 dark:group-hover:text-amber-300 transition-colors">
+                              ⭐ {Number(shop.rating || 0).toFixed(1)} • {totalReviews.toLocaleString('id-ID')} reviews
+                            </p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                      {searchLoading ? 'Memuat daftar coffee shop...' : 'Tidak ada coffee shop yang cocok.'}
+                    </div>
+                  )}
+                </div>
+              ) : null}
             </form>
             <div className="flex flex-col gap-1">
               <Link
