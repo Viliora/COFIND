@@ -4,8 +4,9 @@ import { Link } from 'react-router-dom';
 import { REVIEW_VERB_EXCLUSIONS } from '../constants/reviewKeywordVerbs';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
-const MAX_PHOTOS = 5;
-const MAX_IMAGE_SIZE_KB = 500;
+const MAX_PHOTOS = 1;
+/** Batas ukuran file gambar per foto (2 MiB, selaras dengan backend). */
+const MAX_REVIEW_IMAGE_BYTES = 2 * 1024 * 1024;
 
 function StarRating({ value, hoverValue, onSelect, onHover }) {
   return (
@@ -99,13 +100,13 @@ const ReviewForm = ({
     for (let i = 0; i < files.length && photos.length < MAX_PHOTOS; i++) {
       const file = files[i];
       if (!file.type.startsWith('image/')) continue;
-      if (file.size > MAX_IMAGE_SIZE_KB * 1024) {
-        setError(`Ukuran gambar maksimal ${MAX_IMAGE_SIZE_KB} KB. "${file.name}" dilewati.`);
+      if (file.size > MAX_REVIEW_IMAGE_BYTES) {
+        setError(`Ukuran gambar maksimal 2 MB per file. "${file.name}" dilewati.`);
         continue;
       }
       try {
         const image_data = await fileToBase64(file);
-        setPhotos((prev) => [...prev, { caption: '', image_data, file_name: file.name }]);
+        setPhotos((prev) => [...prev, { image_data }]);
       } catch {
         setError('Gagal membaca file.');
       }
@@ -115,10 +116,6 @@ const ReviewForm = ({
 
   const removePhoto = (index) => {
     setPhotos((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const updatePhotoCaption = (index, caption) => {
-    setPhotos((prev) => prev.map((p, i) => (i === index ? { ...p, caption } : p)));
   };
 
   const handleSubmit = async (e) => {
@@ -150,7 +147,7 @@ const ReviewForm = ({
         text: text.trim(),
         rating_layanan: ratingLayanan || undefined,
         rating_suasana: ratingSuasana || undefined,
-        photos: photos.map((p) => ({ caption: p.caption || undefined, image_data: p.image_data }))
+        photos: photos.map((p) => ({ image_data: p.image_data }))
       };
       const response = await fetch(`${API_BASE}/api/reviews`, {
         method: 'POST',
@@ -331,7 +328,6 @@ const ReviewForm = ({
                     ref={fileInputRef}
                     type="file"
                     accept="image/*"
-                    multiple
                     className="hidden"
                     onChange={handleAddPhoto}
                   />
@@ -352,18 +348,9 @@ const ReviewForm = ({
                   {photos.length > 0 && (
                     <div className="mt-2 space-y-2">
                       {photos.map((p, i) => (
-                        <div key={i} className="flex gap-2 items-start p-2 bg-gray-50 dark:bg-zinc-900/50 rounded-lg">
-                          <img src={p.image_data} alt="" className="w-14 h-14 object-cover rounded" />
-                          <div className="flex-1 min-w-0">
-                            <input
-                              type="text"
-                              value={p.caption}
-                              onChange={(e) => updatePhotoCaption(i, e.target.value)}
-                              placeholder="Keterangan (opsional)"
-                              className="w-full text-sm px-2 py-1 rounded border border-gray-200 dark:border-zinc-600 bg-white dark:bg-zinc-700"
-                            />
-                          </div>
-                          <button type="button" onClick={() => removePhoto(i)} className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded">
+                        <div key={i} className="flex gap-2 items-center p-2 bg-gray-50 dark:bg-zinc-900/50 rounded-lg">
+                          <img src={p.image_data} alt="" className="w-14 h-14 object-cover rounded flex-shrink-0" />
+                          <button type="button" onClick={() => removePhoto(i)} className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded ml-auto" aria-label="Hapus foto">
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                           </button>
                         </div>

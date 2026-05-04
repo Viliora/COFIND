@@ -11,11 +11,10 @@ import os
 import sys
 
 # Samakan default dengan app.py
-HF_MODEL = os.getenv("HF_MODEL", "meta-llama/Meta-Llama-3-8B").strip()
+HF_MODEL = os.getenv("HF_MODEL", "meta-llama/Llama-3.1-8B-Instruct").strip()
 
-CUSTOM_QUERY = (
-    "saya ingin coffee shop yang enak buat nugas dan ada tempat solat atau musholla"
-)
+# Contoh pill seperti request API (tanpa input teks bebas)
+EXAMPLE_PILLS = ["belajar", "kerja"]
 
 
 def truncate_evidence_text(text: str, limit: int = 160) -> str:
@@ -25,15 +24,12 @@ def truncate_evidence_text(text: str, limit: int = 160) -> str:
     return cleaned[: max(0, limit - 3)].rstrip() + "..."
 
 
-def build_intent_line(pills: list[str], custom_query: str) -> str:
-    intent_parts = list(pills)
-    if custom_query:
-        intent_parts.append(f'kebutuhan tambahan: "{custom_query[:200]}"')
-    return " | ".join(intent_parts) if intent_parts else "preferensi umum"
+def build_intent_line(pills: list[str]) -> str:
+    return " | ".join(pills) if pills else "preferensi umum"
 
 
-def build_rerank_prompt(custom_query: str, num_candidates: int = 10, reviews_per_shop: int = 5) -> str:
-    intent_line = build_intent_line([], custom_query)
+def build_rerank_prompt(pills: list[str], num_candidates: int = 10, reviews_per_shop: int = 5) -> str:
+    intent_line = build_intent_line(pills)
     shop_blocks = []
     for idx in range(1, num_candidates + 1):
         review_lines = []
@@ -78,10 +74,9 @@ def build_rerank_prompt(custom_query: str, num_candidates: int = 10, reviews_per
     return "\n\n".join([role, style, context, guardrail])
 
 
-def build_summary_prompt(custom_query: str, quote_chars: int) -> str:
+def build_summary_prompt(pills: list[str], quote_chars: int) -> str:
     """quote_chars: panjang kasar tiap kutipan review (3 kutipan per toko, 3 toko)."""
-    intent_line = build_intent_line([], custom_query)
-    is_manual_mode = bool(custom_query)
+    intent_line = build_intent_line(pills)
 
     def make_quote(n: int) -> str:
         base = (
@@ -127,7 +122,7 @@ def build_summary_prompt(custom_query: str, quote_chars: int) -> str:
     context = (
         "CONTEXT:\n"
         f"User ingin coffee shop yang: {intent_line}\n"
-        f"Mode input: {'manual bebas' if is_manual_mode else 'pilihan preferensi'}\n\n"
+        "Mode input: pilihan konteks aktivitas (pill).\n\n"
         "Berikut 3 kandidat beserta DATA DARI REVIEW USER "
         "(tidak ada data fasilitas, tidak ada rating Google):\n\n"
         + "\n\n".join(shop_blocks)
@@ -168,16 +163,16 @@ def main() -> None:
     print(f"HF_MODEL: {HF_MODEL}")
     print("Panggilan 1 (opsional) _llm_semantic_rerank: max_new_tokens = 400")
     print("Panggilan 2 _generate_llm_review_summary: max_new_tokens = 600")
-    print("(Rerank hanya jika ada custom_query/pill DAN jumlah kandidat di atas ambang > 3.)")
+    print("(Rerank hanya jika ada pill DAN jumlah kandidat di atas ambang > 3.)")
     print()
     print("Catatan: Batas konteks model (mis. 8k token) ada di kartu model HF;")
     print("max_new_tokens hanya membatasi panjang OUTPUT generasi per request.\n")
 
-    summary_short = build_summary_prompt(CUSTOM_QUERY, quote_chars=120)
-    summary_mid = build_summary_prompt(CUSTOM_QUERY, quote_chars=280)
-    summary_long = build_summary_prompt(CUSTOM_QUERY, quote_chars=600)
+    summary_short = build_summary_prompt(EXAMPLE_PILLS, quote_chars=120)
+    summary_mid = build_summary_prompt(EXAMPLE_PILLS, quote_chars=280)
+    summary_long = build_summary_prompt(EXAMPLE_PILLS, quote_chars=600)
 
-    rerank_prompt = build_rerank_prompt(CUSTOM_QUERY, num_candidates=10, reviews_per_shop=5)
+    rerank_prompt = build_rerank_prompt(EXAMPLE_PILLS, num_candidates=10, reviews_per_shop=5)
 
     example_output_summary = (
         '[{"place_id":"PID_1","name":"Toko Rekomendasi 1","summary":"Kalau Anda mencari tempat untuk nugas '
@@ -200,43 +195,21 @@ def main() -> None:
         "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
     ]
 
-    tok_model = None
-    for mid in tokenizer_ids:
-        n = count_tokens_hf("test", mid)
-        if n is not None:
-            tok_model = mid
-            print(f"Menggunakan tokenizer: {tok_model}\n")
-            break
+    for label, prompt in [
+        ("summary pendek", summary_short),
+        ("summary sedang", summary_mid),
+        ("summary panjang", summary_long),
+        ("rerank", rerank_prompt),
+    ]:
+        print(f"--- {label} (~{len(prompt)} karakter) ---")
+        for mid in tokenizer_ids:
+            n = count_tokens_hf(prompt, mid)
+            if n is not None:
+                print(f"  {mid}: {n} token")
+        print(f"  (perkiraan): ~{rough_chars_to_tokens(prompt):.0f} token\n")
 
-    def show_block(label: str, text: str) -> None:
-        if tok_model:
-            inp = count_tokens_hf(text, tok_model)
-            print(f"{label}")
-            print(f"  Perkiraan input tokens (tokenizer): {inp}")
-        else:
-            print(f"{label}")
-            print(f"  Perkiraan input tokens (approx len/3.7): {rough_chars_to_tokens(text):.0f}")
-        print(f"  Panjang karakter prompt: {len(text)}")
-
-    show_block('Prompt SUMMARY (kutipan pendek ~120 char x 9):', summary_short)
-    show_block('Prompt SUMMARY (kutipan sedang ~280 char x 9):', summary_mid)
-    show_block('Prompt SUMMARY (kutipan panjang ~600 char x 9):', summary_long)
-    show_block('Prompt RERANK (10 toko x 5 review x 160 char):', rerank_prompt)
-
-    print("\n=== Perkiraan OUTPUT (bukan dari API nyata) ===")
-    if tok_model:
-        ot_sum = count_tokens_hf(example_output_summary, tok_model)
-        ot_rer = count_tokens_hf(example_output_rerank, tok_model)
-        print(f"Contoh JSON summary 3 toko: ~{ot_sum} tokens")
-        print(f"Contoh JSON rerank top 3:   ~{ot_rer} tokens")
-    else:
-        print(f"Contoh JSON summary: ~{rough_chars_to_tokens(example_output_summary):.0f} tokens")
-        print(f"Contoh JSON rerank:  ~{rough_chars_to_tokens(example_output_rerank):.0f} tokens")
-
-    print("\n=== Ringkasan untuk satu proses preferensi manual ===")
-    print("- Output LLM dibatasi maksimal 600 token (summary) + 400 token (rerank) jika rerank jalan.")
-    print("- Token INPUT nyata bergantung panjang kutipan review di database (summary tidak memotong quote).")
-    print("- Angka di atas memakai contoh sintetis; jalankan ulang setelah pip install transformers jika perlu.")
+    print("Contoh output summary (bukan prompt):", example_output_summary[:120], "...")
+    print("Contoh output rerank:", example_output_rerank[:120], "...")
 
 
 if __name__ == "__main__":

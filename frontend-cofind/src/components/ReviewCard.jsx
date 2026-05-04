@@ -3,8 +3,13 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/authContext';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
-const MAX_PHOTOS = 5;
-const MAX_IMAGE_SIZE_KB = 500;
+const MAX_PHOTOS = 1;
+const MAX_REVIEW_IMAGE_BYTES = 2 * 1024 * 1024;
+
+/** Foto yang boleh ditampilkan/diedit per review (maksimal MAX_PHOTOS). */
+function sliceReviewPhotos(photos) {
+  return (photos || []).filter((p) => p.image_data).slice(0, MAX_PHOTOS);
+}
 
 function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -19,7 +24,7 @@ const ReviewCard = ({ review, onDelete, onUpdate, onLike, highlightKeyword = '' 
   const [editRatingLayanan, setEditRatingLayanan] = useState(review.rating_layanan ?? 0);
   const [editRatingSuasana, setEditRatingSuasana] = useState(review.rating_suasana ?? 0);
   const [editPhotos, setEditPhotos] = useState(() =>
-    (review.photos || []).filter((p) => p.image_data).map((p) => ({ id: p.id, caption: p.caption || '', image_data: p.image_data }))
+    sliceReviewPhotos(review.photos).map((p) => ({ id: p.id, image_data: p.image_data }))
   );
   const [editError, setEditError] = useState('');
   const [success, setSuccess] = useState('');
@@ -45,7 +50,9 @@ const ReviewCard = ({ review, onDelete, onUpdate, onLike, highlightKeyword = '' 
     setEditRating(review.rating || 0);
     setEditRatingLayanan(review.rating_layanan ?? 0);
     setEditRatingSuasana(review.rating_suasana ?? 0);
-    setEditPhotos((review.photos || []).filter((p) => p.image_data).map((p) => ({ id: p.id, caption: p.caption || '', image_data: p.image_data })));
+    setEditPhotos(
+      sliceReviewPhotos(review.photos).map((p) => ({ id: p.id, image_data: p.image_data })),
+    );
     setEditError('');
     setSuccess('');
     setIsEditing(true);
@@ -65,13 +72,13 @@ const ReviewCard = ({ review, onDelete, onUpdate, onLike, highlightKeyword = '' 
     for (let i = 0; i < files.length && editPhotos.length < MAX_PHOTOS; i++) {
       const file = files[i];
       if (!file.type.startsWith('image/')) continue;
-      if (file.size > MAX_IMAGE_SIZE_KB * 1024) {
-        setEditError(`Ukuran gambar maksimal ${MAX_IMAGE_SIZE_KB} KB. "${file.name}" dilewati.`);
+      if (file.size > MAX_REVIEW_IMAGE_BYTES) {
+        setEditError(`Ukuran gambar maksimal 2 MB per file. "${file.name}" dilewati.`);
         continue;
       }
       try {
         const image_data = await fileToBase64(file);
-        setEditPhotos((prev) => [...prev, { caption: '', image_data }]);
+        setEditPhotos((prev) => [...prev, { image_data }]);
       } catch {
         setEditError('Gagal membaca file.');
       }
@@ -83,10 +90,6 @@ const ReviewCard = ({ review, onDelete, onUpdate, onLike, highlightKeyword = '' 
     setEditPhotos((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const updateEditPhotoCaption = (index, caption) => {
-    setEditPhotos((prev) => prev.map((p, i) => (i === index ? { ...p, caption } : p)));
-  };
-
   const closeEditModal = () => {
     setMenuOpen(false);
     setIsEditing(false);
@@ -94,7 +97,9 @@ const ReviewCard = ({ review, onDelete, onUpdate, onLike, highlightKeyword = '' 
     setEditRating(review.rating || 0);
     setEditRatingLayanan(review.rating_layanan ?? 0);
     setEditRatingSuasana(review.rating_suasana ?? 0);
-    setEditPhotos((review.photos || []).filter((p) => p.image_data).map((p) => ({ id: p.id, caption: p.caption || '', image_data: p.image_data })));
+    setEditPhotos(
+      sliceReviewPhotos(review.photos).map((p) => ({ id: p.id, image_data: p.image_data })),
+    );
     setEditError('');
     setSuccess('');
   };
@@ -165,7 +170,7 @@ const ReviewCard = ({ review, onDelete, onUpdate, onLike, highlightKeyword = '' 
           rating: editRating,
           rating_layanan: editRatingLayanan || undefined,
           rating_suasana: editRatingSuasana || undefined,
-          photos: editPhotos.map((p) => ({ caption: p.caption || undefined, image_data: p.image_data })),
+          photos: editPhotos.map((p) => ({ image_data: p.image_data })),
         })
       });
 
@@ -262,6 +267,7 @@ const ReviewCard = ({ review, onDelete, onUpdate, onLike, highlightKeyword = '' 
 
   const displayName = review.profiles?.full_name || review.profiles?.username || review.full_name || review.username || review.author_name || 'Anonim';
   const totalUlasan = review.user_total_reviews != null ? review.user_total_reviews : 0;
+  const displayReviewPhotos = sliceReviewPhotos(review.photos);
 
   const renderHighlightedReviewText = () => {
     const text = String(review.text || '');
@@ -420,9 +426,9 @@ const ReviewCard = ({ review, onDelete, onUpdate, onLike, highlightKeyword = '' 
           <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed mb-3 whitespace-pre-wrap">
             {renderHighlightedReviewText()}
           </p>
-          {review.photos && review.photos.filter((p) => p.image_data).length > 0 && (
+          {displayReviewPhotos.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-3">
-              {review.photos.filter((p) => p.image_data).map((photo) => (
+              {displayReviewPhotos.map((photo) => (
                 <div key={photo.id} className="flex flex-col">
                   <button
                     type="button"
@@ -431,16 +437,11 @@ const ReviewCard = ({ review, onDelete, onUpdate, onLike, highlightKeyword = '' 
                   >
                     <img
                       src={photo.image_data}
-                      alt={photo.caption || 'Foto review'}
+                      alt="Foto review"
                       className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
                     />
                     <span className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-200 pointer-events-none" aria-hidden />
                   </button>
-                  {photo.caption && (
-                    <span className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-[96px] truncate" title={photo.caption}>
-                      {photo.caption}
-                    </span>
-                  )}
                 </div>
               ))}
             </div>
@@ -473,14 +474,9 @@ const ReviewCard = ({ review, onDelete, onUpdate, onLike, highlightKeyword = '' 
                   </button>
                   <img
                     src={photoModal.image_data}
-                    alt={photoModal.caption || 'Foto review'}
+                    alt="Foto review"
                     className="max-w-full max-h-[85vh] w-auto h-auto object-contain rounded-lg shadow-2xl"
                   />
-                  {photoModal.caption && (
-                    <p className="mt-3 text-sm text-gray-200 dark:text-gray-300 text-center max-w-lg">
-                      {photoModal.caption}
-                    </p>
-                  )}
                 </div>
               </div>
             </>
@@ -574,7 +570,6 @@ const ReviewCard = ({ review, onDelete, onUpdate, onLike, highlightKeyword = '' 
                   ref={editPhotoInputRef}
                   type="file"
                   accept="image/*"
-                  multiple
                   className="hidden"
                   onChange={handleEditAddPhoto}
                 />
@@ -594,18 +589,9 @@ const ReviewCard = ({ review, onDelete, onUpdate, onLike, highlightKeyword = '' 
                 {editPhotos.length > 0 && (
                   <div className="mt-2 space-y-2">
                     {editPhotos.map((p, i) => (
-                      <div key={i} className="flex gap-2 items-start p-2 bg-gray-50 dark:bg-zinc-900/50 rounded-lg">
+                      <div key={p.id ?? `new-${i}`} className="flex gap-2 items-center p-2 bg-gray-50 dark:bg-zinc-900/50 rounded-lg">
                         <img src={p.image_data} alt="" className="w-14 h-14 object-cover rounded flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <input
-                            type="text"
-                            value={p.caption}
-                            onChange={(e) => updateEditPhotoCaption(i, e.target.value)}
-                            placeholder="Keterangan (opsional)"
-                            className="w-full text-sm px-2 py-1 rounded border border-gray-200 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-gray-900 dark:text-white"
-                          />
-                        </div>
-                        <button type="button" onClick={() => removeEditPhoto(i)} className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded flex-shrink-0" aria-label="Hapus foto">
+                        <button type="button" onClick={() => removeEditPhoto(i)} className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded flex-shrink-0 ml-auto" aria-label="Hapus foto">
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                         </button>
                       </div>

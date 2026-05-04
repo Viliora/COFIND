@@ -3,9 +3,46 @@ Review Management Utilities
 CRUD operations for coffee shop reviews
 """
 
+import base64
+import re
 import sqlite3
 from datetime import datetime
 from auth_utils import get_db_connection
+
+# Batas ukuran decoded image per foto (selaras dengan frontend review).
+MAX_REVIEW_PHOTO_BYTES = 2 * 1024 * 1024
+
+
+def _review_image_data_byte_len(image_data):
+    """Panjang bytes konten gambar dari data URL base64 atau string mentah."""
+    if not image_data:
+        return 0
+    s = str(image_data).strip()
+    m = re.match(r'^data:image/[^;]+;base64,(.+)$', s, re.DOTALL | re.IGNORECASE)
+    if not m:
+        return len(s.encode('utf-8'))
+    try:
+        return len(base64.b64decode(m.group(1), validate=False))
+    except Exception:
+        return None
+
+
+def _validate_review_photos_size(photos):
+    """Return error message string jika ada foto melebihi MAX_REVIEW_PHOTO_BYTES."""
+    if not photos:
+        return None
+    for idx, p in enumerate(photos[:1]):
+        if not isinstance(p, dict):
+            continue
+        data = p.get('image_data')
+        if not data:
+            continue
+        n = _review_image_data_byte_len(data)
+        if n is None:
+            return f'Format gambar tidak valid (foto #{idx + 1}).'
+        if n > MAX_REVIEW_PHOTO_BYTES:
+            return f'Ukuran gambar maksimal 2 MB per file (foto #{idx + 1}).'
+    return None
 
 def _validate_rating(r, allow_none=False):
     if allow_none and r is None:
@@ -34,7 +71,12 @@ def create_review(user_id, place_id, rating, text='', rating_makanan=None, ratin
         if not shop:
             return {'success': False, 'error': 'Coffee shop not found'}
         shop_id = shop[0]
-        
+
+        photo_err = _validate_review_photos_size(photos)
+        if photo_err:
+            conn.close()
+            return {'success': False, 'error': photo_err}
+
         cursor.execute('''
             INSERT INTO reviews (user_id, shop_id, place_id, rating, review_text, rating_makanan, rating_layanan, rating_suasana, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -53,7 +95,7 @@ def create_review(user_id, place_id, rating, text='', rating_makanan=None, ratin
         review_id = cursor.lastrowid
         
         photos = photos or []
-        for i, p in enumerate(photos[:5]):  # max 5 photos
+        for i, p in enumerate(photos[:1]):  # maksimal 1 foto per review
             caption = (p.get('caption') or '').strip() if isinstance(p, dict) else ''
             image_data = p.get('image_data') if isinstance(p, dict) else None
             cursor.execute(
@@ -130,12 +172,13 @@ def get_review(review_id):
         return {'success': False, 'error': str(e)}
 
 def get_reviews_for_shop(place_id, limit=50, current_user_id=None):
-    """Get all reviews for a coffee shop. Optionally include like_count and user_has_liked when current_user_id is set."""
+    """Get reviews for a coffee shop. Optionally include like_count and user_has_liked when current_user_id is set.
+    limit=None: ambil semua baris (tanpa LIMIT), untuk pipeline rekomendasi / analisis LLM menyeluruh."""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
-        reviews = cursor.execute('''
+
+        base_sql = '''
             SELECT r.id, r.user_id, r.shop_id, r.place_id, r.rating, r.review_text,
                    r.rating_makanan, r.rating_layanan, r.rating_suasana,
                    r.created_at, r.updated_at, u.username
@@ -143,8 +186,11 @@ def get_reviews_for_shop(place_id, limit=50, current_user_id=None):
             LEFT JOIN users u ON r.user_id = u.id
             WHERE r.place_id = ?
             ORDER BY r.created_at DESC
-            LIMIT ?
-        ''', (place_id, limit)).fetchall()
+        '''
+        if limit is None:
+            reviews = cursor.execute(base_sql, (place_id,)).fetchall()
+        else:
+            reviews = cursor.execute(base_sql + ' LIMIT ?', (place_id, limit)).fetchall()
         
         user_ids = list({r[1] for r in reviews if r[1]})
         user_total_reviews = {}
@@ -305,6 +351,11 @@ def update_review(review_id, user_id, rating=None, text=None, rating_makanan=Non
         if rating_suasana is not None and not _validate_rating(rating_suasana, allow_none=True):
             conn.close()
             return {'success': False, 'error': 'Rating suasana must be between 1 and 5'}
+        if photos is not None:
+            photo_err = _validate_review_photos_size(photos)
+            if photo_err:
+                conn.close()
+                return {'success': False, 'error': photo_err}
         cursor.execute('''
             UPDATE reviews
             SET rating = ?, review_text = ?, rating_makanan = ?, rating_layanan = ?, rating_suasana = ?, updated_at = ?
@@ -320,7 +371,7 @@ def update_review(review_id, user_id, rating=None, text=None, rating_makanan=Non
         ))
         if photos is not None:
             cursor.execute('DELETE FROM review_photos WHERE review_id = ?', (review_id,))
-            for p in (photos or [])[:5]:
+            for p in (photos or [])[:1]:
                 caption = (p.get('caption') or '').strip() if isinstance(p, dict) else ''
                 image_data = p.get('image_data') if isinstance(p, dict) else None
                 if image_data:

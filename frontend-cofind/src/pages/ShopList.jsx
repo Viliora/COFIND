@@ -4,6 +4,11 @@ import HeroSwiper from '../components/HeroSwiper';
 import CoffeeShopMap from '../components/CoffeeShopMap';
 import CoffeeShopRadiusMap from '../components/CoffeeShopRadiusMap';
 import RecommendationModal from '../components/RecommendationModal';
+import {
+  CONTEXT_PILL_OPTIONS,
+  CONTEXT_PILL_THEMES,
+  CONTEXT_PILL_THEME_DEFAULT,
+} from '../constants/reviewPills';
 import { preloadFeaturedImages } from '../utils/imagePreloader';
 import { ensureCoffeeShopImageMap } from '../utils/coffeeShopImages';
 import { getRecentlyViewedWithDetails } from '../utils/recentlyViewed';
@@ -26,129 +31,6 @@ function normalizeMatchText(value) {
   return String(value ?? '').trim().toLowerCase();
 }
 
-const MANUAL_CONTEXT_KEYWORDS = {
-  cozy: ['cozy', 'nyaman', 'tenang', 'santai', 'homey', 'adem', 'betah'],
-  belajar: ['belajar', 'kerja', 'tugas', 'laptop', 'wfc', 'produktif', 'fokus'],
-  'wifi stabil': ['wifi', 'wi-fi', 'internet', 'koneksi', 'sinyal'],
-  stopkontak: ['stopkontak', 'colokan', 'charger', 'charge', 'outlet', 'cas'],
-  'ruang ibadah': ['ruang ibadah', 'musholla', 'mushola', 'sholat', 'solat', 'salat', 'masjid'],
-  fotogenik: ['fotogenik', 'aesthetic', 'estetik', 'instagramable', 'foto'],
-  'live music': ['live music', 'musik', 'akustik', 'band', 'nyanyi'],
-  'parkiran luas': ['parkiran', 'parkir', 'parking'],
-  '24 jam': ['24 jam', 'buka malam', 'larut malam', 'subuh'],
-  keluarga: ['keluarga', 'family', 'anak', 'ramah keluarga', 'bawa anak'],
-};
-
-/** Huruf, angka, spasi, dan koma saja (tanpa karakter khusus lain). */
-const MANUAL_INPUT_ALLOWED_REGEX = /^[a-z0-9\s,]+$/i;
-const MANUAL_INPUT_RAW_ALLOWED_REGEX = /^[a-zA-Z0-9\s,]*$/;
-const MANUAL_SPECIAL_CHAR_NOTIFICATION =
-  'Jangan gunakan karakter khusus. Yang diperbolehkan: huruf, angka, spasi, dan koma (,).';
-const MANUAL_PROFANITY_WORDS = new Set([
-  'anjing', 'bangsat', 'kontol', 'memek', 'ngentot', 'tai', 'bajingan', 'tolol', 'goblok', 'asu',
-]);
-const MANUAL_MAX_CHARS = 80;
-const RECOMMENDATION_FIELDS = [
-  { label: '🛋️ Cozy', value: 'cozy' },
-  { label: '📚 Belajar', value: 'belajar' },
-  { label: '📶 WiFi', value: 'wifi stabil' },
-  { label: '🔌 Stopkontak', value: 'stopkontak' },
-  { label: '🕌 Ruang Ibadah', value: 'ruang ibadah' },
-  { label: '📸 Fotogenik', value: 'fotogenik' },
-  { label: '🎵 Live Music', value: 'live music' },
-  { label: '🅿️ Parkir Luas', value: 'parkiran luas' },
-  { label: '🌙 24 jam', value: '24 jam' },
-  { label: '👨‍👩‍👧‍👦 Keluarga', value: 'keluarga' },
-];
-
-function normalizeManualPreference(value) {
-  return String(value ?? '')
-    .toLowerCase()
-    .replace(/[^a-z0-9\s,]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function sanitizeManualPreferenceInput(value) {
-  return String(value ?? '').replace(/[^a-zA-Z0-9\s,]/g, ' ');
-}
-
-function truncateManualPreferenceToMaxChars(value, maxChars = MANUAL_MAX_CHARS) {
-  const safe = sanitizeManualPreferenceInput(value);
-  return safe.slice(0, maxChars);
-}
-
-function getManualPreferenceCharCount(value) {
-  return sanitizeManualPreferenceInput(value).length;
-}
-
-function containsManualProfanity(value) {
-  const normalized = normalizeManualPreference(value);
-  if (!normalized) return false;
-  return normalized
-    .split(/\s+/)
-    .filter(Boolean)
-    .some((token) => MANUAL_PROFANITY_WORDS.has(token));
-}
-
-function hasKnownContextKeyword(value) {
-  const normalized = normalizeManualPreference(value);
-  if (!normalized) return false;
-  const knownTerms = Object.values(MANUAL_CONTEXT_KEYWORDS).flat().map((t) => normalizeManualPreference(t));
-  return knownTerms.includes(normalized) || knownTerms.some((term) => term && normalized.includes(term));
-}
-
-function isLikelyGibberishToken(token) {
-  if (!token || token.length < 7) return false;
-  if (/^\d+$/.test(token)) return true;
-  const vowelCount = (token.match(/[aiueo]/g) || []).length;
-  const consonantCluster = /[bcdfghjklmnpqrstvwxyz]{5,}/.test(token);
-  return vowelCount <= 1 || consonantCluster;
-}
-
-function looksLikeAbsurdManualPreference(value) {
-  const normalized = normalizeManualPreference(value);
-  if (!normalized) return false;
-  const tokens = normalized.split(/\s+/).filter(Boolean);
-  if (!tokens.length) return false;
-  if (tokens.length === 1 && tokens[0].length >= 10 && !hasKnownContextKeyword(tokens[0])) {
-    return true;
-  }
-  const gibberishCount = tokens.filter(isLikelyGibberishToken).length;
-  return gibberishCount >= Math.max(1, Math.ceil(tokens.length * 0.6));
-}
-
-function getManualPreferenceValidationMessage(value) {
-  const normalized = normalizeManualPreference(value);
-  if (!normalized) return '';
-  const charCount = getManualPreferenceCharCount(value);
-
-  // 1) Normalisasi input (sudah via normalizeManualPreference)
-  // 2) Basic validation
-  if (normalized.length < 3) {
-    return 'Input opsi Lainnya terlalu pendek. Masukkan minimal 3 karakter.';
-  }
-  if (normalized.length > MANUAL_MAX_CHARS) {
-    return `Input opsi Lainnya terlalu panjang. Gunakan maksimal ${MANUAL_MAX_CHARS} karakter.`;
-  }
-  if (!MANUAL_INPUT_ALLOWED_REGEX.test(normalized)) {
-    return 'Input opsi Lainnya hanya boleh berisi huruf, angka, spasi, dan koma (,).';
-  }
-  if (charCount > MANUAL_MAX_CHARS) {
-    return `Input opsi Lainnya maksimal ${MANUAL_MAX_CHARS} karakter.`;
-  }
-
-  if (containsManualProfanity(normalized)) {
-    return 'Sistem belum mengerti preferensi Anda. Coba gunakan preferensi lain.';
-  }
-
-  if (looksLikeAbsurdManualPreference(normalized)) {
-    return 'Sistem belum mengerti preferensi Anda. Coba gunakan preferensi lain.';
-  }
-
-  return '';
-}
-
 /** Urut katalog utama: rating tertinggi dulu, lalu jumlah review Google (banyak → sedikit) */
 function sortShopsByGoogleMaps(shops) {
   return [...shops].sort((a, b) => {
@@ -167,14 +49,10 @@ export default function ShopList() {
   const [activeFilter] = useState('all');
   const [selectedPills, setSelectedPills] = useState([]);
   const [confirmedPills, setConfirmedPills] = useState([]);
-  const [confirmedCustomQuery, setConfirmedCustomQuery] = useState('');
   const [llmRecommendations, setLlmRecommendations] = useState([]);
+  const [recommendationIntentContext, setRecommendationIntentContext] = useState(null);
   const [pillRecommendLoading, setPillRecommendLoading] = useState(false);
   const [pillRecommendError, setPillRecommendError] = useState('');
-  const [otherPreferenceText, setOtherPreferenceText] = useState('');
-  const [otherPreferenceError, setOtherPreferenceError] = useState('');
-  const [recommendationModalMode, setRecommendationModalMode] = useState('pills');
-  const [manualSearchAttempted, setManualSearchAttempted] = useState(false);
   const [recommendationNotification, setRecommendationNotification] = useState(null);
   const [showRecommendationModal, setShowRecommendationModal] = useState(false);
   const featuredScrollRef = useRef(null);
@@ -403,7 +281,7 @@ export default function ShopList() {
   };
 
   // Quick recommendation fields (sama dengan LLMAnalyzer)
-  const recommendationFields = RECOMMENDATION_FIELDS;
+  const recommendationFields = CONTEXT_PILL_OPTIONS;
 
   // Jarak Haversine (km) antara dua koordinat
   const haversineKm = (lat1, lng1, lat2, lng2) => {
@@ -464,148 +342,38 @@ export default function ShopList() {
     );
   };
 
-  // Handle pill click - toggle selection (max 3)
+  const pillLabelByValue = useMemo(
+    () => Object.fromEntries(CONTEXT_PILL_OPTIONS.map((p) => [p.value, p.label])),
+    [],
+  );
+
+  // Satu konteks aktivitas per waktu (pill tunggal)
   const handlePillClick = (pillValue) => {
-    if (otherPreferenceText.trim()) return;
     setPillRecommendError('');
-    setOtherPreferenceError('');
-    setSelectedPills(prev => {
-      if (prev.includes(pillValue)) {
-        // Jika sudah dipilih, hapus
-        return prev.filter(p => p !== pillValue);
-      } else {
-        // Jika belum dipilih dan belum mencapai max 3, tambahkan
-        if (prev.length < 3) {
-          return [...prev, pillValue];
-        } else {
-          // Sudah mencapai max 3, tidak bisa tambah lagi
-          return prev;
-        }
-      }
+    setSelectedPills((prev) => {
+      if (prev.includes(pillValue)) return [];
+      return [pillValue];
     });
   };
 
   const hasConfirmedRecommendation = useMemo(
-    () => confirmedPills.length > 0 || Boolean((confirmedCustomQuery || '').trim()),
-    [confirmedPills, confirmedCustomQuery]
+    () => confirmedPills.length > 0,
+    [confirmedPills],
   );
 
   const hasPendingPillChanges = useMemo(() => {
     const selectedKey = [...selectedPills].sort().join('|');
     const confirmedKey = [...confirmedPills].sort().join('|');
-    const pillsDiffer = selectedKey !== confirmedKey;
-    const customDraft = otherPreferenceText.trim();
-    const customConfirmed = (confirmedCustomQuery || '').trim();
-    const manualDiffer =
-      Boolean(customDraft || customConfirmed) && customDraft !== customConfirmed;
-    return pillsDiffer || manualDiffer;
-  }, [selectedPills, confirmedPills, otherPreferenceText, confirmedCustomQuery]);
-
-  const manualCharCount = useMemo(
-    () => getManualPreferenceCharCount(otherPreferenceText),
-    [otherPreferenceText]
-  );
-  const isManualModeActive =
-    (showRecommendationModal && recommendationModalMode === 'manual') || Boolean(otherPreferenceText.trim());
-  const isPillModeActive = selectedPills.length > 0;
-
-  const openManualPreferenceModal = () => {
-    if (selectedPills.length > 0) return;
-    setRecommendationModalMode('manual');
-    setShowRecommendationModal(true);
-    setPillRecommendError('');
-    setOtherPreferenceError('');
-    setManualSearchAttempted(
-      llmRecommendations.length > 0 || Boolean((confirmedCustomQuery || '').trim()),
-    );
-  };
-
-  const handleManualModalAnalyze = async () => {
-    const custom = otherPreferenceText.trim();
-    if (!custom) {
-      setOtherPreferenceError('Masukkan preferensi terlebih dahulu.');
-      return;
-    }
-    const customValidationError = getManualPreferenceValidationMessage(otherPreferenceText);
-    if (customValidationError) {
-      setOtherPreferenceError(customValidationError);
-      setRecommendationNotification({
-        type: 'error',
-        message: customValidationError,
-      });
-      return;
-    }
-    setManualSearchAttempted(true);
-    setOtherPreferenceError('');
-    setConfirmedPills([]);
-    setConfirmedCustomQuery(custom);
-    setPillRecommendLoading(true);
-    setPillRecommendError('');
-    setLlmRecommendations([]);
-    try {
-      const res = await fetch(`${API_BASE}/api/recommend-by-preferences`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          preferences: [],
-          custom_query: custom,
-        }),
-      });
-      let data = null;
-      try {
-        data = await res.json();
-      } catch (parseError) {
-        console.error('[ShopList] failed to parse recommend-by-preferences response:', parseError);
-      }
-
-      if (!res.ok) {
-        throw new Error(data?.message || 'Rekomendasi AI sedang gagal diproses. Coba lagi.');
-      }
-
-      if (data.status === 'success' && Array.isArray(data.recommendations)) {
-        setLlmRecommendations(data.recommendations);
-        if (data.recommendations.length === 0) {
-          const emptyMessage = data?.message
-            || 'Sistem belum mengerti preferensi Anda. Coba gunakan preferensi lain.';
-          setPillRecommendError(emptyMessage);
-          setRecommendationNotification({
-            type: 'error',
-            message: emptyMessage,
-          });
-        }
-      } else {
-        setPillRecommendError(data?.message || 'Rekomendasi AI belum bisa ditampilkan.');
-        setLlmRecommendations([]);
-        if (data?.message) {
-          setRecommendationNotification({
-            type: 'error',
-            message: data.message,
-          });
-        }
-      }
-    } catch (err) {
-      console.error('[ShopList] recommend-by-preferences error:', err);
-      setPillRecommendError(err.message || 'Gagal menghubungi layanan rekomendasi AI.');
-      setLlmRecommendations([]);
-      setRecommendationNotification({
-        type: 'error',
-        message: err.message || 'Gagal menghubungi layanan rekomendasi AI.',
-      });
-    } finally {
-      setPillRecommendLoading(false);
-    }
-  };
+    return selectedKey !== confirmedKey;
+  }, [selectedPills, confirmedPills]);
 
   const requestPillRecommendations = async (pillValues) => {
     if (!Array.isArray(pillValues) || pillValues.length === 0) return;
-    setRecommendationModalMode('pills');
-    setOtherPreferenceError('');
-    setOtherPreferenceText('');
     setConfirmedPills([...pillValues]);
-    setConfirmedCustomQuery('');
     setPillRecommendLoading(true);
     setPillRecommendError('');
     setLlmRecommendations([]);
+    setRecommendationIntentContext(null);
     setShowRecommendationModal(false);
     try {
       const res = await fetch(`${API_BASE}/api/recommend-by-preferences`, {
@@ -613,7 +381,6 @@ export default function ShopList() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           preferences: pillValues,
-          custom_query: '',
         }),
       });
       let data = null;
@@ -629,9 +396,10 @@ export default function ShopList() {
 
       if (data.status === 'success' && Array.isArray(data.recommendations)) {
         setLlmRecommendations(data.recommendations);
+        setRecommendationIntentContext(data.intent_context || null);
         if (data.recommendations.length === 0) {
           const emptyMessage = data?.message
-            || 'Maaf, saat ini belum ada coffee shop yang sesuai. Coba gunakan button preferensi yang tersedia atau input preference lain.';
+            || 'Maaf, saat ini belum ada coffee shop yang cocok dengan konteks ini. Coba konteks lain.';
           setPillRecommendError(emptyMessage);
           setRecommendationNotification({
             type: 'error',
@@ -674,7 +442,7 @@ export default function ShopList() {
     return map;
   }, [coffeeShops]);
 
-  // Konfirmasi pill di beranda (tanpa input manual; preferensi lainnya lewat modal)
+  // Konfirmasi pill konteks di beranda → POST rekomendasi review-based
   const handleConfirmPills = async () => {
     if (selectedPills.length === 0) return;
     await requestPillRecommendations(selectedPills);
@@ -840,99 +608,53 @@ export default function ShopList() {
           </div>
         )}
 
-        {/* Quick Recommendation Pills */}
+        {/* Konteks aktivitas (pill) */}
         {!error && !isLoading && coffeeShops.length > 0 && (
           <div className="mb-6 sm:mb-8">
             <div className="mb-3">
               <h3 className="text-sm sm:text-base font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                Cari berdasarkan preferensi:
+                Cari berdasarkan konteks aktivitas:
               </h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                Pilih hingga 3 pill lalu tekan OK, atau gunakan tombol Preferensi lainnya untuk menulis preferensi
-                bebas di modal (maksimal 3 rekomendasi).
+                Pilih satu pill yang sesuai dengan prefrensi Coffee Shop yang ingin anda kunjungi
               </p>
             </div>
             <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
               {recommendationFields.map((field) => {
                 const isSelected = selectedPills.includes(field.value);
-                const isDisabled = isManualModeActive || (!isSelected && selectedPills.length >= 3);
-                
+                const theme = CONTEXT_PILL_THEMES[field.value] || CONTEXT_PILL_THEME_DEFAULT;
                 return (
                   <button
                     key={field.value}
+                    type="button"
                     onClick={() => handlePillClick(field.value)}
-                    disabled={isDisabled}
                     className={`
-                      px-3 sm:px-4 py-2 rounded-full text-sm font-medium
-                      transition-all duration-200
-                      ${
-                        isSelected
-                          ? 'bg-indigo-600 text-white shadow-md hover:bg-indigo-700 scale-105'
-                          : isDisabled
-                          ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-50'
-                          : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:shadow-sm'
-                      }
+                      px-3 sm:px-4 py-2 rounded-full text-sm font-semibold
+                      transition-shadow duration-200 ease-out
+                      focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900/20 dark:focus-visible:ring-offset-black/30
+                      ${isSelected ? theme.selected : theme.idle}
                     `}
-                    title={isDisabled ? 'Maksimal 3 preferensi yang bisa dipilih' : isSelected ? 'Klik untuk menghapus' : 'Klik untuk memilih'}
                   >
                     {field.label}
                     {isSelected && (
-                      <span className="ml-1.5 text-xs">✓</span>
+                      <span className="ml-1.5 text-xs opacity-95" aria-hidden>
+                        ✓
+                      </span>
                     )}
                   </button>
                 );
               })}
-              <button
-                type="button"
-                onClick={openManualPreferenceModal}
-                disabled={isPillModeActive}
-                className={`
-                  px-3 sm:px-4 py-2 rounded-full text-sm font-medium transition-all duration-200
-                  ${
-                    isPillModeActive
-                      ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-50'
-                      : 'bg-gradient-to-r from-violet-500 to-indigo-600 text-white shadow-md hover:from-violet-600 hover:to-indigo-700 border border-transparent'
-                  }
-                `}
-                title={
-                  isPillModeActive
-                    ? 'Hapus pilihan pill terlebih dahulu untuk menggunakan preferensi lainnya'
-                    : 'Buka modal: tulis preferensi dan lihat hasil LLM di tempat yang sama'
-                }
-              >
-                Preferensi lainnya
-              </button>
             </div>
-            {(selectedPills.length > 0 || hasConfirmedRecommendation) && (
+            {selectedPills.length > 0 && (
               <div className="mt-3 flex flex-wrap items-center gap-2">
-                {selectedPills.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={handleConfirmPills}
-                    disabled={pillRecommendLoading || Boolean(otherPreferenceError)}
-                    className="px-3 sm:px-4 py-2 rounded-full text-sm font-medium bg-indigo-600 text-white shadow-md hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200"
-                    title="Konfirmasi preferensi dan lihat rekomendasi"
-                  >
-                    {pillRecommendLoading && recommendationModalMode === 'pills' ? 'Menganalisis...' : 'OK'}
-                  </button>
-                )}
                 <button
                   type="button"
-                  onClick={() => {
-                    setSelectedPills([]);
-                    setConfirmedPills([]);
-                    setConfirmedCustomQuery('');
-                    setOtherPreferenceText('');
-                    setOtherPreferenceError('');
-                    setManualSearchAttempted(false);
-                    setRecommendationModalMode('pills');
-                    setLlmRecommendations([]);
-                    setPillRecommendError('');
-                    setShowRecommendationModal(false);
-                  }}
-                  className="px-3 sm:px-4 py-2 rounded-full text-sm font-medium bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 transition-all duration-200"
+                  onClick={handleConfirmPills}
+                  disabled={pillRecommendLoading}
+                  className="px-3 sm:px-4 py-2 rounded-full text-sm font-medium bg-indigo-600 text-white shadow-md hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200"
+                  title="Konfirmasi konteks dan lihat rekomendasi"
                 >
-                  Hapus semua filter
+                  {pillRecommendLoading ? 'Menganalisis...' : 'OK'}
                 </button>
               </div>
             )}
@@ -942,22 +664,16 @@ export default function ShopList() {
                 <p className="text-sm text-gray-600 dark:text-gray-300">
                   {confirmedPills.length > 0 && (
                     <>
-                      Preferensi pill:{' '}
-                      <span className="font-medium text-gray-800 dark:text-gray-100">{confirmedPills.join(', ')}</span>
-                    </>
-                  )}
-                  {confirmedPills.length > 0 && confirmedCustomQuery.trim() && <span className="mx-1">·</span>}
-                  {confirmedCustomQuery.trim() && (
-                    <>
-                      Lainnya:{' '}
-                      <span className="font-medium text-gray-800 dark:text-gray-100">{confirmedCustomQuery.trim()}</span>
+                      Konteks:{' '}
+                      <span className="font-medium text-gray-800 dark:text-gray-100">
+                        {confirmedPills.map((v) => pillLabelByValue[v] || v).join(', ')}
+                      </span>
                     </>
                   )}
                 </p>
                 {hasPendingPillChanges && !pillRecommendLoading && (
                   <p className="text-sm text-amber-700 dark:text-amber-300">
-                    Ada perubahan pill atau teks Preferensi lainnya. Konfirmasi ulang (OK atau Analisis di modal) untuk
-                    memperbarui rekomendasi.
+                    Konteks pill berubah. Tekan OK lagi untuk memperbarui rekomendasi.
                   </p>
                 )}
                 {!!pillRecommendError && !pillRecommendLoading && (
@@ -969,20 +685,12 @@ export default function ShopList() {
                   <div className="flex flex-wrap items-center gap-3">
                     <p className={`text-sm ${llmRecommendations.length > 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-600 dark:text-gray-300'}`}>
                       {llmRecommendations.length > 0
-                        ? `Menampilkan ${llmRecommendations.length} rekomendasi (maksimal 3) berdasarkan preferensi yang dikonfirmasi.`
-                        : 'Overlay hasil AI tetap tersedia untuk menampilkan status rekomendasi terbaru Anda.'}
+                        ? `Menampilkan ${llmRecommendations.length} rekomendasi (maksimal 3) untuk konteks yang dipilih.`
+                        : 'Buka overlay untuk melihat status rekomendasi terakhir Anda.'}
                     </p>
                     <button
                       type="button"
-                      onClick={() => {
-                        setRecommendationModalMode(
-                          (confirmedCustomQuery || '').trim() ? 'manual' : 'pills',
-                        );
-                        setManualSearchAttempted(
-                          Boolean((confirmedCustomQuery || '').trim()) || llmRecommendations.length > 0,
-                        );
-                        setShowRecommendationModal(true);
-                      }}
+                      onClick={() => setShowRecommendationModal(true)}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs sm:text-sm font-semibold bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow-sm hover:from-indigo-600 hover:to-violet-600 transition-colors"
                       title="Lihat hasil rekomendasi AI pada overlay"
                     >
@@ -1242,7 +950,7 @@ export default function ShopList() {
         
       </main>
 
-      {pillRecommendLoading && recommendationModalMode === 'pills' && (
+      {pillRecommendLoading && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6">
           <div className="absolute inset-0 bg-slate-950/45 backdrop-blur-sm" aria-hidden="true" />
           <div className="relative z-10 w-full max-w-md rounded-3xl border border-indigo-100 bg-white px-6 py-7 shadow-2xl dark:border-indigo-900/60 dark:bg-gray-900">
@@ -1256,10 +964,10 @@ export default function ShopList() {
                 AI Sedang Bekerja
               </p>
               <h3 className="mt-2 text-xl font-bold text-gray-900 dark:text-white">
-                LLM sedang menganalisis preferensi Anda
+                LLM sedang menganalisis konteks Anda
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
-                Sistem sedang mencocokkan pill preference, query tambahan, dan evidence review untuk memilih coffee shop yang paling relevan.
+                Sistem sedang mencocokkan konteks aktivitas dengan ulasan pengunjung untuk memilih coffee shop yang paling relevan.
               </p>
 
               <div className="mt-5 w-full rounded-2xl bg-indigo-50 px-4 py-3 text-left text-sm text-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-100">
@@ -1279,47 +987,7 @@ export default function ShopList() {
         recommendations={llmRecommendations}
         shopsByKey={shopsByKey}
         confirmedPills={confirmedPills}
-        confirmedCustomQuery={confirmedCustomQuery}
-        modalMode={recommendationModalMode}
-        manualValue={otherPreferenceText}
-        onManualChange={(e) => {
-          const raw = e.target.value;
-          if (!MANUAL_INPUT_RAW_ALLOWED_REGEX.test(raw)) {
-            setRecommendationNotification({
-              type: 'error',
-              message: MANUAL_SPECIAL_CHAR_NOTIFICATION,
-            });
-          }
-          const nextValue = truncateManualPreferenceToMaxChars(raw);
-          setPillRecommendError('');
-          setOtherPreferenceText(nextValue);
-          if (getManualPreferenceCharCount(raw) > MANUAL_MAX_CHARS) {
-            setOtherPreferenceError(`Input opsi Lainnya maksimal ${MANUAL_MAX_CHARS} karakter.`);
-          } else {
-            setOtherPreferenceError(getManualPreferenceValidationMessage(nextValue));
-          }
-        }}
-        onManualAnalyze={handleManualModalAnalyze}
-        manualStatusMessage={pillRecommendError}
-        suggestedPills={recommendationFields}
-        onSuggestedPillClick={async (pillValue) => {
-          const nextPills = [pillValue];
-          setSelectedPills(nextPills);
-          setManualSearchAttempted(true);
-          await requestPillRecommendations(nextPills);
-        }}
-        manualError={otherPreferenceError}
-        manualCharCount={manualCharCount}
-        manualMaxChars={MANUAL_MAX_CHARS}
-        manualAnalyzeDisabled={
-          pillRecommendLoading
-          || Boolean(otherPreferenceError)
-          || !otherPreferenceText.trim()
-        }
-        isAnalyzing={pillRecommendLoading && recommendationModalMode === 'manual'}
-        manualAwaitingFirstSearch={
-          recommendationModalMode === 'manual' && !manualSearchAttempted
-        }
+        intentContext={recommendationIntentContext}
       />
     </div>
   );

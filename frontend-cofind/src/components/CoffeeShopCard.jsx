@@ -82,10 +82,10 @@ const CoffeeShopCard = ({ shop, variant = 'default' }) => {
     }
 
     return (
-        <div className="relative w-full">
+        <div className="relative w-full h-full">
         <Link
             to={`/shop/${shop.place_id}`}
-            className="block group w-full overflow-visible"
+            className="block group w-full h-full overflow-visible"
             style={{ pointerEvents: isModalOpen ? 'none' : 'auto' }}
                 onClick={(e) => {
                     // Prevent navigation if modal is open
@@ -95,8 +95,8 @@ const CoffeeShopCard = ({ shop, variant = 'default' }) => {
                     }
                 }}
             >
-            <div className={`bg-white dark:bg-gray-800 rounded-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 overflow-visible ${
-                isMini ? 'shadow-sm hover:shadow-md' : 'shadow-lg hover:shadow-xl'
+            <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 overflow-visible h-full flex flex-col shadow-lg hover:shadow-2xl transition duration-300 ${
+                isMini ? 'min-h-[14.5rem]' : 'min-h-[25.5rem]'
             }`}>
                 <div className={`aspect-w-16 aspect-h-9 relative overflow-hidden rounded-t-xl ${
                     isMini ? 'h-32' : 'h-48'
@@ -110,7 +110,7 @@ const CoffeeShopCard = ({ shop, variant = 'default' }) => {
                     />
                 </div>
             
-            <div className={`relative ${isMini ? 'p-3' : 'p-4'}`}>
+            <div className={`relative flex-1 ${isMini ? 'p-3' : 'p-4'}`}>
                     <h2 className={`${isMini ? 'text-base mb-1.5' : 'text-xl mb-2'} font-bold text-gray-800 dark:text-gray-200 line-clamp-2 group-hover:text-indigo-600 transition-colors`}>
                         {shop.name}
                     </h2>

@@ -1,0 +1,5 @@
+# Tambahan untuk HF_LLM_BACKEND=transformers (Llama lokal)
+# pip install -r requirements.txt -r requirements-llm-local.txt
+torch>=2.1.0
+transformers>=4.40.0
+accelerate>=0.27.0
