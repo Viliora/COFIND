@@ -1,160 +1,85 @@
 """
-Backend LLM terpadu: Hugging Face InferenceClient (API) atau Transformers lokal.
+Backend LLM via OpenAI-compatible Hugging Face Router.
 
 Lingkungan:
-  HF_LLM_BACKEND=inference|transformers
-    - inference: pakai InferenceClient (perlu HF_API_TOKEN), perilaku lama.
-    - transformers: muat model lokal dengan library transformers (perlu torch).
-    - default: inference jika HF_API_TOKEN ada, selain itu transformers.
-
-  HF_MODEL              — id model (default: meta-llama/Llama-3.1-8B-Instruct, gated: huggingface-cli login)
-  HF_KEYWORD_MODEL      — opsional model terpisah untuk keyword (bisa berat jika beda id)
-  HF_API_TOKEN          — token HF (wajib untuk model gated saat from_pretrained)
-  HF_TRANSFORMERS_DEVICE — cuda | cpu | auto (default: auto)
-  HF_TRANSFORMERS_MAX_INPUT_TOKENS — anggaran panjang konteks efektif (prompt + cadangan
-    untuk generasi), default 131072 agar selaras jendela panjang Llama 3.1; dipotong otomatis
-    ke max_position_embeddings model jika lebih kecil.
-  HF_TRANSFORMERS_GENERATION_RESERVE — cadangan token di luar prompt (default: 512).
+  HF_MODEL — id model router (default: meta-llama/Llama-3.1-8B-Instruct:novita)
+  HF_KEYWORD_MODEL — model opsional untuk keyword
+  HF_API_TOKEN / HF_TOKEN — token Hugging Face
+  HF_LLM_MAX_NEW_TOKENS_CAP — batas output text generation (default: 384)
+  HF_LLM_MAX_CHAT_TOKENS_CAP — batas output chat completion (default: 512)
+  HF_LLM_DEFAULT_TEMPERATURE — default temperature (default: 0.2)
+  HF_LLM_DEFAULT_TOP_P — default top_p (default: 0.9)
+  HF_LLM_DEFAULT_REPETITION_PENALTY — default repetition penalty (default: 1.1)
+  HF_LLM_MAX_RETRIES — retry maksimum per request (default: 2)
+  HF_LLM_BACKOFF_FACTOR — backoff factor retry (default: 0.8)
 """
 from __future__ import annotations
 
 import os
-import threading
-from typing import Any, Dict, List, Optional
+import time
+from typing import Dict, List, Optional
 
-try:
-    import torch
-except ImportError:
-    torch = None  # type: ignore
-
-HF_API_TOKEN = os.getenv("HF_API_TOKEN")
-HF_MODEL = os.getenv("HF_MODEL", "meta-llama/Llama-3.1-8B-Instruct").strip()
+HF_API_TOKEN = (os.getenv("HF_API_TOKEN") or os.getenv("HF_TOKEN") or "").strip()
+HF_MODEL = os.getenv("HF_MODEL", "meta-llama/Llama-3.1-8B-Instruct:novita").strip()
 HF_KEYWORD_MODEL = os.getenv("HF_KEYWORD_MODEL", HF_MODEL).strip()
+LLM_BACKEND = "hf_router_openai"
 
-_backend = os.getenv("HF_LLM_BACKEND", "").strip().lower()
-if _backend not in ("", "inference", "transformers"):
-    print(f"[LLM] HF_LLM_BACKEND tidak dikenal '{_backend}', pakai auto.")
-    _backend = ""
-
-if _backend == "":
-    _backend = "inference" if HF_API_TOKEN else "transformers"
-
-LLM_BACKEND = _backend
+_MAX_NEW_TOKENS_CAP = int(os.getenv("HF_LLM_MAX_NEW_TOKENS_CAP", "384"))
+_MAX_CHAT_TOKENS_CAP = int(os.getenv("HF_LLM_MAX_CHAT_TOKENS_CAP", "512"))
+_DEFAULT_TEMPERATURE = float(os.getenv("HF_LLM_DEFAULT_TEMPERATURE", "0.2"))
+_DEFAULT_TOP_P = float(os.getenv("HF_LLM_DEFAULT_TOP_P", "0.9"))
+_DEFAULT_REPETITION_PENALTY = float(os.getenv("HF_LLM_DEFAULT_REPETITION_PENALTY", "1.1"))
+_MAX_RETRIES = max(0, int(os.getenv("HF_LLM_MAX_RETRIES", "2")))
+_BACKOFF_FACTOR = float(os.getenv("HF_LLM_BACKOFF_FACTOR", "0.8"))
 
 hf_client = None
-if _backend == "inference":
-    if HF_API_TOKEN:
-        try:
-            from huggingface_hub import InferenceClient
-
-            try:
-                hf_client = InferenceClient(provider="featherless-ai", api_key=HF_API_TOKEN)
-                print("[INFO] LLM: InferenceClient (Featherless AI)")
-            except Exception as e:
-                print(f"[WARNING] Featherless init gagal: {e}, fallback default HF")
-                hf_client = InferenceClient(api_key=HF_API_TOKEN)
-                print("[INFO] LLM: InferenceClient (default)")
-        except Exception as e:
-            print(f"[WARNING] InferenceClient gagal: {e}")
-            hf_client = None
-    else:
-        print("[WARNING] HF_LLM_BACKEND=inference tetapi HF_API_TOKEN kosong.")
+if HF_API_TOKEN:
+    try:
+        from openai import OpenAI
+        hf_client = OpenAI(
+            base_url="https://router.huggingface.co/v1",
+            api_key=HF_API_TOKEN,
+        )
+        print("[INFO] LLM: OpenAI-compatible HF Router")
+    except Exception as e:
+        print(f"[WARNING] OpenAI client init gagal: {e}")
+        hf_client = None
 else:
-    print("[INFO] LLM: mode Transformers lokal (HF_LLM_BACKEND=transformers atau tanpa token)")
-
-_local_lock = threading.Lock()
-_local_tokenizer = None
-_local_model = None
-_local_model_id: Optional[str] = None
-
-# Default jendela konteks besar (Llama 3.1 / model long-context); turunkan via env jika VRAM terbatas.
-_DEFAULT_CONTEXT_WINDOW = 131072
+    print("[WARNING] HF_API_TOKEN/HF_TOKEN kosong. Backend HF Router tidak aktif.")
 
 
-def _prompt_truncation_limit(model, max_new_tokens: int) -> int:
-    """
-    Jumlah token maksimum untuk prompt setelah tokenisasi (truncation=True).
-    Tidak melebihi konfigurasi model dan menyisakan ruang untuk max_new_tokens + cadangan.
-    """
-    reserve = int(os.getenv("HF_TRANSFORMERS_GENERATION_RESERVE", "512"))
-    reserve = max(reserve, max_new_tokens + 128)
-    target = int(os.getenv("HF_TRANSFORMERS_MAX_INPUT_TOKENS", str(_DEFAULT_CONTEXT_WINDOW)))
-    cfg = getattr(model, "config", None)
-    if cfg is not None:
-        hard = getattr(cfg, "max_position_embeddings", None)
-        if hard is not None:
-            target = min(target, int(hard))
-    return max(256, target - reserve)
+def _clamp_int(value: int, *, min_value: int, max_value: int) -> int:
+    return max(min_value, min(max_value, int(value)))
 
 
-def _pick_device() -> str:
-    pref = os.getenv("HF_TRANSFORMERS_DEVICE", "auto").strip().lower()
-    cuda_ok = torch is not None and torch.cuda.is_available()
-    if pref == "cuda":
-        return "cuda" if cuda_ok else "cpu"
-    if pref == "cpu":
-        return "cpu"
-    return "cuda" if cuda_ok else "cpu"
+def _normalize_temperature(value: float) -> float:
+    return max(0.0, min(1.5, float(value)))
 
 
-def _auth_token_optional():
-    return HF_API_TOKEN if HF_API_TOKEN else None
+def _normalize_top_p(value: float) -> float:
+    return max(0.1, min(1.0, float(value)))
 
 
-def _ensure_local(model_id: str) -> None:
-    global _local_tokenizer, _local_model, _local_model_id
-    if torch is None:
-        raise RuntimeError("Paket torch tidak terpasang. pip install torch")
-    from transformers import AutoModelForCausalLM, AutoTokenizer
+def _normalize_repetition_penalty(value: float) -> float:
+    return max(1.0, min(2.0, float(value)))
 
-    with _local_lock:
-        if _local_model is not None and _local_model_id == model_id:
-            return
-        if _local_model is not None:
-            del _local_model
-            _local_model = None
-            _local_tokenizer = None
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
 
-        device = _pick_device()
-        dtype = torch.bfloat16 if device == "cuda" else torch.float32
-        tok_kw = {"token": _auth_token_optional()}
-        print(f"[LLM] Memuat {model_id} (device={device}, dtype={dtype}) …")
-        _local_tokenizer = AutoTokenizer.from_pretrained(model_id, **tok_kw)
-        if _local_tokenizer.pad_token_id is None:
-            _local_tokenizer.pad_token_id = _local_tokenizer.eos_token_id
-
-        load_kw: Dict[str, Any] = {
-            "token": _auth_token_optional(),
-            "torch_dtype": dtype,
-            "low_cpu_mem_usage": True,
-        }
-        if device == "cuda":
-            load_kw["device_map"] = "auto"
-        model = AutoModelForCausalLM.from_pretrained(model_id, **load_kw)
-        if device == "cpu":
-            model = model.to("cpu")
-        model.eval()
-        _local_model = model
-        _local_model_id = model_id
-        print("[LLM] Model Transformers siap.")
-        if "instruct" not in model_id.lower():
-            print(
-                "[LLM] Catatan: id model tidak mengandung 'Instruct'. "
-                "Untuk chat & ekstraksi keyword terstruktur, disarankan "
-                "HF_MODEL=meta-llama/Llama-3.1-8B-Instruct (atau setara)."
-            )
+def _call_with_retry(func, *args, **kwargs):
+    last_err = None
+    for attempt in range(_MAX_RETRIES + 1):
+        try:
+            return func(*args, **kwargs)
+        except Exception as err:
+            last_err = err
+            if attempt >= _MAX_RETRIES:
+                break
+            sleep_s = max(0.0, _BACKOFF_FACTOR * (2 ** attempt))
+            time.sleep(sleep_s)
+    raise last_err  # type: ignore[misc]
 
 
 def llm_is_available() -> bool:
-    if _backend == "inference":
-        return hf_client is not None
-    try:
-        import transformers  # noqa: F401
-    except ImportError:
-        return False
-    return torch is not None
+    return hf_client is not None
 
 
 def llm_text_generation(
@@ -163,61 +88,29 @@ def llm_text_generation(
     model: Optional[str] = None,
     max_new_tokens: int = 256,
     min_new_tokens: int = 0,
-    temperature: float = 0.2,
-    top_p: float = 1.0,
+    temperature: float = _DEFAULT_TEMPERATURE,
+    top_p: float = _DEFAULT_TOP_P,
+    repetition_penalty: float = _DEFAULT_REPETITION_PENALTY,
     return_full_text: bool = False,
 ) -> str:
-    """Kompatibel dengan InferenceClient.text_generation (return_full_text=False → hanya teks baru)."""
+    if hf_client is None:
+        raise RuntimeError("HF Router client tidak terkonfigurasi (HF_API_TOKEN/HF_TOKEN?)")
     model_id = (model or HF_MODEL).strip()
-    if _backend == "inference":
-        if hf_client is None:
-            raise RuntimeError("InferenceClient tidak terkonfigurasi (HF_API_TOKEN?)")
-        return hf_client.text_generation(
-            prompt,
-            model=model_id,
-            max_new_tokens=max_new_tokens,
-            temperature=temperature,
-            return_full_text=return_full_text,
-        )
-
-    import torch
-
-    _ensure_local(model_id)
-    assert _local_tokenizer is not None and _local_model is not None
-
-    max_in = _prompt_truncation_limit(_local_model, max_new_tokens)
-
-    enc = _local_tokenizer(
-        prompt,
-        return_tensors="pt",
-        truncation=True,
-        max_length=max_in,
+    max_new_tokens = _clamp_int(max_new_tokens, min_value=16, max_value=max(32, _MAX_NEW_TOKENS_CAP))
+    _ = _clamp_int(min_new_tokens, min_value=0, max_value=max_new_tokens)
+    temperature = _normalize_temperature(temperature)
+    top_p = _normalize_top_p(top_p)
+    _ = _normalize_repetition_penalty(repetition_penalty)
+    resp = _call_with_retry(
+        hf_client.chat.completions.create,
+        model=model_id,
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=max_new_tokens,
+        temperature=temperature,
+        top_p=top_p,
     )
-    dev = next(_local_model.parameters()).device
-    enc = {k: v.to(dev) for k, v in enc.items()}
-
-    gen_kw: Dict[str, Any] = {
-        "max_new_tokens": max_new_tokens,
-        "pad_token_id": _local_tokenizer.eos_token_id,
-    }
-    if min_new_tokens > 0:
-        gen_kw["min_new_tokens"] = min_new_tokens
-    if temperature and temperature > 0:
-        gen_kw["do_sample"] = True
-        gen_kw["temperature"] = float(temperature)
-        if top_p and top_p < 1.0:
-            gen_kw["top_p"] = float(top_p)
-    else:
-        gen_kw["do_sample"] = False
-
-    with torch.inference_mode():
-        out = _local_model.generate(**enc, **gen_kw)
-    in_len = enc["input_ids"].shape[1]
-    new_tokens = out[0][in_len:]
-    text = _local_tokenizer.decode(new_tokens, skip_special_tokens=True)
-    if return_full_text:
-        return prompt + text
-    return text
+    content = ((resp.choices or [{}])[0].message.content or "").strip()
+    return (prompt + content) if return_full_text else content
 
 
 def llm_chat_completions_create(
@@ -226,48 +119,24 @@ def llm_chat_completions_create(
     messages: List[Dict[str, str]],
     max_tokens: int = 512,
     min_tokens: int = 0,
-    temperature: float = 0.7,
-    top_p: float = 0.9,
+    temperature: float = _DEFAULT_TEMPERATURE,
+    top_p: float = _DEFAULT_TOP_P,
+    repetition_penalty: float = _DEFAULT_REPETITION_PENALTY,
 ) -> str:
-    """Mengembalikan isi assistant (satu string), setara response.choices[0].message.content."""
+    if hf_client is None:
+        raise RuntimeError("HF Router client tidak terkonfigurasi (HF_API_TOKEN/HF_TOKEN?)")
     model_id = (model or HF_MODEL).strip()
-    if _backend == "inference":
-        if hf_client is None:
-            raise RuntimeError("InferenceClient tidak terkonfigurasi")
-        resp = hf_client.chat.completions.create(
-            model=model_id,
-            messages=messages,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            top_p=top_p,
-        )
-        return (resp.choices[0].message.content or "").strip()
-
-    _ensure_local(model_id)
-    assert _local_tokenizer is not None
-
-    tok = _local_tokenizer
-    if getattr(tok, "chat_template", None):
-        prompt = tok.apply_chat_template(
-            messages,
-            tokenize=False,
-            add_generation_prompt=True,
-        )
-    else:
-        lines = []
-        for m in messages:
-            role = m.get("role", "user")
-            content = m.get("content", "")
-            lines.append(f"{role.upper()}:\n{content}\n")
-        lines.append("ASSISTANT:\n")
-        prompt = "\n".join(lines)
-
-    return llm_text_generation(
-        prompt,
+    max_tokens = _clamp_int(max_tokens, min_value=16, max_value=max(32, _MAX_CHAT_TOKENS_CAP))
+    _ = _clamp_int(min_tokens, min_value=0, max_value=max_tokens)
+    temperature = _normalize_temperature(temperature)
+    top_p = _normalize_top_p(top_p)
+    _ = _normalize_repetition_penalty(repetition_penalty)
+    resp = _call_with_retry(
+        hf_client.chat.completions.create,
         model=model_id,
-        max_new_tokens=max_tokens,
-        min_new_tokens=min_tokens,
+        messages=messages,
+        max_tokens=max_tokens,
         temperature=temperature,
         top_p=top_p,
-        return_full_text=False,
-    ).strip()
+    )
+    return ((resp.choices or [{}])[0].message.content or "").strip()
