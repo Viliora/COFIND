@@ -197,7 +197,6 @@ function RatingDetailChips({ item }) {
     if (item.rating_makanan != null && item.rating_makanan !== '') {
         chips.push({ key: 'makanan', label: 'Makanan', value: item.rating_makanan });
     }
-    const hasFoto = Boolean(item.has_photos);
     return (
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
             {chips.map((c) => (
@@ -208,15 +207,6 @@ function RatingDetailChips({ item }) {
                     {c.label}: ★{c.value}
                 </span>
             ))}
-            <span
-                className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                    hasFoto
-                        ? 'bg-emerald-50 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100'
-                        : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'
-                }`}
-            >
-                Foto: {hasFoto ? 'Ada' : 'Tidak ada'}
-            </span>
         </div>
     );
 }
@@ -349,7 +339,7 @@ const RecommendationModal = ({
                                                 ) : null}
                                                 <div className="mt-3 space-y-2">
                                                     <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                                                        Bukti ulasan relevan (maks. 3)
+                                                        Bukti ulasan relevan
                                                     </p>
                                                     {evidenceItems.length > 0 ? (
                                                         evidenceItems.map((quoteItem, qIdx) => (

@@ -4918,8 +4918,8 @@ def _collect_modal_display_quotes(evidence, pills, search_keywords=None, limit=3
     return ranked[:limit]
 
 
-def _build_modal_quote_summary(shop_name, quotes, intent_phrase):
-    """Ringkasan singkat berbahasa Indonesia dari kutipan yang ditampilkan di modal."""
+def _build_modal_quote_summary_deterministic(shop_name, quotes, intent_phrase):
+    """Fallback ringkasan modal (tanpa LLM)."""
     name = str(shop_name or 'Coffee shop ini').strip() or 'Coffee shop ini'
     if not quotes:
         return f"Belum ada kutipan ulasan yang cukup spesifik untuk merangkum {name} pada konteks ini."
@@ -4956,6 +4956,158 @@ def _build_modal_quote_summary(shop_name, quotes, intent_phrase):
     )
 
 
+def _build_modal_quote_summary(shop_name, quotes, intent_phrase, evidence=None, pills=None, search_keywords=None):
+    """
+    Ringkasan modal berbasis chat completion dari evidence review yang tersedia.
+    Fallback ke ringkasan deterministik saat LLM tidak tersedia / gagal.
+    """
+    name = str(shop_name or 'Coffee shop ini').strip() or 'Coffee shop ini'
+    ev = evidence or {}
+    fallback_summary = _build_modal_quote_summary_deterministic(name, quotes, intent_phrase)
+
+    if not llm_is_available():
+        return fallback_summary
+
+    review_count = ev.get('review_count')
+    avg_user_rating = ev.get('avg_user_rating')
+    pill_stats = ev.get('pill_stats') or []
+    facilities_tab = ev.get('facilities_tab') or {}
+    category_ratings = ev.get('category_ratings') or {}
+    ctx = str(intent_phrase or '').strip() or 'preferensi umum'
+    keyword_line = ", ".join(_light_keyword_phrase_list(search_keywords or [])) or 'tidak ada'
+
+    stats_lines = []
+    for item in pill_stats[:6]:
+        if not isinstance(item, dict):
+            continue
+        label = str(item.get('pill_label') or item.get('pill') or '').strip() or 'konteks'
+        hits = item.get('keyword_review_hits')
+        cat_field = item.get('category_field')
+        cat_avg = item.get('category_avg')
+        line = f"- {label}: hit keyword={hits}"
+        if cat_field and cat_avg is not None:
+            line += f", {cat_field}={cat_avg}"
+        stats_lines.append(line)
+    if not stats_lines:
+        stats_lines = ['- (tidak ada statistik pill)']
+
+    facility_lines = []
+    for key, label in (('popular_for', 'Popular for'), ('highlights', 'Highlights'), ('atmosphere', 'Atmosphere')):
+        values = facilities_tab.get(key) or []
+        if values:
+            facility_lines.append(f"- {label}: {', '.join(str(v) for v in values[:6])}")
+    if not facility_lines:
+        facility_lines = ['- (tidak ada sinyal fasilitas tab)']
+
+    quote_lines = []
+    source_keys = [
+        ('modal_display_quotes', 6),
+        ('positive_review_quotes', 6),
+        ('negative_review_quotes', 4),
+        ('review_quotes', 6),
+        ('search_keyword_matches', 4),
+    ]
+    seen_quote = set()
+    for key, max_take in source_keys:
+        rows = ev.get(key) or []
+        taken = 0
+        for row in rows:
+            if taken >= max_take:
+                break
+            if not isinstance(row, dict):
+                continue
+            text = _normalize_whitespace(str(row.get('quote') or row.get('text') or ''))
+            if len(text) < 8:
+                continue
+            qkey = text.lower()[:180]
+            if qkey in seen_quote:
+                continue
+            seen_quote.add(qkey)
+            rating = row.get('rating')
+            reason = _normalize_whitespace(str(row.get('reason') or ''))
+            rt = str(rating) if rating is not None and rating != '' else '?'
+            if reason:
+                quote_lines.append(f'- (rating {rt}) "{_truncate_evidence_text(text, 300)}" | alasan: {reason}')
+            else:
+                quote_lines.append(f'- (rating {rt}) "{_truncate_evidence_text(text, 300)}"')
+            taken += 1
+    if not quote_lines:
+        quote_lines = ['- (tidak ada kutipan review yang bisa diringkas)']
+
+    cat_info = ", ".join(
+        f"{k}={v}" for k, v in category_ratings.items() if v is not None
+    ) or 'tidak ada'
+
+    prompt = f"""Anda mendapat data review sebuah coffee shop. Tulis ringkasan singkat seperti teman yang merekomendasikan tempat ini secara natural.
+
+Syarat ketat:
+- Tulis 2-3 kalimat saja, sambung menjadi paragraf mengalir, TANPA judul, label, heading, atau bullet point
+- JANGAN gunakan markdown apapun (tidak ada **bold**, tidak ada *, tidak ada #)
+- JANGAN ulangi poin yang sudah disebutkan
+- Gunakan bahasa santai tapi informatif, seperti rekomendasi dari teman
+- Hanya gunakan fakta dari data di bawah, jangan mengarang
+- Langsung mulai kalimat pertama tanpa pembuka seperti "Berikut adalah..." atau "Berdasarkan data..."
+
+Nama coffee shop: {name}
+Konteks preferensi user: {ctx}
+Keyword intent: {keyword_line}
+Pills: {", ".join(pills or []) if pills else "tidak ada"}
+Jumlah review user: {review_count}
+
+Statistik pill:
+{chr(10).join(stats_lines)}
+
+Sinyal fasilitas:
+{chr(10).join(facility_lines)}
+
+Kutipan review:
+{chr(10).join(quote_lines)}
+"""
+    prompt = _compact_prompt_text(prompt, 5200)
+
+    try:
+        raw = llm_chat_completions_create(
+            model=(HF_MODEL or "meta-llama/Meta-Llama-3-8B").strip(),
+            messages=[
+                {
+                    'role': 'system',
+                    'content': (
+                        'Anda adalah analis review coffee shop. '
+                        'Jawab ringkas, faktual, dan hanya berdasarkan evidence yang diberikan.'
+                    ),
+                },
+                {'role': 'user', 'content': prompt},
+            ],
+            max_tokens=200,
+            temperature=0.5,
+        )
+        summary = _normalize_whitespace(str(raw or ''))
+        if summary.startswith('```'):
+            summary = re.sub(r'^```[a-zA-Z]*\s*', '', summary).strip()
+            summary = re.sub(r'\s*```$', '', summary).strip()
+        # Prompt modal tidak lagi mewajibkan format label; cukup validasi teks natural.
+        if not summary:
+            return fallback_summary
+        lowered = summary.lower()
+        if lowered.startswith('{') or lowered.startswith('[') or '```' in summary or 'json' in lowered:
+            return fallback_summary
+        sentence_parts = [
+            part.strip()
+            for part in re.split(r'(?<=[.!?])\s+', summary)
+            if part.strip()
+        ]
+        if not sentence_parts:
+            return fallback_summary
+        if len(sentence_parts) > 4:
+            summary = ' '.join(sentence_parts[:4]).strip()
+            if summary and summary[-1] not in '.!?':
+                summary += '.'
+        return summary
+    except Exception as err:
+        print(f"[RECOMMEND] Modal quote summary LLM fallback triggered: {err}")
+        return fallback_summary
+
+
 def _attach_modal_evidence_to_supporting(evidence, shop_name, pills, search_keywords=None):
     """Salin evidence dan tambah modal_display_quotes + modal_quote_summary."""
     ev = dict(evidence or {})
@@ -4963,7 +5115,14 @@ def _attach_modal_evidence_to_supporting(evidence, shop_name, pills, search_keyw
     pill_labels = [PILL_LABELS.get(p, p) for p in (pills or [])]
     intent_phrase = ' dan '.join(pill_labels[:3]) if pill_labels else ''
     ev['modal_display_quotes'] = quotes
-    ev['modal_quote_summary'] = _build_modal_quote_summary(shop_name, quotes, intent_phrase)
+    ev['modal_quote_summary'] = _build_modal_quote_summary(
+        shop_name,
+        quotes,
+        intent_phrase,
+        evidence=ev,
+        pills=pills,
+        search_keywords=search_keywords,
+    )
     return ev
 
 
