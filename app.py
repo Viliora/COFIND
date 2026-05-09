@@ -16,7 +16,7 @@ import math
 from collections import Counter
 import time  # Tambahkan untuk penundaan
 from datetime import datetime, timedelta
-import sqlite3  # Local database
+import sqlite3  # Hanya untuk migrasi schema SQLite (ensure_reviews_schema)
 try:
     repair_json = importlib.import_module('json_repair').repair_json
 except Exception:
@@ -35,6 +35,7 @@ from review_utils import create_review, get_review, get_reviews_for_shop, get_us
 from favorites_utils import add_favorite, remove_favorite, get_user_favorites, is_favorite, get_favorite_count
 from want_to_visit_utils import add_want_to_visit, remove_want_to_visit, get_user_want_to_visit, is_want_to_visit
 from preference_suggestions_utils import create_preference_suggestion
+from db_backend import DATABASE_PATH, dict_from_row, get_connection, use_postgres, use_sqlite
 try:
     from rerank_backend import rerank_candidates as cross_rerank_candidates
 except Exception:
@@ -48,8 +49,7 @@ except Exception:
 # Initialize Flask app
 app = Flask(__name__)
 
-# Database configuration
-DATABASE_PATH = os.path.join(os.path.dirname(__file__), 'cofind.db')
+# Database: lihat db_backend.py (SQLite lokal atau Supabase Postgres lewat DATABASE_URL)
 COFIND_RERANK_BACKEND = os.getenv('COFIND_RERANK_BACKEND', 'llm').strip().lower()
 COFIND_SUMMARY_ASYNC = os.getenv('COFIND_SUMMARY_ASYNC', 'false').strip().lower() in ('1', 'true', 'yes', 'on')
 COFIND_DEV_LLM_STRICT = os.getenv('COFIND_DEV_LLM_STRICT', 'false').strip().lower() in ('1', 'true', 'yes', 'on')
@@ -61,9 +61,12 @@ def ensure_reviews_schema():
     - mengizinkan banyak review dari user yang sama pada shop yang sama
     - tidak lagi memakai kolom `review_focus_pills` / `keywords`
     """
+    if not use_sqlite():
+        return
     conn = None
     try:
         conn = sqlite3.connect(DATABASE_PATH, timeout=10)
+        conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         row = cursor.execute(
             "SELECT sql FROM sqlite_master WHERE type='table' AND name='reviews'"
@@ -137,6 +140,7 @@ ensure_reviews_schema()
 
 # Konfigurasi LLM: lihat llm_backend.py (HF_LLM_BACKEND, HF_MODEL, HF_API_TOKEN, dll.)
 print(f"[INFO] LLM backend aktif: {LLM_BACKEND} | model={HF_MODEL}")
+print(f"[INFO] Database backend: {'postgresql (Supabase)' if use_postgres() else 'sqlite'}")
 
 # ============================================================================
 # CACHING SYSTEM DISABLED - Using direct API calls
@@ -191,8 +195,7 @@ def test_api():
 def get_coffeeshops():
     """Get all coffee shops from local SQLite database (dengan jam operasional)"""
     try:
-        conn = sqlite3.connect(DATABASE_PATH)
-        conn.row_factory = sqlite3.Row
+        conn = get_connection()
         cursor = conn.cursor()
         
         cursor.execute("""
@@ -203,7 +206,7 @@ def get_coffeeshops():
         """)
         rows = cursor.fetchall()
         
-        shops = [dict(row) for row in rows]
+        shops = [dict_from_row(cursor, row) for row in rows]
         conn.close()
         
         return jsonify({
@@ -222,8 +225,7 @@ def get_coffeeshops():
 def get_coffeeshop(shop_id):
     """Get specific coffee shop by ID (dengan jam operasional)"""
     try:
-        conn = sqlite3.connect(DATABASE_PATH)
-        conn.row_factory = sqlite3.Row
+        conn = get_connection()
         cursor = conn.cursor()
         
         cursor.execute("""
@@ -233,17 +235,17 @@ def get_coffeeshop(shop_id):
             WHERE c.id = ?
         """, (shop_id,))
         row = cursor.fetchone()
-        conn.close()
-        
         if not row:
+            conn.close()
             return jsonify({
                 'status': 'error',
                 'message': f'Coffee shop {shop_id} not found'
             }), 404
-        
+        data = dict_from_row(cursor, row)
+        conn.close()
         return jsonify({
             'status': 'success',
-            'data': dict(row)
+            'data': data
         })
     except Exception as e:
         return jsonify({
@@ -255,8 +257,7 @@ def get_coffeeshop(shop_id):
 def get_coffeeshop_by_place_id(place_id):
     """Get specific coffee shop by place_id (dengan jam operasional)"""
     try:
-        conn = sqlite3.connect(DATABASE_PATH)
-        conn.row_factory = sqlite3.Row
+        conn = get_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -266,17 +267,18 @@ def get_coffeeshop_by_place_id(place_id):
             WHERE c.place_id = ?
         """, (place_id,))
         row = cursor.fetchone()
-        conn.close()
-
         if not row:
+            conn.close()
             return jsonify({
                 'status': 'error',
                 'message': f'Coffee shop {place_id} not found'
             }), 404
 
+        data = dict_from_row(cursor, row)
+        conn.close()
         return jsonify({
             'status': 'success',
-            'data': dict(row)
+            'data': data
         })
     except Exception as e:
         return jsonify({
@@ -296,8 +298,7 @@ def search_coffeeshops():
         }), 400
     
     try:
-        conn = sqlite3.connect(DATABASE_PATH)
-        conn.row_factory = sqlite3.Row
+        conn = get_connection()
         cursor = conn.cursor()
         
         search_term = f"%{query}%"
@@ -308,7 +309,7 @@ def search_coffeeshops():
         ''', (search_term, search_term))
         
         rows = cursor.fetchall()
-        shops = [dict(row) for row in rows]
+        shops = [dict_from_row(cursor, row) for row in rows]
         conn.close()
         
         return jsonify({
@@ -655,8 +656,7 @@ def admin_dashboard():
         return error_response
 
     try:
-        conn = sqlite3.connect(DATABASE_PATH)
-        conn.row_factory = sqlite3.Row
+        conn = get_connection()
         cursor = conn.cursor()
 
         stats = {
@@ -678,11 +678,12 @@ def admin_dashboard():
             LIMIT 5
         ''').fetchall()
         for row in recent_users:
+            rd = dict_from_row(cursor, row)
             activities.append({
                 'type': 'user',
-                'title': f"User baru: {row['username']}",
+                'title': f"User baru: {rd['username']}",
                 'description': 'Akun baru terdaftar',
-                'created_at': row['created_at'],
+                'created_at': rd['created_at'],
             })
 
         recent_reviews = cursor.execute('''
@@ -694,11 +695,12 @@ def admin_dashboard():
             LIMIT 5
         ''').fetchall()
         for row in recent_reviews:
+            rd = dict_from_row(cursor, row)
             activities.append({
                 'type': 'review',
-                'title': f"Review baru untuk {row['shop_name'] or 'Coffee Shop'}",
-                'description': f"Oleh {row['username'] or 'Anonim'}",
-                'created_at': row['created_at'],
+                'title': f"Review baru untuk {rd['shop_name'] or 'Coffee Shop'}",
+                'description': f"Oleh {rd['username'] or 'Anonim'}",
+                'created_at': rd['created_at'],
             })
 
         recent_suggestions = cursor.execute('''
@@ -709,11 +711,12 @@ def admin_dashboard():
             LIMIT 5
         ''').fetchall()
         for row in recent_suggestions:
+            rd = dict_from_row(cursor, row)
             activities.append({
                 'type': 'suggestion',
-                'title': f"Saran preferensi: {row['preference_text']}",
-                'description': f"Dikirim oleh {row['username'] or 'User'}",
-                'created_at': row['created_at'],
+                'title': f"Saran preferensi: {rd['preference_text']}",
+                'description': f"Dikirim oleh {rd['username'] or 'User'}",
+                'created_at': rd['created_at'],
             })
 
         recent_reports = cursor.execute('''
@@ -725,11 +728,12 @@ def admin_dashboard():
             LIMIT 5
         ''').fetchall()
         for row in recent_reports:
+            rd = dict_from_row(cursor, row)
             activities.append({
                 'type': 'report',
-                'title': f"Laporan review: {row['report_reason'] or 'Tanpa alasan'}",
-                'description': f"{row['shop_name'] or 'Coffee Shop'} • status {row['status'] or 'pending'}",
-                'created_at': row['created_at'],
+                'title': f"Laporan review: {rd['report_reason'] or 'Tanpa alasan'}",
+                'description': f"{rd['shop_name'] or 'Coffee Shop'} • status {rd['status'] or 'pending'}",
+                'created_at': rd['created_at'],
             })
 
         activities = sorted(
@@ -766,8 +770,7 @@ def admin_get_users():
         role_filter = (request.args.get('role') or '').strip().lower()
         status_filter = (request.args.get('status') or '').strip().lower()
 
-        conn = sqlite3.connect(DATABASE_PATH)
-        conn.row_factory = sqlite3.Row
+        conn = get_connection()
         cursor = conn.cursor()
 
         where_clauses = []
@@ -818,20 +821,21 @@ def admin_get_users():
 
         users = []
         for row in rows:
-            review_count = cursor.execute('SELECT COUNT(*) FROM reviews WHERE user_id = ?', (row['id'],)).fetchone()[0]
-            favorite_count = cursor.execute('SELECT COUNT(*) FROM favorites WHERE user_id = ?', (row['id'],)).fetchone()[0]
-            want_count = cursor.execute('SELECT COUNT(*) FROM want_to_visit WHERE user_id = ?', (row['id'],)).fetchone()[0]
+            rd = dict_from_row(cursor, row)
+            review_count = cursor.execute('SELECT COUNT(*) FROM reviews WHERE user_id = ?', (rd['id'],)).fetchone()[0]
+            favorite_count = cursor.execute('SELECT COUNT(*) FROM favorites WHERE user_id = ?', (rd['id'],)).fetchone()[0]
+            want_count = cursor.execute('SELECT COUNT(*) FROM want_to_visit WHERE user_id = ?', (rd['id'],)).fetchone()[0]
             users.append({
-                'id': row['id'],
-                'email': row['email'],
-                'username': row['username'],
-                'is_admin': bool(row['is_admin']),
-                'is_active': bool(row['is_active']),
-                'created_at': row['created_at'],
-                'updated_at': row['updated_at'],
-                'full_name': row['full_name'],
-                'bio': row['bio'],
-                'phone': row['phone'],
+                'id': rd['id'],
+                'email': rd['email'],
+                'username': rd['username'],
+                'is_admin': bool(rd['is_admin']),
+                'is_active': bool(rd['is_active']),
+                'created_at': rd['created_at'],
+                'updated_at': rd['updated_at'],
+                'full_name': rd['full_name'],
+                'bio': rd['bio'],
+                'phone': rd['phone'],
                 'review_count': review_count,
                 'favorite_count': favorite_count,
                 'want_to_visit_count': want_count,
@@ -862,7 +866,7 @@ def admin_update_user(user_id):
     try:
         data = request.get_json() or {}
 
-        conn = sqlite3.connect(DATABASE_PATH)
+        conn = get_connection()
         cursor = conn.cursor()
 
         existing = cursor.execute('SELECT id FROM users WHERE id = ?', (user_id,)).fetchone()
@@ -933,7 +937,7 @@ def admin_create_user():
         if len(password) < 6:
             return jsonify({'status': 'error', 'message': 'Password minimal 6 karakter.'}), 400
 
-        conn = sqlite3.connect(DATABASE_PATH)
+        conn = get_connection()
         cursor = conn.cursor()
 
         if cursor.execute('SELECT id FROM users WHERE email = ?', (email,)).fetchone():
@@ -972,7 +976,7 @@ def admin_delete_user(user_id):
         if user_id == admin_user.get('id'):
             return jsonify({'status': 'error', 'message': 'Anda tidak dapat menghapus akun admin sendiri.'}), 400
 
-        conn = sqlite3.connect(DATABASE_PATH)
+        conn = get_connection()
         cursor = conn.cursor()
 
         existing = cursor.execute('SELECT id FROM users WHERE id = ?', (user_id,)).fetchone()
@@ -980,9 +984,14 @@ def admin_delete_user(user_id):
             conn.close()
             return jsonify({'status': 'error', 'message': 'User tidak ditemukan.'}), 404
 
-        for table in ('sessions', 'reviews', 'review_photos', 'review_likes', 'review_reports',
-                      'favorites', 'want_to_visit', 'user_profiles'):
-            cursor.execute(f'DELETE FROM {table} WHERE user_id = ?', (user_id,))
+        cursor.execute('DELETE FROM sessions WHERE user_id = ?', (user_id,))
+        cursor.execute('DELETE FROM review_likes WHERE user_id = ?', (user_id,))
+        cursor.execute('DELETE FROM favorites WHERE user_id = ?', (user_id,))
+        cursor.execute('DELETE FROM want_to_visit WHERE user_id = ?', (user_id,))
+        cursor.execute('DELETE FROM preference_suggestions WHERE user_id = ?', (user_id,))
+        cursor.execute('DELETE FROM review_reports WHERE reported_by_user_id = ?', (user_id,))
+        cursor.execute('DELETE FROM reviews WHERE user_id = ?', (user_id,))
+        cursor.execute('DELETE FROM user_profiles WHERE user_id = ?', (user_id,))
         cursor.execute('DELETE FROM users WHERE id = ?', (user_id,))
         conn.commit()
         conn.close()
@@ -1003,8 +1012,7 @@ def admin_get_shops():
         per_page = min(max(int(request.args.get('per_page', 10)), 1), 100)
         search = (request.args.get('search') or '').strip().lower()
 
-        conn = sqlite3.connect(DATABASE_PATH)
-        conn.row_factory = sqlite3.Row
+        conn = get_connection()
         cursor = conn.cursor()
         facilities_index = _load_facilities_index()
 
@@ -1040,20 +1048,21 @@ def admin_get_shops():
 
         items = []
         for row in rows:
-            facility_entry = facilities_index.get(row['place_id'], {})
+            rd = dict_from_row(cursor, row)
+            facility_entry = facilities_index.get(rd['place_id'], {})
             facilities_text = _format_facilities_to_text(facility_entry)
             facilities_obj = facility_entry.get('facilities', {})
             items.append({
-                'id': row['id'],
-                'place_id': row['place_id'],
-                'name': row['name'],
-                'address': row['address'],
-                'rating': row['rating'],
-                'total_reviews': row['total_reviews'],
-                'latitude': row['latitude'],
-                'longitude': row['longitude'],
-                'map_embed_url': row['map_embed_url'],
-                'opening_hours_display': row['opening_hours_display'],
+                'id': rd['id'],
+                'place_id': rd['place_id'],
+                'name': rd['name'],
+                'address': rd['address'],
+                'rating': rd['rating'],
+                'total_reviews': rd['total_reviews'],
+                'latitude': rd['latitude'],
+                'longitude': rd['longitude'],
+                'map_embed_url': rd['map_embed_url'],
+                'opening_hours_display': rd['opening_hours_display'],
                 'has_facilities': bool(facility_entry),
                 'facilities_text': facilities_text,
                 'facility_count': _count_enabled_facilities(facilities_obj),
@@ -1084,7 +1093,7 @@ def admin_get_facility_entry(place_id):
     try:
         facilities_index = _load_facilities_index()
 
-        conn = sqlite3.connect(DATABASE_PATH)
+        conn = get_connection()
         cursor = conn.cursor()
         shop_row = cursor.execute('SELECT name FROM coffee_shops WHERE place_id = ?', (place_id,)).fetchone()
         conn.close()
@@ -1151,7 +1160,7 @@ def admin_create_shop():
             slug = re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-')
             place_id = f"admin-{slug or 'coffee-shop'}-{int(time.time())}"
 
-        conn = sqlite3.connect(DATABASE_PATH)
+        conn = get_connection()
         cursor = conn.cursor()
 
         exists = cursor.execute('SELECT 1 FROM coffee_shops WHERE place_id = ?', (place_id,)).fetchone()
@@ -1201,7 +1210,7 @@ def admin_update_shop(place_id):
 
     try:
         data = request.get_json() or {}
-        conn = sqlite3.connect(DATABASE_PATH)
+        conn = get_connection()
         cursor = conn.cursor()
 
         existing = cursor.execute('SELECT id FROM coffee_shops WHERE place_id = ?', (place_id,)).fetchone()
@@ -1250,7 +1259,7 @@ def admin_delete_shop(place_id):
         return error_response
 
     try:
-        conn = sqlite3.connect(DATABASE_PATH)
+        conn = get_connection()
         cursor = conn.cursor()
 
         review_rows = cursor.execute('SELECT id FROM reviews WHERE place_id = ?', (place_id,)).fetchall()
@@ -1286,8 +1295,7 @@ def admin_get_reviews():
         search = (request.args.get('search') or '').strip().lower()
         place_id = (request.args.get('place_id') or '').strip()
 
-        conn = sqlite3.connect(DATABASE_PATH)
-        conn.row_factory = sqlite3.Row
+        conn = get_connection()
         cursor = conn.cursor()
 
         where_clauses = []
@@ -1337,19 +1345,20 @@ def admin_get_reviews():
 
         items = []
         for row in rows:
-            photo_count = cursor.execute('SELECT COUNT(*) FROM review_photos WHERE review_id = ?', (row['id'],)).fetchone()[0]
-            like_count = cursor.execute('SELECT COUNT(*) FROM review_likes WHERE review_id = ?', (row['id'],)).fetchone()[0]
+            rd = dict_from_row(cursor, row)
+            photo_count = cursor.execute('SELECT COUNT(*) FROM review_photos WHERE review_id = ?', (rd['id'],)).fetchone()[0]
+            like_count = cursor.execute('SELECT COUNT(*) FROM review_likes WHERE review_id = ?', (rd['id'],)).fetchone()[0]
             items.append({
-                'id': row['id'],
-                'place_id': row['place_id'],
-                'shop_name': row['shop_name'],
-                'username': row['username'],
-                'rating': row['rating'],
-                'text': row['review_text'],
-                'created_at': row['created_at'],
-                'rating_makanan': row['rating_makanan'],
-                'rating_layanan': row['rating_layanan'],
-                'rating_suasana': row['rating_suasana'],
+                'id': rd['id'],
+                'place_id': rd['place_id'],
+                'shop_name': rd['shop_name'],
+                'username': rd['username'],
+                'rating': rd['rating'],
+                'text': rd['review_text'],
+                'created_at': rd['created_at'],
+                'rating_makanan': rd['rating_makanan'],
+                'rating_layanan': rd['rating_layanan'],
+                'rating_suasana': rd['rating_suasana'],
                 'photo_count': photo_count,
                 'like_count': like_count,
             })
@@ -1382,8 +1391,7 @@ def admin_get_review_reports():
         search = (request.args.get('search') or '').strip().lower()
         status_filter = (request.args.get('status') or '').strip().lower()
 
-        conn = sqlite3.connect(DATABASE_PATH)
-        conn.row_factory = sqlite3.Row
+        conn = get_connection()
         cursor = conn.cursor()
 
         where_clauses = []
@@ -1437,7 +1445,7 @@ def admin_get_review_reports():
             per_page
         )
 
-        items = [dict(row) for row in rows]
+        items = [dict_from_row(cursor, row) for row in rows]
         conn.close()
 
         return jsonify({
@@ -1465,7 +1473,7 @@ def admin_update_review_report(report_id):
         status = (data.get('status') or 'pending').strip()
         admin_notes = (data.get('admin_notes') or '').strip()
 
-        conn = sqlite3.connect(DATABASE_PATH)
+        conn = get_connection()
         cursor = conn.cursor()
 
         existing = cursor.execute('SELECT id FROM review_reports WHERE id = ?', (report_id,)).fetchone()
@@ -1494,7 +1502,7 @@ def admin_delete_review(review_id):
         return error_response
 
     try:
-        conn = sqlite3.connect(DATABASE_PATH)
+        conn = get_connection()
         cursor = conn.cursor()
 
         cursor.execute('DELETE FROM review_likes WHERE review_id = ?', (review_id,))
@@ -1520,8 +1528,7 @@ def admin_get_preference_suggestions():
         per_page = min(max(int(request.args.get('per_page', 10)), 1), 100)
         search = (request.args.get('search') or '').strip().lower()
 
-        conn = sqlite3.connect(DATABASE_PATH)
-        conn.row_factory = sqlite3.Row
+        conn = get_connection()
         cursor = conn.cursor()
 
         where_sql = ''
@@ -1560,7 +1567,7 @@ def admin_get_preference_suggestions():
             per_page
         )
 
-        items = [dict(row) for row in rows]
+        items = [dict_from_row(cursor, row) for row in rows]
         conn.close()
 
         return jsonify({
@@ -1584,7 +1591,7 @@ def admin_delete_preference_suggestion(suggestion_id):
         return error_response
 
     try:
-        conn = sqlite3.connect(DATABASE_PATH)
+        conn = get_connection()
         cursor = conn.cursor()
         cursor.execute('DELETE FROM preference_suggestions WHERE id = ?', (suggestion_id,))
         conn.commit()
@@ -1602,14 +1609,13 @@ def admin_get_ai_cache():
 
     try:
         sentiment_cache = load_sentiment_cache()
-        conn = sqlite3.connect(DATABASE_PATH)
-        conn.row_factory = sqlite3.Row
+        conn = get_connection()
         cursor = conn.cursor()
 
-        shop_lookup = {
-            row['place_id']: row['name']
-            for row in cursor.execute('SELECT place_id, name FROM coffee_shops').fetchall()
-        }
+        shop_lookup = {}
+        for row in cursor.execute('SELECT place_id, name FROM coffee_shops').fetchall():
+            rd = dict_from_row(cursor, row)
+            shop_lookup[rd['place_id']] = rd['name']
         conn.close()
 
         items = []
@@ -3566,8 +3572,7 @@ def _fetch_coffeeshops_with_reviews_from_json(location_str, max_shops=15, keywor
             print(f"[JSON+REVIEWS] places.json tidak ditemukan, fallback ke SQLite coffee_shops")
 
         if not coffee_shops:
-            conn = sqlite3.connect(DATABASE_PATH)
-            conn.row_factory = sqlite3.Row
+            conn = get_connection()
             cursor = conn.cursor()
             rows = cursor.execute("""
                 SELECT c.*, COALESCE(o.hours_display, '') AS opening_hours_display
@@ -3575,9 +3580,9 @@ def _fetch_coffeeshops_with_reviews_from_json(location_str, max_shops=15, keywor
                 LEFT JOIN opening_hours o ON c.place_id = o.place_id
                 ORDER BY c.rating DESC
             """).fetchall()
+            coffee_shops = [dict_from_row(cursor, row) for row in rows]
             conn.close()
-            coffee_shops = [dict(row) for row in rows]
-            print(f"[JSON+REVIEWS] Loaded {len(coffee_shops)} shops from SQLite fallback")
+            print(f"[JSON+REVIEWS] Loaded {len(coffee_shops)} shops dari DB fallback")
 
         if not coffee_shops:
             print(f"[JSON+REVIEWS] Error: Tidak ada data coffee shop di sumber manapun")
@@ -4070,15 +4075,16 @@ def _build_review_only_profile(place_id, facilities_index=None):
     Returns None jika toko tidak ditemukan sama sekali.
     """
     shop_data = {}
-    conn = sqlite3.connect(DATABASE_PATH, timeout=10)
-    conn.row_factory = sqlite3.Row
+    conn = get_connection()
     try:
-        row = conn.execute(
+        cur = conn.cursor()
+        cur.execute(
             "SELECT place_id, name, rating, total_reviews FROM coffee_shops WHERE place_id = ?",
-            (place_id,)
-        ).fetchone()
+            (place_id,),
+        )
+        row = cur.fetchone()
         if row:
-            shop_data = dict(row)
+            shop_data = dict_from_row(cur, row)
     finally:
         conn.close()
 
@@ -4130,7 +4136,7 @@ def _load_all_place_ids():
     """Return list of all place_ids from SQLite, fallback to places.json."""
     place_ids = []
     try:
-        conn = sqlite3.connect(DATABASE_PATH, timeout=10)
+        conn = get_connection()
         rows = conn.execute("SELECT place_id FROM coffee_shops").fetchall()
         conn.close()
         place_ids = [r[0] for r in rows if r[0]]
@@ -6201,16 +6207,17 @@ def _fallback_low_review_shops(exclude_place_ids, needed, all_place_ids):
     if needed <= 0:
         return []
     rows = []
-    conn = sqlite3.connect(DATABASE_PATH, timeout=10)
-    conn.row_factory = sqlite3.Row
+    conn = get_connection()
     try:
         qmarks = ','.join('?' * len(all_place_ids))
-        cur = conn.execute(
+        cur = conn.cursor()
+        cur.execute(
             f"SELECT place_id, name, rating, total_reviews FROM coffee_shops "
             f"WHERE place_id IN ({qmarks})",
             all_place_ids,
         )
-        rows = [dict(r) for r in cur.fetchall()]
+        raw = cur.fetchall()
+        rows = [dict_from_row(cur, r) for r in raw]
     finally:
         conn.close()
     rows = [r for r in rows if r['place_id'] not in exclude_place_ids]
@@ -7055,8 +7062,7 @@ def suggest_keywords():
         reviews_context_for_suggestion = ""
         
         try:
-            conn = sqlite3.connect(DATABASE_PATH, timeout=10)
-            conn.row_factory = sqlite3.Row
+            conn = get_connection()
             cursor = conn.cursor()
             
             # Ambil maksimal 50 review terbaru untuk analisis
@@ -7071,10 +7077,11 @@ def suggest_keywords():
             
             all_reviews = []
             for review in all_reviews_db:
+                rd = dict_from_row(cursor, review)
                 all_reviews.append({
-                    'text': review['review_text'],
-                    'rating': review['rating'],
-                    'author_name': review['username'] or 'Anonim'
+                    'text': rd['review_text'],
+                    'rating': rd['rating'],
+                    'author_name': rd['username'] or 'Anonim'
                 })
             
             conn.close()

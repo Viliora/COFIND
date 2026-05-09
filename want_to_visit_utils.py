@@ -85,7 +85,7 @@ def get_user_want_to_visit(user_id, limit=100):
         rows = cursor.execute(
             '''
             SELECT w.id, w.place_id, w.added_at,
-                   c.name, c.address, c.rating, c.user_ratings_total
+                   c.name, c.address, c.rating, c.total_reviews AS user_ratings_total
             FROM want_to_visit w
             LEFT JOIN coffee_shops c ON w.place_id = c.place_id
             WHERE w.user_id = ?

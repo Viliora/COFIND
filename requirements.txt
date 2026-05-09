@@ -8,3 +8,4 @@ Sastrawi
 celery
 redis
 json-repair
+psycopg2-binary>=2.9

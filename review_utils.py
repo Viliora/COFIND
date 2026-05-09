@@ -5,7 +5,6 @@ CRUD operations for coffee shop reviews
 
 import base64
 import re
-import sqlite3
 from datetime import datetime
 from auth_utils import get_db_connection
 

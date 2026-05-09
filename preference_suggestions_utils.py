@@ -2,7 +2,6 @@
 Preference Suggestions - saran preferensi dari user (hanya untuk user login).
 """
 
-import sqlite3
 from datetime import datetime
 from auth_utils import get_db_connection
 

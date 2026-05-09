@@ -3,7 +3,6 @@ Favorites Management Utilities
 CRUD operations for favorite coffee shops
 """
 
-import sqlite3
 from datetime import datetime
 from auth_utils import get_db_connection
 

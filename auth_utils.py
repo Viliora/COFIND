@@ -1,26 +1,17 @@
 """
-Authentication utilities untuk local SQLite database
-Menggantikan Supabase auth completely
+Authentication utilities — SQLite lokal atau PostgreSQL (Supabase) lewat db_backend.
 """
-import sqlite3
 import hashlib
 import secrets
 import string
 from datetime import datetime, timedelta
-import os
 
-DATABASE_PATH = os.path.join(os.path.dirname(__file__), 'cofind.db')
+from db_backend import dict_from_row, get_connection
+
 
 def get_db_connection():
-    """Get database connection"""
-    conn = sqlite3.connect(DATABASE_PATH, timeout=10)
-    conn.row_factory = sqlite3.Row
-    try:
-        conn.execute("PRAGMA journal_mode=WAL;")
-        conn.execute("PRAGMA busy_timeout=5000;")
-    except sqlite3.Error:
-        pass
-    return conn
+    """Koneksi DB (SQLite atau Postgres sesuai .env)."""
+    return get_connection()
 
 def hash_password(password: str) -> str:
     """Hash password dengan SHA256 + salt"""
@@ -94,7 +85,8 @@ def signup(email: str, username: str, password: str, full_name: str = "") -> dic
                 LEFT JOIN user_profiles p ON u.id = p.user_id
                 WHERE u.id = ?
             ''', (user_id,))
-            user = dict(cursor.fetchone())
+            row_u = cursor.fetchone()
+            user = dict_from_row(cursor, row_u)
         
         return {
             'success': True,
@@ -127,7 +119,7 @@ def login(email: str, password: str) -> dict:
             if not row:
                 return {'success': False, 'error': 'Invalid email or password'}
             
-            user = dict(row)
+            user = dict_from_row(cursor, row)
             password_hash = user.pop('password_hash')
             
             # Verify password
@@ -171,14 +163,11 @@ def verify_token(token: str) -> dict:
             ''', (token,))
             
             row = cursor.fetchone()
-        
-        if not row:
-            return {'valid': False, 'user': None}
-        
-        user = dict(row)
-        user.pop('expires_at', None)
-        
-        return {'valid': True, 'user': user}
+            if not row:
+                return {'valid': False, 'user': None}
+            user = dict_from_row(cursor, row)
+            user.pop('expires_at', None)
+            return {'valid': True, 'user': user}
     
     except Exception as e:
         return {'valid': False, 'error': str(e)}
@@ -207,11 +196,9 @@ def get_user_by_id(user_id: int) -> dict:
             ''', (user_id,))
             
             row = cursor.fetchone()
-        
-        if not row:
-            return None
-        
-        return dict(row)
+            if not row:
+                return None
+            return dict_from_row(cursor, row)
     
     except Exception as e:
         return None
