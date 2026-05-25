@@ -286,8 +286,8 @@ const Navbar = () => {
                 to="/"
                 className={`relative inline-flex items-center justify-center gap-1.5 rounded-md px-3 lg:px-4 py-1.5 lg:py-2 text-xs lg:text-sm font-medium transition-all duration-300 ease-in-out ${
                   isActive('/')
-                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md'
-                    : 'bg-white dark:bg-zinc-700 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-zinc-600 hover:shadow-sm'
+                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md hover:from-blue-700 hover:to-purple-700 hover:shadow-lg'
+                    : 'bg-white dark:bg-zinc-700 text-gray-600 dark:text-gray-400 hover:text-indigo-800 dark:hover:text-indigo-100 hover:bg-indigo-50 dark:hover:bg-indigo-900/45 hover:shadow-sm'
                 }`}
               >
                 <svg
@@ -307,11 +307,14 @@ const Navbar = () => {
               {/* Koleksi (Dropdown) */}
               <div className="relative collection-dropdown-container">
                 <button
+                  type="button"
                   onClick={() => setCollectionDropdownOpen(!collectionDropdownOpen)}
-                  className={`relative inline-flex items-center justify-center gap-1.5 rounded-md px-3 lg:px-4 py-1.5 lg:py-2 text-xs lg:text-sm font-medium transition-all duration-300 ease-in-out ${
+                  className={`relative inline-flex items-center justify-center gap-1.5 rounded-md px-3 lg:px-4 py-1.5 lg:py-2 text-xs lg:text-sm font-medium transition-all duration-300 ease-in-out outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/70 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 ${
                     isActive('/favorite') || isActive('/want-to-visit')
-                      ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md'
-                      : 'bg-white dark:bg-zinc-700 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-zinc-600 hover:shadow-sm'
+                      ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md hover:from-pink-600 hover:to-rose-600 hover:shadow-lg'
+                      : collectionDropdownOpen
+                        ? 'bg-rose-100 dark:bg-rose-900/50 text-rose-900 dark:text-rose-100 shadow-sm'
+                        : 'bg-white dark:bg-zinc-700 text-gray-600 dark:text-gray-400 hover:text-rose-800 dark:hover:text-rose-100 hover:bg-rose-50 dark:hover:bg-rose-900/45 hover:shadow-sm'
                   }`}
                 >
                   <svg
@@ -371,8 +374,8 @@ const Navbar = () => {
                 to="/about"
                 className={`relative inline-flex items-center justify-center gap-1.5 rounded-md px-3 lg:px-4 py-1.5 lg:py-2 text-xs lg:text-sm font-medium transition-all duration-300 ease-in-out ${
                   isActive('/about')
-                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md'
-                    : 'bg-white dark:bg-zinc-700 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-zinc-600 hover:shadow-sm'
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md hover:from-amber-600 hover:to-orange-600 hover:shadow-lg'
+                    : 'bg-white dark:bg-zinc-700 text-gray-600 dark:text-gray-400 hover:text-amber-900 dark:hover:text-amber-100 hover:bg-amber-50 dark:hover:bg-amber-900/40 hover:shadow-sm'
                 }`}
               >
                 <svg

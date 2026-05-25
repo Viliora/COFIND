@@ -267,23 +267,24 @@ const Login = () => {
 
               {/* Error/Success Messages */}
               {error && (
-                <div className="mb-4 p-3 bg-red-500/20 border border-red-400/50 rounded-lg backdrop-blur-sm">
+                <div data-testid="login-error" className="mb-4 p-3 bg-red-500/20 border border-red-400/50 rounded-lg backdrop-blur-sm">
                   <p className="text-sm text-red-100">{error}</p>
                 </div>
               )}
               {success && (
-                <div className="mb-4 p-3 bg-green-500/20 border border-green-400/50 rounded-lg backdrop-blur-sm">
+                <div data-testid="login-success" className="mb-4 p-3 bg-green-500/20 border border-green-400/50 rounded-lg backdrop-blur-sm">
                   <p className="text-sm text-green-100">{success}</p>
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form data-testid="login-form" onSubmit={handleSubmit} className="space-y-5">
                 {/* Username */}
                 <div>
                   <label className="block text-sm font-medium text-white mb-2">
                     Username
                   </label>
                   <input
+                    data-testid="login-username"
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
@@ -301,6 +302,7 @@ const Login = () => {
                       Nama Lengkap (Opsional)
                     </label>
                     <input
+                      data-testid="register-fullname"
                       type="text"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
@@ -317,6 +319,7 @@ const Login = () => {
                       Password
                     </label>
                     <input
+                      data-testid="login-password"
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
@@ -335,6 +338,7 @@ const Login = () => {
                       Konfirmasi Password
                     </label>
                     <input
+                      data-testid="register-confirm-password"
                       type="password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
@@ -363,6 +367,7 @@ const Login = () => {
 
                 {/* Submit Button */}
                 <button
+                  data-testid="login-submit"
                   type="submit"
                   disabled={isSubmitting}
                   className="w-full py-3.5 px-4 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-400 text-white font-semibold rounded-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl disabled:opacity-50"
@@ -388,6 +393,8 @@ const Login = () => {
                   <>
                     Belum punya akun?{' '}
                     <button
+                      type="button"
+                      data-testid="login-switch-register"
                       onClick={() => {
                         setMode('register');
                         setError('');

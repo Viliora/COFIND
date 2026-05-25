@@ -1,18 +1,15 @@
-"""List nama dan alamat coffee shop dari database."""
-import sqlite3
-import os
+"""List nama dan alamat coffee shop dari database (Supabase/PostgreSQL atau SQLite lokal)."""
+from db_backend import get_connection, dict_from_row
 
-db_path = os.path.join(os.path.dirname(__file__), 'cofind.db')
-conn = sqlite3.connect(db_path)
-conn.row_factory = sqlite3.Row
+conn = get_connection()
 cur = conn.cursor()
-cur.execute('SELECT name, address FROM coffee_shops ORDER BY name')
-rows = cur.fetchall()
+cur.execute("SELECT name, address FROM coffee_shops ORDER BY name")
+rows = [dict_from_row(cur, r) for r in cur.fetchall()]
 conn.close()
 
 for i, r in enumerate(rows, 1):
-    name = r['name'] or '-'
-    address = r['address'] or '-'
+    name = (r.get("name") if r else None) or "-"
+    address = (r.get("address") if r else None) or "-"
     print(f"{i}. {name}")
     print(f"   Alamat: {address}")
     print()

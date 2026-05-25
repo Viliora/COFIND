@@ -8,15 +8,11 @@ Cara pakai:
   Opsi 2 - Buat akun admin baru:
     python make_admin.py --create --username <username> --password <password>
 """
-
 import argparse
 import hashlib
-import os
 import secrets
-import sqlite3
-import string
 
-DATABASE_PATH = os.path.join(os.path.dirname(__file__), 'cofind.db')
+from db_backend import get_connection
 
 
 def hash_password(password: str) -> str:
@@ -43,11 +39,10 @@ def main():
     parser.add_argument("--create", action="store_true", help="Buat akun admin baru")
     args = parser.parse_args()
 
-    conn = sqlite3.connect(DATABASE_PATH)
+    conn = get_connection()
     cursor = conn.cursor()
 
     if args.create:
-        # Buat akun admin baru
         if not args.password:
             print("ERROR: --password wajib diisi saat menggunakan --create")
             conn.close()
@@ -56,7 +51,7 @@ def main():
         email = f"{args.username}@cofind.app"
         existing = cursor.execute(
             "SELECT id FROM users WHERE username = ? OR email = ?",
-            (args.username, email)
+            (args.username, email),
         ).fetchone()
         if existing:
             print(f"ERROR: Username '{args.username}' atau email '{email}' sudah dipakai.")
@@ -67,25 +62,24 @@ def main():
         pwd_hash = hash_password(args.password)
         cursor.execute(
             "INSERT INTO users (email, username, password_hash, is_admin, is_active) VALUES (?, ?, ?, 1, 1)",
-            (email, args.username, pwd_hash)
+            (email, args.username, pwd_hash),
         )
         user_id = cursor.lastrowid
         cursor.execute(
             "INSERT INTO user_profiles (user_id, full_name) VALUES (?, ?)",
-            (user_id, args.username)
+            (user_id, args.username),
         )
         conn.commit()
-        print(f"\n✅ Akun admin baru berhasil dibuat:")
+        print(f"\n[OK] Akun admin baru berhasil dibuat:")
         print(f"   Username : {args.username}")
         print(f"   Email    : {email}")
         print(f"   Password : {args.password}")
         print(f"   is_admin : 1 (admin)\n")
 
     else:
-        # Naikkan akun yang sudah ada menjadi admin
         row = cursor.execute(
             "SELECT id, username, email, is_admin FROM users WHERE username = ?",
-            (args.username,)
+            (args.username,),
         ).fetchone()
         if not row:
             print(f"ERROR: Username '{args.username}' tidak ditemukan di database.")
@@ -93,9 +87,11 @@ def main():
             conn.close()
             return
 
-        cursor.execute("UPDATE users SET is_admin = 1 WHERE username = ?", (args.username,))
+        cursor.execute(
+            "UPDATE users SET is_admin = 1 WHERE username = ?", (args.username,)
+        )
         conn.commit()
-        print(f"\n✅ Akun '{args.username}' berhasil dijadikan admin.\n")
+        print(f"\n[OK] Akun '{args.username}' berhasil dijadikan admin.\n")
 
     list_users(cursor)
     conn.close()

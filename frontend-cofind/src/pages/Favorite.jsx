@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/authContext';
 import CoffeeShopCard from '../components/CoffeeShopCard';
 import { ensureCoffeeShopImageMap } from '../utils/coffeeShopImages';
-import { getPersonalizedRecommendations } from '../utils/personalizedRecommendations';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
@@ -11,34 +10,14 @@ const Favorite = () => {
   const { isAuthenticated, user } = useAuth();
   const [favoriteShops, setFavoriteShops] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [allShops, setAllShops] = useState([]); // Semua coffee shops untuk recommendations
-
-  // Load semua coffee shops untuk recommendations
-  const loadAllShops = useCallback(async () => {
-    try {
-      const response = await fetch(`${API_BASE}/api/coffeeshops`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-      const payload = await response.json();
-      if (payload?.status === 'success' && Array.isArray(payload.data)) {
-        setAllShops(payload.data);
-      }
-    } catch (error) {
-      console.error('[Favorite] Error loading all shops:', error);
-    }
-  }, []);
 
   const loadFavorites = useCallback(async () => {
     try {
       setIsLoading(true);
-      
+
       if (isAuthenticated && user?.id) {
         const response = await fetch(`${API_BASE}/api/users/${user.id}/favorites`, {
-          method: 'GET'
+          method: 'GET',
         });
         if (!response.ok) {
           throw new Error(`API error: ${response.status}`);
@@ -46,15 +25,15 @@ const Favorite = () => {
         const payload = await response.json();
         const favorites = Array.isArray(payload.favorites) ? payload.favorites : [];
         const shops = favorites
-          .filter(fav => fav.shop)
-          .map(fav => ({
+          .filter((fav) => fav.shop)
+          .map((fav) => ({
             place_id: fav.place_id,
             name: fav.shop.name,
             address: fav.shop.address,
             vicinity: fav.shop.address,
             rating: fav.shop.rating,
             user_ratings_total: fav.shop.user_ratings_total,
-            photos: fav.shop.photos || null
+            photos: fav.shop.photos || null,
           }));
 
         ensureCoffeeShopImageMap(shops);
@@ -63,7 +42,6 @@ const Favorite = () => {
         return;
       }
 
-      // Guest mode: localStorage fallback
       const favoritePlaceIds = JSON.parse(localStorage.getItem('favoriteShops') || '[]');
       if (favoritePlaceIds.length === 0) {
         setFavoriteShops([]);
@@ -73,14 +51,14 @@ const Favorite = () => {
 
       const response = await fetch(`${API_BASE}/api/coffeeshops`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       });
       if (!response.ok) {
         throw new Error(`API error: ${response.status}`);
       }
       const payload = await response.json();
       const all = Array.isArray(payload.data) ? payload.data : [];
-      const shops = all.filter(shop => favoritePlaceIds.includes(shop.place_id));
+      const shops = all.filter((shop) => favoritePlaceIds.includes(shop.place_id));
       ensureCoffeeShopImageMap(shops);
       setFavoriteShops(shops);
       setIsLoading(false);
@@ -92,39 +70,14 @@ const Favorite = () => {
 
   useEffect(() => {
     loadFavorites();
-    loadAllShops();
-  }, [isAuthenticated, user?.id, loadFavorites, loadAllShops]);
+  }, [isAuthenticated, user?.id, loadFavorites]);
 
-  // Title halaman
   useEffect(() => {
     document.title = 'Favorit - Cofind';
-    return () => { document.title = 'Cofind'; };
+    return () => {
+      document.title = 'Cofind';
+    };
   }, []);
-
-  // Generate Personalized Recommendations berdasarkan favorit
-  const personalizedRecommendations = useMemo(() => {
-    if (favoriteShops.length === 0 || allShops.length === 0) return [];
-    
-    try {
-      const recommendations = getPersonalizedRecommendations(
-        favoriteShops,
-        allShops,
-        {
-          maxResults: 8,
-          minRating: 4.0,
-          excludeFavorites: true,
-          weightFeatures: 0.7, // 70% fokus pada context similarity
-          weightRating: 0.2,
-          weightLocation: 0.1,
-        }
-      );
-      
-      return recommendations;
-    } catch (error) {
-      console.error('[Favorite] Error generating personalized recommendations:', error);
-      return [];
-    }
-  }, [favoriteShops, allShops]);
 
   if (isLoading) {
     return (
@@ -178,7 +131,6 @@ const Favorite = () => {
     );
   }
 
-  // Guest access - show login prompt
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-zinc-900 py-6 sm:py-8 px-3 sm:px-4 md:px-6 lg:px-8">
@@ -226,32 +178,6 @@ const Favorite = () => {
             </div>
           ))}
         </div>
-
-        {/* Personalized Recommendations - Berdasarkan kemiripan konteks review */}
-        {personalizedRecommendations.length > 0 && (
-          <div className="mt-12">
-            <div className="mb-6">
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-2">
-                <span className="text-2xl">✨</span>
-                Rekomendasi untuk Anda
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Coffee shop dengan review yang mirip dengan favorit Anda
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-              {personalizedRecommendations.map((shop) => (
-                <div
-                  key={shop.place_id}
-                  className="block hover:shadow-2xl transition duration-300"
-                >
-                  <CoffeeShopCard shop={shop} />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

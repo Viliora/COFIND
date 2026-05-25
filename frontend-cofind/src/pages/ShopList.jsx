@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import CoffeeShopCard from '../components/CoffeeShopCard';
 import HeroSwiper from '../components/HeroSwiper';
 import CoffeeShopMap from '../components/CoffeeShopMap';
@@ -14,6 +15,7 @@ import { ensureCoffeeShopImageMap } from '../utils/coffeeShopImages';
 import { getRecentlyViewedWithDetails } from '../utils/recentlyViewed';
 import heroBgImage from '../assets/1R modern cafe 1.5.jpg';
 import { useAuth } from '../context/authContext';
+import { authService } from '../services/authService';
 // API Configuration
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
@@ -41,7 +43,7 @@ function sortShopsByGoogleMaps(shops) {
 }
 
 export default function ShopList() {
-  const { loading: authLoading } = useAuth();
+  const { loading: authLoading, user } = useAuth();
   const [coffeeShops, setCoffeeShops] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -55,6 +57,7 @@ export default function ShopList() {
   const [pillRecommendError, setPillRecommendError] = useState('');
   const [recommendationNotification, setRecommendationNotification] = useState(null);
   const [showRecommendationModal, setShowRecommendationModal] = useState(false);
+  const [showPillLoginModal, setShowPillLoginModal] = useState(false);
   const featuredScrollRef = useRef(null);
   const hasLoadedRef = useRef(false);
 
@@ -70,6 +73,40 @@ export default function ShopList() {
     document.title = 'Beranda - Cofind';
     return () => { document.title = 'Cofind'; };
   }, []);
+
+  const isPillPreferenceAvailable = Boolean(user) && !authLoading;
+
+  // Pill + rekomendasi konteks hanya untuk pengguna login; bersihkan saat logout
+  useEffect(() => {
+    if (authLoading) return;
+    if (user) return;
+    setSelectedPills([]);
+    setConfirmedPills([]);
+    setLlmRecommendations([]);
+    setRecommendationIntentContext(null);
+    setPillRecommendError('');
+    setShowRecommendationModal(false);
+    setRecommendationNotification(null);
+    setShowPillLoginModal(false);
+  }, [authLoading, user]);
+
+  useEffect(() => {
+    if (user) setShowPillLoginModal(false);
+  }, [user]);
+
+  useEffect(() => {
+    if (!showPillLoginModal) return undefined;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setShowPillLoginModal(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [showPillLoginModal]);
 
   // Listen untuk online/offline events
   useEffect(() => {
@@ -349,6 +386,12 @@ export default function ShopList() {
 
   // Satu konteks aktivitas per waktu (pill tunggal)
   const handlePillClick = (pillValue) => {
+    if (authLoading) return;
+    if (!user) {
+      setShowPillLoginModal(true);
+      return;
+    }
+    if (pillRecommendLoading) return;
     setPillRecommendError('');
     setSelectedPills((prev) => {
       if (prev.includes(pillValue)) return [];
@@ -368,7 +411,17 @@ export default function ShopList() {
   }, [selectedPills, confirmedPills]);
 
   const requestPillRecommendations = async (pillValues) => {
+    if (!isPillPreferenceAvailable) return;
     if (!Array.isArray(pillValues) || pillValues.length === 0) return;
+    const token = authService.getToken();
+    if (!token) {
+      setPillRecommendError('Silakan login untuk mendapatkan rekomendasi konteks.');
+      setRecommendationNotification({
+        type: 'error',
+        message: 'Silakan login untuk mendapatkan rekomendasi konteks.',
+      });
+      return;
+    }
     setConfirmedPills([...pillValues]);
     setPillRecommendLoading(true);
     setPillRecommendError('');
@@ -378,7 +431,10 @@ export default function ShopList() {
     try {
       const res = await fetch(`${API_BASE}/api/recommend-by-preferences`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
           preferences: pillValues,
         }),
@@ -444,7 +500,7 @@ export default function ShopList() {
 
   // Konfirmasi pill konteks di beranda → POST rekomendasi review-based
   const handleConfirmPills = async () => {
-    if (selectedPills.length === 0) return;
+    if (!isPillPreferenceAvailable || selectedPills.length === 0) return;
     await requestPillRecommendations(selectedPills);
   };
 
@@ -608,12 +664,12 @@ export default function ShopList() {
           </div>
         )}
 
-        {/* Konteks aktivitas (pill) */}
+        {/* Konteks aktivitas (pill) — khusus pengguna login */}
         {!error && !isLoading && coffeeShops.length > 0 && (
           <div className="mb-6 sm:mb-8">
             <div className="mb-3">
               <h3 className="text-sm sm:text-base font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                Cari berdasarkan konteks aktivitas:
+                Sesuaikan preferensi anda:
               </h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
                 Pilih satu pill yang sesuai dengan prefrensi Coffee Shop yang ingin anda kunjungi
@@ -623,15 +679,23 @@ export default function ShopList() {
               {recommendationFields.map((field) => {
                 const isSelected = selectedPills.includes(field.value);
                 const theme = CONTEXT_PILL_THEMES[field.value] || CONTEXT_PILL_THEME_DEFAULT;
+                const pillDisabled = authLoading || pillRecommendLoading;
                 return (
                   <button
                     key={field.value}
                     type="button"
+                    disabled={pillDisabled}
                     onClick={() => handlePillClick(field.value)}
+                    title={
+                      !user && !authLoading
+                        ? 'Login untuk menggunakan fitur analisis LLM'
+                        : undefined
+                    }
                     className={`
                       px-3 sm:px-4 py-2 rounded-full text-sm font-semibold
                       transition-shadow duration-200 ease-out
                       focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900/20 dark:focus-visible:ring-offset-black/30
+                      disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none
                       ${isSelected ? theme.selected : theme.idle}
                     `}
                   >
@@ -645,7 +709,7 @@ export default function ShopList() {
                 );
               })}
             </div>
-            {selectedPills.length > 0 && (
+            {isPillPreferenceAvailable && selectedPills.length > 0 && (
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <button
                   type="button"
@@ -949,6 +1013,49 @@ export default function ShopList() {
         )}
         
       </main>
+
+      {showPillLoginModal && (
+        <div
+          className="fixed inset-0 z-[105] flex items-center justify-center p-4 sm:p-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="pill-login-modal-title"
+        >
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            aria-hidden="true"
+            onClick={() => setShowPillLoginModal(false)}
+          />
+          <div className="relative z-10 w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-gray-700 dark:bg-gray-900">
+            <h3
+              id="pill-login-modal-title"
+              className="text-lg font-bold text-gray-900 dark:text-white"
+            >
+              Login diperlukan
+            </h3>
+            <p className="mt-3 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+              Login untuk menggunakan fitur analisis LLM — dapatkan rekomendasi coffee shop berdasarkan konteks
+              aktivitas dan ulasan pengunjung.
+            </p>
+            <div className="mt-6 flex flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowPillLoginModal(false)}
+                className="rounded-full px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
+              >
+                Tutup
+              </button>
+              <Link
+                to="/login"
+                onClick={() => setShowPillLoginModal(false)}
+                className="inline-flex rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
+              >
+                Masuk
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {pillRecommendLoading && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6">

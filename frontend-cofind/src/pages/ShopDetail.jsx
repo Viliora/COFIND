@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/authContext';
 // Supabase removed - use local backend only
 import OptimizedImage from '../components/OptimizedImage';
 import FacilitiesTab from '../components/FacilitiesTab';
 import ReviewList from '../components/ReviewList';
+import CoffeeShopCard from '../components/CoffeeShopCard';
 import facilitiesData from '../data/facilities.json';
 import { addToRecentlyViewed } from '../utils/recentlyViewed';
-import { getCoffeeShopImage } from '../utils/coffeeShopImages';
+import { getCoffeeShopImage, ensureCoffeeShopImageMap } from '../utils/coffeeShopImages';
 
 // API Configuration (samakan sumber data dengan homepage)
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
@@ -15,7 +16,11 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 const MIN_REVIEWS = 15; // Maksimal jumlah reviews yang ditampilkan
 
 function ShopDetail() {
-  const { id } = useParams();  // id akan mengambil place_id
+  const { id: routeParam } = useParams(); // place_id dari URL
+  const placeIdFromRoute = useMemo(
+    () => (routeParam ? decodeURIComponent(String(routeParam)).trim() : ''),
+    [routeParam],
+  );
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
@@ -28,9 +33,51 @@ function ShopDetail() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [pendingAction, setPendingAction] = useState(null); // 'favorite' or 'wantToVisit'
   const [newReview, setNewReview] = useState(null); // For triggering ReviewList update
+  const [coFavoriteShops, setCoFavoriteShops] = useState([]);
   const [mapError, setMapError] = useState(false); // Track map load errors
   const reviewFormRef = useRef(null); // Ref untuk scroll ke review form
   const locationSectionRef = useRef(null); // Ref untuk scroll ke section lokasi
+
+  const placeIdForApi = useMemo(() => {
+    if (shop?.place_id != null && String(shop.place_id).trim() !== '') {
+      return String(shop.place_id).trim();
+    }
+    return placeIdFromRoute;
+  }, [shop?.place_id, placeIdFromRoute]);
+
+  // Rekomendasi dari pola pengguna lain (exclude_user_id = viewer agar bukan pola diri sendiri)
+  useEffect(() => {
+    const pid = placeIdForApi;
+    if (!pid) {
+      setCoFavoriteShops([]);
+      return undefined;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const qs = new URLSearchParams({ limit: '8' });
+        if (isAuthenticated && user?.id != null) {
+          qs.set('exclude_user_id', String(user.id));
+        }
+        const res = await fetch(
+          `${API_BASE}/api/coffeeshops/place/${encodeURIComponent(pid)}/co-favorites?${qs.toString()}`,
+        );
+        const data = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        if (data.status === 'success' && Array.isArray(data.data) && data.data.length > 0) {
+          ensureCoffeeShopImageMap(data.data);
+          setCoFavoriteShops(data.data);
+        } else {
+          setCoFavoriteShops([]);
+        }
+      } catch {
+        if (!cancelled) setCoFavoriteShops([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [placeIdForApi, isAuthenticated, user?.id]);
 
   // Handle scroll to review form setelah login
   useEffect(() => {
@@ -78,10 +125,13 @@ function ShopDetail() {
       try {
         setIsLoading(true);
         setError(null);
+        if (!placeIdFromRoute) {
+          throw new Error('place_id tidak valid.');
+        }
 
         // ✅ PRIMARY: Fetch from local backend (same source as homepage)
         try {
-          const detailUrl = `${API_BASE}/api/coffeeshops/place/${id}`;
+          const detailUrl = `${API_BASE}/api/coffeeshops/place/${encodeURIComponent(placeIdFromRoute)}`;
           console.log('[ShopDetail] Fetching from backend:', detailUrl);
 
           const response = await fetch(detailUrl);
@@ -129,16 +179,20 @@ function ShopDetail() {
     };
 
     loadShop();
-  }, [id]);
+  }, [placeIdFromRoute]);
 
   // Check if shop is favorited or in want-to-visit (local backend or localStorage)
   useEffect(() => {
     const checkFavoriteStatus = async () => {
-      if (!id) return;
-      
+      const pid = placeIdForApi;
+      if (!pid) return;
+
       if (isAuthenticated && user?.id) {
+        const uid = Number(user.id);
         try {
-          const response = await fetch(`${API_BASE}/api/coffeeshops/${id}/favorite-status?user_id=${user.id}`);
+          const response = await fetch(
+            `${API_BASE}/api/coffeeshops/${encodeURIComponent(pid)}/favorite-status?user_id=${uid}`,
+          );
           if (response.ok) {
             const payload = await response.json();
             setIsFavorite(!!payload?.is_favorite);
@@ -151,7 +205,9 @@ function ShopDetail() {
         }
 
         try {
-          const response = await fetch(`${API_BASE}/api/coffeeshops/${id}/want-to-visit-status?user_id=${user.id}`);
+          const response = await fetch(
+            `${API_BASE}/api/coffeeshops/${encodeURIComponent(pid)}/want-to-visit-status?user_id=${uid}`,
+          );
           if (response.ok) {
             const payload = await response.json();
             setIsWantToVisit(!!payload?.is_want_to_visit);
@@ -167,14 +223,14 @@ function ShopDetail() {
 
       // Guest mode: use localStorage
       const favorites = JSON.parse(localStorage.getItem('favoriteShops') || '[]');
-      setIsFavorite(favorites.includes(id));
+      setIsFavorite(favorites.includes(pid));
 
       const wantToVisit = JSON.parse(localStorage.getItem('wantToVisitShops') || '[]');
-      setIsWantToVisit(wantToVisit.includes(id));
+      setIsWantToVisit(wantToVisit.includes(pid));
     };
     
     checkFavoriteStatus();
-  }, [id, isAuthenticated, user?.id]);
+  }, [placeIdForApi, isAuthenticated, user?.id]);
 
   const toggleFavorite = async () => {
     // If guest, show login modal
@@ -183,16 +239,27 @@ function ShopDetail() {
       setShowLoginModal(true);
       return;
     }
-    
+
+    const pid = placeIdForApi;
+    if (!pid) {
+      setNotification({ type: 'error', message: 'Data toko belum siap. Tunggu sebentar lalu coba lagi.' });
+      return;
+    }
+    const uid = Number(user.id);
+
     try {
       if (isFavorite) {
-        const response = await fetch(`${API_BASE}/api/favorites/${id}`, {
+        const response = await fetch(`${API_BASE}/api/favorites/${encodeURIComponent(pid)}`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: user.id })
+          body: JSON.stringify({ user_id: uid }),
         });
+        const payload = await response.json().catch(() => ({}));
         if (!response.ok) {
-          setNotification({ type: 'error', message: 'Gagal menghapus dari favorit' });
+          setNotification({
+            type: 'error',
+            message: payload.message || 'Gagal menghapus dari favorit',
+          });
           return;
         }
         setNotification({ type: 'removed', message: 'Dihapus dari favorit' });
@@ -200,10 +267,14 @@ function ShopDetail() {
         const response = await fetch(`${API_BASE}/api/favorites`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: user.id, place_id: id })
+          body: JSON.stringify({ user_id: uid, place_id: pid }),
         });
+        const payload = await response.json().catch(() => ({}));
         if (!response.ok) {
-          setNotification({ type: 'error', message: 'Gagal menambahkan ke favorit' });
+          setNotification({
+            type: 'error',
+            message: payload.message || 'Gagal menambahkan ke favorit',
+          });
           return;
         }
         setNotification({ type: 'added', message: 'Ditambahkan ke favorit!' });
@@ -223,16 +294,27 @@ function ShopDetail() {
       setShowLoginModal(true);
       return;
     }
-    
+
+    const pid = placeIdForApi;
+    if (!pid) {
+      setNotification({ type: 'error', message: 'Data toko belum siap. Tunggu sebentar lalu coba lagi.' });
+      return;
+    }
+    const uid = Number(user.id);
+
     try {
       if (isWantToVisit) {
-        const response = await fetch(`${API_BASE}/api/want-to-visit/${id}`, {
+        const response = await fetch(`${API_BASE}/api/want-to-visit/${encodeURIComponent(pid)}`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: user.id })
+          body: JSON.stringify({ user_id: uid }),
         });
+        const payload = await response.json().catch(() => ({}));
         if (!response.ok) {
-          setNotification({ type: 'error', message: 'Gagal menghapus dari want to visit' });
+          setNotification({
+            type: 'error',
+            message: payload.message || 'Gagal menghapus dari want to visit',
+          });
           return;
         }
         setNotification({ type: 'removed', message: 'Dihapus dari want to visit' });
@@ -240,10 +322,14 @@ function ShopDetail() {
         const response = await fetch(`${API_BASE}/api/want-to-visit`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: user.id, place_id: id })
+          body: JSON.stringify({ user_id: uid, place_id: pid }),
         });
+        const payload = await response.json().catch(() => ({}));
         if (!response.ok) {
-          setNotification({ type: 'error', message: 'Gagal menambahkan ke want to visit' });
+          setNotification({
+            type: 'error',
+            message: payload.message || 'Gagal menambahkan ke want to visit',
+          });
           return;
         }
         setNotification({ type: 'added', message: 'Ditambahkan ke want to visit!' });
@@ -294,7 +380,9 @@ function ShopDetail() {
     <div className="w-full py-4 sm:py-6 md:py-8 px-4 sm:px-6 relative">
       {/* Notification Toast */}
       {notification && (
-        <div className={`fixed top-8 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg shadow-lg text-white font-medium z-50 transition-all duration-300 animate-fade-in ${
+        <div
+          data-testid="shop-notification"
+          className={`fixed top-8 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg shadow-lg text-white font-medium z-50 transition-all duration-300 animate-fade-in ${
           notification.type === 'added' 
             ? 'bg-green-500 dark:bg-green-600' 
             : 'bg-orange-500 dark:bg-orange-600'
@@ -488,6 +576,34 @@ function ShopDetail() {
         </div>
       </div>
 
+      {/* User yang menyukai ini juga menyukai */}
+      {coFavoriteShops.length > 0 && (
+        <div className="mt-6 sm:mt-8">
+          <div className="mb-4">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <span
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-slate-800 shadow-md text-lg ring-1 ring-indigo-500/30 dark:from-indigo-500 dark:to-slate-900 dark:ring-indigo-400/25"
+                aria-hidden
+              >
+                💕
+              </span>
+              Pengguna lain yang menyukai ini juga menyukai
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 max-w-2xl">
+              Coffee shop lain berdasarkan pola favorit pengguna lain yang juga menyukai tempat ini
+              {isAuthenticated ? ' (bukan dari pola favorit Anda sendiri).' : '.'}
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+            {coFavoriteShops.map((s) => (
+              <div key={s.place_id} className="transition duration-300 hover:shadow-xl">
+                <CoffeeShopCard shop={s} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Reviews Section */}
       <div className="mt-6 sm:mt-8 space-y-6" ref={reviewFormRef}>
         {shop?.place_id && (
@@ -605,6 +721,8 @@ function ShopDetail() {
 
         {/* Favorite Button */}
         <button
+          type="button"
+          data-testid="shop-toggle-favorite"
           onClick={toggleFavorite}
           className="relative transition-all duration-200 hover:scale-110 focus:outline-none bg-transparent border-0 p-0 group"
         >
@@ -693,7 +811,7 @@ function ShopDetail() {
                   // Navigate to login dengan state untuk redirect kembali
                   navigate('/login', { 
                     state: { 
-                      redirectTo: `/shop/${id}`,
+                      redirectTo: placeIdFromRoute ? `/shop/${placeIdFromRoute}` : '/',
                       scrollToReview: false
                     } 
                   });

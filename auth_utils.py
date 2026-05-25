@@ -55,11 +55,11 @@ def signup(email: str, username: str, password: str, full_name: str = "") -> dic
             if cursor.fetchone():
                 return {'success': False, 'error': 'Username already taken'}
             
-            # Create user
+            # Create user (is_active/is_admin eksplisit: hindari NULL/default yang beda SQLite vs Postgres)
             password_hash = hash_password(password)
             cursor.execute('''
-                INSERT INTO users (email, username, password_hash)
-                VALUES (?, ?, ?)
+                INSERT INTO users (email, username, password_hash, is_admin, is_active)
+                VALUES (?, ?, ?, 0, 1)
             ''', (email, username, password_hash))
             
             user_id = cursor.lastrowid
@@ -112,7 +112,7 @@ def login(email: str, password: str) -> dict:
                 SELECT u.id, u.email, u.username, u.password_hash, u.is_admin, p.full_name
                 FROM users u
                 LEFT JOIN user_profiles p ON u.id = p.user_id
-                WHERE u.email = ? AND u.is_active = 1
+                WHERE u.email = ? AND CAST(u.is_active AS INTEGER) = 1
             ''', (email,))
             
             row = cursor.fetchone()
@@ -159,7 +159,8 @@ def verify_token(token: str) -> dict:
                 FROM sessions s
                 JOIN users u ON s.user_id = u.id
                 LEFT JOIN user_profiles p ON u.id = p.user_id
-                WHERE s.token = ? AND s.expires_at > datetime('now') AND u.is_active = 1
+                WHERE s.token = ? AND s.expires_at > datetime('now')
+                  AND CAST(u.is_active AS INTEGER) = 1
             ''', (token,))
             
             row = cursor.fetchone()
@@ -192,7 +193,7 @@ def get_user_by_id(user_id: int) -> dict:
                 SELECT u.id, u.username, u.email, u.is_admin, p.full_name, p.avatar_url, p.bio, p.phone
                 FROM users u
                 LEFT JOIN user_profiles p ON u.id = p.user_id
-                WHERE u.id = ? AND u.is_active = 1
+                WHERE u.id = ? AND CAST(u.is_active AS INTEGER) = 1
             ''', (user_id,))
             
             row = cursor.fetchone()

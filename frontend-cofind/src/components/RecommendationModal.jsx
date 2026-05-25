@@ -63,8 +63,9 @@ function fullRelevantPhrasesText(item) {
  * Bukti selaras preferensi: review_quotes (pill / keyword / llm_preference),
  * lalu positive_review_quotes, lalu search_keyword_matches — tanpa duplikat.
  * Hanya entri dengan `reason` non-kosong (setelah formatQuoteReason) yang dipakai di UI.
+ * @param {number} maxQuotesBeforeFilter — batas kumpul mentah (lebih besar = hitung sort lebih lengkap).
  */
-function collectRelevantEvidence(rec, confirmedPills = []) {
+function gatherRelevantEvidenceEntries(rec, confirmedPills = [], maxQuotesBeforeFilter = 12) {
     const ev = rec?.supporting_evidence || {};
     const pillSet = new Set(
         (Array.isArray(confirmedPills) ? confirmedPills : []).map((p) => String(p).trim().toLowerCase()),
@@ -73,6 +74,7 @@ function collectRelevantEvidence(rec, confirmedPills = []) {
     const out = [];
 
     function pushQuote(quoteText, meta = {}) {
+        if (out.length >= maxQuotesBeforeFilter) return;
         const q = String(quoteText ?? '').trim();
         if (q.length < 10) return;
         const key = quoteDedupeKey(q);
@@ -84,7 +86,7 @@ function collectRelevantEvidence(rec, confirmedPills = []) {
     const reviewQuotes = Array.isArray(ev.review_quotes) ? ev.review_quotes : [];
 
     for (const item of reviewQuotes) {
-        if (out.length >= 12) break;
+        if (out.length >= maxQuotesBeforeFilter) break;
         const pill = String(item?.pill || '').toLowerCase();
         const matchesPreference =
             pillSet.size === 0 ||
@@ -102,7 +104,7 @@ function collectRelevantEvidence(rec, confirmedPills = []) {
 
     const positive = Array.isArray(ev.positive_review_quotes) ? ev.positive_review_quotes : [];
     for (const item of positive) {
-        if (out.length >= 12) break;
+        if (out.length >= maxQuotesBeforeFilter) break;
         const terms = Array.isArray(item.matched_terms) ? item.matched_terms : [];
         const reason = terms.length ? terms.slice(0, 4).join(', ') : '';
         if (!formatQuoteReason(reason)) continue;
@@ -116,7 +118,7 @@ function collectRelevantEvidence(rec, confirmedPills = []) {
 
     const keywordMatches = Array.isArray(ev.search_keyword_matches) ? ev.search_keyword_matches : [];
     for (const item of keywordMatches) {
-        if (out.length >= 12) break;
+        if (out.length >= maxQuotesBeforeFilter) break;
         const terms = Array.isArray(item.matched_terms) ? item.matched_terms : [];
         const reason = terms.length ? terms.slice(0, 4).join(', ') : '';
         if (!formatQuoteReason(reason)) continue;
@@ -130,7 +132,7 @@ function collectRelevantEvidence(rec, confirmedPills = []) {
 
     if (out.length === 0 && reviewQuotes.length > 0) {
         for (const item of reviewQuotes) {
-            if (out.length >= 12) break;
+            if (out.length >= maxQuotesBeforeFilter) break;
             if (!formatQuoteReason(item.reason)) continue;
             pushQuote(item.quote, {
                 username: item.username,
@@ -141,7 +143,16 @@ function collectRelevantEvidence(rec, confirmedPills = []) {
         }
     }
 
-    return out.filter((item) => formatQuoteReason(item.reason)).slice(0, 5);
+    return out.filter((item) => formatQuoteReason(item.reason));
+}
+
+function collectRelevantEvidence(rec, confirmedPills = []) {
+    return gatherRelevantEvidenceEntries(rec, confirmedPills, 12).slice(0, 5);
+}
+
+/** Untuk urutan modal: jumlah kutipan relevan (aturan sama, kapasitas lebih besar agar beda peringkat jelas). */
+function countRelevantEvidenceForSort(rec, confirmedPills = []) {
+    return gatherRelevantEvidenceEntries(rec, confirmedPills, 500).length;
 }
 
 function quoteCompleteness(item) {
@@ -237,14 +248,26 @@ const RecommendationModal = ({
     if (!isOpen) return null;
 
     const items = recommendations
-        .map((rec) => {
+        .map((rec, apiIndex) => {
             const shop =
                 (rec.place_id && shopsByKey[rec.place_id]) ||
                 (rec.name && shopsByKey[normalizeMatchText(rec.name)]) ||
                 null;
-            return { rec, shop };
+            return { rec, shop, apiIndex };
         })
-        .filter((entry) => entry.shop);
+        .filter((entry) => entry.shop)
+        .sort((a, b) => {
+            const ca = countRelevantEvidenceForSort(a.rec, confirmedPills);
+            const cb = countRelevantEvidenceForSort(b.rec, confirmedPills);
+            if (cb !== ca) return cb - ca;
+            const sa = Number(a.rec?.score);
+            const sb = Number(b.rec?.score);
+            const na = Number.isFinite(sa) ? sa : -Infinity;
+            const nb = Number.isFinite(sb) ? sb : -Infinity;
+            if (nb !== na) return nb - na;
+            return a.apiIndex - b.apiIndex;
+        })
+        .map(({ rec, shop }) => ({ rec, shop }));
 
     const confirmedLabels = pillLabelsFromValues(confirmedPills);
 

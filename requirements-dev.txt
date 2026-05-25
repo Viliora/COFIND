@@ -1,0 +1,5 @@
+# Pengembangan & pengujian (pip install -r requirements-dev.txt)
+-r requirements.txt
+pytest>=7.4
+jsonschema>=4.20
+locust>=2.24

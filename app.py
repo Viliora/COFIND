@@ -16,7 +16,7 @@ import math
 from collections import Counter
 import time  # Tambahkan untuk penundaan
 from datetime import datetime, timedelta
-import sqlite3  # Hanya untuk migrasi schema SQLite (ensure_reviews_schema)
+import sqlite3  # Dipakai hanya oleh ensure_reviews_schema (legacy SQLite migration, tidak berjalan saat backend Postgres)
 try:
     repair_json = importlib.import_module('json_repair').repair_json
 except Exception:
@@ -32,7 +32,14 @@ from llm_backend import (
 )
 from auth_utils import signup, login, logout, verify_token, get_user_by_id, update_user_profile, update_password
 from review_utils import create_review, get_review, get_reviews_for_shop, get_user_reviews, get_user_review_stats, update_review, delete_review, get_average_rating, toggle_review_like
-from favorites_utils import add_favorite, remove_favorite, get_user_favorites, is_favorite, get_favorite_count
+from favorites_utils import (
+    add_favorite,
+    remove_favorite,
+    get_user_favorites,
+    is_favorite,
+    get_favorite_count,
+    get_co_favorited_shops,
+)
 from want_to_visit_utils import add_want_to_visit, remove_want_to_visit, get_user_want_to_visit, is_want_to_visit
 from preference_suggestions_utils import create_preference_suggestion
 from db_backend import DATABASE_PATH, dict_from_row, get_connection, use_postgres, use_sqlite
@@ -49,7 +56,7 @@ except Exception:
 # Initialize Flask app
 app = Flask(__name__)
 
-# Database: lihat db_backend.py (SQLite lokal atau Supabase Postgres lewat DATABASE_URL)
+# Database: lihat db_backend.py (Supabase Postgres via DATABASE_URL, atau SQLite lokal jika COFIND_DB_BACKEND=sqlite)
 COFIND_RERANK_BACKEND = os.getenv('COFIND_RERANK_BACKEND', 'llm').strip().lower()
 COFIND_SUMMARY_ASYNC = os.getenv('COFIND_SUMMARY_ASYNC', 'false').strip().lower() in ('1', 'true', 'yes', 'on')
 COFIND_DEV_LLM_STRICT = os.getenv('COFIND_DEV_LLM_STRICT', 'false').strip().lower() in ('1', 'true', 'yes', 'on')
@@ -57,9 +64,8 @@ COFIND_DEV_LLM_STRICT = os.getenv('COFIND_DEV_LLM_STRICT', 'false').strip().lowe
 
 def ensure_reviews_schema():
     """
-    Pastikan schema reviews sudah:
-    - mengizinkan banyak review dari user yang sama pada shop yang sama
-    - tidak lagi memakai kolom `review_focus_pills` / `keywords`
+    Legacy SQLite migration: pastikan schema reviews sudah up-to-date.
+    Fungsi ini tidak berjalan saat backend Supabase/PostgreSQL aktif.
     """
     if not use_sqlite():
         return
@@ -188,12 +194,12 @@ def test_api():
     })
 
 # ============================================================================
-# COFFEE SHOPS API ENDPOINTS (SQLite Local Database)
+# COFFEE SHOPS API ENDPOINTS
 # ============================================================================
 
 @app.route('/api/coffeeshops', methods=['GET'])
 def get_coffeeshops():
-    """Get all coffee shops from local SQLite database (dengan jam operasional)"""
+    """Get all coffee shops from database (dengan jam operasional)"""
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -286,6 +292,27 @@ def get_coffeeshop_by_place_id(place_id):
             'message': str(e)
         }), 500
 
+
+@app.route('/api/coffeeshops/place/<place_id>/co-favorites', methods=['GET'])
+def api_co_favorited_shops(place_id):
+    """Toko lain yang user lain juga favoritkan jika mereka memfavoritkan place_id ini."""
+    try:
+        limit = request.args.get('limit', 8, type=int)
+        exclude_uid = request.args.get('exclude_user_id', type=int)
+        result = get_co_favorited_shops(place_id, limit, exclude_user_id=exclude_uid)
+        if result.get('success'):
+            return jsonify({
+                'status': 'success',
+                'data': result.get('shops') or [],
+            }), 200
+        return jsonify({
+            'status': 'error',
+            'message': result.get('error') or 'Gagal memuat rekomendasi favorit bersama',
+        }), 400
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
 @app.route('/api/coffeeshops/search', methods=['GET'])
 def search_coffeeshops():
     """Search coffee shops by name"""
@@ -325,7 +352,7 @@ def search_coffeeshops():
         }), 500
 
 # ============================================================================
-# AUTHENTICATION API ENDPOINTS (Local SQLite - No Supabase)
+# AUTHENTICATION API ENDPOINTS
 # ============================================================================
 
 @app.route('/api/auth/signup', methods=['POST'])
@@ -585,6 +612,32 @@ def _require_admin():
     return user, None
 
 
+def _require_authenticated_user():
+    """Pengguna login (bukan admin-only): token sesi valid."""
+    token = _extract_bearer_token()
+    if not token:
+        return None, (jsonify({
+            'status': 'error',
+            'message': 'Login diperlukan untuk rekomendasi berdasarkan konteks aktivitas.',
+        }), 401)
+
+    auth_result = verify_token(token)
+    if not auth_result.get('valid'):
+        return None, (jsonify({
+            'status': 'error',
+            'message': 'Sesi tidak valid atau kadaluarsa. Silakan login lagi.',
+        }), 401)
+
+    user = auth_result.get('user')
+    if not user or not user.get('id'):
+        return None, (jsonify({
+            'status': 'error',
+            'message': 'Sesi tidak valid. Silakan login lagi.',
+        }), 401)
+
+    return user, None
+
+
 def _load_facilities_index():
     facilities_path = os.path.join('frontend-cofind', 'src', 'data', 'facilities.json')
     if not os.path.exists(facilities_path):
@@ -787,9 +840,9 @@ def admin_get_users():
             where_clauses.append('u.is_admin = 0')
 
         if status_filter == 'active':
-            where_clauses.append('u.is_active = 1')
+            where_clauses.append('CAST(u.is_active AS INTEGER) = 1')
         elif status_filter == 'inactive':
-            where_clauses.append('u.is_active = 0')
+            where_clauses.append('CAST(u.is_active AS INTEGER) = 0')
 
         where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ''
 
@@ -1671,7 +1724,7 @@ def admin_get_settings_summary():
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 # ============================================================================
-# REVIEWS API ENDPOINTS (Local SQLite)
+# REVIEWS API ENDPOINTS
 # ============================================================================
 
 @app.route('/api/reviews', methods=['POST'])
@@ -1887,20 +1940,20 @@ def api_get_user_reviews(user_id):
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 # ============================================================================
-# FAVORITES API ENDPOINTS (Local SQLite)
+# FAVORITES API ENDPOINTS
 # ============================================================================
 
 @app.route('/api/favorites', methods=['POST'])
 def api_add_favorite():
     """Add a coffee shop to favorites"""
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
         user_id = data.get('user_id')
-        place_id = data.get('place_id')
-        
-        if not user_id or not place_id:
+        place_id = (data.get('place_id') or '').strip() if data.get('place_id') is not None else ''
+
+        if user_id is None or user_id == '' or not place_id:
             return jsonify({'status': 'error', 'message': 'Missing required fields'}), 400
-        
+
         result = add_favorite(user_id, place_id)
         
         if result['success']:
@@ -2006,7 +2059,7 @@ def api_get_favorite_count(place_id):
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 # ============================================================================
-# WANT TO VISIT API ENDPOINTS (Local SQLite)
+# WANT TO VISIT API ENDPOINTS
 # ============================================================================
 
 @app.route('/api/want-to-visit', methods=['POST'])
@@ -2331,23 +2384,6 @@ def _get_keyword_synonyms(keyword):
     # Jika tidak ada mapping, kembalikan list kosong
     return []
 
-# Daftar keywords yang tidak relevan dengan coffee shop (tidak perlu dianalisis oleh LLM)
-IRRELEVANT_KEYWORDS = [
-    # Hewan yang tidak relevan
-    'dinosaurus', 'dinosaur', 'musang', 'kijang', 'rusa', 'gajah', 'harimau', 'singa', 'beruang',
-    'kucing', 'anjing', 'kelinci', 'tikus', 'burung', 'ikan', 'ular', 'buaya', 'kura-kura',
-    'kuda', 'sapi', 'kerbau', 'ayam', 'bebek', 'angsa', 'merpati', 'elang', 'rajawali',
-    # Benda/objek yang tidak relevan
-    'mobil', 'motor', 'sepeda', 'pesawat', 'kapal', 'kereta', 'truk', 'bus',
-    'gunung', 'laut', 'sungai', 'danau', 'hutan', 'pantai', 'pulau',
-    # Aktivitas yang tidak relevan
-    'berenang', 'mendaki', 'memancing', 'berkebun', 'memasak', 'menjahit',
-    # Objek abstrak yang tidak relevan
-    'planet', 'bintang', 'bulan', 'matahari', 'galaksi', 'nebula',
-    # Kata-kata random lainnya yang jelas tidak relevan
-    'alien', 'robot', 'monster', 'hantu', 'setan', 'jin', 'peri',
-]
-
 def _format_facilities_to_text(shop_facilities):
     """Mengubah data facilities JSON menjadi teks deskriptif terstruktur."""
     facilities = shop_facilities.get('facilities', {})
@@ -2565,25 +2601,6 @@ Ringkasan:"""
     except Exception as e:
         print(f"[SUMMARIZE REVIEWS] Error: {e}")
         return combined[:500] + "..."
-
-
-REVIEW_ANALYSIS_CACHE_VERSION = 6
-REVIEW_ANALYSIS_STOPWORDS = {
-    'yang', 'dan', 'atau', 'dengan', 'untuk', 'karena', 'juga', 'saja', 'banget', 'sekali',
-    'sudah', 'udah', 'nih', 'nya', 'aja', 'sih', 'kok', 'deh', 'kan', 'dari', 'para', 'saat',
-    'sangat', 'lebih', 'cukup', 'agak', 'jadi', 'tetap', 'pada', 'dalam', 'seperti', 'bikin',
-    'tempat', 'coffee', 'shop', 'cafe', 'kafe', 'sini', 'situ', 'itu', 'ini', 'ada', 'tidak',
-    'nggak', 'ga', 'gak', 'the', 'dan', 'buat', 'biar', 'masih', 'kalo', 'kalau', 'sama', 'sangat',
-}
-
-REVIEW_ANALYSIS_ASPECT_KEYWORDS = {
-    'suasana': ['nyaman', 'cozy', 'tenang', 'ramai', 'berisik', 'aesthetic', 'estetik', 'adem', 'dingin', 'luas', 'sempit', 'outdoor', 'indoor'],
-    'fasilitas': ['wifi', 'wi-fi', 'internet', 'colokan', 'stopkontak', 'ac', 'parkir', 'toilet', 'musholla', 'sofa', 'smoking', 'outlet'],
-    'makanan_minuman': ['kopi', 'coffee', 'espresso', 'latte', 'americano', 'matcha', 'makanan', 'minuman', 'snack', 'croffle', 'dessert', 'menu'],
-    'harga': ['harga', 'murah', 'mahal', 'worth', 'terjangkau', 'pricing', 'price'],
-    'pelayanan': ['pelayanan', 'service', 'ramah', 'kasir', 'barista', 'cepat', 'lama', 'slow'],
-    'lokasi': ['lokasi', 'jalan', 'akses', 'strategis', 'pusat', 'pinggir', 'dekat'],
-}
 
 
 def _normalize_whitespace(text):
@@ -3569,7 +3586,7 @@ def _fetch_coffeeshops_with_reviews_from_json(location_str, max_shops=15, keywor
             coffee_shops = places_data.get('data', [])
             print(f"[JSON+REVIEWS] Loaded {len(coffee_shops)} shops from places.json")
         else:
-            print(f"[JSON+REVIEWS] places.json tidak ditemukan, fallback ke SQLite coffee_shops")
+            print(f"[JSON+REVIEWS] places.json tidak ditemukan, fallback ke tabel coffee_shops di database")
 
         if not coffee_shops:
             conn = get_connection()
@@ -3861,6 +3878,38 @@ PILL_LABELS = {
     'instagrammable': 'Instagrammable',
 }
 
+# Panduan ekspansi keyword LLM: frasa harus cocok untuk mencocokkan ulasan pengunjung coffee shop.
+PILL_COFFEE_SHOP_KEYWORD_GUIDANCE = {
+    'belajar': (
+        'Fasilitas dan suasana yang mendukung belajar/nugas menggunakan device seperti laptop di coffee shop: wifi, colokan, tenang,'
+        'fokus, laptop, meja, AC, tidak berisik, nyaman belajar, cocok belajar, kuliah, tugas, skripsi.'
+    ),
+    'kerja': (
+        'Yang mendukung kerja/WFC menggunakan device seperti laptop, tablet, atau smartphone di coffee shop: wifi, colokan, laptop, zoom, meeting online, '
+        'produktif, tenang, meja, AC, tidak berisik, presentasi.'
+    ),
+    'bermain game': (
+        'Yang mendukung gaming di coffee shop: wifi stabil, colokan, tidak lag, mabar, gaming, '
+        'grup, meja luas, AC, jam buka larut, suasana santai untuk main game.'
+    ),
+    'meeting_sosialisasi': (
+        'Yang mendukung meeting/kumpul di coffee shop: ruang luas, meja besar, grup, diskusi, '
+        'rapat, networking, tidak terlalu berisik, wifi, colokan, cocok kumpul, tatap muka.'
+    ),
+    'bersantai': (
+        'Suasana santai/nongkrong di coffee shop: nyaman, cozy, tenang, healing, ngopi, '
+        'obrol, me time, hangout, tidak terburu-buru, tempat duduk nyaman.'
+    ),
+    'keluarga': (
+        'Yang ramah keluarga di coffee shop: cocok keluarga, bawa anak, anak-anak, kursi anak, '
+        'menu anak, luas, tidak terlalu berisik, kumpul keluarga, quality time.'
+    ),
+    'instagrammable': (
+        'Yang menarik untuk foto/konten di coffee shop: aesthetic, estetik, spot foto, '
+        'instagrammable, pencahayaan bagus, dekor menarik, kekinian, instagram.'
+    ),
+}
+
 
 def _collect_intent_strings_for_facilities(pills, search_keywords):
     """Teks gabungan preferensi (pill + keyword review + search_keywords) untuk cocokkan ke label fasilitas."""
@@ -4057,7 +4106,7 @@ def _avg_or_none(values):
 
 def _build_review_only_profile(place_id, facilities_index=None):
     """
-    Bangun profil toko hanya dari SQLite reviews user.
+    Bangun profil toko dari data reviews pengguna di database (Supabase/PostgreSQL).
     Returns:
         {
             'place_id', 'name',
@@ -4133,7 +4182,7 @@ def _build_review_only_profile(place_id, facilities_index=None):
 
 
 def _load_all_place_ids():
-    """Return list of all place_ids from SQLite, fallback to places.json."""
+    """Return list of all place_ids dari database, fallback ke places.json."""
     place_ids = []
     try:
         conn = get_connection()
@@ -4547,6 +4596,23 @@ def _build_preference_description(valid_pills):
     if not valid_pills:
         return "preferensi umum"
     return ", ".join(valid_pills)
+
+
+def _build_llm_keyword_expansion_context(valid_pills):
+    """Konteks per pill untuk prompt ekspansi keyword (harus relevan dengan sebuah tempat atau coffee shop)."""
+    lines = []
+    for pill in valid_pills or []:
+        label = PILL_LABELS.get(pill, pill)
+        guidance = PILL_COFFEE_SHOP_KEYWORD_GUIDANCE.get(
+            pill,
+            f'Frasa yang menjelaskan pengalaman atau relevansi {label} dengan suatu tempat atau coffee shop.',
+        )
+        seed_hint = ', '.join(_expand_pill_to_keywords(pill)[:14])
+        block = f'- Aktivitas: {label} (pill: {pill})\n  Fokus: {guidance}'
+        if seed_hint:
+            block += f'\n  Contoh kata sering di ulasan: {seed_hint}'
+        lines.append(block)
+    return '\n\n'.join(lines)
 
 
 def _sanitize_search_keywords(values, max_items=_SEARCH_KEYWORD_MAX):
@@ -5211,7 +5277,7 @@ def _seed_search_keywords(valid_pills):
     return _filter_negative_search_keywords(seeds)
 
 
-def _validate_search_keywords_with_llm(preference_text, candidate_keywords):
+def _validate_search_keywords_with_llm(preference_text, candidate_keywords, valid_pills=None):
     """
     Validasi keyword agar tetap relevan dengan intent user, masuk akal untuk
     pencarian review coffee shop, dan tidak mengandung sentimen negatif.
@@ -5220,13 +5286,20 @@ def _validate_search_keywords_with_llm(preference_text, candidate_keywords):
     if not cleaned_candidates or not llm_is_available():
         return cleaned_candidates
 
-    prompt = f'''Saring daftar keyword berikut agar hanya tersisa keyword preferensi coffee shop yang masuk akal untuk pencarian review.
-Hapus keyword yang berupa keluhan atau sentimen negatif (contoh: berisik, mahal, kotor, pelayanan buruk, kecewa).
-Hapus juga keyword yang tidak relevan dengan intent user.
+    pills_for_context = list(valid_pills or [])
+    if not pills_for_context and preference_text and preference_text != 'preferensi umum':
+        pills_for_context = [p.strip().lower() for p in preference_text.split(',') if p.strip()]
+    pill_context = _build_llm_keyword_expansion_context(pills_for_context)
+    context_block = f'\n{pill_context}\n' if pill_context else ''
+
+    prompt = f'''Saring daftar keyword berikut agar hanya tersisa frasa yang masuk akal dan sesuai dengan konteks preferensi user dengan coffee shop.
+Hapus keyword keluhan/negatif.
+Pertahankan hanya frasa tentang fasilitas, suasana, layanan, menu, kelebihan, atau aktivitas di tempat.
 Jangan tambah penjelasan, jangan pakai JSON, jangan pakai nomor.
 Keluarkan hanya daftar keyword dipisah koma.
 
-Preference user: "{preference_text}"
+Preferensi aktivitas user: "{preference_text}"
+{context_block}
 Candidate keywords: "{", ".join(cleaned_candidates)}"
 Output format comma separated:'''
 
@@ -5267,20 +5340,40 @@ def _expand_search_keywords_with_llm(valid_pills):
     """
     fallback = _seed_search_keywords(valid_pills)
     preference_text = _build_preference_description(valid_pills)
+    pill_context = _build_llm_keyword_expansion_context(valid_pills)
     if not llm_is_available():
         if COFIND_DEV_LLM_STRICT:
             raise RuntimeError('LLM strict mode aktif: keyword expansion butuh LLM tersedia.')
         return fallback, [], []
 
-    prompt = f'''Instruksi (wajib dipatuhi):
-1) Jawab HANYA satu baris: daftar frasa pendek dipisah koma (tanpa baris baru, tanpa bullet, tanpa nomor).
-2) Frasa = 1-4 kata, bahasa Indonesia atau campuran
-3) Jangan sertakan kalimat pembuka, penutup, label ("Berikut", "Keyword", "Output"), tanda kutip, atau JSON.
-4) Fokus pada kata yang satu lingkup, relevan, atau masih sesuai konteks; tambahkan sinonim relevan.
+    multi_pill_note = ''
+    if len(valid_pills or []) > 1:
+        multi_pill_note = (
+            '\nUser memilih lebih dari satu aktivitas: sertakan frasa yang relevan untuk SEMUA aktivitas '
+            'tersebut dalam konteks coffee shop (boleh campuran, tetap 1-4 kata per frasa).\n'
+        )
 
-Preferensi user: "{preference_text}"
+    prompt = f'''Tugas: hasilkan kata kunci untuk mencocokkan ULASAN PENGUNJUNG tentang coffee shop di Pontianak.
 
-Jawaban Anda (satu baris, koma saja):'''
+Konteks WAJIB:
+- Setiap frasa harus menggambarkan pengalaman, fasilitas, suasana, layanan, menu, atau kenyamanan DI COFFEE SHOP.
+- Frasa dipakai untuk mencari kalimat di review (bukan istilah abstrak sekolah/karier tanpa kaitan tempat).
+- Hindari: sertifikasi, kurikulum, pendidikan formal, kompetensi profesional, edukasi umum, kebijakan, politik.
+{multi_pill_note}
+Preferensi aktivitas user:
+{preference_text}
+
+Detail per aktivitas (pill):
+{pill_context}
+
+Aturan output:
+1) Jawab HANYA satu baris: frasa pendek dipisah koma (tanpa baris baru, bullet, nomor, JSON).
+2) Tiap frasa 1-4 kata, Bahasa Indonesia atau campuran umum (wifi, laptop, cozy).
+3) Tanpa pembuka/penutup ("Berikut", "Keyword:", tanda kutip).
+4) 12-28 frasa unik; prioritaskan yang sering disebut pengunjung di ulasan coffee shop.
+5) Jika pill "belajar", fokus hal yang mendukung belajar DI TEMPAT (wifi, tenang, colokan), bukan kata kuliah abstrak saja.
+
+Jawaban (satu baris, koma saja):'''
 
     try:
         raw = llm_chat_completions_create(
@@ -5289,8 +5382,9 @@ Jawaban Anda (satu baris, koma saja):'''
                 {
                     'role': 'system',
                     'content': (
-                        'Anda adalah pengekstrak kata kunci. Jawaban Anda hanya satu baris teks: '
-                        'frasa-frasa pendek dipisah koma, tanpa teks lain.'
+                        'Anda adalah pengekstrak kata kunci untuk rekomendasi coffee shop. '
+                        'Hanya keluarkan satu baris frasa pendek dipisah koma. '
+                        'Semua frasa harus relevan dengan pengalaman mengunjungi coffee shop '
                     ),
                 },
                 {'role': 'user', 'content': prompt},
@@ -5314,7 +5408,9 @@ Jawaban Anda (satu baris, koma saja):'''
 
         # Scoring keywords: seed + LLM validated (ketat) + Bucket A
         merged = _sanitize_search_keywords(expanded + fallback)
-        validated = _validate_search_keywords_with_llm(preference_text, merged)
+        validated = _validate_search_keywords_with_llm(
+            preference_text, merged, valid_pills=valid_pills,
+        )
         final_keywords = _filter_negative_search_keywords(validated)
         final_keywords = _filter_search_keywords_to_pills(valid_pills, final_keywords)
         if not final_keywords:
@@ -6291,6 +6387,11 @@ def api_recommend_by_preferences():
                 'status': 'error',
                 'message': f'Preferensi tidak dikenali: {", ".join(prefs)}',
             }), 400
+
+        _auth_user, auth_error = _require_authenticated_user()
+        if auth_error is not None:
+            return auth_error
+
         if COFIND_DEV_LLM_STRICT and not llm_is_available():
             return jsonify({
                 'status': 'error',
@@ -6307,7 +6408,7 @@ def api_recommend_by_preferences():
         stage_ms['keyword_expansion_ms'] = round((time.perf_counter() - stage_t0) * 1000, 1)
         stage_t0 = time.perf_counter()
         print(f"[RECOMMEND] Search keywords: {search_keywords}")
-        print(f"[RECOMMEND] LLM preference keywords (semua): {llm_preference_keywords}")
+        print(f"[RECOMMEND] LLM preference keywords: {llm_preference_keywords}")
         bucket_a_log, bucket_b_log = _split_llm_keywords_to_buckets(
             llm_preference_keywords, valid_pills,
         )
@@ -7595,6 +7696,7 @@ def analyze_sentiment():
 
 if __name__ == '__main__':
     # Jalankan app secara langsung untuk pengembangan
-    # Gunakan host 0.0.0.0 untuk bind ke semua interface dan port 5000 sebagai default
+    # Gunakan host 0.0.0.0 untuk bind ke semua interface; port default 5000 (override lewat FLASK_RUN_PORT / PORT untuk E2E)
     # Debug False untuk menghindari restart cycle saat development
-    app.run(debug=False, host='0.0.0.0', port=5000, threaded=True)
+    _run_port = int(os.getenv('FLASK_RUN_PORT') or os.getenv('PORT') or '5000')
+    app.run(debug=False, host='0.0.0.0', port=_run_port, threaded=True)

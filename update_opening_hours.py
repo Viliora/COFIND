@@ -1,11 +1,8 @@
 """
 Script untuk mengupdate jam operasional (opening_hours) di database.
+Menjalankan: python update_opening_hours.py
 """
-
-import sqlite3
-import os
-
-DATABASE_PATH = os.path.join(os.path.dirname(__file__), 'cofind.db')
+from db_backend import get_connection
 
 # (nama persis atau pola LIKE, jam operasional)
 # Urutan: nama lebih spesifik dulu agar "Aming Coffee" tidak menimpa cabang lain
@@ -15,11 +12,11 @@ HOURS_DATA = [
     ("Aming Coffee Ilham", "06.00–00.00."),
     ("Aming Coffee Podomoro", "07.00–02.00."),
     ("Aming Coffee Siantan", "07.00–00.00."),
-    ("Aming Coffee", "06.00–23.00."),  # Aming Coffee (Jl. H. Abbas 1) - exact name
+    ("Aming Coffee", "06.00–23.00."),
     ("CW Coffee Tanjung Raya", "24 jam."),
-    ("Disela Coffee & Roastery", "08.00–22.30."),  # weekday only
+    ("Disela Coffee & Roastery", "08.00–22.30."),
     ("Haruna Cafe", "07.00–23.30."),
-    ("Heim Coffee", "07.00–23.00."),  # weekday only (dulu Senin–Jumat)
+    ("Heim Coffee", "07.00–23.00."),
     ("NUTRICULA COFFEE", "06.00–22.00."),
     ("Osamu Coffee", "09.00–23.00."),
     ("Rumah Kita Coffee & Eatery", "07.00–23.00."),
@@ -27,29 +24,29 @@ HOURS_DATA = [
     ("Sidedoors Coffee Shop", "09.00–23.00."),
 ]
 
+
 def update_opening_hours():
-    conn = sqlite3.connect(DATABASE_PATH)
+    conn = get_connection()
     cursor = conn.cursor()
     try:
         updated = 0
         for name_pattern, hours in HOURS_DATA:
-            # Match exact name first; if contains "Aming Coffee" only, exclude Ilham/Podomoro/Siantan
             if name_pattern == "Aming Coffee":
                 cursor.execute(
-                    "SELECT place_id, name FROM coffee_shops WHERE name = ? COLLATE NOCASE",
-                    (name_pattern,)
+                    "SELECT place_id, name FROM coffee_shops WHERE LOWER(name) = LOWER(?)",
+                    (name_pattern,),
                 )
             else:
                 cursor.execute(
-                    "SELECT place_id, name FROM coffee_shops WHERE name LIKE ? COLLATE NOCASE",
-                    (f"%{name_pattern}%",)
+                    "SELECT place_id, name FROM coffee_shops WHERE LOWER(name) LIKE LOWER(?)",
+                    (f"%{name_pattern}%",),
                 )
             row = cursor.fetchone()
             if row:
-                place_id, actual_name = row
+                place_id, actual_name = row[0], row[1]
                 cursor.execute(
                     "UPDATE opening_hours SET hours_display = ?, updated_at = CURRENT_TIMESTAMP WHERE place_id = ?",
-                    (hours, place_id)
+                    (hours, place_id),
                 )
                 if cursor.rowcount:
                     updated += 1
@@ -63,6 +60,7 @@ def update_opening_hours():
         conn.rollback()
     finally:
         conn.close()
+
 
 if __name__ == "__main__":
     update_opening_hours()

@@ -2,12 +2,8 @@
 Update total_reviews di coffee_shops sesuai data yang benar (Google Maps).
 Menjalankan: python update_total_reviews.py
 """
-import sqlite3
-import os
+from db_backend import get_connection, use_postgres
 
-DATABASE_PATH = os.path.join(os.path.dirname(__file__), 'cofind.db')
-
-# Nama coffee shop (persis seperti di DB) -> total ulasan yang benar
 CORRECT_TOTAL_REVIEWS = {
     "2818 Coffee Roasters": 79,
     "5 CM Coffee and Eatery": 746,
@@ -19,21 +15,32 @@ CORRECT_TOTAL_REVIEWS = {
     "Haruna Cafe": 621,
     "Heim Coffee": 131,
     "NUTRICULA COFFEE": 178,
-    "Osamu Coffee": 0,  # ulasan belum tersedia / tidak terdaftar di Google Maps
+    "Osamu Coffee": 0,
     "Rumah Kita Coffee & Eatery": 82,
     "Seremoni Coffee": 80,
     "Sidedoors Coffee Shop": 361,
-    # CW Coffee Tanjung Raya tidak ada di list user - tidak di-update (tetap nilai lama)
 }
 
-def main():
-    conn = sqlite3.connect(DATABASE_PATH)
-    cursor = conn.cursor()
 
-    cursor.execute("PRAGMA table_info(coffee_shops)")
-    columns = [row[1] for row in cursor.fetchall()]
-    has_total_reviews = 'total_reviews' in columns
-    has_user_ratings = 'user_ratings_total' in columns
+def _column_exists(conn, table, column):
+    cur = conn.cursor()
+    if use_postgres():
+        cur.execute(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema = 'public' AND table_name = ? AND column_name = ?",
+            (table, column),
+        )
+        return cur.fetchone() is not None
+    cur.execute(f"PRAGMA table_info({table})")
+    return any(str(row[1]).lower() == column.lower() for row in cur.fetchall())
+
+
+def main():
+    conn = get_connection()
+    cur = conn.cursor()
+
+    has_total_reviews = _column_exists(conn, "coffee_shops", "total_reviews")
+    has_user_ratings = _column_exists(conn, "coffee_shops", "user_ratings_total")
     if not has_total_reviews and not has_user_ratings:
         print("[ERROR] Kolom total_reviews atau user_ratings_total tidak ada.")
         conn.close()
@@ -42,15 +49,21 @@ def main():
     updated = 0
     for name, total in CORRECT_TOTAL_REVIEWS.items():
         if has_total_reviews and has_user_ratings:
-            cursor.execute(
+            cur.execute(
                 "UPDATE coffee_shops SET total_reviews = ?, user_ratings_total = ? WHERE name = ?",
-                (total, total, name)
+                (total, total, name),
             )
         elif has_total_reviews:
-            cursor.execute("UPDATE coffee_shops SET total_reviews = ? WHERE name = ?", (total, name))
+            cur.execute(
+                "UPDATE coffee_shops SET total_reviews = ? WHERE name = ?",
+                (total, name),
+            )
         else:
-            cursor.execute("UPDATE coffee_shops SET user_ratings_total = ? WHERE name = ?", (total, name))
-        if cursor.rowcount > 0:
+            cur.execute(
+                "UPDATE coffee_shops SET user_ratings_total = ? WHERE name = ?",
+                (total, name),
+            )
+        if cur.rowcount > 0:
             print(f"  [OK] {name} -> {total} ulasan")
             updated += 1
         else:
@@ -59,6 +72,7 @@ def main():
     conn.commit()
     print(f"\nTotal di-update: {updated} coffee shop")
     conn.close()
+
 
 if __name__ == "__main__":
     main()

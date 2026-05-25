@@ -4,81 +4,125 @@ CRUD operations for want_to_visit coffee shops
 """
 from datetime import datetime
 from auth_utils import get_db_connection
+from favorites_utils import _resolve_shop_row
+
 
 def add_want_to_visit(user_id, place_id):
     """Add a coffee shop to want_to_visit"""
+    conn = None
     try:
+        try:
+            user_id = int(user_id)
+        except (TypeError, ValueError):
+            return {'success': False, 'error': 'Invalid user_id'}
+
+        trimmed_pid = (place_id or '').strip()
+        if not trimmed_pid:
+            return {'success': False, 'error': 'place_id required'}
+
         conn = get_db_connection()
         cursor = conn.cursor()
 
         existing = cursor.execute(
-            'SELECT id FROM want_to_visit WHERE user_id = ? AND place_id = ?',
-            (user_id, place_id)
+            'SELECT id FROM want_to_visit WHERE user_id = ? AND (place_id = ? OR TRIM(place_id) = ?)',
+            (user_id, trimmed_pid, trimmed_pid),
         ).fetchone()
 
         if existing:
             return {'success': False, 'error': 'Already in want_to_visit'}
 
-        # Get shop_id from place_id
-        shop = cursor.execute(
-            'SELECT id FROM coffee_shops WHERE place_id = ?',
-            (place_id,)
-        ).fetchone()
-        
+        shop = _resolve_shop_row(cursor, trimmed_pid)
         if not shop:
             return {'success': False, 'error': 'Coffee shop not found'}
-        
+
         shop_id = shop[0]
+        canonical_place_id = shop[1] if len(shop) > 1 else trimmed_pid
 
         cursor.execute(
             '''
             INSERT INTO want_to_visit (user_id, shop_id, place_id, added_at)
             VALUES (?, ?, ?, ?)
             ''',
-            (user_id, shop_id, place_id, datetime.utcnow().isoformat())
+            (user_id, shop_id, canonical_place_id, datetime.utcnow().isoformat()),
         )
 
         conn.commit()
         want_id = cursor.lastrowid
-        conn.close()
 
         return {
             'success': True,
             'want_to_visit_id': want_id,
-            'message': 'Added to want_to_visit'
+            'message': 'Added to want_to_visit',
         }
     except Exception as e:
+        if conn:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
         return {'success': False, 'error': str(e)}
+    finally:
+        if conn:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
 
 def remove_want_to_visit(user_id, place_id):
     """Remove a coffee shop from want_to_visit"""
+    conn = None
     try:
+        try:
+            user_id = int(user_id)
+        except (TypeError, ValueError):
+            return {'success': False, 'error': 'Invalid user_id'}
+
+        trimmed = (place_id or '').strip()
+        if not trimmed:
+            return {'success': False, 'error': 'place_id required'}
+
         conn = get_db_connection()
         cursor = conn.cursor()
 
         existing = cursor.execute(
-            'SELECT id FROM want_to_visit WHERE user_id = ? AND place_id = ?',
-            (user_id, place_id)
+            'SELECT id FROM want_to_visit WHERE user_id = ? AND (place_id = ? OR TRIM(place_id) = ?)',
+            (user_id, trimmed, trimmed),
         ).fetchone()
 
         if not existing:
             return {'success': False, 'error': 'Not in want_to_visit'}
 
         cursor.execute(
-            'DELETE FROM want_to_visit WHERE user_id = ? AND place_id = ?',
-            (user_id, place_id)
+            'DELETE FROM want_to_visit WHERE user_id = ? AND (place_id = ? OR TRIM(place_id) = ?)',
+            (user_id, trimmed, trimmed),
         )
 
         conn.commit()
-        conn.close()
-
         return {'success': True, 'message': 'Removed from want_to_visit'}
     except Exception as e:
+        if conn:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
         return {'success': False, 'error': str(e)}
+    finally:
+        if conn:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
 
 def get_user_want_to_visit(user_id, limit=100):
     """Get all want_to_visit for a user"""
     try:
+        try:
+            user_id = int(user_id)
+        except (TypeError, ValueError):
+            return {'success': False, 'error': 'Invalid user_id'}
+
         conn = get_db_connection()
         cursor = conn.cursor()
 
@@ -115,15 +159,25 @@ def get_user_want_to_visit(user_id, limit=100):
     except Exception as e:
         return {'success': False, 'error': str(e)}
 
+
 def is_want_to_visit(user_id, place_id):
     """Check if a shop is in user's want_to_visit"""
     try:
+        try:
+            user_id = int(user_id)
+        except (TypeError, ValueError):
+            return {'success': False, 'error': 'Invalid user_id'}
+
+        trimmed = (place_id or '').strip()
+        if not trimmed:
+            return {'success': True, 'is_want_to_visit': False}
+
         conn = get_db_connection()
         cursor = conn.cursor()
 
         existing = cursor.execute(
-            'SELECT id FROM want_to_visit WHERE user_id = ? AND place_id = ?',
-            (user_id, place_id)
+            'SELECT id FROM want_to_visit WHERE user_id = ? AND (place_id = ? OR TRIM(place_id) = ?)',
+            (user_id, trimmed, trimmed),
         ).fetchone()
 
         conn.close()
