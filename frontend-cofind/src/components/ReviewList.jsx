@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/authContext';
 import ReviewCard from './ReviewCard';
 import ReviewForm from './ReviewForm';
-import { REVIEW_VERB_EXCLUSIONS } from '../constants/reviewKeywordVerbs';
-
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 const REVIEW_KEYWORD_STOPWORDS = new Set([
   'yang', 'dan', 'atau', 'untuk', 'dengan', 'juga', 'karena', 'dari', 'pada',
@@ -13,46 +12,6 @@ const REVIEW_KEYWORD_STOPWORDS = new Set([
   'shop', 'tempat', 'untung', 'seperti', 'dalam', 'saat', 'biar', 'pas', 'tapi',
   'ga', 'gak', 'nggak', 'tidak', 'iya', 'dong', 'kok',
 ]);
-
-function extractRecurringReviewKeywords(reviews) {
-  const tokenCounts = new Map();
-
-  reviews.forEach((review) => {
-    const text = String(review?.text || '').toLowerCase();
-    if (!text) return;
-
-    const uniqueTokens = new Set(
-      text
-        .replace(/[^a-zA-Z0-9\s]/g, ' ')
-        .split(/\s+/)
-        .map((token) => token.trim())
-        .filter(
-          (token) =>
-            token.length >= 3 &&
-            !REVIEW_KEYWORD_STOPWORDS.has(token) &&
-            !REVIEW_VERB_EXCLUSIONS.has(token) &&
-            !/^\d+$/.test(token)
-        )
-    );
-
-    uniqueTokens.forEach((token) => {
-      tokenCounts.set(token, (tokenCounts.get(token) || 0) + 1);
-    });
-  });
-
-  return Array.from(tokenCounts.entries())
-    .filter(([, count]) => count >= 2)
-    .sort((a, b) => {
-      if (b[1] !== a[1]) return b[1] - a[1];
-      return a[0].localeCompare(b[0]);
-    })
-    .slice(0, 12)
-    .map(([keyword, count]) => ({
-      keyword,
-      label: keyword.charAt(0).toUpperCase() + keyword.slice(1),
-      count,
-    }));
-}
 
 /**
  * ReviewList Component - COMPLETE FIX VERSION
@@ -65,11 +24,12 @@ function extractRecurringReviewKeywords(reviews) {
  * ✅ Optimistic updates dengan fallback refetch
  */
 const ReviewList = ({ placeId, shopName, newReview, onReviewSubmitted }) => {
+  const location = useLocation();
   const { initialized: authInitialized, user, isAuthenticated } = useAuth();
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedKeyword, setSelectedKeyword] = useState('');
   const [reviewSort, setReviewSort] = useState('latest');
+  const [reviewTab, setReviewTab] = useState('all');
   
   // Refs untuk tracking
   const abortControllerRef = useRef(null);
@@ -182,8 +142,10 @@ const ReviewList = ({ placeId, shopName, newReview, onReviewSubmitted }) => {
     currentPlaceIdRef.current = placeId;
     
     setReviews([]);
+    setReviewTab('all');
     setLoading(true);
-    
+
+
     // Simply fetch reviews, no retry needed
     fetchReviews(false);
     
@@ -195,7 +157,7 @@ const ReviewList = ({ placeId, shopName, newReview, onReviewSubmitted }) => {
   // Auto-scroll ke review saat dibuka dari link (e.g. dari profile page dengan hash #review-123)
   useEffect(() => {
     if (loading || reviews.length === 0) return;
-    const hash = window.location.hash;
+    const hash = location.hash || window.location.hash;
     const match = hash && /^#review-(\d+)$/.exec(hash);
     if (!match) return;
     const reviewId = match[1];
@@ -205,10 +167,14 @@ const ReviewList = ({ placeId, shopName, newReview, onReviewSubmitted }) => {
       const el = document.getElementById(id);
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('ring-2', 'ring-amber-500', 'ring-offset-2');
+        setTimeout(() => {
+          el.classList.remove('ring-2', 'ring-amber-500', 'ring-offset-2');
+        }, 2000);
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [reviews, loading]);
+  }, [reviews, loading, location.hash]);
 
   // Handle new review from prop
   useEffect(() => {
@@ -281,17 +247,20 @@ const ReviewList = ({ placeId, shopName, newReview, onReviewSubmitted }) => {
     }, 500);
   }, [fetchReviews]);
 
-  const reviewKeywords = useMemo(() => extractRecurringReviewKeywords(reviews), [reviews]);
-
-  const filteredReviews = useMemo(() => {
-    if (!selectedKeyword) return reviews;
-    return reviews.filter((review) =>
-      String(review?.text || '').toLowerCase().includes(selectedKeyword.toLowerCase())
-    );
-  }, [reviews, selectedKeyword]);
+  const tabFilteredReviews = useMemo(() => {
+    switch (reviewTab) {
+      case 'positive':
+        return reviews.filter((r) => (Number(r.rating) || 0) >= 4);
+      case 'negative':
+        return reviews.filter((r) => (Number(r.rating) || 0) <= 2);
+      case 'all':
+      default:
+        return reviews;
+    }
+  }, [reviews, reviewTab]);
 
   const displayedReviews = useMemo(() => {
-    const list = [...filteredReviews];
+    const list = [...tabFilteredReviews];
 
     switch (reviewSort) {
       case 'highest-rating':
@@ -312,24 +281,8 @@ const ReviewList = ({ placeId, shopName, newReview, onReviewSubmitted }) => {
           (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)
         );
     }
-  }, [filteredReviews, reviewSort]);
+  }, [tabFilteredReviews, reviewSort]);
 
-  
-  // Stats
-  const stats = {
-    total: reviews.length,
-    average: reviews.length > 0 
-      ? (reviews.reduce((acc, r) => acc + (r.rating || 0), 0) / reviews.length).toFixed(1)
-      : 0,
-    distribution: [5, 4, 3, 2, 1].map(rating => ({
-      rating,
-      count: reviews.filter(r => r.rating === rating).length,
-      percentage: reviews.length > 0 
-        ? Math.round((reviews.filter(r => r.rating === rating).length / reviews.length) * 100)
-        : 0
-    }))
-  };
-  
   // Loading state
   if (loading && reviews.length === 0) {
     return (
@@ -359,78 +312,40 @@ const ReviewList = ({ placeId, shopName, newReview, onReviewSubmitted }) => {
   // Main content
   return (
     <div>
-      {/* Stats Header */}
-      {reviews.length > 0 && (
-        <div className="bg-white dark:bg-zinc-800 rounded-xl p-5 mb-6 border border-gray-200 dark:border-zinc-700">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-6">
-            <div className="text-center sm:text-left">
-              <div className="text-4xl font-bold text-gray-900 dark:text-white">
-                {stats.average}
-              </div>
-              <div className="flex justify-center sm:justify-start mt-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <svg
-                    key={star}
-                    className={`w-5 h-5 ${
-                      star <= Math.round(parseFloat(stats.average))
-                        ? 'text-amber-400 fill-current'
-                        : 'text-gray-300 dark:text-zinc-600'
-                    }`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
-                    />
-                  </svg>
-                ))}
-              </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                {stats.total} review
-              </div>
-            </div>
-
-            <div className="flex-1 space-y-1.5">
-              {stats.distribution.map(({ rating, count, percentage }) => (
-                <div key={rating} className="flex items-center gap-2 text-sm">
-                  <span className="w-3 text-gray-600 dark:text-gray-400">{rating}</span>
-                  <svg className="w-4 h-4 text-amber-400 fill-current" viewBox="0 0 24 24">
-                    <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                  </svg>
-                  <div className="flex-1 h-2 bg-gray-200 dark:bg-zinc-700 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-amber-400 rounded-full transition-all duration-500"
-                      style={{ width: `${percentage}%` }}
-                    />
-                  </div>
-                  <span className="w-8 text-right text-gray-500 dark:text-gray-400">{count}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Tombol Tulis Review - di bawah stats header */}
+      {/* Form Tulis Review */}
       {placeId && (
         <div className="mb-6">
           <ReviewForm
             placeId={placeId}
             shopName={shopName || 'Coffee Shop'}
             onReviewSubmitted={onReviewSubmitted}
-            reviewKeywords={reviewKeywords}
-            selectedKeyword={selectedKeyword}
-            onKeywordSelect={setSelectedKeyword}
           />
         </div>
       )}
 
       {reviews.length > 0 ? (
-        <div className="mb-4 flex justify-end">
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="inline-flex rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-1 shadow-sm">
+            {[
+              { key: 'all', label: 'Semua Review', emoji: '⏰' },
+              { key: 'positive', label: 'Positif', emoji: '😊' },
+              { key: 'negative', label: 'Negatif', emoji: '😞' },
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setReviewTab(tab.key)}
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
+                  reviewTab === tab.key
+                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+                    : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-zinc-700'
+                }`}
+              >
+                <span>{tab.emoji}</span>
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </div>
           <label className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
             <span>Urutkan:</span>
             <div className="relative">
@@ -467,21 +382,14 @@ const ReviewList = ({ placeId, shopName, newReview, onReviewSubmitted }) => {
             Jadilah yang pertama memberikan review!
           </p>
         </div>
-      ) : filteredReviews.length === 0 ? (
+      ) : tabFilteredReviews.length === 0 ? (
         <div className="text-center py-10 bg-gray-50 dark:bg-zinc-800/50 rounded-xl border border-gray-200 dark:border-zinc-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            Tidak ada review untuk topik "{selectedKeyword}"
+            Tidak ada review {reviewTab === 'positive' ? 'positif' : reviewTab === 'negative' ? 'negatif' : ''}
           </h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">
-            Coba pilih kapsul topik lain atau reset filter.
+          <p className="text-gray-600 dark:text-gray-400">
+            Coba pilih tab lain.
           </p>
-          <button
-            type="button"
-            onClick={() => setSelectedKeyword('')}
-            className="inline-flex items-center px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-medium transition-colors"
-          >
-            Reset filter
-          </button>
         </div>
       ) : (
         <div className="space-y-4">
@@ -489,10 +397,10 @@ const ReviewList = ({ placeId, shopName, newReview, onReviewSubmitted }) => {
             <div key={review.id} id={`review-${review.id}`} className="scroll-mt-24">
               <ReviewCard
                 review={review}
+                placeId={placeId}
                 onDelete={handleDelete}
                 onUpdate={handleUpdate}
                 onLike={handleLike}
-                highlightKeyword={selectedKeyword}
               />
             </div>
           ))}

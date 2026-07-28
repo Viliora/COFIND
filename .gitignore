@@ -45,6 +45,9 @@ ENV/
 backups/
 *.db-journal
 
+# Runtime cache (di-generate backend, bukan source)
+cache/
+
 # OS
 .DS_Store
 Thumbs.db
@@ -68,3 +71,41 @@ tmp/
 
 # Backup files
 backup_task.xml
+
+# Docs / dumps / schema one-shots (tidak untuk deploy/GitHub)
+*.md
+*.csv
+*.sql
+*.txt
+!requirements.txt
+!requirements-*.txt
+
+# Scripts, tests, migrasi one-shot
+scripts/
+tests/
+pytest.ini
+create_*.py
+add_*.py
+update_*.py
+rename_*.py
+migrate_*.py
+test_*.py
+diagnose.py
+make_admin.py
+list_coffee_shops.py
+access_reviews_db.py
+_reset_password.py
+
+# Frontend test artifacts
+frontend-cofind/test-results/
+frontend-cofind/playwright-report/
+frontend-cofind/e2e/
+frontend-cofind/playwright.config.js
+**/*.test.js
+**/*.test.jsx
+**/*.spec.js
+**/*.spec.jsx
+
+# Local DB dumps / bak
+*.db.bak
+*.bak

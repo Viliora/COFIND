@@ -1,7 +1,17 @@
 // src/components/RecommendationModal.jsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CONTEXT_PILL_OPTIONS } from '../constants/reviewPills';
+import { authService } from '../services/authService';
+
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+
+const DOWNVOTE_REASON_CHIPS = [
+    'Tidak sesuai konteks',
+    'Ulasan menyesatkan',
+    'Sudah pernah ke sini & tidak cocok',
+    'Tempat lain lebih relevan',
+];
 
 function normalizeMatchText(value) {
     return String(value ?? '').trim().toLowerCase();
@@ -222,6 +232,216 @@ function RatingDetailChips({ item }) {
     );
 }
 
+function ThumbUpIcon({ className = 'w-4 h-4' }) {
+    return (
+        <svg className={className} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933A4 4 0 006 10.333z" />
+        </svg>
+    );
+}
+
+function ThumbDownIcon({ className = 'w-4 h-4' }) {
+    return (
+        <svg className={className} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path d="M18 9.5a1.5 1.5 0 11-3 0v-6a1.5 1.5 0 013 0v6zM14 9.667v-5.43a2 2 0 00-1.105-1.79l-.05-.025A4 4 0 0011.055 2H5.64a2 2 0 00-1.962 1.608l-1.2 6A2 2 0 004.44 12H8v4a2 2 0 002 2 1 1 0 001-1v-.667a4 4 0 01.8-2.4l1.4-1.866A4 4 0 0014 9.667z" />
+        </svg>
+    );
+}
+
+function RecommendationFeedbackControls({
+    placeId,
+    preferences,
+    rankPosition,
+    score,
+    initialVote = null,
+    initialReason = '',
+}) {
+    const [vote, setVote] = useState(initialVote);
+    const [reasonDraft, setReasonDraft] = useState(initialReason || '');
+    const [showReasonPanel, setShowReasonPanel] = useState(initialVote === 'not_helpful');
+    const [saving, setSaving] = useState(false);
+    const [statusMessage, setStatusMessage] = useState('');
+    const [errorMessage, setErrorMessage] = useState('');
+
+    useEffect(() => {
+        setVote(initialVote);
+        setReasonDraft(initialReason || '');
+        setShowReasonPanel(initialVote === 'not_helpful');
+        setStatusMessage('');
+        setErrorMessage('');
+    }, [initialVote, initialReason, placeId]);
+
+    const submitFeedback = async (nextVote, reasonValue = null) => {
+        const token = authService.getToken();
+        if (!token) {
+            setErrorMessage('Login diperlukan untuk memberi feedback.');
+            return;
+        }
+        if (!placeId) {
+            setErrorMessage('Data coffee shop tidak lengkap.');
+            return;
+        }
+
+        setSaving(true);
+        setErrorMessage('');
+        setStatusMessage('');
+        try {
+            const res = await fetch(`${API_BASE}/api/recommend-by-preferences/feedback`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    place_id: placeId,
+                    preferences,
+                    vote: nextVote,
+                    reason: reasonValue,
+                    rank_position: rankPosition,
+                    score,
+                }),
+            });
+            let data = null;
+            try {
+                data = await res.json();
+            } catch {
+                data = null;
+            }
+            if (!res.ok || data?.status !== 'success') {
+                throw new Error(data?.message || 'Gagal menyimpan feedback.');
+            }
+
+            setVote(nextVote);
+            if (nextVote === 'helpful') {
+                setShowReasonPanel(false);
+                setStatusMessage('Terima kasih — feedback membantu kami mempertahankan rekomendasi yang relevan.');
+            } else {
+                setShowReasonPanel(true);
+                setStatusMessage(
+                    'Terima kasih — feedback “tidak relevan” disimpan untuk evaluasi dan penyempurnaan rekomendasi.',
+                );
+            }
+            if (reasonValue != null) {
+                setReasonDraft(String(reasonValue));
+            }
+        } catch (err) {
+            setErrorMessage(err?.message || 'Gagal menyimpan feedback.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleThumb = async (nextVote) => {
+        if (saving) return;
+        await submitFeedback(nextVote, nextVote === 'not_helpful' ? reasonDraft || null : null);
+    };
+
+    const handleSaveReason = async () => {
+        if (saving || vote !== 'not_helpful') return;
+        await submitFeedback('not_helpful', reasonDraft.trim() || null);
+    };
+
+    const applyChip = (chip) => {
+        setReasonDraft((prev) => {
+            const current = String(prev || '').trim();
+            if (!current) return chip;
+            if (current.toLowerCase().includes(chip.toLowerCase())) return current;
+            return `${current}; ${chip}`;
+        });
+    };
+
+    return (
+        <div className="mt-4 rounded-xl border border-gray-200 bg-white px-3 py-3 dark:border-gray-700 dark:bg-gray-900/70">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                Feedback rekomendasi
+            </p>
+            <p className="mt-1 text-sm text-gray-700 dark:text-gray-200">
+                Apakah rekomendasi ini membantu?
+            </p>
+            <div className="mt-2.5 flex flex-wrap gap-2">
+                <button
+                    type="button"
+                    disabled={saving}
+                    onClick={() => handleThumb('helpful')}
+                    aria-pressed={vote === 'helpful'}
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-60 ${
+                        vote === 'helpful'
+                            ? 'bg-emerald-600 text-white shadow-sm'
+                            : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-100 dark:hover:bg-emerald-900/50'
+                    }`}
+                >
+                    <ThumbUpIcon />
+                    Rekomendasi membantu
+                </button>
+                <button
+                    type="button"
+                    disabled={saving}
+                    onClick={() => handleThumb('not_helpful')}
+                    aria-pressed={vote === 'not_helpful'}
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-60 ${
+                        vote === 'not_helpful'
+                            ? 'bg-rose-600 text-white shadow-sm'
+                            : 'bg-rose-50 text-rose-800 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-100 dark:hover:bg-rose-900/50'
+                    }`}
+                >
+                    <ThumbDownIcon />
+                    Tidak relevan
+                </button>
+            </div>
+
+            {showReasonPanel ? (
+                <div className="mt-3 space-y-2 border-t border-gray-100 pt-3 dark:border-gray-800">
+                    <p className="text-xs text-gray-600 dark:text-gray-300">
+                        Opsional: beri alasan singkat agar evaluasi sistem lebih akurat.
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                        {DOWNVOTE_REASON_CHIPS.map((chip) => (
+                            <button
+                                key={chip}
+                                type="button"
+                                disabled={saving}
+                                onClick={() => applyChip(chip)}
+                                className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+                            >
+                                {chip}
+                            </button>
+                        ))}
+                    </div>
+                    <textarea
+                        value={reasonDraft}
+                        onChange={(e) => setReasonDraft(e.target.value)}
+                        rows={2}
+                        maxLength={500}
+                        placeholder="Contoh: Suasananya terlalu ramai untuk belajar…"
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:ring-indigo-900/50"
+                    />
+                    <div className="flex justify-end">
+                        <button
+                            type="button"
+                            disabled={saving}
+                            onClick={handleSaveReason}
+                            className="rounded-full bg-rose-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-rose-700 disabled:opacity-60"
+                        >
+                            Simpan alasan
+                        </button>
+                    </div>
+                </div>
+            ) : null}
+
+            {statusMessage ? (
+                <p className="mt-2 text-xs text-emerald-700 dark:text-emerald-300" role="status">
+                    {statusMessage}
+                </p>
+            ) : null}
+            {errorMessage ? (
+                <p className="mt-2 text-xs text-rose-600 dark:text-rose-300" role="alert">
+                    {errorMessage}
+                </p>
+            ) : null}
+        </div>
+    );
+}
+
 const RecommendationModal = ({
     isOpen,
     onClose,
@@ -229,6 +449,8 @@ const RecommendationModal = ({
     shopsByKey = {},
     confirmedPills = [],
 }) => {
+    const [feedbackByPlaceId, setFeedbackByPlaceId] = useState({});
+
     useEffect(() => {
         if (!isOpen) return undefined;
         const originalOverflow = document.body.style.overflow;
@@ -244,6 +466,58 @@ const RecommendationModal = ({
             window.removeEventListener('keydown', handleKeyDown);
         };
     }, [isOpen, onClose]);
+
+    useEffect(() => {
+        if (!isOpen) {
+            setFeedbackByPlaceId({});
+            return undefined;
+        }
+
+        const placeIds = (Array.isArray(recommendations) ? recommendations : [])
+            .map((rec) => String(rec?.place_id || '').trim())
+            .filter(Boolean);
+        const pills = (Array.isArray(confirmedPills) ? confirmedPills : [])
+            .map((p) => String(p || '').trim())
+            .filter(Boolean);
+        const token = authService.getToken();
+
+        if (!token || !pills.length || !placeIds.length) {
+            setFeedbackByPlaceId({});
+            return undefined;
+        }
+
+        let cancelled = false;
+        const loadFeedback = async () => {
+            try {
+                const params = new URLSearchParams({
+                    preferences: pills.join(','),
+                    place_ids: placeIds.join(','),
+                });
+                const res = await fetch(
+                    `${API_BASE}/api/recommend-by-preferences/feedback?${params.toString()}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    },
+                );
+                const data = await res.json().catch(() => null);
+                if (cancelled) return;
+                if (res.ok && data?.status === 'success') {
+                    setFeedbackByPlaceId(data.feedback_by_place_id || {});
+                } else {
+                    setFeedbackByPlaceId({});
+                }
+            } catch {
+                if (!cancelled) setFeedbackByPlaceId({});
+            }
+        };
+
+        loadFeedback();
+        return () => {
+            cancelled = true;
+        };
+    }, [isOpen, recommendations, confirmedPills]);
 
     if (!isOpen) return null;
 
@@ -267,7 +541,7 @@ const RecommendationModal = ({
             if (nb !== na) return nb - na;
             return a.apiIndex - b.apiIndex;
         })
-        .map(({ rec, shop }) => ({ rec, shop }));
+        .map(({ rec, shop }, displayIndex) => ({ rec, shop, displayIndex }));
 
     const confirmedLabels = pillLabelsFromValues(confirmedPills);
 
@@ -332,14 +606,15 @@ const RecommendationModal = ({
                         <div className="space-y-4">
                             <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900/80">
                                 <ul className="space-y-4">
-                                    {items.map(({ rec, shop }, index) => {
+                                    {items.map(({ rec, shop, displayIndex }) => {
                                         const shopName = getShopDisplayName(rec, shop);
                                         const placeId = shop?.place_id || rec?.place_id;
                                         const evidenceItems = getModalEvidenceItems(rec, confirmedPills);
                                         const summaryText = getModalSummaryText(rec);
+                                        const existingFb = placeId ? feedbackByPlaceId[placeId] : null;
                                         return (
                                             <li
-                                                key={rec.place_id || `${rec.name}-${index}`}
+                                                key={rec.place_id || `${rec.name}-${displayIndex}`}
                                                 className="rounded-xl border border-gray-100 bg-gray-50/70 px-3 py-3 dark:border-gray-700 dark:bg-gray-900/50"
                                             >
                                                 {placeId ? (
@@ -391,6 +666,15 @@ const RecommendationModal = ({
                                                         </p>
                                                     )}
                                                 </div>
+
+                                                <RecommendationFeedbackControls
+                                                    placeId={placeId}
+                                                    preferences={confirmedPills}
+                                                    rankPosition={displayIndex + 1}
+                                                    score={rec?.score}
+                                                    initialVote={existingFb?.vote || null}
+                                                    initialReason={existingFb?.reason || ''}
+                                                />
                                             </li>
                                         );
                                     })}

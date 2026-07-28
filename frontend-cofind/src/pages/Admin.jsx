@@ -12,10 +12,9 @@ import CoordinatePickerMap from '../components/admin/CoordinatePickerMap';
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', description: 'Ringkasan statistik dan aktivitas terbaru.' },
   { id: 'users', label: 'Users', description: 'Kelola akun, role admin, dan status user.' },
-  { id: 'facilities', label: 'Facilities', description: 'Kelola coffee shop, fasilitas, dan koordinat lokasi.' },
+  { id: 'facilities', label: 'Coffee Shop', description: 'Kelola coffee shop, fasilitas, dan koordinat lokasi.' },
   { id: 'reviews', label: 'Reviews', description: 'Moderasi ulasan dan pantau engagement.' },
   { id: 'reports', label: 'Reports', description: 'Moderasi laporan review dari user.' },
-  { id: 'suggestions', label: 'Suggestions', description: 'Tinjau saran preferensi dari user.' },
   { id: 'ai', label: 'AI', description: 'Trigger analisis sentimen dan lihat cache AI.' },
   { id: 'settings', label: 'Settings', description: 'Informasi sistem admin dan konfigurasi LLM.' },
 ];
@@ -73,8 +72,8 @@ function SectionHeader({ title, description, actions }) {
   return (
     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
       <div>
-        <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{title}</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{description}</p>
+        <h3 className="text-2xl font-bold text-stone-800">{title}</h3>
+        <p className="text-sm text-stone-500 mt-1">{description}</p>
       </div>
       {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
     </div>
@@ -83,13 +82,13 @@ function SectionHeader({ title, description, actions }) {
 
 function Toolbar({ search, onSearchChange, filters }) {
   return (
-    <div className="rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm p-4 flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
+    <div className="rounded-2xl border border-stone-200/50 bg-[#FAF9F6]/95 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-4 flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
       <input
         type="text"
         value={search}
         onChange={(event) => onSearchChange(event.target.value)}
         placeholder="Cari data..."
-        className="w-full lg:max-w-md rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:bg-white dark:bg-gray-800 transition-colors"
+        className="w-full lg:max-w-md rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all duration-300 ease-out"
       />
       {filters ? <div className="flex flex-wrap gap-2">{filters}</div> : null}
     </div>
@@ -135,12 +134,6 @@ export default function Admin() {
   const [reviewReportsStatusFilter, setReviewReportsStatusFilter] = useState('');
   const [reviewReportsLoading, setReviewReportsLoading] = useState(false);
   const [reviewReportsError, setReviewReportsError] = useState('');
-
-  const [suggestions, setSuggestions] = useState([]);
-  const [suggestionsPagination, setSuggestionsPagination] = useState(null);
-  const [suggestionsSearch, setSuggestionsSearch] = useState('');
-  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
-  const [suggestionsError, setSuggestionsError] = useState('');
 
   const [aiCache, setAiCache] = useState([]);
   const [aiCacheLoading, setAiCacheLoading] = useState(false);
@@ -239,17 +232,11 @@ export default function Admin() {
     }
   }, []);
 
-  const loadUsers = useCallback(async (page = 1) => {
+  const loadUsers = useCallback(async (page = 1, search = '', role = '', status = '') => {
     setUsersLoading(true);
     setUsersError('');
     try {
-      const result = await adminService.getUsers({
-        page,
-        per_page: 8,
-        search: usersSearch,
-        role: userRoleFilter,
-        status: userStatusFilter,
-      });
+      const result = await adminService.getUsers({ page, per_page: 8, search, role, status });
       setUsers(result.items || []);
       setUsersPagination(result.pagination || null);
     } catch (error) {
@@ -257,17 +244,13 @@ export default function Admin() {
     } finally {
       setUsersLoading(false);
     }
-  }, [userRoleFilter, userStatusFilter, usersSearch]);
+  }, []);
 
-  const loadShops = useCallback(async (page = 1) => {
+  const loadShops = useCallback(async (page = 1, search = '') => {
     setShopsLoading(true);
     setShopsError('');
     try {
-      const result = await adminService.getShops({
-        page,
-        per_page: 8,
-        search: shopsSearch,
-      });
+      const result = await adminService.getShops({ page, per_page: 8, search });
       setShops(result.items || []);
       setShopsPagination(result.pagination || null);
     } catch (error) {
@@ -275,18 +258,13 @@ export default function Admin() {
     } finally {
       setShopsLoading(false);
     }
-  }, [shopsSearch]);
+  }, []);
 
-  const loadReviews = useCallback(async (page = 1) => {
+  const loadReviews = useCallback(async (page = 1, search = '', placeId = '') => {
     setReviewsLoading(true);
     setReviewsError('');
     try {
-      const result = await adminService.getReviews({
-        page,
-        per_page: 8,
-        search: reviewsSearch,
-        place_id: reviewShopFilter,
-      });
+      const result = await adminService.getReviews({ page, per_page: 8, search, place_id: placeId });
       setReviews(result.items || []);
       setReviewsPagination(result.pagination || null);
     } catch (error) {
@@ -294,7 +272,7 @@ export default function Admin() {
     } finally {
       setReviewsLoading(false);
     }
-  }, [reviewsSearch, reviewShopFilter]);
+  }, []);
 
   const loadReviewShopOptions = useCallback(async () => {
     try {
@@ -308,16 +286,11 @@ export default function Admin() {
     }
   }, []);
 
-  const loadReviewReports = useCallback(async (page = 1) => {
+  const loadReviewReports = useCallback(async (page = 1, search = '', status = '') => {
     setReviewReportsLoading(true);
     setReviewReportsError('');
     try {
-      const result = await adminService.getReviewReports({
-        page,
-        per_page: 8,
-        search: reviewReportsSearch,
-        status: reviewReportsStatusFilter,
-      });
+      const result = await adminService.getReviewReports({ page, per_page: 8, search, status });
       setReviewReports(result.items || []);
       setReviewReportsPagination(result.pagination || null);
     } catch (error) {
@@ -325,25 +298,7 @@ export default function Admin() {
     } finally {
       setReviewReportsLoading(false);
     }
-  }, [reviewReportsSearch, reviewReportsStatusFilter]);
-
-  const loadSuggestions = useCallback(async (page = 1) => {
-    setSuggestionsLoading(true);
-    setSuggestionsError('');
-    try {
-      const result = await adminService.getPreferenceSuggestions({
-        page,
-        per_page: 8,
-        search: suggestionsSearch,
-      });
-      setSuggestions(result.items || []);
-      setSuggestionsPagination(result.pagination || null);
-    } catch (error) {
-      setSuggestionsError(error.message);
-    } finally {
-      setSuggestionsLoading(false);
-    }
-  }, [suggestionsSearch]);
+  }, []);
 
   const loadAICache = useCallback(async () => {
     setAiCacheLoading(true);
@@ -381,27 +336,30 @@ export default function Admin() {
   }, [isAdmin, loadDashboard, loadSettings]);
 
   useEffect(() => {
-    if (!isAdmin) return;
-    if (activeSection === 'users') loadUsers(usersPagination?.page || 1);
-    if (activeSection === 'facilities') loadShops(shopsPagination?.page || 1);
-    if (activeSection === 'reviews') {
-      loadReviews(reviewsPagination?.page || 1);
-      loadReviewShopOptions();
-    }
-    if (activeSection === 'reports') loadReviewReports(reviewReportsPagination?.page || 1);
-    if (activeSection === 'suggestions') loadSuggestions(suggestionsPagination?.page || 1);
-    if (activeSection === 'ai') loadAICache();
-  }, [
-    activeSection,
-    isAdmin,
-    loadAICache,
-    loadReviewShopOptions,
-    loadReviewReports,
-    loadReviews,
-    loadShops,
-    loadSuggestions,
-    loadUsers,
-  ]);
+    if (!isAdmin || activeSection !== 'users') return;
+    loadUsers(1, usersSearch, userRoleFilter, userStatusFilter);
+  }, [isAdmin, activeSection, usersSearch, userRoleFilter, userStatusFilter, loadUsers]);
+
+  useEffect(() => {
+    if (!isAdmin || activeSection !== 'facilities') return;
+    loadShops(1, shopsSearch);
+  }, [isAdmin, activeSection, shopsSearch, loadShops]);
+
+  useEffect(() => {
+    if (!isAdmin || activeSection !== 'reviews') return;
+    loadReviews(1, reviewsSearch, reviewShopFilter);
+    loadReviewShopOptions();
+  }, [isAdmin, activeSection, reviewsSearch, reviewShopFilter, loadReviews, loadReviewShopOptions]);
+
+  useEffect(() => {
+    if (!isAdmin || activeSection !== 'reports') return;
+    loadReviewReports(1, reviewReportsSearch, reviewReportsStatusFilter);
+  }, [isAdmin, activeSection, reviewReportsSearch, reviewReportsStatusFilter, loadReviewReports]);
+
+  useEffect(() => {
+    if (!isAdmin || activeSection !== 'ai') return;
+    loadAICache();
+  }, [isAdmin, activeSection, loadAICache]);
 
   const openUserCreateModal = () => {
     setUserModalMode('create');
@@ -627,17 +585,6 @@ export default function Admin() {
     }
   };
 
-  const handleDeleteSuggestion = async (suggestionId) => {
-    if (!window.confirm('Hapus saran preferensi ini?')) return;
-    try {
-      await adminService.deletePreferenceSuggestion(suggestionId);
-      showFeedback('success', 'Saran preferensi berhasil dihapus.');
-      await Promise.all([loadSuggestions(suggestionsPagination?.page || 1), loadDashboard()]);
-    } catch (error) {
-      showFeedback('error', error.message);
-    }
-  };
-
   const handleRunSentiment = async (shop) => {
     setAiRunningPlaceId(shop.place_id);
     try {
@@ -671,8 +618,8 @@ export default function Admin() {
       label: 'User',
       render: (row) => (
         <div>
-          <p className="font-semibold text-gray-900 dark:text-white">{row.full_name || row.username}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">@{row.username} • {row.email}</p>
+          <p className="font-semibold text-stone-800">{row.full_name || row.username}</p>
+          <p className="text-xs text-stone-500">@{row.username} • {row.email}</p>
         </div>
       ),
     },
@@ -693,7 +640,7 @@ export default function Admin() {
       key: 'stats',
       label: 'Aktivitas',
       render: (row) => (
-        <div className="text-xs text-gray-600 dark:text-gray-300 space-y-1">
+        <div className="text-xs text-stone-600 space-y-1">
           <p>{row.review_count} review</p>
           <p>{row.favorite_count} favorit</p>
           <p>{row.want_to_visit_count} want-to-visit</p>
@@ -708,7 +655,7 @@ export default function Admin() {
           <p className={row.is_active ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
             {row.is_active ? 'Aktif' : 'Nonaktif'}
           </p>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">{formatDate(row.created_at)}</p>
+          <p className="text-stone-500 mt-1">{formatDate(row.created_at)}</p>
         </div>
       ),
     },
@@ -720,14 +667,14 @@ export default function Admin() {
           <button
             type="button"
             onClick={() => openUserModal(row)}
-            className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium text-white hover:bg-indigo-700"
+            className="rounded-lg bg-amber-700 px-3 py-2 text-xs font-medium text-stone-50 hover:bg-amber-800 transition-all duration-300 ease-out cursor-pointer"
           >
             Edit
           </button>
           <button
             type="button"
             onClick={() => handleDeleteUser(row.id, row.username)}
-            className="rounded-lg bg-red-600 px-3 py-2 text-xs font-medium text-white hover:bg-red-700"
+            className="rounded-lg bg-red-600 px-3 py-2 text-xs font-medium text-stone-50 hover:bg-red-700 transition-all duration-300 ease-out cursor-pointer"
           >
             Hapus
           </button>
@@ -742,8 +689,8 @@ export default function Admin() {
       label: 'Coffee Shop',
       render: (row) => (
         <div>
-          <p className="font-semibold text-gray-900 dark:text-white">{row.name}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{row.place_id}</p>
+          <p className="font-semibold text-stone-800">{row.name}</p>
+          <p className="text-xs text-stone-500">{row.place_id}</p>
         </div>
       ),
     },
@@ -753,7 +700,7 @@ export default function Admin() {
       render: (row) => (
         <div className="space-y-1">
           <p>{row.address}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">
+          <p className="text-xs text-stone-500">
             Lat: {row.latitude ?? '-'} • Lng: {row.longitude ?? '-'}
           </p>
         </div>
@@ -764,7 +711,7 @@ export default function Admin() {
       label: 'Fasilitas',
       render: (row) => (
         <div className="space-y-1">
-          <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">
+          <p className="text-xs text-stone-500">
             {row.has_facilities ? `${row.facility_count} indikator fasilitas` : 'Belum ada data facilities.json'}
           </p>
           <p className="text-xs line-clamp-3">{row.facilities_text || '-'}</p>
@@ -777,7 +724,7 @@ export default function Admin() {
       render: (row) => (
         <div className="text-xs">
           <p>{row.rating || 0} / 5</p>
-          <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{row.total_reviews || 0} review</p>
+          <p className="text-stone-500">{row.total_reviews || 0} review</p>
         </div>
       ),
     },
@@ -789,21 +736,21 @@ export default function Admin() {
           <button
             type="button"
             onClick={() => openFacilityEditor(row)}
-            className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700"
+            className="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-medium text-stone-50 hover:bg-emerald-800 transition-all duration-300 ease-out cursor-pointer"
           >
             Edit JSON
           </button>
           <button
             type="button"
             onClick={() => openShopEditModal(row)}
-            className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium text-white hover:bg-indigo-700"
+            className="rounded-lg bg-amber-700 px-3 py-2 text-xs font-medium text-stone-50 hover:bg-amber-800 transition-all duration-300 ease-out cursor-pointer"
           >
             Edit
           </button>
           <button
             type="button"
             onClick={() => handleDeleteShop(row.place_id, row.name)}
-            className="rounded-lg bg-red-600 px-3 py-2 text-xs font-medium text-white hover:bg-red-700"
+            className="rounded-lg bg-red-600 px-3 py-2 text-xs font-medium text-stone-50 hover:bg-red-700 transition-all duration-300 ease-out cursor-pointer"
           >
             Hapus
           </button>
@@ -818,8 +765,8 @@ export default function Admin() {
       label: 'Review',
       render: (row) => (
         <div className="space-y-1">
-          <p className="font-semibold text-gray-900 dark:text-white">{row.shop_name || row.place_id}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">oleh {row.username || 'Anonim'}</p>
+          <p className="font-semibold text-stone-800">{row.shop_name || row.place_id}</p>
+          <p className="text-xs text-stone-500">oleh {row.username || 'Anonim'}</p>
           <p className="text-xs line-clamp-3">{row.text || '(Tanpa teks)'}</p>
         </div>
       ),
@@ -829,10 +776,7 @@ export default function Admin() {
       label: 'Skor',
       render: (row) => (
         <div className="text-xs space-y-1">
-          <p>Utama: {row.rating}</p>
-          <p>Makanan: {row.rating_makanan ?? '-'}</p>
-          <p>Layanan: {row.rating_layanan ?? '-'}</p>
-          <p>Suasana: {row.rating_suasana ?? '-'}</p>
+          <p>Rating: {row.rating}</p>
         </div>
       ),
     },
@@ -843,7 +787,7 @@ export default function Admin() {
         <div className="text-xs space-y-1">
           <p>{row.photo_count} foto</p>
           <p>{row.like_count} like</p>
-          <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{formatDate(row.created_at)}</p>
+          <p className="text-stone-500">{formatDate(row.created_at)}</p>
         </div>
       ),
     },
@@ -854,43 +798,7 @@ export default function Admin() {
         <button
           type="button"
           onClick={() => handleDeleteReview(row.id)}
-          className="rounded-lg bg-red-600 px-3 py-2 text-xs font-medium text-white hover:bg-red-700"
-        >
-          Hapus
-        </button>
-      ),
-    },
-  ];
-
-  const suggestionColumns = [
-    {
-      key: 'suggestion',
-      label: 'Saran',
-      render: (row) => (
-        <div className="space-y-1">
-          <p className="font-semibold text-gray-900 dark:text-white">{row.preference_text}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{row.username || row.email || 'User'}</p>
-        </div>
-      ),
-    },
-    {
-      key: 'reason_text',
-      label: 'Alasan',
-      render: (row) => <p className="text-xs line-clamp-4">{row.reason_text}</p>,
-    },
-    {
-      key: 'created_at',
-      label: 'Dikirim',
-      render: (row) => <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{formatDate(row.created_at)}</span>,
-    },
-    {
-      key: 'actions',
-      label: 'Aksi',
-      render: (row) => (
-        <button
-          type="button"
-          onClick={() => handleDeleteSuggestion(row.id)}
-          className="rounded-lg bg-red-600 px-3 py-2 text-xs font-medium text-white hover:bg-red-700"
+          className="rounded-lg bg-red-600 px-3 py-2 text-xs font-medium text-stone-50 hover:bg-red-700 transition-all duration-300 ease-out cursor-pointer"
         >
           Hapus
         </button>
@@ -904,8 +812,8 @@ export default function Admin() {
       label: 'Report',
       render: (row) => (
         <div className="space-y-1">
-          <p className="font-semibold text-gray-900 dark:text-white">{row.report_reason || 'Tanpa alasan'}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">
+          <p className="font-semibold text-stone-800">{row.report_reason || 'Tanpa alasan'}</p>
+          <p className="text-xs text-stone-500">
             {row.shop_name || row.place_id || 'Coffee Shop'} • pelapor {row.reported_by_username || 'User'}
           </p>
           <p className="text-xs line-clamp-3">{row.report_text || '(Tanpa detail laporan)'}</p>
@@ -918,7 +826,7 @@ export default function Admin() {
       render: (row) => (
         <div className="space-y-1">
           <p className="text-xs line-clamp-3">{row.review_text || '(Review sudah tidak ada)'}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{formatDate(row.created_at)}</p>
+          <p className="text-xs text-stone-500">{formatDate(row.created_at)}</p>
         </div>
       ),
     },
@@ -946,7 +854,7 @@ export default function Admin() {
         <button
           type="button"
           onClick={() => openReportModal(row)}
-          className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium text-white hover:bg-indigo-700"
+          className="rounded-lg bg-amber-700 px-3 py-2 text-xs font-medium text-stone-50 hover:bg-amber-800 transition-all duration-300 ease-out cursor-pointer"
         >
           Moderasi
         </button>
@@ -960,8 +868,8 @@ export default function Admin() {
       label: 'Coffee Shop',
       render: (row) => (
         <div>
-          <p className="font-semibold text-gray-900 dark:text-white">{row.shop_name}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{row.place_id}</p>
+          <p className="font-semibold text-stone-800">{row.shop_name}</p>
+          <p className="text-xs text-stone-500">{row.place_id}</p>
         </div>
       ),
     },
@@ -971,7 +879,7 @@ export default function Admin() {
       render: (row) => (
         <div className="space-y-1">
           <p className="text-xs line-clamp-3">{row.data?.ringkasan || '-'}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">
+          <p className="text-xs text-stone-500">
             {row.review_count} review • {formatTimestamp(row.timestamp)}
           </p>
         </div>
@@ -984,7 +892,7 @@ export default function Admin() {
         <button
           type="button"
           onClick={() => handleDeleteCache(row.place_id)}
-          className="rounded-lg bg-red-600 px-3 py-2 text-xs font-medium text-white hover:bg-red-700"
+          className="rounded-lg bg-red-600 px-3 py-2 text-xs font-medium text-stone-50 hover:bg-red-700 transition-all duration-300 ease-out cursor-pointer"
         >
           Hapus cache
         </button>
@@ -994,20 +902,20 @@ export default function Admin() {
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-gray-950 flex items-center justify-center px-4">
-        <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 text-center">
+      <div className="min-h-screen bg-gradient-to-b from-[#FAF9F6] via-stone-50 to-amber-50/30 flex items-center justify-center px-4">
+        <div className="max-w-md w-full bg-[#FAF9F6]/95 border border-stone-200/50 rounded-2xl shadow-[0_12px_40px_rgb(0,0,0,0.08)] p-8 text-center">
           <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Akses Ditolak</h2>
-          <p className="text-gray-600 dark:text-gray-300 mb-6">
+          <h2 className="text-xl font-bold text-stone-800 mb-2">Akses Ditolak</h2>
+          <p className="text-stone-600 mb-6">
             Halaman ini hanya dapat diakses oleh administrator.
           </p>
           <Link
             to="/"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-amber-700 text-stone-50 rounded-lg hover:bg-amber-800 transition-all duration-300 ease-out cursor-pointer"
           >
             Kembali ke Beranda
           </Link>
@@ -1017,7 +925,7 @@ export default function Admin() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 px-3 py-6 sm:px-4 md:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-b from-[#FAF9F6] via-stone-50 to-amber-50/30 px-3 py-6 sm:px-4 md:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-6">
         <AdminTopbar profile={profile} onLogout={handleLogout} />
 
@@ -1044,7 +952,7 @@ export default function Admin() {
                     <button
                       type="button"
                       onClick={loadDashboard}
-                      className="rounded-xl bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700"
+                      className="rounded-xl bg-amber-700 px-4 py-2 text-sm font-medium text-stone-50 hover:bg-amber-800 transition-all duration-300 ease-out cursor-pointer"
                     >
                       Refresh
                     </button>
@@ -1064,20 +972,20 @@ export default function Admin() {
                   <AdminStatCard label="Total Review Reports" value={dashboardLoading ? '...' : dashboard.stats?.total_review_reports ?? 0} helper="Laporan review yang perlu dimoderasi." />
                 </div>
 
-                <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm p-5">
-                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Aktivitas terbaru</h4>
+                <div className="rounded-2xl border border-stone-200/50 bg-[#FAF9F6]/95 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-5">
+                  <h4 className="text-lg font-semibold text-stone-800 mb-4">Aktivitas terbaru</h4>
                   <div className="space-y-3">
                     {(dashboard.recent_activity || []).length === 0 ? (
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Belum ada aktivitas terbaru.</p>
+                      <p className="text-sm text-stone-500">Belum ada aktivitas terbaru.</p>
                     ) : (
                       dashboard.recent_activity.map((item, index) => (
-                        <div key={`${item.type}-${index}`} className="rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-900/60 p-4">
+                        <div key={`${item.type}-${index}`} className="rounded-xl border border-stone-200/60 bg-stone-100/40 p-4">
                           <div className="flex items-center justify-between gap-3">
                             <div>
-                              <p className="font-medium text-gray-900 dark:text-white">{item.title}</p>
-                              <p className="text-sm text-gray-500 dark:text-gray-400">{item.description}</p>
+                              <p className="font-medium text-stone-800">{item.title}</p>
+                              <p className="text-sm text-stone-500">{item.description}</p>
                             </div>
-                            <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(item.created_at)}</span>
+                            <span className="text-xs text-stone-500">{formatDate(item.created_at)}</span>
                           </div>
                         </div>
                       ))
@@ -1096,7 +1004,7 @@ export default function Admin() {
                     <button
                       type="button"
                       onClick={openUserCreateModal}
-                      className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                      className="rounded-xl bg-amber-700 px-4 py-2 text-sm font-medium text-stone-50 hover:bg-amber-800 transition-all duration-300 ease-out cursor-pointer"
                     >
                       Tambah user
                     </button>
@@ -1110,7 +1018,7 @@ export default function Admin() {
                       <select
                         value={userRoleFilter}
                         onChange={(event) => setUserRoleFilter(event.target.value)}
-                        className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-200"
+                        className="rounded-xl border border-stone-300/70 bg-stone-50 px-3 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
                       >
                         <option value="">Semua role</option>
                         <option value="admin">Admin</option>
@@ -1119,7 +1027,7 @@ export default function Admin() {
                       <select
                         value={userStatusFilter}
                         onChange={(event) => setUserStatusFilter(event.target.value)}
-                        className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-200"
+                        className="rounded-xl border border-stone-300/70 bg-stone-50 px-3 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
                       >
                         <option value="">Semua status</option>
                         <option value="active">Aktif</option>
@@ -1134,7 +1042,7 @@ export default function Admin() {
                   loading={usersLoading}
                   error={usersError}
                   pagination={usersPagination}
-                  onPageChange={loadUsers}
+                  onPageChange={(p) => loadUsers(p, usersSearch, userRoleFilter, userStatusFilter)}
                   emptyMessage="Belum ada user yang cocok dengan filter."
                 />
               </>
@@ -1143,13 +1051,13 @@ export default function Admin() {
             {activeSection === 'facilities' ? (
               <>
                 <SectionHeader
-                  title="Facilities & Locations"
+                  title="Coffee Shop"
                   description="Kelola data coffee shop, lokasi, rating, dan edit penuh entry facilities.json per coffee shop."
                   actions={
                     <button
                       type="button"
                       onClick={openShopCreateModal}
-                      className="rounded-xl bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700"
+                      className="rounded-xl bg-amber-700 px-4 py-2 text-sm font-medium text-stone-50 hover:bg-amber-800 transition-all duration-300 ease-out cursor-pointer"
                     >
                       Tambah coffee shop
                     </button>
@@ -1162,7 +1070,7 @@ export default function Admin() {
                   loading={shopsLoading}
                   error={shopsError}
                   pagination={shopsPagination}
-                  onPageChange={loadShops}
+                  onPageChange={(p) => loadShops(p, shopsSearch)}
                   emptyMessage="Belum ada coffee shop yang cocok."
                 />
               </>
@@ -1178,7 +1086,7 @@ export default function Admin() {
                     <select
                       value={reviewShopFilter}
                       onChange={(event) => setReviewShopFilter(event.target.value)}
-                      className="rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm"
+                      className="rounded-xl border border-stone-300/70 bg-stone-50 px-3 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all duration-300 ease-out"
                     >
                       <option value="">Semua coffee shop</option>
                       {reviewShopOptions.map((shop) => (
@@ -1195,7 +1103,7 @@ export default function Admin() {
                   loading={reviewsLoading}
                   error={reviewsError}
                   pagination={reviewsPagination}
-                  onPageChange={loadReviews}
+                  onPageChange={(p) => loadReviews(p, reviewsSearch, reviewShopFilter)}
                   emptyMessage="Belum ada review yang cocok."
                 />
               </>
@@ -1211,7 +1119,7 @@ export default function Admin() {
                     <select
                       value={reviewReportsStatusFilter}
                       onChange={(event) => setReviewReportsStatusFilter(event.target.value)}
-                      className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-200"
+                      className="rounded-xl border border-stone-300/70 bg-stone-50 px-3 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
                     >
                       <option value="">Semua status</option>
                       <option value="pending">pending</option>
@@ -1227,24 +1135,8 @@ export default function Admin() {
                   loading={reviewReportsLoading}
                   error={reviewReportsError}
                   pagination={reviewReportsPagination}
-                  onPageChange={loadReviewReports}
+                  onPageChange={(p) => loadReviewReports(p, reviewReportsSearch, reviewReportsStatusFilter)}
                   emptyMessage="Belum ada review report."
-                />
-              </>
-            ) : null}
-
-            {activeSection === 'suggestions' ? (
-              <>
-                <SectionHeader title="Preference Suggestions" description="Pantau saran preferensi baru dari user untuk pengembangan fitur rekomendasi." />
-                <Toolbar search={suggestionsSearch} onSearchChange={setSuggestionsSearch} />
-                <AdminTable
-                  columns={suggestionColumns}
-                  rows={suggestions}
-                  loading={suggestionsLoading}
-                  error={suggestionsError}
-                  pagination={suggestionsPagination}
-                  onPageChange={loadSuggestions}
-                  emptyMessage="Belum ada saran preferensi."
                 />
               </>
             ) : null}
@@ -1258,20 +1150,20 @@ export default function Admin() {
                   </div>
                 ) : null}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm p-5">
-                    <h4 className="font-semibold text-gray-900 dark:text-white mb-4">Trigger analisis sentimen</h4>
+                  <div className="rounded-2xl border border-stone-200/50 bg-[#FAF9F6]/95 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-5">
+                    <h4 className="font-semibold text-stone-800 mb-4">Trigger analisis sentimen</h4>
                     <div className="space-y-3 max-h-[420px] overflow-y-auto">
                       {aiShops.map((shop) => (
-                        <div key={shop.place_id} className="rounded-xl border border-gray-100 dark:border-gray-700 p-4 flex items-center justify-between gap-3">
+                        <div key={shop.place_id} className="rounded-xl border border-stone-200/60 p-4 flex items-center justify-between gap-3">
                           <div>
-                            <p className="font-medium text-gray-900 dark:text-white">{shop.name}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">{shop.place_id}</p>
+                            <p className="font-medium text-stone-800">{shop.name}</p>
+                            <p className="text-xs text-stone-500">{shop.place_id}</p>
                           </div>
                           <button
                             type="button"
                             onClick={() => handleRunSentiment(shop)}
                             disabled={aiRunningPlaceId === shop.place_id}
-                            className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+                            className="rounded-lg bg-amber-700 px-3 py-2 text-xs font-medium text-stone-50 hover:bg-amber-800 transition-all duration-300 ease-out cursor-pointer disabled:opacity-60"
                           >
                             {aiRunningPlaceId === shop.place_id ? 'Menganalisis...' : 'Analisis'}
                           </button>
@@ -1280,20 +1172,20 @@ export default function Admin() {
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm p-5">
-                    <h4 className="font-semibold text-gray-900 dark:text-white mb-4">Status AI</h4>
+                  <div className="rounded-2xl border border-stone-200/50 bg-[#FAF9F6]/95 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-5">
+                    <h4 className="font-semibold text-stone-800 mb-4">Status AI</h4>
                     <div className="space-y-3 text-sm">
-                      <div className="rounded-xl bg-gray-50/60 dark:bg-gray-900/60 border border-gray-100 dark:border-gray-700/60 p-4">
-                        <p className="text-gray-500 dark:text-gray-400">LLM tersedia</p>
-                        <p className="font-semibold text-gray-900 dark:text-white">{settings?.llm_available ? 'Ya' : 'Tidak'}</p>
+                      <div className="rounded-xl bg-stone-100/40 border border-stone-200/60 p-4">
+                        <p className="text-stone-500">LLM tersedia</p>
+                        <p className="font-semibold text-stone-800">{settings?.llm_available ? 'Ya' : 'Tidak'}</p>
                       </div>
-                      <div className="rounded-xl bg-gray-50/60 dark:bg-gray-900/60 border border-gray-100 dark:border-gray-700/60 p-4">
-                        <p className="text-gray-500 dark:text-gray-400">Model</p>
-                        <p className="font-semibold text-gray-900 dark:text-white break-all">{settings?.llm_model || '-'}</p>
+                      <div className="rounded-xl bg-stone-100/40 border border-stone-200/60 p-4">
+                        <p className="text-stone-500">Model</p>
+                        <p className="font-semibold text-stone-800 break-all">{settings?.llm_model || '-'}</p>
                       </div>
-                      <div className="rounded-xl bg-gray-50/60 dark:bg-gray-900/60 border border-gray-100 dark:border-gray-700/60 p-4">
-                        <p className="text-gray-500 dark:text-gray-400">Total cache</p>
-                        <p className="font-semibold text-gray-900 dark:text-white">{aiCache.length}</p>
+                      <div className="rounded-xl bg-stone-100/40 border border-stone-200/60 p-4">
+                        <p className="text-stone-500">Total cache</p>
+                        <p className="font-semibold text-stone-800">{aiCache.length}</p>
                       </div>
                     </div>
                   </div>
@@ -1313,10 +1205,10 @@ export default function Admin() {
               <>
                 <SectionHeader title="Settings" description="Ringkasan konfigurasi admin, LLM, dan integrasi frontend-backend." />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm p-5">
-                    <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Konfigurasi sistem</h4>
+                  <div className="rounded-2xl border border-stone-200/50 bg-[#FAF9F6]/95 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-5">
+                    <h4 className="font-semibold text-stone-800 mb-3">Konfigurasi sistem</h4>
                     {settingsLoading ? (
-                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Memuat settings...</p>
+                      <p className="text-sm text-stone-500">Memuat settings...</p>
                     ) : (
                       <div className="space-y-3 text-sm">
                         <p><span className="font-medium">LLM tersedia:</span> {settings?.llm_available ? 'Ya' : 'Tidak'}</p>
@@ -1327,9 +1219,9 @@ export default function Admin() {
                     )}
                   </div>
 
-                  <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm p-5">
-                    <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Saran operasional</h4>
-                    <div className="space-y-3 text-sm text-gray-600 dark:text-gray-300">
+                  <div className="rounded-2xl border border-stone-200/50 bg-[#FAF9F6]/95 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-5">
+                    <h4 className="font-semibold text-stone-800 mb-3">Saran operasional</h4>
+                    <div className="space-y-3 text-sm text-stone-600">
                       <p>Gunakan tab Facilities untuk memperbarui latitude dan longitude dengan klik langsung di peta.</p>
                       <p>Setelah menghapus review besar-besaran, jalankan ulang analisis AI pada coffee shop terkait agar cache tetap relevan.</p>
                       <p>Saran preferensi dari user dapat menjadi dasar menambah pill preferensi baru di halaman utama.</p>
@@ -1352,7 +1244,7 @@ export default function Admin() {
           {userModalMode === 'create' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                <label className="block text-sm font-medium text-stone-700 mb-1">
                   Email <span className="text-red-500 dark:text-red-400">*</span>
                 </label>
                 <input
@@ -1361,11 +1253,11 @@ export default function Admin() {
                   value={userForm.email}
                   onChange={(event) => setUserForm((prev) => ({ ...prev, email: event.target.value }))}
                   placeholder="user@example.com"
-                  className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-200"
+                  className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                <label className="block text-sm font-medium text-stone-700 mb-1">
                   Password <span className="text-red-500 dark:text-red-400">*</span>
                 </label>
                 <input
@@ -1375,7 +1267,7 @@ export default function Admin() {
                   value={userForm.password}
                   onChange={(event) => setUserForm((prev) => ({ ...prev, password: event.target.value }))}
                   placeholder="Min. 6 karakter"
-                  className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-200"
+                  className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
               </div>
             </div>
@@ -1383,7 +1275,7 @@ export default function Admin() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+              <label className="block text-sm font-medium text-stone-700 mb-1">
                 Username {userModalMode === 'create' ? <span className="text-red-500 dark:text-red-400">*</span> : null}
               </label>
               <input
@@ -1391,70 +1283,70 @@ export default function Admin() {
                 required={userModalMode === 'create'}
                 value={userForm.username}
                 onChange={(event) => setUserForm((prev) => ({ ...prev, username: event.target.value }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-200"
+                className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Nama lengkap</label>
+              <label className="block text-sm font-medium text-stone-700 mb-1">Nama lengkap</label>
               <input
                 type="text"
                 value={userForm.full_name}
                 onChange={(event) => setUserForm((prev) => ({ ...prev, full_name: event.target.value }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-200"
+                className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Nomor telepon</label>
+            <label className="block text-sm font-medium text-stone-700 mb-1">Nomor telepon</label>
             <input
               type="text"
               value={userForm.phone}
               onChange={(event) => setUserForm((prev) => ({ ...prev, phone: event.target.value }))}
-              className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-200"
+              className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Bio</label>
+            <label className="block text-sm font-medium text-stone-700 mb-1">Bio</label>
             <textarea
               rows={3}
               value={userForm.bio}
               onChange={(event) => setUserForm((prev) => ({ ...prev, bio: event.target.value }))}
-              className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-200"
+              className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <label className="flex items-center gap-3 rounded-xl border border-gray-200 dark:border-gray-700 p-4 cursor-pointer">
+            <label className="flex items-center gap-3 rounded-xl border border-stone-200/60 p-4 cursor-pointer">
               <input
                 type="checkbox"
                 checked={userForm.is_admin}
                 onChange={(event) => setUserForm((prev) => ({ ...prev, is_admin: event.target.checked }))}
               />
               <div>
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Role admin</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Akses ke dashboard admin</p>
+                <p className="text-sm font-medium text-stone-700">Role admin</p>
+                <p className="text-xs text-stone-500">Akses ke dashboard admin</p>
               </div>
             </label>
-            <label className="flex items-center gap-3 rounded-xl border border-gray-200 dark:border-gray-700 p-4 cursor-pointer">
+            <label className="flex items-center gap-3 rounded-xl border border-stone-200/60 p-4 cursor-pointer">
               <input
                 type="checkbox"
                 checked={userForm.is_active}
                 onChange={(event) => setUserForm((prev) => ({ ...prev, is_active: event.target.checked }))}
               />
               <div>
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Akun aktif</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">User bisa login jika aktif</p>
+                <p className="text-sm font-medium text-stone-700">Akun aktif</p>
+                <p className="text-xs text-stone-500">User bisa login jika aktif</p>
               </div>
             </label>
           </div>
 
           <div className="flex justify-end gap-3">
-            <button type="button" onClick={closeUserModal} className="rounded-xl border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm">
+            <button type="button" onClick={closeUserModal} className="rounded-xl border border-stone-300/70 px-4 py-2 text-sm text-stone-700 hover:bg-stone-100 transition-all duration-300 ease-out cursor-pointer">
               Batal
             </button>
-            <button type="submit" disabled={userSubmitting} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60">
+            <button type="submit" disabled={userSubmitting} className="rounded-xl bg-amber-700 px-4 py-2 text-sm font-medium text-stone-50 hover:bg-amber-800 disabled:opacity-60 transition-all duration-300 ease-out cursor-pointer">
               {userSubmitting ? 'Menyimpan...' : userModalMode === 'create' ? 'Buat user' : 'Simpan perubahan'}
             </button>
           </div>
@@ -1470,42 +1362,42 @@ export default function Admin() {
         <form onSubmit={handleShopSubmit} className="space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Place ID</label>
+              <label className="block text-sm font-medium text-stone-700 mb-1">Place ID</label>
               <input
                 type="text"
                 value={shopForm.place_id}
                 disabled={shopModalMode === 'edit'}
                 onChange={(event) => setShopForm((prev) => ({ ...prev, place_id: event.target.value }))}
                 placeholder="Kosongkan untuk generate otomatis"
-                className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-200 disabled:opacity-60"
+                className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-60"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Nama coffee shop</label>
+              <label className="block text-sm font-medium text-stone-700 mb-1">Nama coffee shop</label>
               <input
                 type="text"
                 value={shopForm.name}
                 onChange={(event) => setShopForm((prev) => ({ ...prev, name: event.target.value }))}
                 required
-                className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-200"
+                className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Alamat</label>
+            <label className="block text-sm font-medium text-stone-700 mb-1">Alamat</label>
             <textarea
               rows={3}
               value={shopForm.address}
               onChange={(event) => setShopForm((prev) => ({ ...prev, address: event.target.value }))}
               required
-              className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-200"
+              className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Rating</label>
+              <label className="block text-sm font-medium text-stone-700 mb-1">Rating</label>
               <input
                 type="number"
                 min="0"
@@ -1513,80 +1405,80 @@ export default function Admin() {
                 step="0.1"
                 value={shopForm.rating}
                 onChange={(event) => setShopForm((prev) => ({ ...prev, rating: event.target.value }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-200"
+                className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Total review</label>
+              <label className="block text-sm font-medium text-stone-700 mb-1">Total review</label>
               <input
                 type="number"
                 min="0"
                 value={shopForm.total_reviews}
                 onChange={(event) => setShopForm((prev) => ({ ...prev, total_reviews: event.target.value }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-200"
+                className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Latitude</label>
+              <label className="block text-sm font-medium text-stone-700 mb-1">Latitude</label>
               <input
                 type="number"
                 step="0.000001"
                 value={shopForm.latitude}
                 onChange={(event) => setShopForm((prev) => ({ ...prev, latitude: event.target.value }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-200"
+                className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Longitude</label>
+              <label className="block text-sm font-medium text-stone-700 mb-1">Longitude</label>
               <input
                 type="number"
                 step="0.000001"
                 value={shopForm.longitude}
                 onChange={(event) => setShopForm((prev) => ({ ...prev, longitude: event.target.value }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-200"
+                className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Pilih koordinat di peta</label>
+            <label className="block text-sm font-medium text-stone-700 mb-2">Pilih koordinat di peta</label>
             <CoordinatePickerMap
               latitude={shopForm.latitude === '' ? null : Number(shopForm.latitude)}
               longitude={shopForm.longitude === '' ? null : Number(shopForm.longitude)}
               onChange={(lat, lng) => setShopForm((prev) => ({ ...prev, latitude: lat, longitude: lng }))}
             />
-            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">
+            <p className="mt-2 text-xs text-stone-500">
               Klik pada peta untuk mengisi latitude dan longitude otomatis.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Map embed URL</label>
+              <label className="block text-sm font-medium text-stone-700 mb-1">Map embed URL</label>
               <input
                 type="text"
                 value={shopForm.map_embed_url}
                 onChange={(event) => setShopForm((prev) => ({ ...prev, map_embed_url: event.target.value }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-200"
+                className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Jam operasional</label>
+              <label className="block text-sm font-medium text-stone-700 mb-1">Jam operasional</label>
               <input
                 type="text"
                 value={shopForm.opening_hours_display}
                 onChange={(event) => setShopForm((prev) => ({ ...prev, opening_hours_display: event.target.value }))}
                 placeholder="Contoh: Senin-Minggu, 08.00-22.00"
-                className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-200"
+                className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
             </div>
           </div>
 
           <div className="flex justify-end gap-3">
-            <button type="button" onClick={closeShopModal} className="rounded-xl border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm">
+            <button type="button" onClick={closeShopModal} className="rounded-xl border border-stone-300/70 px-4 py-2 text-sm text-stone-700 hover:bg-stone-100 transition-all duration-300 ease-out cursor-pointer">
               Batal
             </button>
-            <button type="submit" disabled={shopSubmitting} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60">
+            <button type="submit" disabled={shopSubmitting} className="rounded-xl bg-amber-700 px-4 py-2 text-sm font-medium text-stone-50 hover:bg-amber-800 disabled:opacity-60 transition-all duration-300 ease-out cursor-pointer">
               {shopSubmitting ? 'Menyimpan...' : shopModalMode === 'create' ? 'Tambah coffee shop' : 'Simpan perubahan'}
             </button>
           </div>
@@ -1600,7 +1492,7 @@ export default function Admin() {
         maxWidth="max-w-5xl"
       >
         {facilityEditorLoading ? (
-          <div className="py-12 text-center text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Memuat data facilities...</div>
+          <div className="py-12 text-center text-sm text-stone-500">Memuat data facilities...</div>
         ) : (
           <form onSubmit={handleSaveFacilityEditor} className="space-y-4">
             <div className="rounded-xl bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 p-4 text-sm text-amber-800 dark:text-amber-300">
@@ -1611,13 +1503,13 @@ export default function Admin() {
               onChange={(event) => setFacilityJsonText(event.target.value)}
               rows={24}
               spellCheck={false}
-              className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 font-mono text-xs px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-300"
+              className="w-full rounded-xl border border-stone-300/70 bg-stone-50 text-stone-800 font-mono text-xs px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
             <div className="flex justify-end gap-3">
-              <button type="button" onClick={closeFacilityEditor} className="rounded-xl border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm">
+              <button type="button" onClick={closeFacilityEditor} className="rounded-xl border border-stone-300/70 px-4 py-2 text-sm text-stone-700 hover:bg-stone-100 transition-all duration-300 ease-out cursor-pointer">
                 Batal
               </button>
-              <button type="submit" disabled={facilityEditorSubmitting} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60">
+              <button type="submit" disabled={facilityEditorSubmitting} className="rounded-xl bg-emerald-700 px-4 py-2 text-sm font-medium text-stone-50 hover:bg-emerald-800 disabled:opacity-60 transition-all duration-300 ease-out cursor-pointer">
                 {facilityEditorSubmitting ? 'Menyimpan...' : 'Simpan JSON'}
               </button>
             </div>
@@ -1633,43 +1525,43 @@ export default function Admin() {
       >
         <form onSubmit={handleSaveReport} className="space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Coffee shop</p>
-              <p className="mt-1 font-medium text-gray-900 dark:text-white">{reportForm.shop_name || '-'}</p>
+            <div className="rounded-xl border border-stone-200/60 p-4">
+              <p className="text-xs text-stone-500">Coffee shop</p>
+              <p className="mt-1 font-medium text-stone-800">{reportForm.shop_name || '-'}</p>
             </div>
-            <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Pelapor</p>
-              <p className="mt-1 font-medium text-gray-900 dark:text-white">{reportForm.reported_by_username || '-'}</p>
+            <div className="rounded-xl border border-stone-200/60 p-4">
+              <p className="text-xs text-stone-500">Pelapor</p>
+              <p className="mt-1 font-medium text-stone-800">{reportForm.reported_by_username || '-'}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Alasan laporan</p>
-              <p className="mt-1 font-medium text-gray-900 dark:text-white">{reportForm.report_reason || '-'}</p>
+            <div className="rounded-xl border border-stone-200/60 p-4">
+              <p className="text-xs text-stone-500">Alasan laporan</p>
+              <p className="mt-1 font-medium text-stone-800">{reportForm.report_reason || '-'}</p>
             </div>
-            <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Tanggal laporan</p>
-              <p className="mt-1 font-medium text-gray-900 dark:text-white">{formatDate(reportForm.created_at)}</p>
+            <div className="rounded-xl border border-stone-200/60 p-4">
+              <p className="text-xs text-stone-500">Tanggal laporan</p>
+              <p className="mt-1 font-medium text-stone-800">{formatDate(reportForm.created_at)}</p>
             </div>
           </div>
 
-          <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-            <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Detail laporan</p>
-            <p className="mt-1 text-sm text-gray-800 dark:text-gray-100 whitespace-pre-wrap">{reportForm.report_text || '(Tidak ada detail tambahan)'}</p>
+          <div className="rounded-xl border border-stone-200/60 p-4">
+            <p className="text-xs text-stone-500">Detail laporan</p>
+            <p className="mt-1 text-sm text-stone-800 whitespace-pre-wrap">{reportForm.report_text || '(Tidak ada detail tambahan)'}</p>
           </div>
 
-          <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-            <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Review yang dilaporkan</p>
-            <p className="mt-1 text-sm text-gray-800 dark:text-gray-100 whitespace-pre-wrap">{reportForm.review_text || '(Review sudah tidak tersedia)'}</p>
+          <div className="rounded-xl border border-stone-200/60 p-4">
+            <p className="text-xs text-stone-500">Review yang dilaporkan</p>
+            <p className="mt-1 text-sm text-stone-800 whitespace-pre-wrap">{reportForm.review_text || '(Review sudah tidak tersedia)'}</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Status moderasi</label>
+            <label className="block text-sm font-medium text-stone-700 mb-1">Status moderasi</label>
             <select
               value={reportForm.status}
               onChange={(event) => setReportForm((prev) => ({ ...prev, status: event.target.value }))}
-              className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-200"
+              className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
             >
               <option value="pending">pending</option>
               <option value="reviewed">reviewed</option>
@@ -1679,21 +1571,21 @@ export default function Admin() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Catatan admin</label>
+            <label className="block text-sm font-medium text-stone-700 mb-1">Catatan admin</label>
             <textarea
               rows={4}
               value={reportForm.admin_notes}
               onChange={(event) => setReportForm((prev) => ({ ...prev, admin_notes: event.target.value }))}
-              className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-200"
+              className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
               placeholder="Contoh: Review melanggar aturan spam, sudah dihapus."
             />
           </div>
 
           <div className="flex justify-end gap-3">
-            <button type="button" onClick={closeReportModal} className="rounded-xl border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm">
+            <button type="button" onClick={closeReportModal} className="rounded-xl border border-stone-300/70 px-4 py-2 text-sm text-stone-700 hover:bg-stone-100 transition-all duration-300 ease-out cursor-pointer">
               Batal
             </button>
-            <button type="submit" disabled={reportSubmitting} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60">
+            <button type="submit" disabled={reportSubmitting} className="rounded-xl bg-amber-700 px-4 py-2 text-sm font-medium text-stone-50 hover:bg-amber-800 disabled:opacity-60 transition-all duration-300 ease-out cursor-pointer">
               {reportSubmitting ? 'Menyimpan...' : 'Simpan moderasi'}
             </button>
           </div>

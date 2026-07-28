@@ -1,59 +1,18 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuth } from '../context/authContext';
 import { Link } from 'react-router-dom';
-import { REVIEW_VERB_EXCLUSIONS } from '../constants/reviewKeywordVerbs';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 const MAX_PHOTOS = 1;
 /** Batas ukuran file gambar per foto (2 MiB, selaras dengan backend). */
 const MAX_REVIEW_IMAGE_BYTES = 2 * 1024 * 1024;
 
-function StarRating({ value, hoverValue, onSelect, onHover }) {
-  return (
-    <div className="flex gap-0.5">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <button
-          key={star}
-          type="button"
-          onClick={() => onSelect(star)}
-          onMouseEnter={() => onHover(star)}
-          onMouseLeave={() => onHover(0)}
-          className="p-0.5 transition-transform hover:scale-110 focus:outline-none"
-          aria-label={`${star} bintang`}
-        >
-          <svg
-            className={`w-8 h-8 ${
-              star <= (hoverValue || value)
-                ? 'text-amber-500 fill-amber-500'
-                : 'text-gray-300 dark:text-gray-600'
-            }`}
-            fill="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-          </svg>
-        </button>
-      ))}
-    </div>
-  );
-}
-
 const ReviewForm = ({
   placeId,
   shopName,
   onReviewSubmitted,
-  reviewKeywords = [],
-  selectedKeyword = '',
-  onKeywordSelect,
 }) => {
   const { user, isAuthenticated } = useAuth();
-  const [showModal, setShowModal] = useState(false);
-  const [rating, setRating] = useState(0);
-  const [ratingLayanan, setRatingLayanan] = useState(0);
-  const [ratingSuasana, setRatingSuasana] = useState(0);
-  const [hoverRating, setHoverRating] = useState(0);
-  const [hoverLayanan, setHoverLayanan] = useState(0);
-  const [hoverSuasana, setHoverSuasana] = useState(0);
   const [text, setText] = useState('');
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -62,25 +21,7 @@ const ReviewForm = ({
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const fileInputRef = useRef(null);
 
-  const visibleReviewKeywords = useMemo(
-    () =>
-      reviewKeywords.filter(
-        (item) => !REVIEW_VERB_EXCLUSIONS.has(String(item.keyword || '').toLowerCase())
-      ),
-    [reviewKeywords]
-  );
-
-  const openModal = () => {
-    setShowModal(true);
-    setError('');
-    setSuccess('');
-  };
-
-  const closeModal = () => {
-    setShowModal(false);
-    setRating(0);
-    setRatingLayanan(0);
-    setRatingSuasana(0);
+  const resetForm = () => {
     setText('');
     setPhotos([]);
     setError('');
@@ -126,10 +67,6 @@ const ReviewForm = ({
       setError('Sesi Anda telah berakhir. Silakan login kembali.');
       return;
     }
-    if (!rating) {
-      setError('Silakan beri rating untuk tempat.');
-      return;
-    }
     if (!text.trim()) {
       setError('Silakan tulis pengalaman Anda.');
       return;
@@ -143,10 +80,8 @@ const ReviewForm = ({
       const payload = {
         user_id: user.id,
         place_id: placeId,
-        rating,
+        rating: 5,
         text: text.trim(),
-        rating_layanan: ratingLayanan || undefined,
-        rating_suasana: ratingSuasana || undefined,
         photos: photos.map((p) => ({ image_data: p.image_data }))
       };
       const response = await fetch(`${API_BASE}/api/reviews`, {
@@ -170,7 +105,7 @@ const ReviewForm = ({
         });
       }
       setTimeout(() => {
-        closeModal();
+        resetForm();
         setSuccess('');
       }, 1500);
       setTimeout(() => setShowSuccessPopup(false), 2500);
@@ -215,105 +150,10 @@ const ReviewForm = ({
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={openModal}
-        className="w-full py-3 px-4 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-xl border border-amber-500 dark:border-amber-600 transition-colors flex items-center justify-center gap-2"
-      >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-        </svg>
-        Tulis Review
-      </button>
-
-      {visibleReviewKeywords.length > 0 && (
-        <div className="mt-4 rounded-xl bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-700 p-4">
-          <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
-            <div>
-              <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                Terkait Coffee Shop ini
-              </h3>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {visibleReviewKeywords.map((item) => {
-              const isActive = selectedKeyword === item.keyword;
-              return (
-                <button
-                  key={item.keyword}
-                  type="button"
-                  onClick={() => onKeywordSelect?.(isActive ? '' : item.keyword)}
-                  className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm transition-colors ${
-                    isActive
-                      ? 'bg-amber-600 text-white shadow-sm'
-                      : 'bg-white dark:bg-zinc-900 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-zinc-600 hover:border-amber-400 hover:text-amber-700 dark:hover:text-amber-400'
-                  }`}
-                >
-                  <span>{item.label}</span>
-                  <span
-                    className={`rounded-full px-1.5 py-0.5 text-[11px] ${
-                      isActive
-                        ? 'bg-white/20 text-white'
-                        : 'bg-gray-100 dark:bg-zinc-700 text-gray-500 dark:text-gray-300'
-                    }`}
-                  >
-                    {item.count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {showModal && (
-        <>
-          <div
-            className="fixed inset-0 bg-black/50 z-[100]"
-            aria-hidden="true"
-            onClick={closeModal}
-          />
-          <div
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(95vw,520px)] max-h-[90vh] overflow-y-auto bg-white dark:bg-zinc-800 rounded-2xl border border-gray-200 dark:border-zinc-700 shadow-2xl z-[101]"
-            role="dialog"
-            aria-labelledby="review-modal-title"
-            onClick={(e) => e.stopPropagation()}
-          >
+      <div className="bg-white dark:bg-zinc-800 rounded-2xl border border-gray-200 dark:border-zinc-700 shadow-sm">
             <div className="p-5 sm:p-6">
-              <h2 id="review-modal-title" className="text-xl font-semibold text-gray-900 dark:text-white text-center mb-4">
-                {shopName}
-              </h2>
-
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold">
-                  {(user?.username || user?.full_name || 'U').toString().charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900 dark:text-white">
-                    {(user?.full_name || user?.username || 'User').toString().toUpperCase()}
-                  </p>
-                </div>
-              </div>
-
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rating tempat</p>
-                  <StarRating value={rating} hoverValue={hoverRating} onSelect={setRating} onHover={setHoverRating} />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Layanan</p>
-                  <StarRating value={ratingLayanan} hoverValue={hoverLayanan} onSelect={setRatingLayanan} onHover={setHoverLayanan} />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Suasana</p>
-                  <StarRating value={ratingSuasana} hoverValue={hoverSuasana} onSelect={setRatingSuasana} onHover={setHoverSuasana} />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Bagikan pengalaman Anda tentang tempat ini
-                  </label>
                   <textarea
                     value={text}
                     onChange={(e) => setText(e.target.value)}
@@ -368,13 +208,6 @@ const ReviewForm = ({
 
                 <div className="flex justify-end gap-2 pt-2">
                   <button
-                    type="button"
-                    onClick={closeModal}
-                    className="px-4 py-2 rounded-lg font-medium bg-gray-200 dark:bg-zinc-600 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-zinc-500 transition-colors"
-                  >
-                    Batal
-                  </button>
-                  <button
                     type="submit"
                     disabled={loading}
                     className="px-4 py-2 rounded-lg font-medium bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white transition-colors"
@@ -384,9 +217,7 @@ const ReviewForm = ({
                 </div>
               </form>
             </div>
-          </div>
-        </>
-      )}
+      </div>
     </>
   );
 };

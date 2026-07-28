@@ -128,16 +128,6 @@ export const adminService = {
     });
   },
 
-  getPreferenceSuggestions(params = {}) {
-    return apiCall(`/api/admin/preference-suggestions${buildQuery(params)}`);
-  },
-
-  deletePreferenceSuggestion(suggestionId) {
-    return apiCall(`/api/admin/preference-suggestions/${suggestionId}`, {
-      method: 'DELETE',
-    });
-  },
-
   getAICache() {
     return apiCall('/api/admin/ai/cache');
   },

@@ -6,6 +6,10 @@ import OptimizedImage from '../components/OptimizedImage';
 import FacilitiesTab from '../components/FacilitiesTab';
 import ReviewList from '../components/ReviewList';
 import CoffeeShopCard from '../components/CoffeeShopCard';
+import ShopVotesSummary from '../components/ShopVotesSummary';
+import ShopVoteModal from '../components/ShopVoteModal';
+import ShopOverallExperience from '../components/ShopOverallExperience';
+import ShopProsCons from '../components/ShopProsCons';
 import facilitiesData from '../data/facilities.json';
 import { addToRecentlyViewed } from '../utils/recentlyViewed';
 import { getCoffeeShopImage, ensureCoffeeShopImageMap } from '../utils/coffeeShopImages';
@@ -33,8 +37,11 @@ function ShopDetail() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [pendingAction, setPendingAction] = useState(null); // 'favorite' or 'wantToVisit'
   const [newReview, setNewReview] = useState(null); // For triggering ReviewList update
-  const [coFavoriteShops, setCoFavoriteShops] = useState([]);
   const [mapError, setMapError] = useState(false); // Track map load errors
+  const [voteSummary, setVoteSummary] = useState(null);
+  const [myVote, setMyVote] = useState(null);
+  const [isVoteModalOpen, setIsVoteModalOpen] = useState(false);
+  const [isSubmittingVote, setIsSubmittingVote] = useState(false);
   const reviewFormRef = useRef(null); // Ref untuk scroll ke review form
   const locationSectionRef = useRef(null); // Ref untuk scroll ke section lokasi
 
@@ -45,39 +52,52 @@ function ShopDetail() {
     return placeIdFromRoute;
   }, [shop?.place_id, placeIdFromRoute]);
 
-  // Rekomendasi dari pola pengguna lain (exclude_user_id = viewer agar bukan pola diri sendiri)
-  useEffect(() => {
-    const pid = placeIdForApi;
-    if (!pid) {
-      setCoFavoriteShops([]);
-      return undefined;
-    }
-    let cancelled = false;
-    (async () => {
-      try {
-        const qs = new URLSearchParams({ limit: '8' });
-        if (isAuthenticated && user?.id != null) {
-          qs.set('exclude_user_id', String(user.id));
-        }
-        const res = await fetch(
-          `${API_BASE}/api/coffeeshops/place/${encodeURIComponent(pid)}/co-favorites?${qs.toString()}`,
-        );
-        const data = await res.json().catch(() => ({}));
-        if (cancelled) return;
-        if (data.status === 'success' && Array.isArray(data.data) && data.data.length > 0) {
-          ensureCoffeeShopImageMap(data.data);
-          setCoFavoriteShops(data.data);
-        } else {
-          setCoFavoriteShops([]);
-        }
-      } catch {
-        if (!cancelled) setCoFavoriteShops([]);
-      }
-    })();
-    return () => {
-      cancelled = true;
+  const goldOverview = useMemo(() => {
+    const pid = placeIdForApi || shop?.place_id;
+    if (!pid || !facilitiesData?.facilities_by_place_id?.[pid]) return '';
+
+    const facs = facilitiesData.facilities_by_place_id[pid].facilities;
+    const highlights = facs.highlights || {};
+    const popular = facs.popular_for || {};
+    const atmosphere = facs.atmosphere || [];
+    const crowd = facs.crowd || [];
+
+    const translationMap = {
+      'good_coffee': 'kopi yang enak',
+      'good_desserts': 'pencuci mulut yang lezat',
+      'good_tea_selection': 'pilihan teh yang beragam',
+      'sports': 'cocok untuk menyaksikan pertandingan olahraga',
+      'live_music': 'pertunjukan musik',
+      'live_performances': 'pertunjukan langsung',
+      'breakfast': 'sarapan',
+      'lunch': 'makan siang',
+      'dinner': 'makan malam',
+      'solo_dining': 'bersantai sendiri (me time)',
+      'good_for_working_on_laptop': 'bekerja menggunakan laptop (wfc)',
+      'berkelompok': 'keluarga, komunitas',
+      'mahasiswa': 'mahasiswa',
+      'ramah_keluarga': 'keluarga',
+      'turis': 'turis'
     };
-  }, [placeIdForApi, isAuthenticated, user?.id]);
+
+    const translate = (key) => translationMap[key] || key.replace(/_/g, ' ');
+
+    const hList = Object.keys(highlights).filter(k => highlights[k]).map(translate);
+    const pList = Object.keys(popular).filter(k => popular[k]).map(translate);
+    const aList = atmosphere;
+    const cList = crowd.map(translate);
+
+    const hStr = hList.length > 0 ? hList.join(', ') : 'berbagai sajian';
+    const pStr = pList.length > 0 ? pList.join(', ') : 'bersantai';
+    const aStr = aList.length > 0 ? aList.join(', ') : 'nyaman';
+    const cStr = cList.length > 0 ? cList.join(', ') : '';
+
+    let summary = `${shop?.name || 'Tempat ini'} adalah coffee shop yang memiliki keunggulan pada ${hStr}. Tempat ini sangat populer untuk ${pStr} dengan suasana yang ${aStr}.`;
+    if (cStr) {
+      summary += ` Pengunjung tempat ini mayoritas seperti ${cStr}.`;
+    }
+    return summary;
+  }, [placeIdForApi, shop?.place_id, shop?.name]);
 
   // Handle scroll to review form setelah login
   useEffect(() => {
@@ -231,6 +251,130 @@ function ShopDetail() {
     
     checkFavoriteStatus();
   }, [placeIdForApi, isAuthenticated, user?.id]);
+
+  // Fetch vote summary (agregat semua user) untuk coffee shop ini
+  const fetchVoteSummary = async (pid) => {
+    if (!pid) return;
+    try {
+      const response = await fetch(`${API_BASE}/api/coffeeshops/${encodeURIComponent(pid)}/votes/summary`);
+      if (response.ok) {
+        const payload = await response.json();
+        if (payload?.status === 'success') {
+          setVoteSummary(payload);
+        }
+      }
+    } catch (err) {
+      console.error('[ShopDetail] Error fetching vote summary:', err);
+    }
+  };
+
+  // Fetch vote milik user yang sedang login untuk coffee shop ini
+  const fetchMyVote = async (pid) => {
+    if (!pid || !isAuthenticated || !user?.id) {
+      setMyVote(null);
+      return;
+    }
+    try {
+      const response = await fetch(
+        `${API_BASE}/api/coffeeshops/${encodeURIComponent(pid)}/votes/me?user_id=${Number(user.id)}`,
+      );
+      if (response.ok) {
+        const payload = await response.json();
+        setMyVote(payload?.vote || null);
+      }
+    } catch (err) {
+      console.error('[ShopDetail] Error fetching my vote:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (!placeIdForApi) return;
+    fetchVoteSummary(placeIdForApi);
+    fetchMyVote(placeIdForApi);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [placeIdForApi, isAuthenticated, user?.id]);
+
+  const openVoteModal = () => {
+    if (!isAuthenticated || !user?.id) {
+      setPendingAction('vote');
+      setShowLoginModal(true);
+      return;
+    }
+    setIsVoteModalOpen(true);
+  };
+
+  const handleSubmitVote = async (voteData) => {
+    const pid = placeIdForApi;
+    if (!pid || !user?.id) return;
+
+    setIsSubmittingVote(true);
+    try {
+      const response = await fetch(`${API_BASE}/api/coffeeshops/${encodeURIComponent(pid)}/votes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: Number(user.id), ...voteData }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || payload?.status !== 'success') {
+        setNotification({ type: 'error', message: payload?.message || 'Gagal menyimpan vote' });
+        return;
+      }
+      setNotification({ type: 'added', message: 'Vote berhasil disimpan!' });
+      setIsVoteModalOpen(false);
+      await Promise.all([fetchVoteSummary(pid), fetchMyVote(pid)]);
+    } catch (err) {
+      console.error('[ShopDetail] Error submitting vote:', err);
+      setNotification({ type: 'error', message: 'Terjadi kesalahan saat menyimpan vote' });
+    } finally {
+      setIsSubmittingVote(false);
+    }
+  };
+
+  // Klik langsung pada opsi rating/status kunjungan di ShopVotesSummary:
+  // submit vote saat itu juga tanpa membuka ShopVoteModal. Klik ulang pada
+  // opsi yang sama akan membatalkan (unset) pilihan tersebut.
+  const handleQuickVote = async (field, key) => {
+    if (!isAuthenticated || !user?.id) {
+      setPendingAction('vote');
+      setShowLoginModal(true);
+      return;
+    }
+    const pid = placeIdForApi;
+    if (!pid || isSubmittingVote) return;
+
+    const nextValue = myVote?.[field] === key ? null : key;
+    const voteData = {
+      presence: myVote?.presence ?? null,
+      rating: myVote?.rating ?? null,
+      best_for: myVote?.best_for || [],
+      pelayanan: myVote?.pelayanan ?? null,
+      kebersihan: myVote?.kebersihan ?? null,
+      kenyamanan: myVote?.kenyamanan ?? null,
+      harga: myVote?.harga ?? null,
+      [field]: nextValue,
+    };
+
+    setIsSubmittingVote(true);
+    try {
+      const response = await fetch(`${API_BASE}/api/coffeeshops/${encodeURIComponent(pid)}/votes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: Number(user.id), ...voteData }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || payload?.status !== 'success') {
+        setNotification({ type: 'error', message: payload?.message || 'Gagal menyimpan vote' });
+        return;
+      }
+      setNotification({ type: 'added', message: 'Vote berhasil disimpan!' });
+      await Promise.all([fetchVoteSummary(pid), fetchMyVote(pid)]);
+    } catch (err) {
+      console.error('[ShopDetail] Error submitting quick vote:', err);
+      setNotification({ type: 'error', message: 'Terjadi kesalahan saat menyimpan vote' });
+    } finally {
+      setIsSubmittingVote(false);
+    }
+  };
 
   const toggleFavorite = async () => {
     // If guest, show login modal
@@ -420,22 +564,45 @@ function ShopDetail() {
           </div>
         </div>
 
-        {/* Informasi Utama */}
-        <div className="space-y-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3 break-words">
-              {shop.name}
-            </h1>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center bg-amber-50 dark:bg-amber-900/20 px-3 py-1.5 rounded-lg">
-                <span className="text-amber-500 text-lg">⭐</span>
-                <span className="ml-1.5 text-lg font-semibold text-gray-900 dark:text-white">
-                  {shop.rating || 'N/A'}
-                </span>
-              </div>
+        {/* Nama Coffee Shop */}
+        <div className="mb-6">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3 break-words">
+            {shop.name}
+          </h1>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center bg-amber-50 dark:bg-amber-900/20 px-3 py-1.5 rounded-lg">
+              <span className="text-amber-500 text-lg">⭐</span>
+              <span className="ml-1.5 text-lg font-semibold text-gray-900 dark:text-white">
+                {shop.rating || 'N/A'}
+              </span>
             </div>
           </div>
+        </div>
 
+        {/* Overview gold summary non-LLM untuk pembanding evaluasi summary */}
+        {goldOverview && (
+          <section className="mb-6 rounded-xl border border-amber-200 bg-amber-50/70 p-4 sm:p-5 dark:border-amber-900/40 dark:bg-amber-950/20">
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white shadow-sm" aria-hidden>
+                <svg className="h-5 w-5" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M4 19.5A2.5 2.5 0 016.5 17H20"></path>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"></path>
+                </svg>
+              </span>
+              <div className="min-w-0">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+                  Overview
+                </h2>
+                <p className="mt-2 text-sm sm:text-base leading-7 text-gray-700 dark:text-gray-300">
+                  {goldOverview}
+                </p>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Informasi Utama */}
+        <div className="space-y-4">
           {/* Alamat */}
           <div className="flex items-start gap-3 p-4 bg-gray-50 dark:bg-zinc-700/50 rounded-lg">
             <svg className="w-5 h-5 text-gray-600 dark:text-gray-400 mt-0.5 flex-shrink-0" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" stroke="currentColor" viewBox="0 0 24 24">
@@ -491,6 +658,39 @@ function ShopDetail() {
         </div>
       </div>
 
+      {/* Votes Section */}
+      {shop?.place_id && (
+        <div className="mt-6 sm:mt-8">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-rose-400 to-pink-500 text-white shadow-md text-lg">
+                  🗳️
+                </span>
+                Votes Pengunjung
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 max-w-2xl">
+                Klik langsung salah satu opsi rating atau status kunjungan untuk vote instan. Gunakan tombol di kanan untuk mengatur detail vote lainnya (best for & slider).
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={openVoteModal}
+              className="flex-shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold shadow-sm transition-colors cursor-pointer"
+            >
+              <span>⭐</span>
+              <span>{myVote ? 'Edit My Vote' : 'My Votes'}</span>
+            </button>
+          </div>
+          <ShopVotesSummary
+            summary={voteSummary}
+            myVote={myVote}
+            onSelectRating={(key) => handleQuickVote('rating', key)}
+            onSelectPresence={(key) => handleQuickVote('presence', key)}
+            isSubmitting={isSubmittingVote}
+          />
+        </div>
+      )}
 
       {/* Ringkasan facilities (popular_for, highlights, atmosphere, amenities) */}
       {shop?.place_id && facilitiesData?.facilities_by_place_id?.[shop.place_id] && (
@@ -510,6 +710,31 @@ function ShopDetail() {
           </div>
           <FacilitiesTab facilities={facilitiesData.facilities_by_place_id[shop.place_id].facilities} />
         </div>
+      )}
+
+      {/* Overall Experience (rata-rata pelayanan, kebersihan, kenyamanan, harga) */}
+      <ShopOverallExperience
+        summary={voteSummary}
+        myVote={myVote}
+        isAuthenticated={isAuthenticated}
+        onSubmit={handleSubmitVote}
+        onRequireLogin={() => {
+          setPendingAction('vote');
+          setShowLoginModal(true);
+        }}
+      />
+
+      {/* Pros & Cons (What People Say) */}
+      {shop?.place_id && (
+        <ShopProsCons
+          placeId={placeIdForApi}
+          user={user}
+          isAuthenticated={isAuthenticated}
+          onRequireLogin={() => {
+            setPendingAction('vote');
+            setShowLoginModal(true);
+          }}
+        />
       )}
 
       {/* Static Map */}
@@ -576,33 +801,6 @@ function ShopDetail() {
         </div>
       </div>
 
-      {/* User yang menyukai ini juga menyukai */}
-      {coFavoriteShops.length > 0 && (
-        <div className="mt-6 sm:mt-8">
-          <div className="mb-4">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <span
-                className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-slate-800 shadow-md text-lg ring-1 ring-indigo-500/30 dark:from-indigo-500 dark:to-slate-900 dark:ring-indigo-400/25"
-                aria-hidden
-              >
-                💕
-              </span>
-              Pengguna lain yang menyukai ini juga menyukai
-            </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 max-w-2xl">
-              Coffee shop lain berdasarkan pola favorit pengguna lain yang juga menyukai tempat ini
-              {isAuthenticated ? ' (bukan dari pola favorit Anda sendiri).' : '.'}
-            </p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-            {coFavoriteShops.map((s) => (
-              <div key={s.place_id} className="transition duration-300 hover:shadow-xl">
-                <CoffeeShopCard shop={s} />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Reviews Section */}
       <div className="mt-6 sm:mt-8 space-y-6" ref={reviewFormRef}>
@@ -783,6 +981,17 @@ function ShopDetail() {
         </button>
       </div>
 
+      {/* Vote Modal */}
+      <ShopVoteModal
+        isOpen={isVoteModalOpen}
+        onClose={() => setIsVoteModalOpen(false)}
+        shopName={shop?.name}
+        summary={voteSummary}
+        myVote={myVote}
+        onSubmit={handleSubmitVote}
+        isSubmitting={isSubmittingVote}
+      />
+
       {/* Login Modal untuk Guest */}
       {showLoginModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -791,7 +1000,11 @@ function ShopDetail() {
               Login Diperlukan
             </h3>
             <p className="text-gray-700 dark:text-gray-300 mb-6">
-              Untuk {pendingAction === 'favorite' ? 'menambahkan ke favorit' : 'menambahkan ke want to visit'}, 
+              Untuk {pendingAction === 'favorite'
+                ? 'menambahkan ke favorit'
+                : pendingAction === 'vote'
+                  ? 'memberikan vote'
+                  : 'menambahkan ke want to visit'}, 
               Anda perlu login terlebih dahulu. Apakah Anda ingin login sekarang?
             </p>
             <div className="flex justify-end gap-3">

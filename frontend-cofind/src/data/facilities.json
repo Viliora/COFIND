@@ -220,7 +220,7 @@
     },
     "ChIJC3_RpddZHS4RMiDp7-6TemY": {
       "place_id": "ChIJC3_RpddZHS4RMiDp7-6TemY",
-      "name": "Rumah Kita Coffee & Eatery",
+      "name": "Butu Kopi",
       "facilities": {
         "service_options": {
           "outdoor_seating": true,
@@ -294,7 +294,7 @@
     },
     "ChIJpVctpWBZHS4RdUbSlT-pSl8": {
       "place_id": "ChIJpVctpWBZHS4RdUbSlT-pSl8",
-      "name": "CW Coffee Tanjung Raya",
+      "name": "KOKOTUKU",
       "facilities": {
         "accessibility": {
           "wheelchair_accessible_seating": false,
@@ -366,61 +366,70 @@
     },
     "ChIJBVWfsoFZHS4Rakb44yanMjs": {
       "place_id": "ChIJBVWfsoFZHS4Rakb44yanMjs",
-      "name": "Osamu Coffee",
+      "name": "Tropic di Suprapto",
       "facilities": {
         "service_options": {
           "outdoor_seating": true,
-          "contactless_delivery": true,
           "delivery": true,
           "takeaway": true,
           "dine_in": true
         },
+        "popular_for": {
+          "breakfast": true,
+          "dinner": true,
+          "solo_dining": true,
+          "good_for_working_on_laptop": true
+        },
         "highlights": {
           "good_coffee": true,
+          "great_dessert": true,
           "good_tea_selection": true
         },
         "offerings": {
-          "alcohol": true,
+          "quick_bite": true,
           "coffee": true
         },
         "dining_options": {
           "breakfast": true,
+          "brunch": true,
           "lunch": true,
           "dinner": true,
+          "dessert": true,
           "seating": true,
           "table_service": true
         },
         "amenities": {
-          "bar": true,
-          "toilet": true,
-          "wifi": true,
-          "free_wifi": true
+          "toilet": true
         },
         "atmosphere": [
           "nyaman",
+          "romantis",
           "santai",
           "tenang",
           "trendi"
         ],
         "crowd": [
-          "berkelompok",
-          "mahasiswa",
-          "ramah_keluarga",
-          "turis"
-        ],
+        "berkelompok",
+        "mahasiswa",
+        "turis"
+      ],
         "planning": {
           "accepts_reservations": true
         },
         "payments": {
           "debit_card": true,
+          "credit_card": true,
           "nfc_mobile_payments": true
         },
         "children": {
-          "good_for_kids": true
-        },
+        "good_for_kids": true,
+        "high_chairs": true,
+        "kids_menu": true
+      },
         "parking": {
           "parking_available": true,
-          "free_parking_lot": true
+          "paid_street_parking": true,
+          "paid_parking_lot": true
         },
         "meta": {
           "source": "google_maps_copy_element",
@@ -532,7 +541,7 @@
     },
     "ChIJIRuUuwNZHS4RrhnXINPqQQ4": {
       "place_id": "ChIJIRuUuwNZHS4RrhnXINPqQQ4",
-      "name": "Sidedoors Coffee Shop",
+      "name": "Lokale KHW Hasyim",
       "facilities": {
         "accessibility": {
           "wheelchair_accessible_seating": false,
@@ -718,7 +727,7 @@
     },
     "ChIJKX36yixZHS4ROQfX-hNWhj0": {
       "place_id": "ChIJKX36yixZHS4ROQfX-hNWhj0",
-      "name": "Aming Coffee Siantan",
+      "name": "Silang Coffee",
       "facilities": {
         "accessibility": {
           "wheelchair_accessible_toilet": true,
@@ -866,6 +875,90 @@
         }
       }
     },
+    "ChIJ6fOdOEBZHS4RcV3VfZzhYx0": {
+    "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+    "name": "Aming Coffee Ilham",
+    "facilities": {
+      "accessibility": {
+        "wheelchair_accessible_seating": true,
+        "wheelchair_accessible_entrance": false,
+        "wheelchair_accessible_parking": true,
+        "wheelchair_accessible_toilet": true
+      },
+      "service_options": {
+        "outdoor_seating": true,
+        "contactless_delivery": false,
+        "delivery": true,
+        "takeaway": true,
+        "dine_in": true
+      },
+      "highlights": {
+        "good_coffee": true,
+        "good_desserts": false,
+        "sports": true,
+        "good_tea_selection": true
+      },
+      "popular_for": {
+        "breakfast": false,
+        "lunch": false,
+        "good_for_working_on_laptop": true
+      },
+      "offerings": {
+        "quick_bite": true,
+        "late_night_food": true,
+        "coffee": true
+      },
+      "dining_options": {
+        "breakfast": true,
+        "brunch": true,
+        "lunch": true,
+        "dinner": true,
+        "dessert": false,
+        "seating": true,
+        "table_service": true
+      },
+      "amenities": {
+        "toilet": true,
+        "gender_neutral_toilet": true,
+        "wifi": true,
+        "free_wifi": true
+      },
+      "atmosphere": [
+        "nyaman",
+        "santai",
+        "tenang",
+        "trendi"
+      ],
+      "crowd": [
+        "berkelompok",
+        "mahasiswa",
+        "ramah keluarga",
+        "turis"
+      ],
+      "planning": {
+        "accepts_reservations": true,
+        "usually_has_wait": false
+      },
+      "payments": {
+        "debit_card": true,
+        "credit_card": true,
+        "meal_coupons": true,
+        "nfc_mobile_payments": true
+      },
+      "children": {
+        "kids_menu": true
+      },
+      "parking": {
+        "paid_street_parking": true,
+        "paid_parking_lot": true,
+        "plenty_of_parking": true
+      },
+      "meta": {
+        "source": "google_maps_copy_element",
+        "last_updated": "2025-12-22"
+      }
+    }
+  },
     "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4": {
       "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
       "name": "Aming Coffee Podomoro",

@@ -48,11 +48,9 @@ export default function ShopList() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [activeFilter] = useState('all');
   const [selectedPills, setSelectedPills] = useState([]);
   const [confirmedPills, setConfirmedPills] = useState([]);
   const [llmRecommendations, setLlmRecommendations] = useState([]);
-  const [recommendationIntentContext, setRecommendationIntentContext] = useState(null);
   const [pillRecommendLoading, setPillRecommendLoading] = useState(false);
   const [pillRecommendError, setPillRecommendError] = useState('');
   const [recommendationNotification, setRecommendationNotification] = useState(null);
@@ -83,7 +81,6 @@ export default function ShopList() {
     setSelectedPills([]);
     setConfirmedPills([]);
     setLlmRecommendations([]);
-    setRecommendationIntentContext(null);
     setPillRecommendError('');
     setShowRecommendationModal(false);
     setRecommendationNotification(null);
@@ -278,46 +275,8 @@ export default function ShopList() {
     [coffeeShops]
   );
 
-  // Filter berdasarkan kategori
-  const getFilteredShopsByCategory = (shops) => {
-    switch (activeFilter) {
-      case 'top-rated':
-        return shops
-          .filter((shop) => {
-            const rating = getGoogleRating(shop);
-            return rating >= 4.5 && rating <= 5.0;
-          })
-          .sort((a, b) => {
-            const ratingA = getGoogleRating(a);
-            const ratingB = getGoogleRating(b);
-            if (ratingB !== ratingA) return ratingB - ratingA;
-            return getGoogleReviewCount(b) - getGoogleReviewCount(a);
-          });
-      case 'popular':
-        return shops
-          .filter((shop) => getGoogleReviewCount(shop) > 1000)
-          .sort((a, b) => {
-            const cDiff = getGoogleReviewCount(b) - getGoogleReviewCount(a);
-            if (cDiff !== 0) return cDiff;
-            return getGoogleRating(b) - getGoogleRating(a);
-          });
-      case 'newest':
-        return shops
-          .filter(
-            (shop) => getGoogleRating(shop) >= 4.0 && getGoogleReviewCount(shop) < 100
-          )
-          .sort((a, b) => {
-            const ratingA = getGoogleRating(a);
-            const ratingB = getGoogleRating(b);
-            if (ratingB !== ratingA) return ratingB - ratingA;
-            return getGoogleReviewCount(a) - getGoogleReviewCount(b);
-          });
-      default:
-        return sortShopsByGoogleMaps(shops);
-    }
-  };
+  const getFilteredShopsByCategory = (shops) => sortShopsByGoogleMaps(shops);
 
-  // Quick recommendation fields (sama dengan LLMAnalyzer)
   const recommendationFields = CONTEXT_PILL_OPTIONS;
 
   // Jarak Haversine (km) antara dua koordinat
@@ -426,7 +385,6 @@ export default function ShopList() {
     setPillRecommendLoading(true);
     setPillRecommendError('');
     setLlmRecommendations([]);
-    setRecommendationIntentContext(null);
     setShowRecommendationModal(false);
     try {
       const res = await fetch(`${API_BASE}/api/recommend-by-preferences`, {
@@ -452,7 +410,6 @@ export default function ShopList() {
 
       if (data.status === 'success' && Array.isArray(data.recommendations)) {
         setLlmRecommendations(data.recommendations);
-        setRecommendationIntentContext(data.intent_context || null);
         if (data.recommendations.length === 0) {
           const emptyMessage = data?.message
             || 'Maaf, saat ini belum ada coffee shop yang cocok dengan konteks ini. Coba konteks lain.';
@@ -944,9 +901,7 @@ export default function ShopList() {
 
         <div className="flex items-center justify-between mb-4 sm:mb-6 flex-wrap gap-2">
           <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 border-b pb-2 flex-1">
-            {activeFilter === 'all' ? 'All Coffee Shops' : 
-             activeFilter === 'top-rated' ? '⭐ Top Rated Coffee Shops' :
-             activeFilter === 'newest' ? '💎 Hidden Gem Coffee Shops' : 'Coffee Shop Catalog'} ({filteredShops.length})
+            All Coffee Shops ({filteredShops.length})
           </h2>
           <div className="flex items-center gap-2">
             {!isOnline && !isLoading && (
@@ -1094,7 +1049,6 @@ export default function ShopList() {
         recommendations={llmRecommendations}
         shopsByKey={shopsByKey}
         confirmedPills={confirmedPills}
-        intentContext={recommendationIntentContext}
       />
     </div>
   );

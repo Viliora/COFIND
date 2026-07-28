@@ -3,3 +3,5 @@
 pytest>=7.4
 jsonschema>=4.20
 locust>=2.24
+rouge-score>=0.1.2
+bert-score>=0.3.13
