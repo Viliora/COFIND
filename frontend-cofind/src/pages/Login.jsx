@@ -400,7 +400,7 @@ const Login = () => {
                         setError('');
                         setSuccess('');
                       }}
-                      className="text-white hover:text-orange-400 font-medium transition-colors"
+                      className="text-orange-400 hover:text-orange-300 font-semibold underline underline-offset-2 transition-colors"
                     >
                       Daftar sekarang
                     </button>
@@ -415,7 +415,7 @@ const Login = () => {
                         setError('');
                         setSuccess('');
                       }}
-                      className="text-white hover:text-orange-400 font-medium transition-colors"
+                      className="text-orange-400 hover:text-orange-300 font-semibold underline underline-offset-2 transition-colors"
                     >
                       Masuk di sini
                     </button>
@@ -430,7 +430,7 @@ const Login = () => {
                         setError('');
                         setSuccess('');
                       }}
-                      className="text-white hover:text-orange-400 font-medium transition-colors"
+                      className="text-orange-400 hover:text-orange-300 font-semibold underline underline-offset-2 transition-colors"
                     >
                       Kembali ke login
                     </button>
