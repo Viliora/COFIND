@@ -125,7 +125,7 @@ const Login = () => {
         }
         // Enhanced password validation
         if (password.length < 8) {
-          setError('Password minimal 8 karakter. Untuk keamanan lebih baik, gunakan minimal 12 karakter dengan kombinasi huruf besar, huruf kecil, angka, dan karakter khusus.');
+          setError('Password minimal 8 karakter.');
           setIsSubmitting(false);
           return;
         }
