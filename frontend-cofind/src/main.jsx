@@ -4,6 +4,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './index.css';
 import { BrowserRouter } from 'react-router-dom';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { registerServiceWorker } from './utils/sw-register';
 import ErrorBoundary from './components/ErrorBoundary';
 
@@ -28,6 +29,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <ErrorBoundary>
       <BrowserRouter>
         <App />
+        <SpeedInsights />
       </BrowserRouter>
     </ErrorBoundary>
   </React.StrictMode>,

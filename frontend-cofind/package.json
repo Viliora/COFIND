@@ -18,6 +18,7 @@
     "open:backend": "start http://localhost:5000"
   },
   "dependencies": {
+    "@vercel/speed-insights": "^2.0.0",
     "leaflet": "^1.9.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
