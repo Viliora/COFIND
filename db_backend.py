@@ -173,9 +173,36 @@ class AdaptingConnection:
 
 
 def get_connection() -> AdaptingConnection:
+    import time
+
     import psycopg2
+    from psycopg2 import OperationalError
 
     if not DATABASE_URL:
         raise RuntimeError("DATABASE_URL (atau SUPABASE_DB_URL) wajib untuk backend Postgres/Supabase.")
-    raw = psycopg2.connect(DATABASE_URL)
-    return AdaptingConnection(raw)
+
+    # Transient DNS / network blips (common with Supabase pooler) — retry briefly.
+    last_err: Optional[BaseException] = None
+    for attempt in range(3):
+        try:
+            raw = psycopg2.connect(DATABASE_URL, connect_timeout=10)
+            return AdaptingConnection(raw)
+        except OperationalError as e:
+            last_err = e
+            msg = str(e).lower()
+            transient = any(
+                s in msg
+                for s in (
+                    "could not translate host name",
+                    "name or service not known",
+                    "temporary failure in name resolution",
+                    "could not connect to server",
+                    "timeout expired",
+                    "connection timed out",
+                    "network is unreachable",
+                )
+            )
+            if not transient or attempt == 2:
+                raise
+            time.sleep(0.5 * (2 ** attempt))
+    raise last_err  # pragma: no cover

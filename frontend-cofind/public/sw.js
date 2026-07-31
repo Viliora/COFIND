@@ -1,9 +1,9 @@
 // Service Worker untuk Cofind dengan Optimized Caching Strategy
 // UPDATE CACHE VERSION SETIAP KALI ADA PERUBAHAN PENTING
-const CACHE_VERSION = 'cofind-v6'; // FIX: Disabled HTML caching, session persistence
-const CACHE_SHELL = 'cofind-shell-v6';      // ONLY static JS/CSS chunks (bukan HTML)
-const CACHE_STATIC = 'cofind-static-v6';    // Images, fonts, dll
-const CACHE_CONTENT = 'cofind-content-v6';  // API responses, dynamic content (DISABLED)
+const CACHE_VERSION = 'cofind-v7'; // FIX: API fetch tanpa custom headers (hindari CORS preflight)
+const CACHE_SHELL = 'cofind-shell-v7';      // ONLY static JS/CSS chunks (bukan HTML)
+const CACHE_STATIC = 'cofind-static-v7';    // Images, fonts, dll
+const CACHE_CONTENT = 'cofind-content-v7';  // API responses, dynamic content (DISABLED)
 // HTML pages NOT cached - always fetch fresh untuk prevent stale login page
 
 // Application Shell Assets - HANYA static assets, bukan HTML pages
@@ -414,17 +414,12 @@ async function networkOnlyStrategy(request) {
       throw new Error('Network response not OK');
     }
     
+    // Cache-bust via query only — jangan set If-None-Match / Cache-Control di request
+    // (header non-simple memicu CORS preflight yang sering gagal ke backend cross-origin).
     url.searchParams.set('_sw_t', Date.now().toString());
-    const cacheBustingHeaders = new Headers(request.headers);
-    cacheBustingHeaders.set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
-    cacheBustingHeaders.set('Pragma', 'no-cache');
-    cacheBustingHeaders.set('Expires', '0');
-    cacheBustingHeaders.set('If-Modified-Since', '0');
-    cacheBustingHeaders.set('If-None-Match', '*');
-    
     const cacheBustingRequest = new Request(url.toString(), {
       method: request.method,
-      headers: cacheBustingHeaders,
+      headers: request.headers,
       body: request.body,
       mode: request.mode,
       credentials: request.credentials,
@@ -432,26 +427,11 @@ async function networkOnlyStrategy(request) {
       redirect: request.redirect
     });
     
-    const networkResponse = await fetch(cacheBustingRequest, {
-      cache: 'no-store',
-      headers: cacheBustingHeaders
-    });
+    const networkResponse = await fetch(cacheBustingRequest, { cache: 'no-store' });
     
     if (networkResponse && networkResponse.ok) {
-      // Create new response with no-cache headers
-      const responseHeaders = new Headers(networkResponse.headers);
-      responseHeaders.set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
-      responseHeaders.set('Pragma', 'no-cache');
-      responseHeaders.set('Expires', '0');
-      
-      const noCacheResponse = new Response(networkResponse.body, {
-        status: networkResponse.status,
-        statusText: networkResponse.statusText,
-        headers: responseHeaders
-      });
-      
-      // CRITICAL: Don't cache this response
-      return noCacheResponse;
+      // CRITICAL: Don't cache this response — return as-is
+      return networkResponse;
     }
     
     throw new Error('Network response not OK');

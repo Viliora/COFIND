@@ -82,14 +82,37 @@ except Exception as _fb_err:
 print(f"[INFO] LLM backend aktif: {LLM_BACKEND} | model={HF_MODEL}")
 print("[INFO] Database backend: postgresql (Supabase)")
 
-# Enable CORS for /api/* (preflight + allow Content-Type for POST JSON)
+# CORS: frontend Vercel + local Vite. Override lewat CORS_ORIGINS (comma-separated).
+_CORS_DEFAULT_ORIGINS = (
+    "https://cofind-pi.vercel.app,"
+    "http://localhost:5173,"
+    "http://127.0.0.1:5173,"
+    "http://localhost:3000,"
+    "http://127.0.0.1:3000"
+)
+_cors_origins_raw = (os.getenv("CORS_ORIGINS") or "".join(_CORS_DEFAULT_ORIGINS)).strip()
+_CORS_ORIGINS = [o.strip() for o in _cors_origins_raw.split(",") if o.strip()] or ["*"]
+_CORS_ALLOW_HEADERS = [
+    "Content-Type",
+    "Authorization",
+    "Cache-Control",
+    "Pragma",
+    "Expires",
+    "If-Modified-Since",
+    "If-None-Match",
+    "Accept",
+    "X-Requested-With",
+]
+_CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+
 CORS(
     app,
     resources={r"/api/*": {
-        "origins": "*",
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"],
-        "expose_headers": ["Content-Type"],
+        "origins": _CORS_ORIGINS,
+        "methods": _CORS_ALLOW_METHODS,
+        "allow_headers": _CORS_ALLOW_HEADERS,
+        "expose_headers": ["Content-Type", "ETag"],
+        "max_age": 86400,
     }},
     supports_credentials=False,
 )
@@ -97,14 +120,32 @@ CORS(
 
 @app.after_request
 def add_cors_headers_to_response(response):
-    """Pastikan semua response (termasuk error 4xx/5xx) punya CORS headers agar browser tidak blok."""
-    if request.path.startswith("/api/"):
-        if "Access-Control-Allow-Origin" not in response.headers:
-            response.headers["Access-Control-Allow-Origin"] = "*"
-        if "Access-Control-Allow-Methods" not in response.headers:
-            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-        if "Access-Control-Allow-Headers" not in response.headers:
-            response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    """Pastikan semua response /api/* (termasuk 4xx/5xx & preflight) punya CORS headers."""
+    if not request.path.startswith("/api/"):
+        return response
+
+    origin = request.headers.get("Origin")
+    if origin and ("*" in _CORS_ORIGINS or origin in _CORS_ORIGINS):
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Vary"] = "Origin"
+    elif "*" in _CORS_ORIGINS:
+        response.headers["Access-Control-Allow-Origin"] = "*"
+    elif _CORS_ORIGINS:
+        # Fallback: izinkan origin pertama yang dikonfigurasi
+        response.headers["Access-Control-Allow-Origin"] = _CORS_ORIGINS[0]
+
+    response.headers["Access-Control-Allow-Methods"] = ", ".join(_CORS_ALLOW_METHODS)
+    # Echo requested headers jika ada (preflight), plus daftar default
+    requested = request.headers.get("Access-Control-Request-Headers")
+    if requested:
+        allowed = {h.strip().lower() for h in _CORS_ALLOW_HEADERS}
+        extra = [h.strip() for h in requested.split(",") if h.strip().lower() in allowed]
+        response.headers["Access-Control-Allow-Headers"] = ", ".join(
+            dict.fromkeys(_CORS_ALLOW_HEADERS + extra)
+        )
+    else:
+        response.headers["Access-Control-Allow-Headers"] = ", ".join(_CORS_ALLOW_HEADERS)
+    response.headers["Access-Control-Max-Age"] = "86400"
     return response
 
 # Root endpoint
