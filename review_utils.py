@@ -230,6 +230,57 @@ def get_reviews_for_shop(place_id, limit=50, current_user_id=None):
     except Exception as e:
         return {'success': False, 'error': str(e)}
 
+
+def get_reviews_for_recommendation_batch(place_ids):
+    """
+    Ambil review lean untuk pipeline rekomendasi (tanpa foto/like).
+    Return: {'success': True, 'by_place': {place_id: [review_dict, ...]}}
+    """
+    place_ids = [str(pid).strip() for pid in (place_ids or []) if str(pid).strip()]
+    if not place_ids:
+        return {'success': True, 'by_place': {}}
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        placeholders = ','.join('?' * len(place_ids))
+        rows = cursor.execute(
+            f'''
+            SELECT r.id, r.user_id, r.shop_id, r.place_id, r.rating, r.review_text,
+                   r.created_at, r.updated_at, u.username
+            FROM reviews r
+            LEFT JOIN users u ON r.user_id = u.id
+            WHERE r.place_id IN ({placeholders})
+            ORDER BY r.created_at DESC
+            ''',
+            place_ids,
+        ).fetchall()
+        conn.close()
+
+        by_place = {pid: [] for pid in place_ids}
+        for review in rows:
+            pid = review[3]
+            if pid not in by_place:
+                by_place[pid] = []
+            by_place[pid].append({
+                'id': review[0],
+                'user_id': review[1],
+                'shop_id': review[2],
+                'place_id': pid,
+                'rating': review[4],
+                'text': review[5],
+                'created_at': review[6],
+                'updated_at': review[7],
+                'username': review[8],
+                'full_name': review[8],
+                'photos': [],
+                'like_count': 0,
+                'user_has_liked': False,
+            })
+        return {'success': True, 'by_place': by_place}
+    except Exception as e:
+        return {'success': False, 'error': str(e), 'by_place': {}}
+
+
 def get_user_review_stats(user_id):
     """Get total review count and average rating for a user."""
     try:

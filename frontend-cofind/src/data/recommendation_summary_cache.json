@@ -67,25 +67,25 @@
   },
   "ChIJ6fOdOEBZHS4RcV3VfZzhYx0::bermain game": {
     "version": "v1",
-    "timestamp": 1781696817.4401386,
+    "timestamp": 1785767370.9812567,
     "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
     "pills": [
       "bermain game"
     ],
     "shop_name": "Aming Coffee Ilham",
     "review_count": 5,
-    "summary": "Kesimpulan: Aming Coffee Ilham adalah tempat yang nyaman untuk bermain game dan nongkrong bersama teman-teman. Kelebihannya, tempatnya luas, ruang parkir kendaraan juga luas, dan wifi lancar. Catatan, beberapa review mengatakan bahwa toiletnya bau karena tidak ada pewangi toilet."
+    "summary": "Kesimpulan: Aming Coffee Ilham adalah tempat yang nyaman dan santai untuk bermain game dan nongkrong. Kelebihannya, kopi enak, pilihan teh beragam, dan wifi lancar. Catatan: beberapa review menyebutkan bahwa toiletnya bau dan akses wastafelnya tidak nyaman."
   },
   "ChIJyRLXBlJYHS4RWNj0yvAvSAQ::bermain game": {
     "version": "v1",
-    "timestamp": 1781696817.4401596,
+    "timestamp": 1785767370.9812748,
     "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
     "pills": [
       "bermain game"
     ],
     "shop_name": "Aming Coffee",
-    "review_count": 5,
-    "summary": "Kesimpulan: Aming Coffee adalah tempat yang nyaman dan santai untuk bermain game dan nongkrong bersama teman-teman. Kelebihannya, tempatnya nyaman, santai, dan trendi, serta wifi lancar. Catatan, beberapa review mengatakan bahwa tempatnya ramai di malam hari dan tidak nyaman bagi mereka yang sensitif terhadap asap/rokok."
+    "review_count": 6,
+    "summary": "Kesimpulan: Aming Coffee adalah tempat yang nyaman dan santai untuk bermain game dan nongkrong. Kelebihannya, kopi enak, dessert enak, pilihan teh beragam, dan wifi lancar. Catatan: beberapa review menyebutkan bahwa tempatnya sangat ramai dan tidak nyaman bagi mereka yang sensitif terhadap asap/rokok."
   },
   "ChIJpVctpWBZHS4RdUbSlT-pSl8::bermain game": {
     "version": "v1",
@@ -218,5 +218,16 @@
     "shop_name": "Disela Coffee & Roastery",
     "review_count": 3,
     "summary": "Kesimpulan: Disela Coffee & Roastery adalah tempat yang nyaman dan tenang untuk bersantai dan menikmati kopi. Kelebihannya, tempatnya memiliki suasana yang santai, pilihan kopi yang lezat, serta pelayanan yang baik. Catatan: beberapa reviewer menyebutkan bahwa parkiran di tempat ini agak susah."
+  },
+  "ChIJE8-LfABZHS4R_MsSOwiHNL8::bermain game": {
+    "version": "v1",
+    "timestamp": 1785767370.981271,
+    "place_id": "ChIJE8-LfABZHS4R_MsSOwiHNL8",
+    "pills": [
+      "bermain game"
+    ],
+    "shop_name": "Seremoni Coffee",
+    "review_count": 3,
+    "summary": "Kesimpulan: Seremoni Coffee adalah tempat yang nyaman dan santai untuk bermain game dan nongkrong. Kelebihannya, kopi enak, pilihan teh beragam, dan wifi lancar. Catatan: beberapa review menyebutkan bahwa tempatnya sangat bersih dan memiliki detail yang baik."
   }
 }

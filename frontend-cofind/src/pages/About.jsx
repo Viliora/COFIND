@@ -62,7 +62,7 @@ const SECTIONS = [
       'react vite tailwind flask python sqlite backend frontend huggingface llm',
     paragraphs: [
       'Antarmuka: React, Vite, Tailwind CSS. Layanan backend: Flask (Python), penyimpanan data aplikasi termasuk SQLite untuk akun dan sesi.',
-      'Alur rekomendasi memakai ekspansi kata kunci, skor berbasis ulasan, dan ringkasan/penyusunan ulang kandidat lewat model LLM sesuai konfigurasi server.',
+      'Alur rekomendasi memakai keyword seed dari pill aktivitas, skor BM25 berbasis ulasan, lalu ringkasan hasil lewat model LLM.',
     ],
   },
   {
