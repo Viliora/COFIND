@@ -98,19 +98,74 @@ def get_replacement_pairs() -> tuple:
     return tuple(pairs)
 
 
+@lru_cache(maxsize=1)
+def _compiled_replacements() -> tuple:
+    """
+    Pisah aturan jadi dua bentuk agar normalisasi tidak perlu ribuan regex:
+      - token_map: src satu kata -> lookup dict O(1) per token
+      - multiword: src berisi spasi (jumlahnya sedikit) -> satu regex gabungan
+    """
+    token_map: Dict[str, str] = {}
+    multiword = []
+    for src, dest in get_replacement_pairs():
+        if ' ' in src:
+            multiword.append((src, dest))
+        else:
+            token_map[src] = dest
+
+    multiword_re = None
+    if multiword:
+        # Urutan panjang menurun sudah dijamin get_replacement_pairs().
+        pattern = '|'.join(re.escape(src) for src, _ in multiword)
+        multiword_re = re.compile(rf'\b(?:{pattern})\b')
+    return token_map, dict(multiword), multiword_re
+
+
+# Ekspansi bisa memunculkan token baru (mis. "wfc" -> "work from cafe").
+# Dua lintasan sudah cukup dan tetap jauh lebih murah daripada regex per aturan.
+_MAX_TOKEN_PASSES = 2
+
+
+def _apply_token_map(text: str, token_map: Dict[str, str]) -> str:
+    for _ in range(_MAX_TOKEN_PASSES):
+        tokens = text.split()
+        if not tokens:
+            return ''
+        changed = False
+        out = []
+        for token in tokens:
+            replacement = token_map.get(token)
+            if replacement is None:
+                out.append(token)
+                continue
+            out.append(replacement)
+            changed = True
+        text = ' '.join(out)
+        if not changed:
+            break
+    return text
+
+
+@lru_cache(maxsize=20000)
+def _normalize_cached(value: str) -> str:
+    text = _basic_clean(value)
+    if not text:
+        return ''
+    token_map, multiword_map, multiword_re = _compiled_replacements()
+    if multiword_re is not None:
+        text = multiword_re.sub(lambda m: multiword_map[m.group(0)], text)
+    text = _apply_token_map(text, token_map)
+    return re.sub(r'\s+', ' ', text).strip()
+
+
 def normalize_text_with_slang(value: str) -> str:
     """
     Normalisasi teks: lowercase, strip aksen, lalu canonical + slang map.
     Cocok untuk keyword match dan tokenisasi BM25.
     """
-    text = _basic_clean(value)
-    if not text:
-        return ''
-    for src, dest in get_replacement_pairs():
-        if not src:
-            continue
-        text = re.sub(rf'\b{re.escape(src)}\b', dest, text)
-    return re.sub(r'\s+', ' ', text).strip()
+    if not isinstance(value, str):
+        value = str(value or '')
+    return _normalize_cached(value)
 
 
 def tokenize_normalized(value: str) -> list:

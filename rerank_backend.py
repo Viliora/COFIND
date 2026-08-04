@@ -1,3 +1,11 @@
+"""
+DEPRECATED — tidak dipakai pipeline rekomendasi aktif.
+
+Pipeline Cofind sekarang: seed pill → BM25 hybrid → top-N (tanpa rerank).
+File ini dipertahankan hanya untuk referensi historis / eksperimen lokal.
+Jangan import dari app.py.
+"""
+
 from __future__ import annotations
 
 import os
