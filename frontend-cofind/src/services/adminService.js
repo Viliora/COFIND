@@ -148,4 +148,15 @@ export const adminService = {
   getSettings() {
     return apiCall('/api/admin/settings');
   },
+
+  getPreferenceSuggestions(params = {}) {
+    return apiCall(`/api/admin/preference-suggestions${buildQuery(params)}`);
+  },
+
+  updatePreferenceSuggestion(suggestionId, payload) {
+    return apiCall(`/api/admin/preference-suggestions/${suggestionId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
 };

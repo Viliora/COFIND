@@ -45,12 +45,30 @@ from recommendation_feedback_utils import (
     get_not_helpful_place_ids,
     get_feedback_evaluation_summary,
 )
+from preference_suggestion_utils import (
+    ensure_preference_suggestions_table,
+    create_preference_suggestion,
+    list_preference_suggestions,
+    update_preference_suggestion,
+)
 from slang_normalize import normalize_text_with_slang, tokenize_normalized, DOMAIN_CANONICAL_REPLACEMENTS
 from bm25_utils import (
     build_query_tokens,
     build_bm25_index,
     score_shops_bm25,
     normalize_bm25_scores,
+)
+from llm_recommender import (
+    build_user_taste_profile,
+    corpus_vocabulary_from_tokens,
+    expand_pill_keywords,
+    format_user_taste_prompt_block,
+    grounding_check_enabled as llm_grounding_check_enabled,
+    llm_rerank_candidates,
+    pipeline_config as llm_pipeline_config,
+    rerank_enabled as llm_rerank_enabled,
+    shop_corpus_text,
+    ungrounded_quotes,
 )
 from pros_cons_utils import get_pros_cons, toggle_pros_cons_vote, maybe_refresh_pros_cons
 from favorites_utils import (
@@ -67,8 +85,8 @@ from db_backend import dict_from_row, get_connection
 app = Flask(__name__)
 
 # Database: lihat db_backend.py (Supabase Postgres via DATABASE_URL / SUPABASE_DB_URL)
-# Rerank dinonaktifkan: top-N langsung dari skor BM25 hybrid.
-COFIND_RERANK_BACKEND = 'none'
+# Rerank: LLM menilai kandidat teratas hasil BM25 hybrid (lihat llm_recommender.py).
+COFIND_RERANK_BACKEND = 'llm' if llm_rerank_enabled() else 'none'
 COFIND_SUMMARY_ASYNC = os.getenv('COFIND_SUMMARY_ASYNC', 'false').strip().lower() in ('1', 'true', 'yes', 'on')
 COFIND_DEV_LLM_STRICT = os.getenv('COFIND_DEV_LLM_STRICT', 'false').strip().lower() in ('1', 'true', 'yes', 'on')
 # Modal quote summary: default deterministik (tanpa LLM per toko). Set true untuk LLM.
@@ -88,6 +106,12 @@ try:
         print("[INFO] Table recommendation_feedback siap.")
 except Exception as _fb_err:
     print(f"[WARN] Inisialisasi recommendation_feedback gagal: {_fb_err}")
+
+try:
+    if ensure_preference_suggestions_table():
+        print("[INFO] Table preference_suggestions siap.")
+except Exception as _ps_err:
+    print(f"[WARN] Inisialisasi preference_suggestions gagal: {_ps_err}")
 
 # Konfigurasi LLM: lihat llm_backend.py (HF_LLM_BACKEND, HF_MODEL, HF_API_TOKEN, dll.)
 print(f"[INFO] LLM backend aktif: {LLM_BACKEND} | model={HF_MODEL}")
@@ -670,6 +694,31 @@ def admin_dashboard():
     if error_response:
         return error_response
 
+    def _normalize_activity_created_at(value):
+        """Samakan created_at ke ISO string agar aman untuk sort + JSON."""
+        if value is None:
+            return ''
+        if isinstance(value, datetime):
+            return value.isoformat()
+        return str(value)
+
+    def _safe_int(value, default=0):
+        try:
+            return int(value or 0)
+        except (TypeError, ValueError):
+            return default
+
+    def _fetch_count_map(sql, params=()):
+        rows = cursor.execute(sql, params).fetchall()
+        result = {}
+        for row in rows or []:
+            rd = dict_from_row(cursor, row) or {}
+            key = rd.get('key')
+            if key is None and len(row) >= 2:
+                key = row[0]
+            result[str(key or '')] = _safe_int(rd.get('cnt') if 'cnt' in rd else (row[1] if len(row) > 1 else 0))
+        return result
+
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -678,27 +727,204 @@ def admin_dashboard():
             'total_users': cursor.execute('SELECT COUNT(*) FROM users').fetchone()[0],
             'total_facilities': cursor.execute('SELECT COUNT(*) FROM coffee_shops').fetchone()[0],
             'total_reviews': cursor.execute('SELECT COUNT(*) FROM reviews').fetchone()[0],
-            'total_favorites': cursor.execute('SELECT COUNT(*) FROM favorites').fetchone()[0],
-            'total_want_to_visit': cursor.execute('SELECT COUNT(*) FROM want_to_visit').fetchone()[0],
             'total_review_reports': cursor.execute('SELECT COUNT(*) FROM review_reports').fetchone()[0],
+            'pending_reports': cursor.execute(
+                "SELECT COUNT(*) FROM review_reports WHERE LOWER(COALESCE(status, 'pending')) = 'pending'"
+            ).fetchone()[0],
         }
 
-        activities = []
+        # --- Feedback rekomendasi LLM (helpful / not_helpful) ---
+        recommendation_feedback = {
+            'helpful': 0,
+            'not_helpful': 0,
+            'total': 0,
+            'helpful_rate': None,
+            'unique_users': 0,
+        }
+        try:
+            ensure_recommendation_feedback_table()
+            vote_map = _fetch_count_map(
+                '''
+                SELECT vote AS key, COUNT(*) AS cnt
+                FROM recommendation_feedback
+                GROUP BY vote
+                '''
+            )
+            recommendation_feedback['helpful'] = vote_map.get('helpful', 0)
+            recommendation_feedback['not_helpful'] = vote_map.get('not_helpful', 0)
+            recommendation_feedback['total'] = (
+                recommendation_feedback['helpful'] + recommendation_feedback['not_helpful']
+            )
+            if recommendation_feedback['total'] > 0:
+                recommendation_feedback['helpful_rate'] = round(
+                    100.0 * recommendation_feedback['helpful'] / recommendation_feedback['total'],
+                    1,
+                )
+            recommendation_feedback['unique_users'] = _safe_int(
+                cursor.execute(
+                    'SELECT COUNT(DISTINCT user_id) FROM recommendation_feedback'
+                ).fetchone()[0]
+            )
+        except Exception as fb_err:
+            print(f"[WARN] dashboard recommendation_feedback: {fb_err}")
 
-        recent_users = cursor.execute('''
-            SELECT id, username, created_at
-            FROM users
-            ORDER BY created_at DESC
-            LIMIT 5
-        ''').fetchall()
-        for row in recent_users:
-            rd = dict_from_row(cursor, row)
-            activities.append({
-                'type': 'user',
-                'title': f"User baru: {rd['username']}",
-                'description': 'Akun baru terdaftar',
-                'created_at': rd['created_at'],
-            })
+        feedback_by_preference = []
+        try:
+            pref_rows = cursor.execute(
+                '''
+                SELECT preferences_key,
+                       SUM(CASE WHEN vote = 'helpful' THEN 1 ELSE 0 END) AS helpful,
+                       SUM(CASE WHEN vote = 'not_helpful' THEN 1 ELSE 0 END) AS not_helpful,
+                       COUNT(*) AS total
+                FROM recommendation_feedback
+                GROUP BY preferences_key
+                ORDER BY total DESC
+                LIMIT 8
+                '''
+            ).fetchall()
+            for row in pref_rows or []:
+                rd = dict_from_row(cursor, row) or {}
+                feedback_by_preference.append({
+                    'preferences_key': rd.get('preferences_key') or '(kosong)',
+                    'helpful': _safe_int(rd.get('helpful')),
+                    'not_helpful': _safe_int(rd.get('not_helpful')),
+                    'total': _safe_int(rd.get('total')),
+                })
+        except Exception as pref_err:
+            print(f"[WARN] dashboard feedback_by_preference: {pref_err}")
+
+        # --- Kontribusi user terhadap pengayaan coffee shop (review + foto) ---
+        top_contributors = []
+        try:
+            contrib_rows = cursor.execute(
+                '''
+                SELECT u.id AS user_id,
+                       u.username,
+                       COUNT(r.id) AS review_count,
+                       COALESCE(SUM(photo_counts.photo_count), 0) AS photo_count,
+                       COUNT(DISTINCT r.place_id) AS shop_count
+                FROM users u
+                INNER JOIN reviews r ON r.user_id = u.id
+                LEFT JOIN (
+                    SELECT review_id, COUNT(*) AS photo_count
+                    FROM review_photos
+                    GROUP BY review_id
+                ) photo_counts ON photo_counts.review_id = r.id
+                WHERE COALESCE(u.is_admin, 0) = 0
+                GROUP BY u.id, u.username
+                ORDER BY review_count DESC, photo_count DESC
+                LIMIT 8
+                '''
+            ).fetchall()
+            for row in contrib_rows or []:
+                rd = dict_from_row(cursor, row) or {}
+                top_contributors.append({
+                    'user_id': rd.get('user_id'),
+                    'username': rd.get('username') or 'Anonim',
+                    'review_count': _safe_int(rd.get('review_count')),
+                    'photo_count': _safe_int(rd.get('photo_count')),
+                    'shop_count': _safe_int(rd.get('shop_count')),
+                })
+        except Exception as contrib_err:
+            print(f"[WARN] dashboard top_contributors: {contrib_err}")
+
+        most_reviewed_shops = []
+        try:
+            shop_rows = cursor.execute(
+                '''
+                SELECT c.place_id,
+                       c.name AS shop_name,
+                       COUNT(r.id) AS review_count,
+                       COUNT(DISTINCT r.user_id) AS unique_reviewers
+                FROM coffee_shops c
+                INNER JOIN reviews r ON r.place_id = c.place_id
+                GROUP BY c.place_id, c.name
+                ORDER BY review_count DESC
+                LIMIT 8
+                '''
+            ).fetchall()
+            for row in shop_rows or []:
+                rd = dict_from_row(cursor, row) or {}
+                most_reviewed_shops.append({
+                    'place_id': rd.get('place_id'),
+                    'shop_name': rd.get('shop_name') or rd.get('place_id') or 'Coffee Shop',
+                    'review_count': _safe_int(rd.get('review_count')),
+                    'unique_reviewers': _safe_int(rd.get('unique_reviewers')),
+                })
+        except Exception as shop_err:
+            print(f"[WARN] dashboard most_reviewed_shops: {shop_err}")
+
+        # --- Tren review 14 hari terakhir ---
+        reviews_trend = []
+        try:
+            from db_backend import use_postgres
+            if use_postgres():
+                trend_rows = cursor.execute(
+                    '''
+                    SELECT TO_CHAR(DATE(created_at), 'YYYY-MM-DD') AS day_key,
+                           COUNT(*) AS cnt
+                    FROM reviews
+                    WHERE created_at >= (CURRENT_DATE - INTERVAL '13 days')
+                    GROUP BY DATE(created_at)
+                    ORDER BY DATE(created_at)
+                    '''
+                ).fetchall()
+            else:
+                trend_rows = cursor.execute(
+                    '''
+                    SELECT date(created_at) AS day_key, COUNT(*) AS cnt
+                    FROM reviews
+                    WHERE date(created_at) >= date('now', '-13 days')
+                    GROUP BY date(created_at)
+                    ORDER BY date(created_at)
+                    '''
+                ).fetchall()
+            trend_map = {}
+            for row in trend_rows or []:
+                rd = dict_from_row(cursor, row) or {}
+                day_key = str(rd.get('day_key') or (row[0] if row else '') or '')[:10]
+                trend_map[day_key] = _safe_int(rd.get('cnt') if 'cnt' in rd else (row[1] if len(row) > 1 else 0))
+
+            from datetime import timedelta
+            today = datetime.utcnow().date()
+            for offset in range(13, -1, -1):
+                day = today - timedelta(days=offset)
+                key = day.isoformat()
+                reviews_trend.append({
+                    'date': key,
+                    'label': day.strftime('%d/%m'),
+                    'count': trend_map.get(key, 0),
+                })
+        except Exception as trend_err:
+            print(f"[WARN] dashboard reviews_trend: {trend_err}")
+
+        # --- Saran preferensi pill ---
+        preference_suggestions = {
+            'pending': 0,
+            'reviewed': 0,
+            'accepted': 0,
+            'rejected': 0,
+            'total': 0,
+        }
+        try:
+            ensure_preference_suggestions_table()
+            sug_map = _fetch_count_map(
+                '''
+                SELECT COALESCE(status, 'pending') AS key, COUNT(*) AS cnt
+                FROM preference_suggestions
+                GROUP BY COALESCE(status, 'pending')
+                '''
+            )
+            for key in ('pending', 'reviewed', 'accepted', 'rejected'):
+                preference_suggestions[key] = sug_map.get(key, 0)
+            preference_suggestions['total'] = sum(
+                preference_suggestions[k] for k in ('pending', 'reviewed', 'accepted', 'rejected')
+            )
+        except Exception as sug_err:
+            print(f"[WARN] dashboard preference_suggestions: {sug_err}")
+
+        # --- Ringkasan aktivitas (hanya review & laporan; user baru tidak ditonjolkan) ---
+        activities = []
 
         recent_reviews = cursor.execute('''
             SELECT r.id, u.username, c.name AS shop_name, r.created_at
@@ -714,7 +940,7 @@ def admin_dashboard():
                 'type': 'review',
                 'title': f"Review baru untuk {rd['shop_name'] or 'Coffee Shop'}",
                 'description': f"Oleh {rd['username'] or 'Anonim'}",
-                'created_at': rd['created_at'],
+                'created_at': _normalize_activity_created_at(rd['created_at']),
             })
 
         recent_reports = cursor.execute('''
@@ -731,20 +957,28 @@ def admin_dashboard():
                 'type': 'report',
                 'title': f"Laporan review: {rd['report_reason'] or 'Tanpa alasan'}",
                 'description': f"{rd['shop_name'] or 'Coffee Shop'} • status {rd['status'] or 'pending'}",
-                'created_at': rd['created_at'],
+                'created_at': _normalize_activity_created_at(rd['created_at']),
             })
 
         activities = sorted(
             activities,
             key=lambda item: item.get('created_at') or '',
             reverse=True
-        )[:8]
+        )[:6]
 
         conn.close()
 
         return jsonify({
             'status': 'success',
             'stats': stats,
+            'charts': {
+                'recommendation_feedback': recommendation_feedback,
+                'feedback_by_preference': feedback_by_preference,
+                'top_contributors': top_contributors,
+                'most_reviewed_shops': most_reviewed_shops,
+                'reviews_trend': reviews_trend,
+                'preference_suggestions': preference_suggestions,
+            },
             'recent_activity': activities,
             'admin': {
                 'id': admin_user.get('id'),
@@ -2380,6 +2614,20 @@ def _parse_llm_json_with_repair(raw_text, *, expected='any', model=None):
                     pass
             repaired_text = repaired
     raise ValueError("JSON repair failed after max iterations")
+
+
+def _llm_model_id():
+    return (HF_MODEL or "meta-llama/Meta-Llama-3-8B").strip()
+
+
+def _llm_chat_for_pipeline(*, messages, max_tokens, temperature):
+    """Adapter chat completion untuk tahap keputusan LLM di llm_recommender."""
+    return llm_chat_completions_create(
+        model=_llm_model_id(),
+        messages=messages,
+        max_tokens=max_tokens,
+        temperature=temperature,
+    )
 
 
 def _compact_prompt_text(text, max_chars=1200):
@@ -4808,8 +5056,9 @@ def _score_shop_by_user_reviews(
     Keyword match per-pill tetap dihitung untuk evidence/UI (sample quotes),
     tetapi bobot utama ranking memakai skor BM25 yang dinormalisasi (0..1).
 
-    llm_preference_keywords: frasa Bucket B dari LLM (tidak overlap leksikon pill).
-    Hanya untuk llm_evidence_matches (kutipan UI), tidak memengaruhi skor.
+    llm_preference_keywords: frasa Bucket B dari ekspansi LLM (tidak overlap leksikon pill,
+    sudah divalidasi ada di korpus review). Di fungsi ini hanya dipakai untuk
+    llm_evidence_matches (kutipan UI); pengaruh ranking-nya lewat token query BM25.
     """
     reviews = profile.get('reviews') or []
     review_count = len(reviews)
@@ -5236,10 +5485,14 @@ def _build_summary_output_entry(shop, summary, pills, search_keywords):
         pills,
         search_keywords=search_keywords,
     )
+    llm_fit = shop.get('llm_fit') if isinstance(shop.get('llm_fit'), dict) else None
     return {
         'place_id': shop['place_id'],
         'name': shop['name'],
         'score': shop.get('score', 0),
+        'final_score': shop.get('final_score', shop.get('score', 0)),
+        'ranking_source': 'llm' if llm_fit else 'hybrid',
+        'llm_fit': llm_fit,
         'explanation': summary,
         'supporting_evidence': evidence_out,
         'review_count': evidence_out.get('review_count', 0),
@@ -5304,6 +5557,19 @@ def _generate_llm_review_summary(top_shops, pills, search_keywords=None):
         )
         output.append(_build_summary_output_entry(shop, summary, pills, search_keywords))
     return output
+
+
+def _unverified_summary_quotes(summary, shop):
+    """
+    Kutipan pada summary LLM yang tidak bisa ditemukan di korpus review toko.
+    Kosong berarti seluruh kutipan tergrounding (atau grounding check dimatikan).
+    """
+    if not llm_grounding_check_enabled():
+        return []
+    corpus = shop_corpus_text((shop.get('profile') or {}).get('reviews') or [])
+    if not corpus:
+        return []
+    return ungrounded_quotes(summary, corpus)
 
 
 def _llm_summaries_for_shops(top_shops, pills, search_keywords=None):
@@ -5473,9 +5739,24 @@ def _llm_summaries_for_shops(top_shops, pills, search_keywords=None):
         result_map = {}
         for shop in top_shops:
             summary = summary_map.get(shop['place_id'])
-            if not summary or any(bad in summary.lower() for bad in ['place_id', '[fasilitas]', '[review]', 'json']):
+            invalid_reason = None
+            if not summary:
+                invalid_reason = 'summary kosong'
+            elif any(bad in summary.lower() for bad in ['place_id', '[fasilitas]', '[review]', 'json']):
+                invalid_reason = 'summary mengandung artefak prompt'
+            else:
+                unverified = _unverified_summary_quotes(summary, shop)
+                if unverified:
+                    invalid_reason = f'kutipan tidak ada di review: {unverified[0][:60]}'
+            if invalid_reason:
                 if COFIND_DEV_LLM_STRICT:
-                    raise RuntimeError(f"LLM strict mode aktif: summary invalid untuk {shop['place_id']}.")
+                    raise RuntimeError(
+                        f"LLM strict mode aktif: summary invalid untuk {shop['place_id']} ({invalid_reason})."
+                    )
+                print(
+                    f"[RECOMMEND] Summary fallback deterministik untuk {shop.get('name')}: {invalid_reason}",
+                    flush=True,
+                )
                 summary = _build_review_summary_deterministic(shop, pills)
             result_map[shop['place_id']] = summary
         return result_map
@@ -5492,14 +5773,17 @@ def _llm_summaries_for_shops(top_shops, pills, search_keywords=None):
 @app.route('/api/recommend-by-preferences', methods=['POST'])
 def api_recommend_by_preferences():
     """
-    Rekomendasi 100% berbasis user review.
+    Rekomendasi 100% berbasis user review dengan LLM sebagai pengambil keputusan.
+    Input tetap pill (tidak ada teks bebas dari user).
     Pipeline:
       1. Build profil review-only tiap toko (hanya reviews dari tabel `reviews`)
-      2. Keyword seed dari PILL_MAPPING (tanpa ekspansi LLM) sebagai query
+      2. Query: seed keyword PILL_MAPPING + ekspansi LLM yang tervalidasi kosakata korpus
       3. BM25 scoring korpus review (70%) + kategori rating (20%) + avg rating (10%)
-      4. Ambil top-3 langsung dari skor hybrid (tanpa LLM/cross-encoder rerank)
+      4. LLM rerank kandidat teratas (fit score + alasan + kutipan bukti tervalidasi),
+         skor akhir = campuran fit LLM dan skor statistik; fallback ke urutan hybrid
       5. Hanya kembalikan toko yang memang lolos evidensi review
-      6. LLM NLP summary merupakan ringkasan atau kesimpulan dari review-review user
+      6. LLM NLP summary merupakan ringkasan review user, kutipannya diverifikasi
+         terhadap korpus review toko tersebut
     """
     request_t0 = time.perf_counter()
     stage_t0 = request_t0
@@ -5550,9 +5834,14 @@ def api_recommend_by_preferences():
         except Exception as fb_excl_err:
             print(f"[RECOMMEND] Gagal load feedback exclusion: {fb_excl_err}")
 
-        # Query keywords: seed PILL_MAPPING saja (tanpa ekspansi / validasi LLM).
+        # Konteks personalisasi (review sendiri + favorit) untuk tahap keputusan LLM.
+        taste_profile = build_user_taste_profile(_auth_user.get('id'))
+        user_taste_block = format_user_taste_prompt_block(taste_profile)
+
+        # Query keywords: seed PILL_MAPPING; ekspansi LLM ditambahkan setelah korpus siap.
         search_keywords = _seed_search_keywords(valid_pills)
         llm_preference_keywords = []
+        expansion_info = {}
         stage_ms['keyword_seed_ms'] = round((time.perf_counter() - stage_t0) * 1000, 1)
         stage_t0 = time.perf_counter()
         print(f"[RECOMMEND] Search keywords (seed pill): {search_keywords}")
@@ -5580,20 +5869,48 @@ def api_recommend_by_preferences():
         stage_ms['profile_load_ms'] = round((time.perf_counter() - stage_t0) * 1000, 1)
         stage_t0 = time.perf_counter()
 
-        # --- Step 2: BM25 index atas seluruh korpus review toko ---
-        query_tokens = build_query_tokens(
-            valid_pills,
-            _expand_pill_to_keywords,
-            search_keywords=search_keywords,
-            tokenize_fn=tokenize_normalized,
-        )
+        # --- Step 2: BM25 index + ekspansi keyword LLM yang tervalidasi korpus ---
         bm25_raw_by_place = {}
         bm25_norm_by_place = {}
+        bm25_place_ids, bm25_model, corpus_tokens = [], None, []
         try:
-            bm25_place_ids, bm25_model, _corpus = build_bm25_index(
+            bm25_place_ids, bm25_model, corpus_tokens = build_bm25_index(
                 profiles,
                 tokenize_fn=tokenize_normalized,
             )
+        except Exception as bm25_err:
+            print(f"[RECOMMEND] BM25 gagal, fallback keyword scoring: {bm25_err}", flush=True)
+
+        if llm_is_available():
+            expansion_info = expand_pill_keywords(
+                valid_pills,
+                pill_labels=PILL_LABELS,
+                pill_lexicon=search_keywords,
+                chat_fn=_llm_chat_for_pipeline,
+                sanitize_keywords=_filter_negative_search_keywords,
+                corpus_vocabulary=corpus_vocabulary_from_tokens(corpus_tokens),
+                parse_json_fn=_parse_llm_json_with_repair,
+            )
+            llm_preference_keywords = expansion_info.get('keywords') or []
+            print(
+                f"[RECOMMEND] Ekspansi keyword LLM ({expansion_info.get('source')}): "
+                f"{llm_preference_keywords} "
+                f"(ditolak leksikon={expansion_info.get('rejected_lexicon')}, "
+                f"ditolak korpus={expansion_info.get('rejected_vocabulary')} "
+                f"contoh={expansion_info.get('rejected_vocabulary_sample')})",
+                flush=True,
+            )
+        stage_ms['llm_keyword_expansion_ms'] = round((time.perf_counter() - stage_t0) * 1000, 1)
+        stage_t0 = time.perf_counter()
+
+        query_keywords = list(dict.fromkeys(list(search_keywords) + list(llm_preference_keywords)))
+        query_tokens = build_query_tokens(
+            valid_pills,
+            _expand_pill_to_keywords,
+            search_keywords=query_keywords,
+            tokenize_fn=tokenize_normalized,
+        )
+        if bm25_model is not None:
             bm25_raw_by_place = score_shops_bm25(bm25_place_ids, bm25_model, query_tokens)
             bm25_norm_by_place = normalize_bm25_scores(bm25_raw_by_place)
             print(
@@ -5602,8 +5919,6 @@ def api_recommend_by_preferences():
                 f"nonzero={sum(1 for v in bm25_raw_by_place.values() if v > 0)}",
                 flush=True,
             )
-        except Exception as bm25_err:
-            print(f"[RECOMMEND] BM25 gagal, fallback keyword scoring: {bm25_err}", flush=True)
 
         # --- Step 3: Hybrid scoring (70% BM25 + 20% kategori + 10% rating) ---
         print(
@@ -5617,7 +5932,7 @@ def api_recommend_by_preferences():
                 profile,
                 valid_pills,
                 search_keywords=search_keywords,
-                llm_preference_keywords=None,
+                llm_preference_keywords=llm_preference_keywords,
                 bm25_norm=bm25_norm_by_place.get(pid),
                 bm25_raw=bm25_raw_by_place.get(pid),
             )
@@ -5661,17 +5976,51 @@ def api_recommend_by_preferences():
             flush=True,
         )
 
-        # --- Step 4: Top-N langsung dari skor hybrid (tanpa rerank) ---
-        top_shops = scored_candidates[:MAX_REC]
-        stage_ms['rerank_ms'] = 0.0
-        stage_ms['rerank_backend'] = 'none'
+        # --- Step 4: LLM rerank kandidat teratas (fallback: urutan skor hybrid) ---
+        rerank_backend = 'hybrid'
+        rerank_telemetry = {}
+        ranked_candidates = scored_candidates
+        if scored_candidates and llm_is_available() and llm_rerank_enabled():
+            rerank_result = llm_rerank_candidates(
+                scored_candidates,
+                valid_pills,
+                pill_labels=PILL_LABELS,
+                chat_fn=_llm_chat_for_pipeline,
+                parse_json_fn=_parse_llm_json_with_repair,
+                user_taste_block=user_taste_block,
+                keyword_line=", ".join(query_keywords[:20]),
+            ) or {}
+            rerank_telemetry = rerank_result.get('telemetry') or {}
+            if rerank_result.get('ranked'):
+                ranked_candidates = rerank_result['ranked']
+                rerank_backend = 'llm'
+            else:
+                print(
+                    f"[RECOMMEND] Step 4: LLM rerank tidak dipakai "
+                    f"({rerank_telemetry.get('backend')}: {rerank_telemetry.get('error')})",
+                    flush=True,
+                )
+                if COFIND_DEV_LLM_STRICT:
+                    raise RuntimeError(
+                        f"LLM strict mode aktif: rerank gagal ({rerank_telemetry.get('error')})"
+                    )
+
+        top_shops = ranked_candidates[:MAX_REC]
+        stage_ms['rerank_ms'] = round((time.perf_counter() - stage_t0) * 1000, 1)
+        stage_ms['rerank_backend'] = rerank_backend
+        stage_t0 = time.perf_counter()
         print(
-            f"[RECOMMEND] Step 4: Top-{MAX_REC} dari skor hybrid (rerank dinonaktifkan)",
+            f"[RECOMMEND] Step 4: Top-{MAX_REC} dari rerank={rerank_backend} "
+            f"(kandidat dinilai LLM={rerank_telemetry.get('scored_by_llm', 0)}, "
+            f"kutipan tidak tergrounding={rerank_telemetry.get('ungrounded_quotes', 0)})",
             flush=True,
         )
         for rank, shop in enumerate(top_shops, 1):
+            fit = shop.get('llm_fit') or {}
             print(
-                f"[RECOMMEND]   #{rank} {shop.get('name')} score={shop.get('score')}",
+                f"[RECOMMEND]   #{rank} {shop.get('name')} score={shop.get('score')} "
+                f"final={shop.get('final_score', shop.get('score'))} "
+                f"llm_fit={fit.get('fit_score')}",
                 flush=True,
             )
 
@@ -5690,7 +6039,7 @@ def api_recommend_by_preferences():
         recommendations = _generate_llm_review_summary(
             top_shops,
             valid_pills,
-            search_keywords=search_keywords,
+            search_keywords=query_keywords,
         )
         stage_ms['llm_summary_ms'] = round((time.perf_counter() - stage_t0) * 1000, 1)
         stage_ms['summary_async_enabled'] = COFIND_SUMMARY_ASYNC
@@ -5706,6 +6055,17 @@ def api_recommend_by_preferences():
             'preferences': valid_pills,
             'search_keywords': search_keywords,
             'llm_preference_keywords': llm_preference_keywords,
+            'llm_pipeline': {
+                'config': llm_pipeline_config(),
+                'keyword_expansion': {
+                    'source': expansion_info.get('source', 'disabled'),
+                    'accepted': len(llm_preference_keywords),
+                    'rejected_lexicon': expansion_info.get('rejected_lexicon', 0),
+                    'rejected_vocabulary': expansion_info.get('rejected_vocabulary', 0),
+                },
+                'rerank': dict(rerank_telemetry, backend=rerank_backend),
+                'personalization_used': bool(user_taste_block),
+            },
             'recommendations': recommendations,
         }), 200
 
@@ -5826,6 +6186,98 @@ def api_recommend_feedback_summary():
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
+@app.route('/api/preference-suggestions', methods=['POST'])
+def api_create_preference_suggestion():
+    """
+    User login mengirim saran pill preferensi baru ke admin.
+    Body: { label: string, description?: string }
+    """
+    try:
+        auth_user, auth_error = _require_authenticated_user()
+        if auth_error is not None:
+            return auth_error
+
+        data = request.get_json(silent=True) or {}
+        result = create_preference_suggestion(
+            auth_user.get('id'),
+            data.get('label'),
+            description=data.get('description'),
+        )
+        if not result.get('success'):
+            return jsonify({
+                'status': 'error',
+                'message': result.get('error') or 'Gagal mengirim saran preferensi',
+            }), 400
+        return jsonify({
+            'status': 'success',
+            'message': 'Saran preferensi berhasil dikirim ke admin.',
+            'suggestion': result.get('suggestion'),
+        }), 201
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/admin/preference-suggestions', methods=['GET'])
+def admin_list_preference_suggestions():
+    """Daftar saran preferensi pill untuk admin."""
+    _, error_response = _require_admin()
+    if error_response:
+        return error_response
+
+    try:
+        page = max(int(request.args.get('page', 1)), 1)
+        per_page = min(max(int(request.args.get('per_page', 10)), 1), 100)
+        search = (request.args.get('search') or '').strip()
+        status_filter = (request.args.get('status') or '').strip()
+
+        result = list_preference_suggestions(
+            page=page,
+            per_page=per_page,
+            search=search,
+            status_filter=status_filter,
+        )
+        if not result.get('success'):
+            return jsonify({
+                'status': 'error',
+                'message': result.get('error') or 'Gagal mengambil saran preferensi',
+            }), 400
+        return jsonify({
+            'status': 'success',
+            'items': result.get('items') or [],
+            'pagination': result.get('pagination') or {},
+        }), 200
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/admin/preference-suggestions/<int:suggestion_id>', methods=['PUT'])
+def admin_update_preference_suggestion(suggestion_id):
+    """Perbarui status/catatan saran preferensi (admin)."""
+    _, error_response = _require_admin()
+    if error_response:
+        return error_response
+
+    try:
+        data = request.get_json(silent=True) or {}
+        result = update_preference_suggestion(
+            suggestion_id,
+            status=data.get('status') or 'pending',
+            admin_notes=data.get('admin_notes'),
+        )
+        if not result.get('success'):
+            status_code = 404 if 'tidak ditemukan' in (result.get('error') or '').lower() else 400
+            return jsonify({
+                'status': 'error',
+                'message': result.get('error') or 'Gagal memperbarui saran',
+            }), status_code
+        return jsonify({
+            'status': 'success',
+            'message': 'Saran preferensi berhasil diperbarui',
+        }), 200
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
 # Endpoint untuk cek status LLM availability (lightweight, no token usage)
 @app.route('/api/llm/status', methods=['GET'])
 def llm_status():
@@ -5837,6 +6289,7 @@ def llm_status():
     return jsonify({
         'available': llm_is_available(),
         'backend': LLM_BACKEND,
+        'pipeline': llm_pipeline_config(),
         'message': msg,
     })
 
@@ -5848,7 +6301,8 @@ def health_check():
         'status': 'ok',
         'llm_available': llm_is_available(),
         'llm_backend': LLM_BACKEND,
-        'rerank_backend': 'none',
+        'rerank_backend': COFIND_RERANK_BACKEND,
+        'llm_pipeline': llm_pipeline_config(),
         'summary_async_enabled': COFIND_SUMMARY_ASYNC,
     }
     try:

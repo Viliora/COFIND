@@ -56,6 +56,12 @@ export default function ShopList() {
   const [recommendationNotification, setRecommendationNotification] = useState(null);
   const [showRecommendationModal, setShowRecommendationModal] = useState(false);
   const [showPillLoginModal, setShowPillLoginModal] = useState(false);
+  const [showPreferenceSuggestModal, setShowPreferenceSuggestModal] = useState(false);
+  const [suggestLabel, setSuggestLabel] = useState('');
+  const [suggestDescription, setSuggestDescription] = useState('');
+  const [suggestSubmitting, setSuggestSubmitting] = useState(false);
+  const [suggestError, setSuggestError] = useState('');
+  const [suggestSuccess, setSuggestSuccess] = useState('');
   const featuredScrollRef = useRef(null);
   const hasLoadedRef = useRef(false);
 
@@ -356,6 +362,67 @@ export default function ShopList() {
       if (prev.includes(pillValue)) return [];
       return [pillValue];
     });
+  };
+
+  const openPreferenceSuggestModal = () => {
+    if (authLoading) return;
+    if (!user) {
+      setShowPillLoginModal(true);
+      return;
+    }
+    setSuggestError('');
+    setSuggestSuccess('');
+    setShowPreferenceSuggestModal(true);
+  };
+
+  const closePreferenceSuggestModal = () => {
+    if (suggestSubmitting) return;
+    setShowPreferenceSuggestModal(false);
+    setSuggestError('');
+    setSuggestSuccess('');
+  };
+
+  const handleSubmitPreferenceSuggestion = async (event) => {
+    event.preventDefault();
+    const label = suggestLabel.trim();
+    if (!label) {
+      setSuggestError('Isi nama preferensi yang ingin Anda sarankan.');
+      return;
+    }
+    const token = authService.getToken();
+    if (!token) {
+      setShowPreferenceSuggestModal(false);
+      setShowPillLoginModal(true);
+      return;
+    }
+
+    setSuggestSubmitting(true);
+    setSuggestError('');
+    setSuggestSuccess('');
+    try {
+      const res = await fetch(`${API_BASE}/api/preference-suggestions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          label,
+          description: suggestDescription.trim() || undefined,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data?.message || 'Gagal mengirim saran preferensi.');
+      }
+      setSuggestSuccess(data?.message || 'Saran berhasil dikirim ke admin.');
+      setSuggestLabel('');
+      setSuggestDescription('');
+    } catch (err) {
+      setSuggestError(err?.message || 'Gagal mengirim saran preferensi.');
+    } finally {
+      setSuggestSubmitting(false);
+    }
   };
 
   const hasConfirmedRecommendation = useMemo(
@@ -665,6 +732,21 @@ export default function ShopList() {
                   </button>
                 );
               })}
+            </div>
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={openPreferenceSuggestModal}
+                disabled={authLoading || pillRecommendLoading}
+                className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-300 dark:hover:text-indigo-200 underline-offset-2 hover:underline disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline"
+                title={
+                  !user && !authLoading
+                    ? 'Login untuk mengirim saran preferensi'
+                    : 'Sarankan preferensi baru ke admin'
+                }
+              >
+                Tidak ada yang cocok? Sarankan preferensi
+              </button>
             </div>
             {isPillPreferenceAvailable && selectedPills.length > 0 && (
               <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -1008,6 +1090,108 @@ export default function ShopList() {
                 Masuk
               </Link>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showPreferenceSuggestModal && (
+        <div
+          className="fixed inset-0 z-[105] flex items-center justify-center p-4 sm:p-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="preference-suggest-modal-title"
+        >
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            aria-hidden="true"
+            onClick={closePreferenceSuggestModal}
+          />
+          <div className="relative z-10 w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-gray-700 dark:bg-gray-900">
+            <h3
+              id="preference-suggest-modal-title"
+              className="text-lg font-bold text-gray-900 dark:text-white"
+            >
+              Sarankan preferensi baru
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+              Tidak menemukan pill yang sesuai? Kirim saran ke admin agar preferensi tersebut dapat ditambahkan.
+            </p>
+
+            {suggestSuccess ? (
+              <div className="mt-5 space-y-4">
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-200">
+                  {suggestSuccess}
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={closePreferenceSuggestModal}
+                    className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"
+                  >
+                    Tutup
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmitPreferenceSuggestion} className="mt-5 space-y-4">
+                <div>
+                  <label
+                    htmlFor="suggest-preference-label"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
+                  >
+                    Nama preferensi <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="suggest-preference-label"
+                    type="text"
+                    value={suggestLabel}
+                    onChange={(e) => setSuggestLabel(e.target.value)}
+                    maxLength={80}
+                    placeholder="Contoh: Nongkrong malam, Date, Pet-friendly"
+                    disabled={suggestSubmitting}
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="suggest-preference-description"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
+                  >
+                    Deskripsi singkat (opsional)
+                  </label>
+                  <textarea
+                    id="suggest-preference-description"
+                    value={suggestDescription}
+                    onChange={(e) => setSuggestDescription(e.target.value)}
+                    maxLength={500}
+                    rows={3}
+                    placeholder="Jelaskan konteks atau fasilitas yang Anda cari..."
+                    disabled={suggestSubmitting}
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                  />
+                </div>
+                {!!suggestError && (
+                  <p className="text-sm text-red-600 dark:text-red-300">{suggestError}</p>
+                )}
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={closePreferenceSuggestModal}
+                    disabled={suggestSubmitting}
+                    className="rounded-full px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-60 dark:text-gray-200 dark:hover:bg-gray-800"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={suggestSubmitting}
+                    className="inline-flex rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
+                  >
+                    {suggestSubmitting ? 'Mengirim...' : 'Kirim saran'}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

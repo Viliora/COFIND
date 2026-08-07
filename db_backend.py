@@ -26,6 +26,7 @@ _INSERT_RETURNING_TABLES = frozenset({
     "review_reports",
     "review_photos",
     "recommendation_feedback",
+    "preference_suggestions",
 })
 
 
