@@ -8,13 +8,15 @@ import AdminStatCard from '../components/admin/AdminStatCard';
 import AdminTable from '../components/admin/AdminTable';
 import AdminModal from '../components/admin/AdminModal';
 import CoordinatePickerMap from '../components/admin/CoordinatePickerMap';
+import AdminDashboardCharts from '../components/admin/AdminDashboardCharts';
 
 const NAV_ITEMS = [
-  { id: 'dashboard', label: 'Dashboard', description: 'Ringkasan statistik dan aktivitas terbaru.' },
+  { id: 'dashboard', label: 'Dashboard', description: 'Grafik kualitas LLM, kontribusi user, dan tren konten.' },
   { id: 'users', label: 'Users', description: 'Kelola akun, role admin, dan status user.' },
   { id: 'facilities', label: 'Coffee Shop', description: 'Kelola coffee shop, fasilitas, dan koordinat lokasi.' },
   { id: 'reviews', label: 'Reviews', description: 'Moderasi ulasan dan pantau engagement.' },
   { id: 'reports', label: 'Reports', description: 'Moderasi laporan review dari user.' },
+  { id: 'suggestions', label: 'Saran Preferensi', description: 'Tinjau saran pill preferensi baru dari user.' },
   { id: 'ai', label: 'AI', description: 'Trigger analisis sentimen dan lihat cache AI.' },
   { id: 'settings', label: 'Settings', description: 'Informasi sistem admin dan konfigurasi LLM.' },
 ];
@@ -102,7 +104,7 @@ export default function Admin() {
   const [activeSection, setActiveSection] = useState('dashboard');
   const [feedback, setFeedback] = useState(null);
 
-  const [dashboard, setDashboard] = useState({ stats: null, recent_activity: [] });
+  const [dashboard, setDashboard] = useState({ stats: null, recent_activity: [], charts: null });
   const [dashboardLoading, setDashboardLoading] = useState(false);
   const [dashboardError, setDashboardError] = useState('');
 
@@ -134,6 +136,13 @@ export default function Admin() {
   const [reviewReportsStatusFilter, setReviewReportsStatusFilter] = useState('');
   const [reviewReportsLoading, setReviewReportsLoading] = useState(false);
   const [reviewReportsError, setReviewReportsError] = useState('');
+
+  const [preferenceSuggestions, setPreferenceSuggestions] = useState([]);
+  const [preferenceSuggestionsPagination, setPreferenceSuggestionsPagination] = useState(null);
+  const [preferenceSuggestionsSearch, setPreferenceSuggestionsSearch] = useState('');
+  const [preferenceSuggestionsStatusFilter, setPreferenceSuggestionsStatusFilter] = useState('');
+  const [preferenceSuggestionsLoading, setPreferenceSuggestionsLoading] = useState(false);
+  const [preferenceSuggestionsError, setPreferenceSuggestionsError] = useState('');
 
   const [aiCache, setAiCache] = useState([]);
   const [aiCacheLoading, setAiCacheLoading] = useState(false);
@@ -171,6 +180,19 @@ export default function Admin() {
     reported_by_username: '',
     review_text: '',
     shop_name: '',
+    created_at: '',
+  });
+
+  const [suggestionModalOpen, setSuggestionModalOpen] = useState(false);
+  const [suggestionSubmitting, setSuggestionSubmitting] = useState(false);
+  const [suggestionForm, setSuggestionForm] = useState({
+    id: null,
+    label: '',
+    description: '',
+    status: 'pending',
+    admin_notes: '',
+    username: '',
+    email: '',
     created_at: '',
   });
 
@@ -224,7 +246,11 @@ export default function Admin() {
     setDashboardError('');
     try {
       const result = await adminService.getDashboard();
-      setDashboard(result);
+      setDashboard({
+        stats: result.stats || null,
+        recent_activity: result.recent_activity || [],
+        charts: result.charts || null,
+      });
     } catch (error) {
       setDashboardError(error.message);
     } finally {
@@ -300,6 +326,20 @@ export default function Admin() {
     }
   }, []);
 
+  const loadPreferenceSuggestions = useCallback(async (page = 1, search = '', status = '') => {
+    setPreferenceSuggestionsLoading(true);
+    setPreferenceSuggestionsError('');
+    try {
+      const result = await adminService.getPreferenceSuggestions({ page, per_page: 8, search, status });
+      setPreferenceSuggestions(result.items || []);
+      setPreferenceSuggestionsPagination(result.pagination || null);
+    } catch (error) {
+      setPreferenceSuggestionsError(error.message);
+    } finally {
+      setPreferenceSuggestionsLoading(false);
+    }
+  }, []);
+
   const loadAICache = useCallback(async () => {
     setAiCacheLoading(true);
     setAiCacheError('');
@@ -355,6 +395,11 @@ export default function Admin() {
     if (!isAdmin || activeSection !== 'reports') return;
     loadReviewReports(1, reviewReportsSearch, reviewReportsStatusFilter);
   }, [isAdmin, activeSection, reviewReportsSearch, reviewReportsStatusFilter, loadReviewReports]);
+
+  useEffect(() => {
+    if (!isAdmin || activeSection !== 'suggestions') return;
+    loadPreferenceSuggestions(1, preferenceSuggestionsSearch, preferenceSuggestionsStatusFilter);
+  }, [isAdmin, activeSection, preferenceSuggestionsSearch, preferenceSuggestionsStatusFilter, loadPreferenceSuggestions]);
 
   useEffect(() => {
     if (!isAdmin || activeSection !== 'ai') return;
@@ -582,6 +627,56 @@ export default function Admin() {
       showFeedback('error', error.message);
     } finally {
       setReportSubmitting(false);
+    }
+  };
+
+  const openSuggestionModal = (suggestion) => {
+    setSuggestionForm({
+      id: suggestion.id,
+      label: suggestion.label || '',
+      description: suggestion.description || '',
+      status: suggestion.status || 'pending',
+      admin_notes: suggestion.admin_notes || '',
+      username: suggestion.username || '',
+      email: suggestion.email || '',
+      created_at: suggestion.created_at || '',
+    });
+    setSuggestionModalOpen(true);
+  };
+
+  const closeSuggestionModal = () => {
+    setSuggestionModalOpen(false);
+    setSuggestionForm({
+      id: null,
+      label: '',
+      description: '',
+      status: 'pending',
+      admin_notes: '',
+      username: '',
+      email: '',
+      created_at: '',
+    });
+  };
+
+  const handleSaveSuggestion = async (event) => {
+    event.preventDefault();
+    setSuggestionSubmitting(true);
+    try {
+      await adminService.updatePreferenceSuggestion(suggestionForm.id, {
+        status: suggestionForm.status,
+        admin_notes: suggestionForm.admin_notes,
+      });
+      showFeedback('success', 'Saran preferensi berhasil diperbarui.');
+      closeSuggestionModal();
+      await loadPreferenceSuggestions(
+        preferenceSuggestionsPagination?.page || 1,
+        preferenceSuggestionsSearch,
+        preferenceSuggestionsStatusFilter,
+      );
+    } catch (error) {
+      showFeedback('error', error.message);
+    } finally {
+      setSuggestionSubmitting(false);
     }
   };
 
@@ -862,6 +957,59 @@ export default function Admin() {
     },
   ];
 
+  const preferenceSuggestionColumns = [
+    {
+      key: 'suggestion',
+      label: 'Saran',
+      render: (row) => (
+        <div className="space-y-1">
+          <p className="font-semibold text-stone-800">{row.label || 'Tanpa label'}</p>
+          <p className="text-xs text-stone-500">
+            dari @{row.username || 'user'}{row.email ? ` • ${row.email}` : ''}
+          </p>
+          <p className="text-xs line-clamp-3">{row.description || '(Tanpa deskripsi)'}</p>
+        </div>
+      ),
+    },
+    {
+      key: 'meta',
+      label: 'Dikirim',
+      render: (row) => (
+        <p className="text-xs text-stone-500">{formatDate(row.created_at)}</p>
+      ),
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (row) => (
+        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
+          row.status === 'accepted'
+            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800/60'
+            : row.status === 'rejected'
+            ? 'bg-slate-100 dark:bg-slate-700/70 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600/70'
+            : row.status === 'reviewed'
+            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60'
+            : 'bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60'
+        }`}>
+          {row.status || 'pending'}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      label: 'Aksi',
+      render: (row) => (
+        <button
+          type="button"
+          onClick={() => openSuggestionModal(row)}
+          className="rounded-lg bg-amber-700 px-3 py-2 text-xs font-medium text-stone-50 hover:bg-amber-800 transition-all duration-300 ease-out cursor-pointer"
+        >
+          Tinjau
+        </button>
+      ),
+    },
+  ];
+
   const aiCacheColumns = [
     {
       key: 'shop_name',
@@ -947,7 +1095,7 @@ export default function Admin() {
               <>
                 <SectionHeader
                   title="Dashboard"
-                  description="Ringkasan data utama, aktivitas terbaru, dan status aplikasi admin."
+                  description="Metrik penting: kualitas rekomendasi LLM, kontribusi user, dan tren konten coffee shop."
                   actions={
                     <button
                       type="button"
@@ -966,14 +1114,49 @@ export default function Admin() {
                 ) : null}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-                  <AdminStatCard label="Total Users" value={dashboardLoading ? '...' : dashboard.stats?.total_users ?? 0} helper="Termasuk admin dan user biasa." />
-                  <AdminStatCard label="Total Facilities / Shops" value={dashboardLoading ? '...' : dashboard.stats?.total_facilities ?? 0} helper="Jumlah coffee shop di database." />
-                  <AdminStatCard label="Total Reviews" value={dashboardLoading ? '...' : dashboard.stats?.total_reviews ?? 0} helper="Review user yang tersimpan." />
-                  <AdminStatCard label="Total Review Reports" value={dashboardLoading ? '...' : dashboard.stats?.total_review_reports ?? 0} helper="Laporan review yang perlu dimoderasi." />
+                  <AdminStatCard
+                    label="Tingkat membantu LLM"
+                    value={
+                      dashboardLoading
+                        ? '...'
+                        : dashboard.charts?.recommendation_feedback?.helpful_rate != null
+                          ? `${dashboard.charts.recommendation_feedback.helpful_rate}%`
+                          : '—'
+                    }
+                    helper="Persentase feedback 'membantu' vs total feedback rekomendasi."
+                  />
+                  <AdminStatCard
+                    label="Feedback rekomendasi"
+                    value={dashboardLoading ? '...' : dashboard.charts?.recommendation_feedback?.total ?? 0}
+                    helper={`${dashboard.charts?.recommendation_feedback?.helpful ?? 0} membantu · ${dashboard.charts?.recommendation_feedback?.not_helpful ?? 0} tidak`}
+                  />
+                  <AdminStatCard
+                    label="Total Reviews"
+                    value={dashboardLoading ? '...' : dashboard.stats?.total_reviews ?? 0}
+                    helper="Kontribusi user yang memperkaya info coffee shop."
+                  />
+                  <AdminStatCard
+                    label="Perlu tindak lanjut"
+                    value={
+                      dashboardLoading
+                        ? '...'
+                        : (dashboard.stats?.pending_reports ?? 0) + (dashboard.charts?.preference_suggestions?.pending ?? 0)
+                    }
+                    helper={`${dashboard.stats?.pending_reports ?? 0} laporan · ${dashboard.charts?.preference_suggestions?.pending ?? 0} saran preferensi`}
+                  />
                 </div>
 
+                {dashboardLoading ? (
+                  <div className="rounded-2xl border border-stone-200/50 bg-[#FAF9F6]/95 p-8 text-sm text-stone-500 text-center">
+                    Memuat grafik dashboard...
+                  </div>
+                ) : (
+                  <AdminDashboardCharts charts={dashboard.charts} />
+                )}
+
                 <div className="rounded-2xl border border-stone-200/50 bg-[#FAF9F6]/95 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-5">
-                  <h4 className="text-lg font-semibold text-stone-800 mb-4">Aktivitas terbaru</h4>
+                  <h4 className="text-lg font-semibold text-stone-800 mb-1">Aktivitas terbaru</h4>
+                  <p className="text-xs text-stone-500 mb-4">Review baru dan laporan yang perlu perhatian.</p>
                   <div className="space-y-3">
                     {(dashboard.recent_activity || []).length === 0 ? (
                       <p className="text-sm text-stone-500">Belum ada aktivitas terbaru.</p>
@@ -1141,6 +1324,41 @@ export default function Admin() {
               </>
             ) : null}
 
+            {activeSection === 'suggestions' ? (
+              <>
+                <SectionHeader
+                  title="Saran Preferensi"
+                  description="Tinjau saran pill preferensi baru dari user. Status accepted berarti saran layak ditambahkan ke katalog pill."
+                />
+                <Toolbar
+                  search={preferenceSuggestionsSearch}
+                  onSearchChange={setPreferenceSuggestionsSearch}
+                  filters={
+                    <select
+                      value={preferenceSuggestionsStatusFilter}
+                      onChange={(event) => setPreferenceSuggestionsStatusFilter(event.target.value)}
+                      className="rounded-xl border border-stone-300/70 bg-stone-50 px-3 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    >
+                      <option value="">Semua status</option>
+                      <option value="pending">pending</option>
+                      <option value="reviewed">reviewed</option>
+                      <option value="accepted">accepted</option>
+                      <option value="rejected">rejected</option>
+                    </select>
+                  }
+                />
+                <AdminTable
+                  columns={preferenceSuggestionColumns}
+                  rows={preferenceSuggestions}
+                  loading={preferenceSuggestionsLoading}
+                  error={preferenceSuggestionsError}
+                  pagination={preferenceSuggestionsPagination}
+                  onPageChange={(p) => loadPreferenceSuggestions(p, preferenceSuggestionsSearch, preferenceSuggestionsStatusFilter)}
+                  emptyMessage="Belum ada saran preferensi dari user."
+                />
+              </>
+            ) : null}
+
             {activeSection === 'ai' ? (
               <>
                 <SectionHeader title="AI Management" description="Jalankan analisis sentimen per coffee shop dan pantau hasil cache yang tersimpan." />
@@ -1224,7 +1442,7 @@ export default function Admin() {
                     <div className="space-y-3 text-sm text-stone-600">
                       <p>Gunakan tab Facilities untuk memperbarui latitude dan longitude dengan klik langsung di peta.</p>
                       <p>Setelah menghapus review besar-besaran, jalankan ulang analisis AI pada coffee shop terkait agar cache tetap relevan.</p>
-                      <p>Saran preferensi dari user dapat menjadi dasar menambah pill preferensi baru di halaman utama.</p>
+                      <p>Cek tab Saran Preferensi untuk meninjau usulan pill baru dari user, lalu tambahkan ke katalog jika diterima.</p>
                     </div>
                   </div>
                 </div>
@@ -1587,6 +1805,83 @@ export default function Admin() {
             </button>
             <button type="submit" disabled={reportSubmitting} className="rounded-xl bg-amber-700 px-4 py-2 text-sm font-medium text-stone-50 hover:bg-amber-800 disabled:opacity-60 transition-all duration-300 ease-out cursor-pointer">
               {reportSubmitting ? 'Menyimpan...' : 'Simpan moderasi'}
+            </button>
+          </div>
+        </form>
+      </AdminModal>
+
+      <AdminModal
+        isOpen={suggestionModalOpen}
+        title="Tinjau Saran Preferensi"
+        onClose={closeSuggestionModal}
+        maxWidth="max-w-2xl"
+      >
+        <form onSubmit={handleSaveSuggestion} className="space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="rounded-xl border border-stone-200/60 p-4">
+              <p className="text-xs text-stone-500">Pengirim</p>
+              <p className="mt-1 font-medium text-stone-800">
+                @{suggestionForm.username || 'user'}
+              </p>
+              <p className="text-xs text-stone-500 mt-1">{suggestionForm.email || '-'}</p>
+            </div>
+            <div className="rounded-xl border border-stone-200/60 p-4">
+              <p className="text-xs text-stone-500">Tanggal saran</p>
+              <p className="mt-1 font-medium text-stone-800">{formatDate(suggestionForm.created_at)}</p>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-stone-200/60 p-4">
+            <p className="text-xs text-stone-500">Label preferensi</p>
+            <p className="mt-1 font-medium text-stone-800">{suggestionForm.label || '-'}</p>
+          </div>
+
+          <div className="rounded-xl border border-stone-200/60 p-4">
+            <p className="text-xs text-stone-500">Deskripsi</p>
+            <p className="mt-1 text-sm text-stone-800 whitespace-pre-wrap">
+              {suggestionForm.description || '(Tidak ada deskripsi)'}
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-1">Status</label>
+            <select
+              value={suggestionForm.status}
+              onChange={(event) => setSuggestionForm((prev) => ({ ...prev, status: event.target.value }))}
+              className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+            >
+              <option value="pending">pending</option>
+              <option value="reviewed">reviewed</option>
+              <option value="accepted">accepted</option>
+              <option value="rejected">rejected</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-1">Catatan admin</label>
+            <textarea
+              rows={3}
+              value={suggestionForm.admin_notes}
+              onChange={(event) => setSuggestionForm((prev) => ({ ...prev, admin_notes: event.target.value }))}
+              className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              placeholder="Contoh: Akan ditambahkan sebagai pill 'Pet-friendly'."
+            />
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={closeSuggestionModal}
+              className="rounded-xl border border-stone-300/70 px-4 py-2 text-sm text-stone-700 hover:bg-stone-100 transition-all duration-300 ease-out cursor-pointer"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={suggestionSubmitting}
+              className="rounded-xl bg-amber-700 px-4 py-2 text-sm font-medium text-stone-50 hover:bg-amber-800 disabled:opacity-60 transition-all duration-300 ease-out cursor-pointer"
+            >
+              {suggestionSubmitting ? 'Menyimpan...' : 'Simpan status'}
             </button>
           </div>
         </form>

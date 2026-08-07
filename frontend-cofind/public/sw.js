@@ -1,9 +1,9 @@
 // Service Worker untuk Cofind dengan Optimized Caching Strategy
 // UPDATE CACHE VERSION SETIAP KALI ADA PERUBAHAN PENTING
-const CACHE_VERSION = 'cofind-v7'; // FIX: API fetch tanpa custom headers (hindari CORS preflight)
-const CACHE_SHELL = 'cofind-shell-v7';      // ONLY static JS/CSS chunks (bukan HTML)
-const CACHE_STATIC = 'cofind-static-v7';    // Images, fonts, dll
-const CACHE_CONTENT = 'cofind-content-v7';  // API responses, dynamic content (DISABLED)
+const CACHE_VERSION = 'cofind-v8'; // FIX: SPA deep-link (buka tab baru) fallback ke index.html
+const CACHE_SHELL = 'cofind-shell-v8';      // ONLY static JS/CSS chunks (bukan HTML)
+const CACHE_STATIC = 'cofind-static-v8';    // Images, fonts, dll
+const CACHE_CONTENT = 'cofind-content-v8';  // API responses, dynamic content (DISABLED)
 // HTML pages NOT cached - always fetch fresh untuk prevent stale login page
 
 // Application Shell Assets - HANYA static assets, bukan HTML pages
@@ -329,69 +329,78 @@ async function cacheFirstStrategy(request, cacheName) {
 }
 
 // NETWORK ONLY FOR HTML: Always fetch HTML pages from network, no caching
-// Ini memastikan routes seperti /login selalu fresh dan tidak stale
+// Untuk SPA deep-link (/shop/:id, dll.) fallback ke index.html agar React Router bisa handle.
 async function networkOnlyStrategyForHTML(request) {
-  try {
-    console.log('[Service Worker] Network Only (HTML) - Fetching from network (NO CACHE):', request.url);
-    
-    // Create new request with aggressive cache-busting headers
-    const cacheBustingHeaders = new Headers(request.headers);
-    cacheBustingHeaders.set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
-    cacheBustingHeaders.set('Pragma', 'no-cache');
-    cacheBustingHeaders.set('Expires', '0');
-    cacheBustingHeaders.set('If-Modified-Since', '0'); // Prevent 304 responses
-    cacheBustingHeaders.set('If-None-Match', '*'); // Prevent 304 responses
-    
-    // Add cache-busting query parameter untuk HTML pages
-    const url = new URL(request.url);
-    url.searchParams.set('_html_t', Date.now().toString()); // HTML timestamp
-    
-    const cacheBustingRequest = new Request(url.toString(), {
-      method: request.method,
-      headers: cacheBustingHeaders,
-      body: request.body,
-      mode: request.mode,
-      credentials: request.credentials,
-      cache: 'no-store', // Force no cache
-      redirect: request.redirect
+  const acceptHtml = (request.headers.get('accept') || '').includes('text/html');
+  const isNavigation = request.mode === 'navigate' || acceptHtml;
+
+  const withNoCacheHeaders = (response) => {
+    const responseHeaders = new Headers(response.headers);
+    responseHeaders.set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+    responseHeaders.set('Pragma', 'no-cache');
+    responseHeaders.set('Expires', '0');
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: responseHeaders,
     });
-    
-    const networkResponse = await fetch(cacheBustingRequest, {
-      cache: 'no-store', // Double ensure no cache
-      headers: cacheBustingHeaders
-    });
-    
-    if (networkResponse && networkResponse.ok) {
-      // Create new response with no-cache headers
-      const responseHeaders = new Headers(networkResponse.headers);
-      responseHeaders.set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
-      responseHeaders.set('Pragma', 'no-cache');
-      responseHeaders.set('Expires', '0');
-      
-      const noCacheResponse = new Response(networkResponse.body, {
-        status: networkResponse.status,
-        statusText: networkResponse.statusText,
-        headers: responseHeaders
-      });
-      
-      // CRITICAL: Don't cache HTML pages - always fetch fresh
-      return noCacheResponse;
+  };
+
+  const fetchSpaShell = async () => {
+    // Ambil shell SPA tanpa mengubah path browser (React Router baca URL asli).
+    const candidates = ['/index.html', '/'];
+    for (const path of candidates) {
+      try {
+        const resp = await fetch(new Request(path, {
+          method: 'GET',
+          headers: { Accept: 'text/html' },
+          cache: 'no-store',
+        }));
+        if (resp && resp.ok) {
+          console.log('[Service Worker] SPA shell fallback:', path, 'for', request.url);
+          return withNoCacheHeaders(resp);
+        }
+      } catch (err) {
+        console.warn('[Service Worker] SPA shell fetch failed:', path, err);
+      }
     }
-    
-    throw new Error('Network response not OK');
+    return null;
+  };
+
+  try {
+    console.log('[Service Worker] Network Only (HTML):', request.url);
+
+    // Jangan manipulasi URL/header agresif — itu sering memecah navigasi "Open in new tab".
+    const networkResponse = await fetch(request, { cache: 'no-store' });
+
+    if (networkResponse && networkResponse.ok) {
+      return withNoCacheHeaders(networkResponse);
+    }
+
+    // Deep link tanpa rewrite hosting biasanya 404 → fallback shell SPA.
+    if (isNavigation && networkResponse && (networkResponse.status === 404 || networkResponse.status >= 500)) {
+      const shell = await fetchSpaShell();
+      if (shell) return shell;
+    }
+
+    throw new Error(`Network response not OK (${networkResponse && networkResponse.status})`);
   } catch (error) {
     console.error('[Service Worker] Network Only (HTML) - Failed:', request.url, error);
-    
-    // Return error response - jangan fallback ke cache untuk HTML
+
+    if (isNavigation) {
+      const shell = await fetchSpaShell();
+      if (shell) return shell;
+    }
+
     return new Response(
-      '<!DOCTYPE html><html><head><title>Network Error</title></head><body><h1>Network Error</h1><p>Unable to load page. Please check your connection.</p><script>setTimeout(() => window.location.reload(), 2000);</script></body></html>',
+      '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Cofind</title></head><body><p>Tidak dapat memuat halaman. <a href="/">Kembali ke beranda</a>.</p></body></html>',
       {
         status: 503,
         statusText: 'Service Unavailable',
-        headers: { 
-          'Content-Type': 'text/html',
-          'Cache-Control': 'no-cache'
-        }
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'no-cache',
+        },
       }
     );
   }
