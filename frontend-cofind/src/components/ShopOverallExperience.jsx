@@ -63,9 +63,6 @@ export default function ShopOverallExperience({ summary, myVote, isAuthenticated
           </span>
           Overall Experience
         </h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 max-w-2xl">
-          Rata-rata penilaian pelayanan, kebersihan, kenyamanan, dan harga berdasarkan vote pengunjung.
-        </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

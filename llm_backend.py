@@ -5,13 +5,13 @@ Lingkungan:
   HF_MODEL — id model router (default: meta-llama/Llama-3.1-8B-Instruct:novita)
   HF_KEYWORD_MODEL — model opsional untuk keyword (legacy)
   HF_API_TOKEN / HF_TOKEN — token Hugging Face
-  HF_LLM_TIMEOUT_SECONDS — timeout request HTTP ke router (default: 30)
+  HF_LLM_TIMEOUT_SECONDS — timeout request HTTP ke router (default: 60)
   HF_LLM_MAX_NEW_TOKENS_CAP — batas output text generation (default: 384)
-  HF_LLM_MAX_CHAT_TOKENS_CAP — batas output chat completion (default: 512)
+  HF_LLM_MAX_CHAT_TOKENS_CAP — batas output chat completion (default: 900)
   HF_LLM_DEFAULT_TEMPERATURE — default temperature (default: 0.2)
   HF_LLM_DEFAULT_TOP_P — default top_p (default: 0.9)
   HF_LLM_DEFAULT_REPETITION_PENALTY — default repetition penalty (default: 1.1)
-  HF_LLM_MAX_RETRIES — retry maksimum per request (default: 2)
+  HF_LLM_MAX_RETRIES — retry maksimum per request (default: 1)
   HF_LLM_BACKOFF_FACTOR — backoff factor retry (default: 0.8)
 """
 from __future__ import annotations
@@ -26,13 +26,15 @@ HF_KEYWORD_MODEL = os.getenv("HF_KEYWORD_MODEL", HF_MODEL).strip()
 LLM_BACKEND = "hf_router_openai"
 
 _MAX_NEW_TOKENS_CAP = int(os.getenv("HF_LLM_MAX_NEW_TOKENS_CAP", "384"))
-_MAX_CHAT_TOKENS_CAP = int(os.getenv("HF_LLM_MAX_CHAT_TOKENS_CAP", "512"))
+_MAX_CHAT_TOKENS_CAP = int(os.getenv("HF_LLM_MAX_CHAT_TOKENS_CAP", "900"))
 _DEFAULT_TEMPERATURE = float(os.getenv("HF_LLM_DEFAULT_TEMPERATURE", "0.2"))
 _DEFAULT_TOP_P = float(os.getenv("HF_LLM_DEFAULT_TOP_P", "0.9"))
 _DEFAULT_REPETITION_PENALTY = float(os.getenv("HF_LLM_DEFAULT_REPETITION_PENALTY", "1.1"))
-_MAX_RETRIES = max(0, int(os.getenv("HF_LLM_MAX_RETRIES", "2")))
+_MAX_RETRIES = max(0, int(os.getenv("HF_LLM_MAX_RETRIES", "1")))
 _BACKOFF_FACTOR = float(os.getenv("HF_LLM_BACKOFF_FACTOR", "0.8"))
-_TIMEOUT_SECONDS = float(os.getenv("HF_LLM_TIMEOUT_SECONDS", "30"))
+# Satu percobaan yang dibiarkan selesai lebih berguna daripada dua percobaan yang
+# sama-sama dipotong di tengah: prompt ringkasan besar dan retry mengulang dari nol.
+_TIMEOUT_SECONDS = float(os.getenv("HF_LLM_TIMEOUT_SECONDS", "60"))
 
 hf_client = None
 if HF_API_TOKEN:

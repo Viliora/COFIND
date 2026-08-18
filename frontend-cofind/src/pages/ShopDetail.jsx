@@ -669,16 +669,13 @@ function ShopDetail() {
                 </span>
                 Votes Pengunjung
               </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 max-w-2xl">
-                Klik langsung salah satu opsi rating atau status kunjungan untuk vote instan. Gunakan tombol di kanan untuk mengatur detail vote lainnya (best for & slider).
-              </p>
             </div>
             <button
               type="button"
               onClick={openVoteModal}
               className="flex-shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold shadow-sm transition-colors cursor-pointer"
             >
-              <span>⭐</span>
+              <span>🗳️</span>
               <span>{myVote ? 'Edit My Vote' : 'My Votes'}</span>
             </button>
           </div>
@@ -704,9 +701,6 @@ function ShopDetail() {
               </span>
               Fasilitas & Suasana
             </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 max-w-2xl">
-              Populer, keunggulan, dan suasana yang dirasakan pengunjung.
-            </p>
           </div>
           <FacilitiesTab facilities={facilitiesData.facilities_by_place_id[shop.place_id].facilities} />
         </div>
