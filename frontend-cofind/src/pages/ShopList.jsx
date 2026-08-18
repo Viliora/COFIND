@@ -5,6 +5,8 @@ import HeroSwiper from '../components/HeroSwiper';
 import CoffeeShopMap from '../components/CoffeeShopMap';
 import CoffeeShopRadiusMap from '../components/CoffeeShopRadiusMap';
 import RecommendationModal from '../components/RecommendationModal';
+import RecommendationProgressOverlay from '../components/RecommendationProgressOverlay';
+import { streamRecommendations } from '../services/recommendationStream';
 import {
   CONTEXT_PILL_OPTIONS,
   CONTEXT_PILL_THEMES,
@@ -52,6 +54,7 @@ export default function ShopList() {
   const [confirmedPills, setConfirmedPills] = useState([]);
   const [llmRecommendations, setLlmRecommendations] = useState([]);
   const [pillRecommendLoading, setPillRecommendLoading] = useState(false);
+  const [pillRecommendProgress, setPillRecommendProgress] = useState(null);
   const [pillRecommendError, setPillRecommendError] = useState('');
   const [recommendationNotification, setRecommendationNotification] = useState(null);
   const [showRecommendationModal, setShowRecommendationModal] = useState(false);
@@ -450,29 +453,23 @@ export default function ShopList() {
     }
     setConfirmedPills([...pillValues]);
     setPillRecommendLoading(true);
+    setPillRecommendProgress(null);
     setPillRecommendError('');
     setLlmRecommendations([]);
     setShowRecommendationModal(false);
     try {
-      const res = await fetch(`${API_BASE}/api/recommend-by-preferences`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          preferences: pillValues,
-        }),
+      const { statusCode, body: data } = await streamRecommendations({
+        apiBase: API_BASE,
+        token,
+        preferences: pillValues,
+        onProgress: setPillRecommendProgress,
       });
-      let data = null;
-      try {
-        data = await res.json();
-      } catch (parseError) {
-        console.error('[ShopList] failed to parse recommend-by-preferences response:', parseError);
-      }
 
-      if (!res.ok) {
+      if (statusCode < 200 || statusCode >= 300) {
         throw new Error(data?.message || 'Rekomendasi AI sedang gagal diproses. Coba lagi.');
+      }
+      if (!data) {
+        throw new Error('Rekomendasi AI mengirim respons yang tidak bisa dibaca.');
       }
 
       if (data.status === 'success' && Array.isArray(data.recommendations)) {
@@ -509,6 +506,7 @@ export default function ShopList() {
       });
     } finally {
       setPillRecommendLoading(false);
+      setPillRecommendProgress(null);
     }
   };
 
@@ -788,7 +786,7 @@ export default function ShopList() {
                   <div className="flex flex-wrap items-center gap-3">
                     <p className={`text-sm ${llmRecommendations.length > 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-600 dark:text-gray-300'}`}>
                       {llmRecommendations.length > 0
-                        ? `Menampilkan ${llmRecommendations.length} rekomendasi (maksimal 3) untuk konteks yang dipilih.`
+                        ? `Menampilkan ${llmRecommendations.length} rekomendasi (hingga 3) yang punya bukti ulasan relevan untuk konteks yang dipilih.`
                         : 'Buka overlay untuk melihat status rekomendasi terakhir Anda.'}
                     </p>
                     <button
@@ -1147,7 +1145,6 @@ export default function ShopList() {
                     value={suggestLabel}
                     onChange={(e) => setSuggestLabel(e.target.value)}
                     maxLength={80}
-                    placeholder="Contoh: Nongkrong malam, Date, Pet-friendly"
                     disabled={suggestSubmitting}
                     className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
                   />
@@ -1157,7 +1154,7 @@ export default function ShopList() {
                     htmlFor="suggest-preference-description"
                     className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
                   >
-                    Deskripsi singkat (opsional)
+                    Deskripsi singkat
                   </label>
                   <textarea
                     id="suggest-preference-description"
@@ -1165,7 +1162,7 @@ export default function ShopList() {
                     onChange={(e) => setSuggestDescription(e.target.value)}
                     maxLength={500}
                     rows={3}
-                    placeholder="Jelaskan konteks atau fasilitas yang Anda cari..."
+                    placeholder="Jelaskan preferensi yang ingin anda tambahkan..."
                     disabled={suggestSubmitting}
                     className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
                   />
@@ -1196,36 +1193,10 @@ export default function ShopList() {
         </div>
       )}
 
-      {pillRecommendLoading && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6">
-          <div className="absolute inset-0 bg-slate-950/45 backdrop-blur-sm" aria-hidden="true" />
-          <div className="relative z-10 w-full max-w-md rounded-3xl border border-indigo-100 bg-white px-6 py-7 shadow-2xl dark:border-indigo-900/60 dark:bg-gray-900">
-            <div className="flex flex-col items-center text-center">
-              <div className="relative mb-5">
-                <div className="h-14 w-14 rounded-full border-4 border-indigo-100 dark:border-indigo-900/50" />
-                <div className="absolute inset-0 h-14 w-14 animate-spin rounded-full border-4 border-transparent border-t-indigo-600 border-r-violet-500" />
-              </div>
-
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-indigo-500 dark:text-indigo-300">
-                AI Sedang Bekerja
-              </p>
-              <h3 className="mt-2 text-xl font-bold text-gray-900 dark:text-white">
-                LLM sedang menganalisis konteks Anda
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
-                Sistem sedang mencocokkan konteks aktivitas dengan ulasan pengunjung untuk memilih coffee shop yang paling relevan.
-              </p>
-
-              <div className="mt-5 w-full rounded-2xl bg-indigo-50 px-4 py-3 text-left text-sm text-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-100">
-                <p className="font-medium">Mohon tunggu sebentar...</p>
-                <p className="mt-1 text-indigo-800/80 dark:text-indigo-100/80">
-                  Hasil rekomendasi akan otomatis ditampilkan setelah analisis selesai.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <RecommendationProgressOverlay
+        open={pillRecommendLoading}
+        progress={pillRecommendProgress}
+      />
 
       <RecommendationModal
         isOpen={showRecommendationModal}

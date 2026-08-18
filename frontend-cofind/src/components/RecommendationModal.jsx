@@ -69,9 +69,20 @@ function fullRelevantPhrasesText(item) {
     return formatQuoteReason(item?.reason);
 }
 
+function quoteKeysFrom(items) {
+    const keys = new Set();
+    for (const item of Array.isArray(items) ? items : []) {
+        const key = quoteDedupeKey(item?.quote || item?.text);
+        if (key) keys.add(key);
+    }
+    return keys;
+}
+
 /**
  * Bukti selaras preferensi: review_quotes (pill / keyword / llm_preference),
  * lalu positive_review_quotes, lalu search_keyword_matches — tanpa duplikat.
+ * Kutipan yang sudah masuk catatan kelemahan (modal_caveat_quotes /
+ * negative_review_quotes) tidak dihitung sebagai bukti kecocokan.
  * Hanya entri dengan `reason` non-kosong (setelah formatQuoteReason) yang dipakai di UI.
  * @param {number} maxQuotesBeforeFilter — batas kumpul mentah (lebih besar = hitung sort lebih lengkap).
  */
@@ -80,6 +91,10 @@ function gatherRelevantEvidenceEntries(rec, confirmedPills = [], maxQuotesBefore
     const pillSet = new Set(
         (Array.isArray(confirmedPills) ? confirmedPills : []).map((p) => String(p).trim().toLowerCase()),
     );
+    const caveatKeys = quoteKeysFrom([
+        ...(Array.isArray(ev.modal_caveat_quotes) ? ev.modal_caveat_quotes : []),
+        ...(Array.isArray(ev.negative_review_quotes) ? ev.negative_review_quotes : []),
+    ]);
     const seen = new Set();
     const out = [];
 
@@ -88,7 +103,7 @@ function gatherRelevantEvidenceEntries(rec, confirmedPills = [], maxQuotesBefore
         const q = String(quoteText ?? '').trim();
         if (q.length < 10) return;
         const key = quoteDedupeKey(q);
-        if (seen.has(key)) return;
+        if (!key || seen.has(key) || caveatKeys.has(key)) return;
         seen.add(key);
         out.push({ quote: q, ...meta });
     }
@@ -109,6 +124,10 @@ function gatherRelevantEvidenceEntries(rec, confirmedPills = [], maxQuotesBefore
             rating: item.rating,
             reason: item.reason,
             pill_label: item.pill_label,
+            rating_layanan: item.rating_layanan,
+            rating_suasana: item.rating_suasana,
+            rating_makanan: item.rating_makanan,
+            has_photos: item.has_photos,
         });
     }
 
@@ -123,6 +142,10 @@ function gatherRelevantEvidenceEntries(rec, confirmedPills = [], maxQuotesBefore
             rating: item.rating,
             reason,
             pill_label: 'Ulasan pengguna',
+            rating_layanan: item.rating_layanan,
+            rating_suasana: item.rating_suasana,
+            rating_makanan: item.rating_makanan,
+            has_photos: item.has_photos,
         });
     }
 
@@ -137,6 +160,10 @@ function gatherRelevantEvidenceEntries(rec, confirmedPills = [], maxQuotesBefore
             rating: item.rating,
             reason,
             pill_label: 'Kecocokan kata kunci',
+            rating_layanan: item.rating_layanan,
+            rating_suasana: item.rating_suasana,
+            rating_makanan: item.rating_makanan,
+            has_photos: item.has_photos,
         });
     }
 
@@ -149,6 +176,10 @@ function gatherRelevantEvidenceEntries(rec, confirmedPills = [], maxQuotesBefore
                 rating: item.rating,
                 reason: item.reason,
                 pill_label: item.pill_label,
+                rating_layanan: item.rating_layanan,
+                rating_suasana: item.rating_suasana,
+                rating_makanan: item.rating_makanan,
+                has_photos: item.has_photos,
             });
         }
     }
@@ -191,10 +222,50 @@ function sortModalQuotes(items) {
  */
 function getModalEvidenceItems(rec, confirmedPills) {
     const ev = rec?.supporting_evidence || {};
+    const caveatKeys = quoteKeysFrom(ev.modal_caveat_quotes);
     const fromApi = Array.isArray(ev.modal_display_quotes) ? ev.modal_display_quotes : [];
-    if (fromApi.length > 0) return fromApi.slice(0, 3);
+    const supporting = fromApi.filter((item) => !caveatKeys.has(quoteDedupeKey(item?.quote)));
+    if (supporting.length > 0) return supporting.slice(0, 3);
     const collected = collectRelevantEvidence(rec, confirmedPills);
     return sortModalQuotes(collected).slice(0, 3);
+}
+
+/**
+ * Catatan dari ulasan: kutipan yang relevan dengan preferensi tetapi memuat keluhan
+ * pada aspek itu. Ditampilkan sebagai transparansi, bukan sebagai bukti kecocokan.
+ */
+function getModalCaveatItems(rec) {
+    const ev = rec?.supporting_evidence || {};
+    const fromApi = Array.isArray(ev.modal_caveat_quotes) ? ev.modal_caveat_quotes : [];
+    const rows = fromApi.length > 0
+        ? fromApi
+        : (Array.isArray(ev.negative_review_quotes) ? ev.negative_review_quotes : []);
+    const seen = new Set();
+    const out = [];
+    for (const item of rows) {
+        const q = String(item?.quote ?? item?.text ?? '').trim();
+        if (q.length < 10) continue;
+        const key = quoteDedupeKey(q);
+        if (!key || seen.has(key)) continue;
+        const terms = Array.isArray(item.matched_terms) ? item.matched_terms : [];
+        const reason = formatQuoteReason(item.reason) || terms.slice(0, 4).join(', ');
+        // Fallback dari negative_review_quotes: hanya yang menyentuh keyword preferensi.
+        if (fromApi.length === 0 && !reason) continue;
+        seen.add(key);
+        out.push({
+            quote: q,
+            username: item.username,
+            rating: item.rating,
+            reason,
+            pill_label: item.pill_label,
+            rating_layanan: item.rating_layanan,
+            rating_suasana: item.rating_suasana,
+            rating_makanan: item.rating_makanan,
+            has_photos: item.has_photos,
+        });
+        if (out.length >= 2) break;
+    }
+    return out;
 }
 
 function getModalSummaryText(rec) {
@@ -530,6 +601,8 @@ const RecommendationModal = ({
             return { rec, shop, apiIndex };
         })
         .filter((entry) => entry.shop)
+        // Jangan tampilkan toko tanpa bukti ulasan relevan.
+        .filter((entry) => getModalEvidenceItems(entry.rec, confirmedPills).length > 0)
         .sort((a, b) => {
             const ca = countRelevantEvidenceForSort(a.rec, confirmedPills);
             const cb = countRelevantEvidenceForSort(b.rec, confirmedPills);
@@ -610,6 +683,7 @@ const RecommendationModal = ({
                                         const shopName = getShopDisplayName(rec, shop);
                                         const placeId = shop?.place_id || rec?.place_id;
                                         const evidenceItems = getModalEvidenceItems(rec, confirmedPills);
+                                        const caveatItems = getModalCaveatItems(rec);
                                         const summaryText = getModalSummaryText(rec);
                                         const existingFb = placeId ? feedbackByPlaceId[placeId] : null;
                                         return (
@@ -639,6 +713,9 @@ const RecommendationModal = ({
                                                     <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                                                         Bukti ulasan relevan
                                                     </p>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                        Kutipan yang mendukung konteks yang Anda pilih.
+                                                    </p>
                                                     {evidenceItems.length > 0 ? (
                                                         evidenceItems.map((quoteItem, qIdx) => (
                                                             <div
@@ -666,6 +743,34 @@ const RecommendationModal = ({
                                                         </p>
                                                     )}
                                                 </div>
+
+                                                {caveatItems.length > 0 && (
+                                                    <div className="mt-3 space-y-2">
+                                                        <p className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
+                                                            Catatan dari ulasan
+                                                        </p>
+                                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                            Masih soal konteks yang Anda pilih, tapi pengalamannya kurang positif.
+                                                        </p>
+                                                        {caveatItems.map((quoteItem, cIdx) => (
+                                                            <div
+                                                                key={`caveat-${quoteDedupeKey(quoteItem.quote)}-${cIdx}`}
+                                                                className="rounded-lg border border-amber-200 bg-amber-50/70 px-3 py-2 text-sm dark:border-amber-900/60 dark:bg-amber-950/30"
+                                                            >
+                                                                <p className="italic text-gray-700 dark:text-gray-200">
+                                                                    &ldquo;{quoteItem.quote}&rdquo;
+                                                                </p>
+                                                                <RatingDetailChips item={quoteItem} />
+                                                                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                                    {quoteItem.username || 'Anonim'}
+                                                                    {quoteItem.reason
+                                                                        ? ` · ${formatQuoteReason(quoteItem.reason)}`
+                                                                        : ''}
+                                                                </p>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
 
                                                 <RecommendationFeedbackControls
                                                     placeId={placeId}

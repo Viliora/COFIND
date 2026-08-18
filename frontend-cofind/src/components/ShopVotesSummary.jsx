@@ -10,7 +10,7 @@ export const RATING_META = [
 
 export const PRESENCE_META = [
   { key: 'here', label: 'saya sedang di sini', emoji: '📍', barColor: 'bg-emerald-400', textColor: 'text-emerald-500' },
-  { key: 'been', label: 'saya pernah ke sini', emoji: '🕐', barColor: 'bg-blue-400', textColor: 'text-blue-500' },
+  { key: 'been', label: 'saya pernah ke sini', emoji: '👣', barColor: 'bg-blue-400', textColor: 'text-blue-500' },
   { key: 'want', label: 'saya mau ke sini', emoji: '💛', barColor: 'bg-amber-400', textColor: 'text-amber-500' },
 ];
 
