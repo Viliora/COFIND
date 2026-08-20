@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/authContext';
-import CoffeeShopCard from '../components/CoffeeShopCard';
+import CoffeeShopCard, { SHOP_CATALOG_GRID_CLASS } from '../components/CoffeeShopCard';
 import { ensureCoffeeShopImageMap } from '../utils/coffeeShopImages';
+import { PageWithLatestReviews } from '../components/LatestReviewsAside';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
@@ -83,7 +84,9 @@ const Favorite = () => {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-zinc-900 py-6 sm:py-8 px-3 sm:px-4 md:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <p className="text-center text-lg text-gray-600 dark:text-gray-400">Memuat favorit...</p>
+          <PageWithLatestReviews>
+            <p className="text-center text-lg text-gray-600 dark:text-gray-400">Memuat favorit...</p>
+          </PageWithLatestReviews>
         </div>
       </div>
     );
@@ -93,6 +96,7 @@ const Favorite = () => {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-zinc-900 py-6 sm:py-8 px-3 sm:px-4 md:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
+          <PageWithLatestReviews>
           <div className="text-center py-8 sm:py-12 md:py-16">
             <svg
               className="mx-auto h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 text-rose-400 dark:text-rose-500"
@@ -126,6 +130,7 @@ const Favorite = () => {
               </Link>
             </div>
           </div>
+          </PageWithLatestReviews>
         </div>
       </div>
     );
@@ -134,6 +139,8 @@ const Favorite = () => {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-zinc-900 py-6 sm:py-8 px-3 sm:px-4 md:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <PageWithLatestReviews>
         <div className="max-w-2xl mx-auto text-center py-12">
           <div className="w-20 h-20 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
             <svg className="w-10 h-10 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -156,6 +163,8 @@ const Favorite = () => {
             Masuk / Daftar
           </Link>
         </div>
+          </PageWithLatestReviews>
+        </div>
       </div>
     );
   }
@@ -163,6 +172,8 @@ const Favorite = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-900 py-6 sm:py-8 px-3 sm:px-4 md:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
+        <PageWithLatestReviews>
+        <div>
         <div className="mb-8">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
             ❤️ Favorit Saya
@@ -171,13 +182,15 @@ const Favorite = () => {
             {favoriteShops.length} coffee shop yang Anda sukai
           </p>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+        <div className={SHOP_CATALOG_GRID_CLASS}>
           {favoriteShops.map((shop) => (
             <div key={shop.place_id}>
               <CoffeeShopCard shop={shop} />
             </div>
           ))}
         </div>
+        </div>
+        </PageWithLatestReviews>
       </div>
     </div>
   );

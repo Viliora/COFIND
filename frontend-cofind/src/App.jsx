@@ -8,7 +8,6 @@ import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import { initializeSessionFix } from './utils/sessionFix';
-// import './utils/debugSessionIssue'; // Temporarily disabled - will import manually when needed
 
 // Lazy load page components for code splitting
 // This reduces initial bundle size and improves FCP/LCP

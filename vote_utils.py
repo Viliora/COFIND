@@ -260,6 +260,62 @@ def upsert_vote(user_id, place_id, presence=None, rating=None, best_for=None,
                 pass
 
 
+def _empty_vote_accumulator():
+    return {
+        'presence_counts': {k: 0 for k in PRESENCE_OPTIONS},
+        'rating_counts': {k: 0 for k in RATING_OPTIONS},
+        'best_for_counts': {k: 0 for k in BEST_FOR_OPTIONS},
+        'slider_sums': {k: 0 for k in SLIDER_FIELDS},
+        'slider_counts': {k: 0 for k in SLIDER_FIELDS},
+        'slider_distributions': {k: {str(v): 0 for v in range(1, 6)} for k in SLIDER_FIELDS},
+        'total_votes': 0,
+    }
+
+
+def _accumulate_vote_row(acc, rd):
+    acc['total_votes'] += 1
+    presence = rd.get('presence')
+    if presence in acc['presence_counts']:
+        acc['presence_counts'][presence] += 1
+    rating = rd.get('rating')
+    if rating in acc['rating_counts']:
+        acc['rating_counts'][rating] += 1
+    for tag in _clean_best_for(rd.get('best_for')):
+        acc['best_for_counts'][tag] += 1
+    for field in SLIDER_FIELDS:
+        val = rd.get(field)
+        if val is not None:
+            acc['slider_sums'][field] += val
+            acc['slider_counts'][field] += 1
+            val_key = str(val)
+            if val_key in acc['slider_distributions'][field]:
+                acc['slider_distributions'][field][val_key] += 1
+
+
+def _accumulate_review_star(acc, star):
+    label = _star_to_rating_label(star)
+    if label in acc['rating_counts']:
+        acc['rating_counts'][label] += 1
+
+
+def _finalize_vote_summary(acc):
+    slider_averages = {}
+    for field in SLIDER_FIELDS:
+        if acc['slider_counts'][field] > 0:
+            slider_averages[field] = round(acc['slider_sums'][field] / acc['slider_counts'][field], 1)
+        else:
+            slider_averages[field] = None
+    return {
+        'success': True,
+        'total_votes': acc['total_votes'],
+        'presence_counts': acc['presence_counts'],
+        'rating_counts': acc['rating_counts'],
+        'best_for_counts': acc['best_for_counts'],
+        'slider_averages': slider_averages,
+        'slider_distributions': acc['slider_distributions'],
+    }
+
+
 def get_vote_summary(place_id):
     """
     Agregasi vote untuk satu coffee shop:
@@ -288,40 +344,10 @@ def get_vote_summary(place_id):
             (trimmed_pid, trimmed_pid),
         ).fetchall()
 
-        presence_counts = {k: 0 for k in PRESENCE_OPTIONS}
-        rating_counts = {k: 0 for k in RATING_OPTIONS}
-        best_for_counts = {k: 0 for k in BEST_FOR_OPTIONS}
-        slider_sums = {k: 0 for k in SLIDER_FIELDS}
-        slider_counts = {k: 0 for k in SLIDER_FIELDS}
-        slider_distributions = {k: {str(v): 0 for v in range(1, 6)} for k in SLIDER_FIELDS}
-
-        total_votes = 0
+        acc = _empty_vote_accumulator()
         for row in rows:
-            rd = dict_from_row(cursor, row)
-            total_votes += 1
+            _accumulate_vote_row(acc, dict_from_row(cursor, row))
 
-            presence = rd.get('presence')
-            if presence in presence_counts:
-                presence_counts[presence] += 1
-
-            rating = rd.get('rating')
-            if rating in rating_counts:
-                rating_counts[rating] += 1
-
-            for tag in _clean_best_for(rd.get('best_for')):
-                best_for_counts[tag] += 1
-
-            for field in SLIDER_FIELDS:
-                val = rd.get(field)
-                if val is not None:
-                    slider_sums[field] += val
-                    slider_counts[field] += 1
-                    val_key = str(val)
-                    if val_key in slider_distributions[field]:
-                        slider_distributions[field][val_key] += 1
-
-        # Akumulasi rating dari review (bintang 1-5) yang dikonversi ke label
-        # love/like/ok/dislike/hate, agar konsisten dengan tampilan pada ReviewCard.
         review_rows = cursor.execute(
             '''
             SELECT rating
@@ -331,27 +357,9 @@ def get_vote_summary(place_id):
             (trimmed_pid, trimmed_pid),
         ).fetchall()
         for review_row in review_rows:
-            star = review_row[0]
-            label = _star_to_rating_label(star)
-            if label in rating_counts:
-                rating_counts[label] += 1
+            _accumulate_review_star(acc, review_row[0])
 
-        slider_averages = {}
-        for field in SLIDER_FIELDS:
-            if slider_counts[field] > 0:
-                slider_averages[field] = round(slider_sums[field] / slider_counts[field], 1)
-            else:
-                slider_averages[field] = None
-
-        return {
-            'success': True,
-            'total_votes': total_votes,
-            'presence_counts': presence_counts,
-            'rating_counts': rating_counts,
-            'best_for_counts': best_for_counts,
-            'slider_averages': slider_averages,
-            'slider_distributions': slider_distributions,
-        }
+        return _finalize_vote_summary(acc)
     except Exception as e:
         return {'success': False, 'error': str(e)}
     finally:
@@ -360,3 +368,62 @@ def get_vote_summary(place_id):
                 conn.close()
             except Exception:
                 pass
+
+
+def get_vote_summaries_batch(place_ids, include_review_stars=True):
+    """Agregasi vote untuk banyak coffee shop. Return {place_id: summary_dict}.
+
+    include_review_stars: jika True, rating bintang dari tabel reviews ikut
+    dihitung ke rating_counts (untuk tampilan UI). Rekomendasi mematikan ini
+    supaya sinyal komunitas tidak dobel dengan rata-rata rating review.
+    """
+    ids = [str(pid).strip() for pid in (place_ids or []) if str(pid).strip()]
+    if not ids:
+        return {}
+    unique_ids = list(dict.fromkeys(ids))
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        placeholders = ','.join('?' * len(unique_ids))
+        vote_rows = cursor.execute(
+            f'''
+            SELECT place_id, presence, rating, best_for, pelayanan, kebersihan, kenyamanan, harga
+            FROM shop_votes
+            WHERE place_id IN ({placeholders})
+            ''',
+            unique_ids,
+        ).fetchall()
+
+        acc_by_place = {pid: _empty_vote_accumulator() for pid in unique_ids}
+        for row in vote_rows:
+            rd = dict_from_row(cursor, row)
+            pid = str(rd.get('place_id') or '').strip()
+            if pid not in acc_by_place:
+                acc_by_place[pid] = _empty_vote_accumulator()
+            _accumulate_vote_row(acc_by_place[pid], rd)
+        if include_review_stars:
+            review_rows = cursor.execute(
+                f'''
+                SELECT place_id, rating
+                FROM reviews
+                WHERE place_id IN ({placeholders}) AND rating IS NOT NULL
+                ''',
+                unique_ids,
+            ).fetchall()
+            for row in review_rows:
+                pid = str(row[0] or '').strip()
+                if pid not in acc_by_place:
+                    acc_by_place[pid] = _empty_vote_accumulator()
+                _accumulate_review_star(acc_by_place[pid], row[1])
+        return {pid: _finalize_vote_summary(acc) for pid, acc in acc_by_place.items()}
+    except Exception as e:
+        print(f'[VOTES] get_vote_summaries_batch failed: {e}')
+        return {pid: _finalize_vote_summary(_empty_vote_accumulator()) for pid in unique_ids}
+    finally:
+        if conn:
+            try:
+                conn.close()
+            except Exception:
+                pass
+

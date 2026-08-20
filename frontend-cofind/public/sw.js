@@ -1,10 +1,9 @@
 // Service Worker untuk Cofind dengan Optimized Caching Strategy
 // UPDATE CACHE VERSION SETIAP KALI ADA PERUBAHAN PENTING
-const CACHE_VERSION = 'cofind-v8'; // FIX: SPA deep-link (buka tab baru) fallback ke index.html
-const CACHE_SHELL = 'cofind-shell-v8';      // ONLY static JS/CSS chunks (bukan HTML)
-const CACHE_STATIC = 'cofind-static-v8';    // Images, fonts, dll
-const CACHE_CONTENT = 'cofind-content-v8';  // API responses, dynamic content (DISABLED)
-// HTML pages NOT cached - always fetch fresh untuk prevent stale login page
+const CACHE_VERSION = 'cofind-v9';
+const CACHE_SHELL = 'cofind-shell-v9';    // JS/CSS chunks (bukan HTML)
+const CACHE_STATIC = 'cofind-static-v9';  // Images, fonts, dll
+// HTML, API, dan data dinamis: network only — tidak di-cache di klien.
 
 // Application Shell Assets - HANYA static assets, bukan HTML pages
 // HTML pages harus SELALU fresh untuk session persistence
@@ -65,32 +64,22 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   console.log('[Service Worker] Activating version', CACHE_VERSION);
   
-  // Daftar cache yang valid untuk versi ini (tidak boleh dihapus)
+  // Hanya aset tampilan yang boleh dipertahankan.
   const validCaches = [
     CACHE_SHELL,
     CACHE_STATIC,
-    CACHE_CONTENT,
-    // CACHE_PAGES dihapus - HTML pages tidak di-cache
   ];
   
   event.waitUntil(
     Promise.all([
-      // Hapus cache lama - AGGRESSIVE CLEANUP
       caches.keys()
         .then((cacheNames) => {
           return Promise.all(
             cacheNames.map((cacheName) => {
-              // Hapus cache lama yang bukan bagian dari versi ini
               if (cacheName.startsWith('cofind-') && !validCaches.includes(cacheName)) {
-                console.log('[Service Worker] Removing old cache:', cacheName);
+                console.log('[Service Worker] Removing unused/old cache:', cacheName);
                 return caches.delete(cacheName);
               }
-              // Hapus cache dengan version lama (v1, v2, v3, v4, dll jika bukan v5)
-              if (cacheName.startsWith('cofind-') && !cacheName.includes('v5')) {
-                console.log('[Service Worker] Removing old version cache:', cacheName);
-                return caches.delete(cacheName);
-              }
-              // Skip cache yang bukan cofind- atau cache valid untuk versi ini
               return Promise.resolve();
             })
           );
@@ -126,118 +115,7 @@ self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'GET_VERSION') {
     event.ports[0].postMessage({ version: CACHE_VERSION });
   }
-  
-  // Cache management dari aplikasi
-  if (event.data && event.data.type === 'CACHE_PUT') {
-    handleCachePut(event.data);
-  }
-  
-  if (event.data && event.data.type === 'CACHE_DELETE') {
-    handleCacheDelete(event.data);
-  }
-  
-  if (event.data && event.data.type === 'CACHE_CLEAR') {
-    handleCacheClear(event.data);
-  }
 });
-
-// Handler untuk menambah/memperbarui cache
-async function handleCachePut(data) {
-  const { url, responseData, cacheType = 'content' } = data;
-  
-  try {
-    const cacheName = getCacheName(cacheType);
-    const cache = await caches.open(cacheName);
-    
-    // Buat response object dari data
-    const response = new Response(
-      JSON.stringify(responseData),
-      {
-        headers: { 'Content-Type': 'application/json' },
-        status: 200,
-        statusText: 'OK'
-      }
-    );
-    
-    await cache.put(url, response);
-    console.log('[Service Worker] Cache updated:', url);
-    
-    // Notify client
-    const clients = await self.clients.matchAll();
-    clients.forEach(client => {
-      client.postMessage({ 
-        type: 'CACHE_UPDATED', 
-        url, 
-        cacheType 
-      });
-    });
-  } catch (error) {
-    console.error('[Service Worker] Error caching data:', error);
-  }
-}
-
-// Handler untuk menghapus item dari cache
-async function handleCacheDelete(data) {
-  const { url, cacheType } = data;
-  
-  try {
-    const cacheName = getCacheName(cacheType);
-    const cache = await caches.open(cacheName);
-    await cache.delete(url);
-    console.log('[Service Worker] Cache deleted:', url);
-    
-    // Notify client
-    const clients = await self.clients.matchAll();
-    clients.forEach(client => {
-      client.postMessage({ 
-        type: 'CACHE_DELETED', 
-        url 
-      });
-    });
-  } catch (error) {
-    console.error('[Service Worker] Error deleting cache:', error);
-  }
-}
-
-// Handler untuk clear semua cache
-async function handleCacheClear(data) {
-  const { cacheType } = data || {};
-  
-  try {
-    if (cacheType) {
-      // Clear specific cache type
-      const cacheName = getCacheName(cacheType);
-      await caches.delete(cacheName);
-      console.log('[Service Worker] Cache cleared:', cacheType);
-    } else {
-      // Clear all caches
-      const cacheNames = await caches.keys();
-      await Promise.all(cacheNames.map(name => caches.delete(name)));
-      console.log('[Service Worker] All caches cleared');
-    }
-    
-    // Notify client
-    const clients = await self.clients.matchAll();
-    clients.forEach(client => {
-      client.postMessage({ 
-        type: 'CACHE_CLEARED', 
-        cacheType: cacheType || 'all'
-      });
-    });
-  } catch (error) {
-    console.error('[Service Worker] Error clearing cache:', error);
-  }
-}
-
-// Helper untuk mendapatkan nama cache
-function getCacheName(type) {
-  switch(type) {
-    case 'shell': return CACHE_SHELL;
-    case 'static': return CACHE_STATIC;
-    case 'content': return CACHE_CONTENT;
-    default: return CACHE_CONTENT;
-  }
-}
 
 // ============================================
 // EVENT: FETCH (Caching Strategy)
@@ -285,8 +163,8 @@ self.addEventListener('fetch', (event) => {
     // Ini memastikan /login dan semua routes selalu fresh
     event.respondWith(networkOnlyStrategyForHTML(request));
   } else {
-    // Default: NETWORK FIRST (untuk dynamic content)
-    event.respondWith(networkFirstStrategy(request, CACHE_CONTENT));
+    // Request yang tidak dikenali: jangan di-cache (bisa data dinamis).
+    event.respondWith(networkOnlyStrategy(request));
   }
 });
 
@@ -315,12 +193,6 @@ async function cacheFirstStrategy(request, cacheName) {
     return networkResponse;
   } catch (error) {
     console.error('[Service Worker] Cache First error:', error);
-    
-    // Fallback: coba dari cache lain atau return error
-    const fallbackCache = await caches.open(CACHE_CONTENT);
-    const fallback = await fallbackCache.match(request);
-    if (fallback) return fallback;
-    
     return new Response('Network error', { 
       status: 408,
       headers: { 'Content-Type': 'text/plain' }
@@ -470,62 +342,6 @@ async function networkOnlyStrategy(request) {
   }
 }
 
-// NETWORK FIRST: Fetch dari network dulu, jika gagal baru pakai cache
-async function networkFirstStrategy(request, cacheName) {
-  try {
-    const cache = await caches.open(cacheName);
-    
-    // Coba fetch dari network dengan timeout
-    const networkResponse = await Promise.race([
-      fetch(request),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Network timeout')), 3000)
-      )
-    ]);
-    
-    if (networkResponse && networkResponse.status === 200) {
-      // Update cache dengan response terbaru
-      cache.put(request, networkResponse.clone());
-      console.log('[Service Worker] Network First - Serving from network:', request.url);
-      return networkResponse;
-    }
-    
-    throw new Error('Network response not OK');
-  } catch (error) {
-    console.log('[Service Worker] Network First - Network failed, trying cache:', request.url, error.message);
-    
-    // Fallback ke cache
-    const cache = await caches.open(cacheName);
-    const cachedResponse = await cache.match(request);
-    
-    if (cachedResponse) {
-      console.log('[Service Worker] Network First - Serving from cache:', request.url);
-      return cachedResponse;
-    }
-    
-    // Jika tidak ada di cache juga, return error response yang lebih informatif
-    return new Response(
-      JSON.stringify({ 
-        error: 'Offline', 
-        message: 'Server tidak dapat diakses dan tidak ada data tersimpan. Pastikan server backend berjalan.',
-        details: {
-          url: request.url,
-          timestamp: new Date().toISOString(),
-          suggestion: 'Periksa apakah server backend berjalan di ' + new URL(request.url).origin
-        }
-      }),
-      {
-        status: 503,
-        statusText: 'Service Unavailable',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache'
-        }
-      }
-    );
-  }
-}
-
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
@@ -644,44 +460,6 @@ self.addEventListener('push', (event) => {
     })
   );
 });
-
-// ============================================
-// EVENT: SYNC (Background Sync)
-// ============================================
-self.addEventListener('sync', (event) => {
-  console.log('[Service Worker] Background sync event:', event.tag);
-  
-  if (event.tag === 'sync-offline-data') {
-    event.waitUntil(syncOfflineData());
-  }
-  
-  if (event.tag === 'sync-favorites') {
-    event.waitUntil(syncFavorites());
-  }
-});
-
-async function syncOfflineData() {
-  try {
-    console.log('[Service Worker] Syncing offline data...');
-    const cache = await caches.open(CACHE_CONTENT);
-    const keys = await cache.keys();
-    console.log('[Service Worker] Found', keys.length, 'items to sync');
-    return Promise.resolve();
-  } catch (error) {
-    console.error('[Service Worker] Error syncing offline data:', error);
-    return Promise.reject(error);
-  }
-}
-
-async function syncFavorites() {
-  try {
-    console.log('[Service Worker] Syncing favorites...');
-    return Promise.resolve();
-  } catch (error) {
-    console.error('[Service Worker] Error syncing favorites:', error);
-    return Promise.reject(error);
-  }
-}
 
 // ============================================
 // EVENT: NOTIFICATION CLICK

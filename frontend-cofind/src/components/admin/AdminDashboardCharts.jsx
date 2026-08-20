@@ -78,7 +78,7 @@ function DonutChart({ segments, centerLabel, centerValue }) {
                 <span className="text-stone-700 truncate">{segment.label}</span>
               </div>
               <span className="font-medium text-stone-800 tabular-nums">
-                {segment.value} <span className="text-stone-400 font-normal">({pct}%)</span>
+                {segment.value}
               </span>
             </div>
           );
@@ -204,7 +204,7 @@ export default function AdminDashboardCharts({ charts }) {
             centerLabel="tingkat membantu"
           />
           <p className="mt-4 text-xs text-stone-500">
-            {feedback.total || 0} feedback dari {feedback.unique_users || 0} user unik.
+            {feedback.total || 0} feedback dari {feedback.unique_users || 0} user.
           </p>
         </ChartCard>
 

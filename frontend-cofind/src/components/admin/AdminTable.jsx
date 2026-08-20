@@ -18,7 +18,9 @@ export default function AdminTable({
               {columns.map((column) => (
                 <th
                   key={column.key}
-                  className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-stone-500"
+                  className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-stone-500 ${
+                    column.align === 'center' ? 'text-center' : 'text-left'
+                  }`}
                 >
                   {column.label}
                 </th>
@@ -51,7 +53,12 @@ export default function AdminTable({
               rows.map((row, index) => (
                 <tr key={row.id || row.place_id || index} className="align-top hover:bg-stone-50 transition-colors duration-300 ease-out">
                   {columns.map((column) => (
-                    <td key={column.key} className="px-4 py-3 text-sm text-stone-700">
+                    <td
+                      key={column.key}
+                      className={`px-4 py-3 text-sm text-stone-700 ${
+                        column.align === 'center' ? 'text-center' : ''
+                      }`}
+                    >
                       {column.render ? column.render(row) : row[column.key]}
                     </td>
                   ))}

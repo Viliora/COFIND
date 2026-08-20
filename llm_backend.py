@@ -3,7 +3,6 @@ Backend LLM via OpenAI-compatible Hugging Face Router.
 
 Lingkungan:
   HF_MODEL — id model router (default: meta-llama/Llama-3.1-8B-Instruct:novita)
-  HF_KEYWORD_MODEL — model opsional untuk keyword (legacy)
   HF_API_TOKEN / HF_TOKEN — token Hugging Face
   HF_LLM_TIMEOUT_SECONDS — timeout request HTTP ke router (default: 60)
   HF_LLM_MAX_NEW_TOKENS_CAP — batas output text generation (default: 384)
@@ -22,7 +21,6 @@ from typing import Dict, List, Optional
 
 HF_API_TOKEN = (os.getenv("HF_API_TOKEN") or os.getenv("HF_TOKEN") or "").strip()
 HF_MODEL = os.getenv("HF_MODEL", "meta-llama/Llama-3.1-8B-Instruct:novita").strip()
-HF_KEYWORD_MODEL = os.getenv("HF_KEYWORD_MODEL", HF_MODEL).strip()
 LLM_BACKEND = "hf_router_openai"
 
 _MAX_NEW_TOKENS_CAP = int(os.getenv("HF_LLM_MAX_NEW_TOKENS_CAP", "384"))

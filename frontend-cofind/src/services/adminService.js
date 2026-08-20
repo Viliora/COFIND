@@ -128,23 +128,6 @@ export const adminService = {
     });
   },
 
-  getAICache() {
-    return apiCall('/api/admin/ai/cache');
-  },
-
-  deleteAICache(placeId) {
-    return apiCall(`/api/admin/ai/cache/${placeId}`, {
-      method: 'DELETE',
-    });
-  },
-
-  triggerSentimentAnalysis(payload) {
-    return apiCall('/api/llm/analyze-sentiment', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
-  },
-
   getSettings() {
     return apiCall('/api/admin/settings');
   },

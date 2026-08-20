@@ -90,8 +90,8 @@ function AuthProvider({ children }) {
         return { error: { message: 'Username minimal 3 karakter' } };
       }
 
-      if (!password || password.length < 6) {
-        return { error: { message: 'Password minimal 6 karakter' } };
+      if (!password || password.length < 8) {
+        return { error: { message: 'Password minimal 8 karakter' } };
       }
 
       // Call backend signup

@@ -7,7 +7,7 @@ Tahap yang disediakan modul ini:
      di review (tidak mungkin mengarang istilah).
   B. Rerank kandidat oleh LLM: LLM memberi fit score + alasan + kutipan bukti,
      lalu skor akhir = campuran fit LLM dan skor statistik (BM25 hybrid).
-  C. Konteks personalisasi dari histori user (review sendiri + favorit).
+  C. Konteks personalisasi dari histori user (review, favorit, dan penilaian toko).
   D. Grounding check: setiap kutipan yang diklaim LLM harus benar-benar ada di
      korpus review toko tersebut, kalau tidak maka klaim itu dibuang.
 
@@ -432,10 +432,16 @@ def corpus_vocabulary_from_tokens(tokenized_corpus: Sequence[Sequence[str]]) -> 
 # Tahap C: konteks personalisasi dari histori user
 # --------------------------------------------------------------------------
 
-def build_user_taste_profile(user_id: object, *, max_reviews: int = 6, max_favorites: int = 6) -> Dict[str, object]:
+def build_user_taste_profile(
+    user_id: object,
+    *,
+    max_reviews: int = 6,
+    max_favorites: int = 6,
+    max_votes: int = 12,
+) -> Dict[str, object]:
     """
     Ringkasan selera user dari data yang sudah dimiliki aplikasi:
-    review yang pernah ia tulis dan coffee shop favoritnya.
+    review yang pernah ia tulis, coffee shop favorit, dan penilaian tokonya.
     Dipakai hanya sebagai konteks preferensi, bukan sumber fakta tentang kandidat.
     """
     profile: Dict[str, object] = {
@@ -444,6 +450,10 @@ def build_user_taste_profile(user_id: object, *, max_reviews: int = 6, max_favor
         'avg_rating_given': None,
         'review_lines': [],
         'favorite_names': [],
+        'vote_rating_bits': [],
+        'vote_best_for_bits': [],
+        'vote_slider_bits': [],
+        'vote_shop_lines': [],
     }
     if not profile['enabled']:
         return profile
@@ -470,6 +480,17 @@ def build_user_taste_profile(user_id: object, *, max_reviews: int = 6, max_favor
                 'WHERE f.user_id = ? ORDER BY f.added_at DESC LIMIT ?',
                 (uid, int(max_favorites)),
             ).fetchall()
+            try:
+                vote_rows = cursor.execute(
+                    'SELECT sv.rating, sv.best_for, sv.pelayanan, sv.kebersihan, '
+                    'sv.kenyamanan, sv.harga, c.name '
+                    'FROM shop_votes sv LEFT JOIN coffee_shops c ON sv.place_id = c.place_id '
+                    'WHERE sv.user_id = ? '
+                    'ORDER BY COALESCE(sv.updated_at, sv.created_at) DESC LIMIT ?',
+                    (uid, int(max_votes)),
+                ).fetchall()
+            except Exception:
+                vote_rows = []
         finally:
             conn.close()
     except Exception as err:
@@ -500,10 +521,75 @@ def build_user_taste_profile(user_id: object, *, max_reviews: int = 6, max_favor
         if name and name not in favorite_names:
             favorite_names.append(name)
 
+    rating_counts: Dict[str, int] = {}
+    best_for_counts: Dict[str, int] = {}
+    slider_sums: Dict[str, float] = {}
+    slider_n: Dict[str, int] = {}
+    vote_shop_lines = []
+    for row in vote_rows or []:
+        rating, best_for_raw, pelayanan, kebersihan, kenyamanan, harga, shop_name = (
+            list(row) + [None] * 7
+        )[:7]
+        rating_key = str(rating or '').strip().lower()
+        if rating_key in _RATING_PROMPT_LABELS:
+            rating_counts[rating_key] = rating_counts.get(rating_key, 0) + 1
+        tags = [
+            tag.strip().lower()
+            for tag in str(best_for_raw or '').split(',')
+            if tag.strip()
+        ]
+        for tag in tags:
+            if tag in _BEST_FOR_PROMPT_LABELS:
+                best_for_counts[tag] = best_for_counts.get(tag, 0) + 1
+        for field, val in (
+            ('pelayanan', pelayanan),
+            ('kebersihan', kebersihan),
+            ('kenyamanan', kenyamanan),
+            ('harga', harga),
+        ):
+            try:
+                if val is not None:
+                    slider_sums[field] = slider_sums.get(field, 0.0) + float(val)
+                    slider_n[field] = slider_n.get(field, 0) + 1
+            except (TypeError, ValueError):
+                pass
+        shop_label = str(shop_name or '').strip()
+        if shop_label and len(vote_shop_lines) < 3:
+            bits = []
+            if rating_key in _RATING_PROMPT_LABELS:
+                bits.append(_RATING_PROMPT_LABELS[rating_key])
+            tagged = [_BEST_FOR_PROMPT_LABELS[t] for t in tags if t in _BEST_FOR_PROMPT_LABELS][:2]
+            if tagged:
+                bits.append('untuk ' + ', '.join(tagged))
+            if bits:
+                vote_shop_lines.append(f'{shop_label}: {", ".join(bits)}')
+
+    vote_rating_bits = [
+        f'{_RATING_PROMPT_LABELS[key]} ({count})'
+        for key, count in sorted(rating_counts.items(), key=lambda item: (-item[1], item[0]))
+        if count
+    ]
+    vote_best_for_bits = [
+        f'{_BEST_FOR_PROMPT_LABELS[tag]} ({count})'
+        for tag, count in sorted(best_for_counts.items(), key=lambda item: (-item[1], item[0]))
+        if count
+    ][:4]
+    vote_slider_bits = [
+        f'{field} {slider_sums[field] / slider_n[field]:.1f}/5'
+        for field in ('pelayanan', 'kebersihan', 'kenyamanan', 'harga')
+        if slider_n.get(field)
+    ]
+
     profile['avg_rating_given'] = round(sum(ratings) / len(ratings), 2) if ratings else None
     profile['review_lines'] = review_lines
     profile['favorite_names'] = favorite_names
-    profile['has_history'] = bool(review_lines or favorite_names)
+    profile['vote_rating_bits'] = vote_rating_bits
+    profile['vote_best_for_bits'] = vote_best_for_bits
+    profile['vote_slider_bits'] = vote_slider_bits
+    profile['vote_shop_lines'] = vote_shop_lines
+    profile['has_history'] = bool(
+        review_lines or favorite_names or vote_rating_bits or vote_best_for_bits or vote_slider_bits
+    )
     return profile
 
 
@@ -518,6 +604,17 @@ def format_user_taste_prompt_block(taste_profile: Optional[Dict[str, object]]) -
     ]
     if profile.get('avg_rating_given') is not None:
         lines.append(f"- Rata-rata rating yang biasa user berikan: {profile['avg_rating_given']}/5")
+    vote_rating_bits = profile.get('vote_rating_bits') or []
+    if vote_rating_bits:
+        lines.append(f"- Penilaian toko yang biasa user pilih: {', '.join(vote_rating_bits[:4])}")
+    vote_best_for_bits = profile.get('vote_best_for_bits') or []
+    if vote_best_for_bits:
+        lines.append(f"- Aktivitas yang user sering tandai cocok: {', '.join(vote_best_for_bits)}")
+    vote_slider_bits = profile.get('vote_slider_bits') or []
+    if vote_slider_bits:
+        lines.append(f"- Pengalaman yang user utamakan: {', '.join(vote_slider_bits)}")
+    for line in (profile.get('vote_shop_lines') or [])[:3]:
+        lines.append(f'- Penilaian user sebelumnya: {line}')
     for line in (profile.get('review_lines') or [])[:4]:
         lines.append(f'- Ulasan user sebelumnya: {line}')
     favorites = profile.get('favorite_names') or []
@@ -532,7 +629,8 @@ def format_user_taste_prompt_block(taste_profile: Optional[Dict[str, object]]) -
 
 _RERANK_SYSTEM_PROMPT = (
     'Anda mesin pemeringkat rekomendasi coffee shop Cofind. '
-    'Anda memilih dan mengurutkan kandidat HANYA berdasarkan data dan kutipan review yang diberikan. '
+    'Anda memilih dan mengurutkan kandidat berdasarkan kutipan review (bukti utama) '
+    'dan sinyal pengunjung yang diberikan. '
     'Jangan menambah kandidat, jangan mengarang fasilitas, jangan mengarang kutipan. '
     'Jawab HANYA JSON array valid tanpa markdown dan tanpa penjelasan di luar JSON.'
 )
@@ -578,7 +676,93 @@ def _quote_candidates_for_prompt(evidence: Dict[str, object], *, limit: int, quo
     return quotes
 
 
-def _candidate_block(index: int, candidate: Dict[str, object], quotes: Sequence[Dict[str, object]]) -> str:
+_RATING_PROMPT_LABELS = {
+    'love': 'sangat suka',
+    'like': 'suka',
+    'ok': 'biasa',
+    'dislike': 'kurang suka',
+    'hate': 'tidak suka',
+}
+_BEST_FOR_PROMPT_LABELS = {
+    'belajar': 'belajar',
+    'kerja': 'kerja',
+    'nge_game': 'bermain game',
+    'meeting': 'meeting',
+    'family_time': 'keluarga',
+    'instagrammable': 'instagrammable',
+}
+_PILL_TO_BEST_FOR = {
+    'belajar': 'belajar',
+    'kerja': 'kerja',
+    'bermain game': 'nge_game',
+    'meeting_sosialisasi': 'meeting',
+    'keluarga': 'family_time',
+    'instagrammable': 'instagrammable',
+}
+
+
+def _community_signal_lines(evidence: Dict[str, object], pills: Optional[Sequence[str]] = None) -> List[str]:
+    """Baris fakta pengunjung untuk blok kandidat; kosong bila toko belum punya data."""
+    data = (evidence or {}).get('community_signals') or {}
+    vote = data.get('vote') or {}
+    lines: List[str] = []
+
+    rating_counts = vote.get('rating_counts') or {}
+    total_rating = sum(int(rating_counts.get(k) or 0) for k in _RATING_PROMPT_LABELS)
+    if total_rating > 0:
+        bits = []
+        for key, label in _RATING_PROMPT_LABELS.items():
+            count = int(rating_counts.get(key) or 0)
+            if count:
+                bits.append(f'{label} {count}')
+        if bits:
+            lines.append(f'    - penilaian: {", ".join(bits[:4])} (dari {total_rating} penilaian)')
+
+    slider_bits = []
+    sliders = vote.get('slider_averages') or {}
+    for field in ('pelayanan', 'kebersihan', 'kenyamanan', 'harga'):
+        val = sliders.get(field)
+        if val is not None:
+            try:
+                slider_bits.append(f'{field} {float(val):.1f}/5')
+            except (TypeError, ValueError):
+                pass
+    if slider_bits:
+        lines.append(f'    - pengalaman: {", ".join(slider_bits)}')
+
+    best_for_counts = vote.get('best_for_counts') or {}
+    preferred_tags = [_PILL_TO_BEST_FOR[p] for p in (pills or []) if p in _PILL_TO_BEST_FOR]
+    ranked_tags = sorted(
+        ((tag, int(count or 0)) for tag, count in best_for_counts.items() if int(count or 0) > 0),
+        key=lambda item: (-item[1], item[0]),
+    )
+    if preferred_tags:
+        ranked_tags = [item for item in ranked_tags if item[0] in preferred_tags] + [
+            item for item in ranked_tags if item[0] not in preferred_tags
+        ]
+    if ranked_tags:
+        best_bits = [
+            f'{_BEST_FOR_PROMPT_LABELS.get(tag, tag)} ({count})'
+            for tag, count in ranked_tags[:3]
+        ]
+        lines.append(f'    - sering dipilih untuk: {", ".join(best_bits)}')
+
+    pro_texts = [
+        str(item.get('text') or '').strip()
+        for item in (data.get('top_pros') or [])
+        if str(item.get('text') or '').strip()
+    ]
+    if pro_texts:
+        lines.append(f'    - keunggulan yang disetujui: {"; ".join(pro_texts[:3])}')
+    return lines
+
+
+def _candidate_block(
+    index: int,
+    candidate: Dict[str, object],
+    quotes: Sequence[Dict[str, object]],
+    pills: Optional[Sequence[str]] = None,
+) -> str:
     """
     Blok bukti satu kandidat. Tiga hal yang disengaja di sini:
     skor statistik sistem tidak dibocorkan (kalau ditampilkan, LLM cenderung menyalin
@@ -614,12 +798,19 @@ def _candidate_block(index: int, candidate: Dict[str, object], quotes: Sequence[
     if not quote_lines:
         quote_lines = ['    (tidak ada kutipan review)']
 
+    community_lines = _community_signal_lines(evidence, pills=pills)
+    community_block = ''
+    if community_lines:
+        community_block = '  sinyal pengunjung:\n' + '\n'.join(community_lines) + '\n'
+
     return (
         f"id={index} | {candidate.get('name') or '-'}\n"
         f"  jumlah review: {evidence.get('review_count', 0)}, rata-rata rating user: {evidence.get('avg_user_rating')}\n"
         f"  rating kategori: {category_line}\n"
         f"  sinyal per konteks:\n" + '\n'.join(stat_lines) + '\n'
-        f"  kutipan review bernomor (satu-satunya sumber bukti kandidat ini):\n" + '\n'.join(quote_lines)
+        + community_block
+        + f"  kutipan review bernomor (bukti utama; sinyal pengunjung di atas hanya pendukung):\n"
+        + '\n'.join(quote_lines)
     )
 
 
@@ -712,7 +903,7 @@ def llm_rerank_candidates(
             quote_chars=quote_chars,
         )
         quotes_by_place[str(candidate.get('place_id'))] = quotes
-        blocks.append(_candidate_block(idx, candidate, quotes))
+        blocks.append(_candidate_block(idx, candidate, quotes, pills=pills))
 
     prompt_parts = [
         f'Preferensi aktivitas user: {labels_line}',
@@ -724,7 +915,8 @@ def llm_rerank_candidates(
     prompt_parts.append(
         'Tugas: nilai seberapa cocok setiap kandidat dengan preferensi user, lalu urutkan dari paling cocok.\n'
         'Aturan ketat:\n'
-        '- Urutan kandidat di atas acak dan TIDAK mencerminkan kualitas. Nilai murni dari bukti review.\n'
+        '- Urutan kandidat di atas acak dan TIDAK mencerminkan kualitas. '
+        'Nilai dari kutipan review plus sinyal pengunjung bila ada.\n'
         f'- Wajib menilai SEMUA {len(pool)} kandidat, satu objek JSON per kandidat, tanpa kandidat baru.\n'
         '- id adalah angka kandidat (id=...) yang tertulis di atas.\n'
         '- fit_score bilangan 0 sampai 10. Bukti lemah untuk preferensi user berarti fit_score rendah.\n'

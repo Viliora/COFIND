@@ -39,34 +39,11 @@ function quoteDedupeKey(quote) {
     return String(quote ?? '').trim().toLowerCase().slice(0, 160);
 }
 
-/** Pratinjau kutipan di kartu (maks. panjang karakter); teks lengkap di `title` hover. */
-const MODAL_QUOTE_PREVIEW_MAX = 50;
+const QUOTE_UNSUITABILITY_RE =
+    /kurang (disarankan|direkomendasikan|cocok|recommended)|tidak (disarankan|direkomendasikan|cocok|recommended)|ga cocok|gak cocok|nggak cocok|enggak cocok|bukan tempat yang cocok|bukan untuk/i;
 
-function truncateQuotePreview(text, maxLen = MODAL_QUOTE_PREVIEW_MAX) {
-    const s = String(text ?? '').trim();
-    if (s.length <= maxLen) {
-        return { preview: s, truncated: false };
-    }
-    const ellipsis = '…';
-    const budget = Math.max(1, maxLen - ellipsis.length);
-    let cut = s.slice(0, budget);
-    const lastSpace = cut.lastIndexOf(' ');
-    if (lastSpace > Math.floor(budget * 0.35)) {
-        cut = cut.slice(0, lastSpace);
-    }
-    return { preview: `${cut}${ellipsis}`, truncated: true };
-}
-
-/** Kata/frasa relevan untuk baris meta: utuh, tidak dipotong (reason atau matched_terms). */
-function fullRelevantPhrasesText(item) {
-    const terms = item?.matched_terms;
-    if (Array.isArray(terms) && terms.length > 0) {
-        return terms
-            .map((t) => String(t ?? '').trim())
-            .filter(Boolean)
-            .join(', ');
-    }
-    return formatQuoteReason(item?.reason);
+function quoteLooksUnsuitable(quote) {
+    return QUOTE_UNSUITABILITY_RE.test(String(quote ?? ''));
 }
 
 function quoteKeysFrom(items) {
@@ -102,6 +79,7 @@ function gatherRelevantEvidenceEntries(rec, confirmedPills = [], maxQuotesBefore
         if (out.length >= maxQuotesBeforeFilter) return;
         const q = String(quoteText ?? '').trim();
         if (q.length < 10) return;
+        if (quoteLooksUnsuitable(q)) return;
         const key = quoteDedupeKey(q);
         if (!key || seen.has(key) || caveatKeys.has(key)) return;
         seen.add(key);
@@ -167,23 +145,6 @@ function gatherRelevantEvidenceEntries(rec, confirmedPills = [], maxQuotesBefore
         });
     }
 
-    if (out.length === 0 && reviewQuotes.length > 0) {
-        for (const item of reviewQuotes) {
-            if (out.length >= maxQuotesBeforeFilter) break;
-            if (!formatQuoteReason(item.reason)) continue;
-            pushQuote(item.quote, {
-                username: item.username,
-                rating: item.rating,
-                reason: item.reason,
-                pill_label: item.pill_label,
-                rating_layanan: item.rating_layanan,
-                rating_suasana: item.rating_suasana,
-                rating_makanan: item.rating_makanan,
-                has_photos: item.has_photos,
-            });
-        }
-    }
-
     return out.filter((item) => formatQuoteReason(item.reason));
 }
 
@@ -222,12 +183,24 @@ function sortModalQuotes(items) {
  */
 function getModalEvidenceItems(rec, confirmedPills) {
     const ev = rec?.supporting_evidence || {};
-    const caveatKeys = quoteKeysFrom(ev.modal_caveat_quotes);
-    const fromApi = Array.isArray(ev.modal_display_quotes) ? ev.modal_display_quotes : [];
-    const supporting = fromApi.filter((item) => !caveatKeys.has(quoteDedupeKey(item?.quote)));
-    if (supporting.length > 0) return supporting.slice(0, 3);
-    const collected = collectRelevantEvidence(rec, confirmedPills);
-    return sortModalQuotes(collected).slice(0, 3);
+    const caveatKeys = quoteKeysFrom([
+        ...(Array.isArray(ev.modal_caveat_quotes) ? ev.modal_caveat_quotes : []),
+        ...(Array.isArray(ev.negative_review_quotes) ? ev.negative_review_quotes : []),
+    ]);
+    const fromApi = Array.isArray(ev.modal_display_quotes) ? ev.modal_display_quotes : null;
+    const asSupporting = (items) =>
+        (Array.isArray(items) ? items : []).filter((item) => {
+            const quote = item?.quote;
+            if (!quote) return false;
+            if (caveatKeys.has(quoteDedupeKey(quote))) return false;
+            if (quoteLooksUnsuitable(quote)) return false;
+            return true;
+        });
+    // Percayai pemisahan backend: jangan angkat ulang kutipan caveat sebagai bukti.
+    if (fromApi) {
+        return asSupporting(fromApi).slice(0, 3);
+    }
+    return sortModalQuotes(asSupporting(collectRelevantEvidence(rec, confirmedPills))).slice(0, 3);
 }
 
 /**
@@ -237,9 +210,14 @@ function getModalEvidenceItems(rec, confirmedPills) {
 function getModalCaveatItems(rec) {
     const ev = rec?.supporting_evidence || {};
     const fromApi = Array.isArray(ev.modal_caveat_quotes) ? ev.modal_caveat_quotes : [];
+    const misplaced = (Array.isArray(ev.modal_display_quotes) ? ev.modal_display_quotes : [])
+        .filter((item) => quoteLooksUnsuitable(item?.quote || item?.text));
     const rows = fromApi.length > 0
-        ? fromApi
-        : (Array.isArray(ev.negative_review_quotes) ? ev.negative_review_quotes : []);
+        ? [...fromApi, ...misplaced]
+        : [
+            ...(Array.isArray(ev.negative_review_quotes) ? ev.negative_review_quotes : []),
+            ...misplaced,
+        ];
     const seen = new Set();
     const out = [];
     for (const item of rows) {
@@ -333,6 +311,10 @@ function RecommendationFeedbackControls({
     const [saving, setSaving] = useState(false);
     const [statusMessage, setStatusMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
+    const [feedbackLocked, setFeedbackLocked] = useState(
+        Boolean(String(initialReason || '').trim() || initialVote === 'helpful'),
+    );
+    const [showThanksPopup, setShowThanksPopup] = useState(false);
 
     useEffect(() => {
         setVote(initialVote);
@@ -340,17 +322,19 @@ function RecommendationFeedbackControls({
         setShowReasonPanel(initialVote === 'not_helpful');
         setStatusMessage('');
         setErrorMessage('');
+        setFeedbackLocked(Boolean(String(initialReason || '').trim() || initialVote === 'helpful'));
+        setShowThanksPopup(false);
     }, [initialVote, initialReason, placeId]);
 
-    const submitFeedback = async (nextVote, reasonValue = null) => {
+    const submitFeedback = async (nextVote, reasonValue = null, { lockAfter = false, showThanks = false } = {}) => {
         const token = authService.getToken();
         if (!token) {
             setErrorMessage('Login diperlukan untuk memberi feedback.');
-            return;
+            return false;
         }
         if (!placeId) {
             setErrorMessage('Data coffee shop tidak lengkap.');
-            return;
+            return false;
         }
 
         setSaving(true);
@@ -395,24 +379,38 @@ function RecommendationFeedbackControls({
             if (reasonValue != null) {
                 setReasonDraft(String(reasonValue));
             }
+            if (lockAfter) {
+                setFeedbackLocked(true);
+            }
+            if (showThanks) {
+                setShowThanksPopup(true);
+            }
+            return true;
         } catch (err) {
             setErrorMessage(err?.message || 'Gagal menyimpan feedback.');
+            return false;
         } finally {
             setSaving(false);
         }
     };
 
     const handleThumb = async (nextVote) => {
-        if (saving) return;
-        await submitFeedback(nextVote, nextVote === 'not_helpful' ? reasonDraft || null : null);
+        if (saving || feedbackLocked) return;
+        await submitFeedback(nextVote, nextVote === 'not_helpful' ? reasonDraft || null : null, {
+            lockAfter: nextVote === 'helpful',
+        });
     };
 
     const handleSaveReason = async () => {
-        if (saving || vote !== 'not_helpful') return;
-        await submitFeedback('not_helpful', reasonDraft.trim() || null);
+        if (saving || feedbackLocked || vote !== 'not_helpful') return;
+        await submitFeedback('not_helpful', reasonDraft.trim() || null, {
+            lockAfter: true,
+            showThanks: true,
+        });
     };
 
     const applyChip = (chip) => {
+        if (feedbackLocked) return;
         setReasonDraft((prev) => {
             const current = String(prev || '').trim();
             if (!current) return chip;
@@ -420,6 +418,8 @@ function RecommendationFeedbackControls({
             return `${current}; ${chip}`;
         });
     };
+
+    const inputDisabled = saving || feedbackLocked;
 
     return (
         <div className="mt-4 rounded-xl border border-gray-200 bg-white px-3 py-3 dark:border-gray-700 dark:bg-gray-900/70">
@@ -432,10 +432,10 @@ function RecommendationFeedbackControls({
             <div className="mt-2.5 flex flex-wrap gap-2">
                 <button
                     type="button"
-                    disabled={saving}
+                    disabled={inputDisabled}
                     onClick={() => handleThumb('helpful')}
                     aria-pressed={vote === 'helpful'}
-                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-60 ${
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                         vote === 'helpful'
                             ? 'bg-emerald-600 text-white shadow-sm'
                             : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-100 dark:hover:bg-emerald-900/50'
@@ -446,10 +446,10 @@ function RecommendationFeedbackControls({
                 </button>
                 <button
                     type="button"
-                    disabled={saving}
+                    disabled={inputDisabled}
                     onClick={() => handleThumb('not_helpful')}
                     aria-pressed={vote === 'not_helpful'}
-                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-60 ${
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                         vote === 'not_helpful'
                             ? 'bg-rose-600 text-white shadow-sm'
                             : 'bg-rose-50 text-rose-800 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-100 dark:hover:bg-rose-900/50'
@@ -463,16 +463,18 @@ function RecommendationFeedbackControls({
             {showReasonPanel ? (
                 <div className="mt-3 space-y-2 border-t border-gray-100 pt-3 dark:border-gray-800">
                     <p className="text-xs text-gray-600 dark:text-gray-300">
-                        Opsional: beri alasan singkat agar evaluasi sistem lebih akurat.
+                        {feedbackLocked
+                            ? 'Alasan Anda sudah terkirim dan tidak dapat diubah.'
+                            : 'Opsional: beri alasan singkat agar evaluasi sistem lebih akurat.'}
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                         {DOWNVOTE_REASON_CHIPS.map((chip) => (
                             <button
                                 key={chip}
                                 type="button"
-                                disabled={saving}
+                                disabled={inputDisabled}
                                 onClick={() => applyChip(chip)}
-                                className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+                                className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
                             >
                                 {chip}
                             </button>
@@ -483,19 +485,23 @@ function RecommendationFeedbackControls({
                         onChange={(e) => setReasonDraft(e.target.value)}
                         rows={2}
                         maxLength={500}
+                        readOnly={feedbackLocked}
+                        disabled={inputDisabled}
                         placeholder="Contoh: Suasananya terlalu ramai untuk belajar…"
-                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:ring-indigo-900/50"
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:ring-indigo-900/50 dark:disabled:bg-gray-900 dark:disabled:text-gray-400"
                     />
-                    <div className="flex justify-end">
-                        <button
-                            type="button"
-                            disabled={saving}
-                            onClick={handleSaveReason}
-                            className="rounded-full bg-rose-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-rose-700 disabled:opacity-60"
-                        >
-                            Simpan alasan
-                        </button>
-                    </div>
+                    {!feedbackLocked ? (
+                        <div className="flex justify-end">
+                            <button
+                                type="button"
+                                disabled={saving}
+                                onClick={handleSaveReason}
+                                className="rounded-full bg-rose-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-rose-700 disabled:opacity-60"
+                            >
+                                Simpan alasan
+                            </button>
+                        </div>
+                    ) : null}
                 </div>
             ) : null}
 
@@ -508,6 +514,39 @@ function RecommendationFeedbackControls({
                 <p className="mt-2 text-xs text-rose-600 dark:text-rose-300" role="alert">
                     {errorMessage}
                 </p>
+            ) : null}
+
+            {showThanksPopup ? (
+                <div
+                    className="fixed inset-0 z-[110] flex items-center justify-center p-4"
+                    role="alertdialog"
+                    aria-modal="true"
+                    aria-labelledby={`feedback-thanks-title-${placeId}`}
+                >
+                    <div
+                        className="absolute inset-0 bg-black/50"
+                        onClick={() => setShowThanksPopup(false)}
+                        aria-hidden="true"
+                    />
+                    <div className="relative z-10 w-full max-w-sm rounded-2xl bg-white px-5 py-6 text-center shadow-2xl dark:bg-gray-900">
+                        <p
+                            id={`feedback-thanks-title-${placeId}`}
+                            className="text-base font-semibold text-gray-900 dark:text-white"
+                        >
+                            Terima kasih sudah memberikan feedback Anda
+                        </p>
+                        <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                            Masukan ini membantu Cofind menyempurnakan rekomendasi ke depannya.
+                        </p>
+                        <button
+                            type="button"
+                            onClick={() => setShowThanksPopup(false)}
+                            className="mt-4 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                        >
+                            Tutup
+                        </button>
+                    </div>
+                </div>
             ) : null}
         </div>
     );
@@ -713,33 +752,26 @@ const RecommendationModal = ({
                                                     <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                                                         Bukti ulasan relevan
                                                     </p>
-                                                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                        Kutipan yang mendukung konteks yang Anda pilih.
-                                                    </p>
                                                     {evidenceItems.length > 0 ? (
-                                                        evidenceItems.map((quoteItem, qIdx) => (
-                                                            <div
-                                                                key={`${quoteDedupeKey(quoteItem.quote)}-${qIdx}`}
-                                                                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900"
-                                                            >
-                                                                <p className="italic text-gray-800 dark:text-gray-100">
-                                                                    &ldquo;{quoteItem.quote}&rdquo;
-                                                                </p>
-                                                                <RatingDetailChips item={quoteItem} />
-                                                                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                                                    {quoteItem.username || 'Anonim'}
-                                                                    {quoteItem.pill_label
-                                                                        ? ` `
-                                                                        : ''}
-                                                                    {quoteItem.reason
-                                                                        ? ` · ${formatQuoteReason(quoteItem.reason)}`
-                                                                        : ''}
-                                                                </p>
-                                                            </div>
-                                                        ))
+                                                        <>
+                                                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                                Kutipan yang mendukung konteks yang Anda pilih.
+                                                            </p>
+                                                            {evidenceItems.map((quoteItem, qIdx) => (
+                                                                <div
+                                                                    key={`${quoteDedupeKey(quoteItem.quote)}-${qIdx}`}
+                                                                    className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900"
+                                                                >
+                                                                    <p className="italic text-gray-800 dark:text-gray-100">
+                                                                        &ldquo;{quoteItem.quote}&rdquo;
+                                                                    </p>
+                                                                    <RatingDetailChips item={quoteItem} />
+                                                                </div>
+                                                            ))}
+                                                        </>
                                                     ) : (
                                                         <p className="text-sm text-gray-600 dark:text-gray-300">
-                                                            Belum ada kutipan ulasan yang cocok dengan preferensi untuk toko ini.
+                                                            Belum ada kutipan ulasan yang mendukung konteks ini. Lihat catatan di bawah bila ada.
                                                         </p>
                                                     )}
                                                 </div>
@@ -761,12 +793,6 @@ const RecommendationModal = ({
                                                                     &ldquo;{quoteItem.quote}&rdquo;
                                                                 </p>
                                                                 <RatingDetailChips item={quoteItem} />
-                                                                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                                                    {quoteItem.username || 'Anonim'}
-                                                                    {quoteItem.reason
-                                                                        ? ` · ${formatQuoteReason(quoteItem.reason)}`
-                                                                        : ''}
-                                                                </p>
                                                             </div>
                                                         ))}
                                                     </div>

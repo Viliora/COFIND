@@ -8,6 +8,7 @@ from flask_cors import CORS
 import os
 import json
 import re
+import hashlib
 import importlib
 from collections import Counter
 import time
@@ -30,6 +31,7 @@ from review_utils import (
     get_reviews_for_shop,
     get_reviews_for_recommendation_batch,
     get_user_reviews,
+    get_latest_reviews,
     get_user_review_stats,
     update_review,
     delete_review,
@@ -37,7 +39,7 @@ from review_utils import (
     toggle_review_like,
     create_review_report,
 )
-from vote_utils import get_user_vote, upsert_vote, get_vote_summary, migrate_review_ratings_to_votes
+from vote_utils import get_user_vote, upsert_vote, get_vote_summary, migrate_review_ratings_to_votes, get_vote_summaries_batch
 from recommendation_feedback_utils import (
     ensure_recommendation_feedback_table,
     upsert_recommendation_feedback,
@@ -70,7 +72,7 @@ from llm_recommender import (
     shop_corpus_text,
     ungrounded_quotes,
 )
-from pros_cons_utils import get_pros_cons, toggle_pros_cons_vote, maybe_refresh_pros_cons
+from pros_cons_utils import get_pros_cons, toggle_pros_cons_vote, maybe_refresh_pros_cons, get_top_voted_pros_batch
 from favorites_utils import (
     add_favorite,
     remove_favorite,
@@ -87,7 +89,6 @@ app = Flask(__name__)
 # Database: lihat db_backend.py (Supabase Postgres via DATABASE_URL / SUPABASE_DB_URL)
 # Rerank: LLM menilai kandidat teratas hasil BM25 hybrid (lihat llm_recommender.py).
 COFIND_RERANK_BACKEND = 'llm' if llm_rerank_enabled() else 'none'
-COFIND_SUMMARY_ASYNC = os.getenv('COFIND_SUMMARY_ASYNC', 'false').strip().lower() in ('1', 'true', 'yes', 'on')
 COFIND_DEV_LLM_STRICT = os.getenv('COFIND_DEV_LLM_STRICT', 'false').strip().lower() in ('1', 'true', 'yes', 'on')
 # Modal quote summary: default deterministik (tanpa LLM per toko). Set true untuk LLM.
 COFIND_MODAL_QUOTE_LLM = os.getenv('COFIND_MODAL_QUOTE_LLM', 'false').strip().lower() in ('1', 'true', 'yes', 'on')
@@ -1816,6 +1817,16 @@ def admin_get_settings_summary():
 # ============================================================================
 # REVIEWS API ENDPOINTS
 # ============================================================================
+
+@app.route('/api/reviews/latest', methods=['GET'])
+@app.route('/api/reviews', methods=['GET'])
+def api_latest_reviews():
+    """Ulasan terbaru untuk tampilan publik (About / beranda / koleksi)."""
+    result = get_latest_reviews(request.args.get('limit', 10))
+    if not result.get('success'):
+        return jsonify({'status': 'error', 'message': result.get('error', 'Gagal memuat ulasan')}), 500
+    return jsonify({'status': 'success', 'items': result.get('items') or []}), 200
+
 
 @app.route('/api/reviews', methods=['POST'])
 def api_create_review():
@@ -3559,7 +3570,6 @@ PILL_MAPPING = {
             'skripsi', 'buku', 'baca buku', 'fokus belajar', 'ruang belajar', 'temen belajar',
             'anak kuliahan', 'mahasiswa', 'tugas sekolah',
         ],
-        'review_pills': ['belajar'],
     },
     'kerja': {
         'facility_fields': {
@@ -3571,7 +3581,6 @@ PILL_MAPPING = {
             'ngantor', 'produktif', 'deadline', 'presentasi', 'dokumen', 'ngerjain kerjaan',
             'bisnis', 'kantor',
         ],
-        'review_pills': ['kerja'],
     },
     'bermain game': {
         'facility_fields': {
@@ -3581,19 +3590,21 @@ PILL_MAPPING = {
             'main game', 'gaming', 'game', 'ngegame', 'mobile legends', 'ml', 'pubg',
             'valorant', 'mabar', 'gas game', 'turnamen', 'push rank', 'wifi', 'jaringan', 'jaringan lancar', 'internet'
         ],
-        'review_pills': ['bermain game'],
     },
     'meeting_sosialisasi': {
         'facility_fields': {
             'popular_for': ['good_for_groups'],
-            'crowd': ['berkelompok', 'keluarga'],
+            'crowd': ['berkelompok'],
         },
+        # Hindari kata longgar seperti "kumpul"/"grup": "berkumpul dengan keluarga"
+        # bukan bukti meeting. Pakai frasa pertemuan/rapat yang lebih spesifik.
         'review_keywords': [
-            'meeting', 'rapat', 'diskusi', 'kumpul', 'ngumpul', 'arisan',
-            'sosialisasi', 'networking',
-            'acara', 'catch up', 'komunitas', 'grup',
+            'meeting', 'rapat', 'diskusi', 'arisan', 'sosialisasi', 'networking',
+            'catch up', 'ruang meeting', 'ruang rapat', 'meeting room',
+            'private room', 'ruang privat', 'ruang diskusi', 'untuk meeting',
+            'buat rapat', 'untuk rapat', 'pertemuan bisnis', 'pertemuan kerja',
+            'meeting kantor', 'kumpul kerja', 'kumpul kantor', 'kumpul tim',
         ],
-        'review_pills': ['meeting_sosialisasi'],
     },
     'bersantai': {
         'facility_fields': {
@@ -3604,7 +3615,6 @@ PILL_MAPPING = {
             'santai', 'nongkrong', 'chill', 'rileks', 'healing', 'tenang', 'adem',
             'nyaman', 'cozy', 'hangout', 'me time', 'sambil ngopi', 'obrol santai',
         ],
-        'review_pills': ['bersantai'],
     },
     'keluarga': {
         'facility_fields': {
@@ -3617,7 +3627,6 @@ PILL_MAPPING = {
             'cocok keluarga', 'bawa anak', 'family friendly',
             'berkumpul bersama', 'kumpul bersama', 'quality time', 
         ],
-        'review_pills': ['keluarga'],
     },
     'instagrammable': {
         'facility_fields': {
@@ -3629,7 +3638,6 @@ PILL_MAPPING = {
             'feed', 'story', 'instagram', 'kekinian',
             'pict', 'photo spot', 'banyak spot foto',
         ],
-        'review_pills': ['instagrammable'],
     },
 }
 
@@ -3641,6 +3649,32 @@ PILL_LABELS = {
     'bersantai': 'Bersantai',
     'keluarga': 'Keluarga',
     'instagrammable': 'Instagrammable',
+}
+
+PILL_TO_BEST_FOR = {
+    'belajar': 'belajar',
+    'kerja': 'kerja',
+    'bermain game': 'nge_game',
+    'meeting_sosialisasi': 'meeting',
+    'keluarga': 'family_time',
+    'instagrammable': 'instagrammable',
+}
+
+BEST_FOR_PROMPT_LABELS = {
+    'belajar': 'belajar',
+    'kerja': 'kerja',
+    'nge_game': 'bermain game',
+    'meeting': 'meeting',
+    'family_time': 'keluarga',
+    'instagrammable': 'instagrammable',
+}
+
+RATING_VOTE_WEIGHTS = {
+    'love': 1.0,
+    'like': 0.75,
+    'ok': 0.5,
+    'dislike': 0.25,
+    'hate': 0.0,
 }
 
 def _collect_intent_strings_for_facilities(pills, search_keywords):
@@ -3732,8 +3766,6 @@ def _truncate_evidence_text(text, limit=180):
     return cleaned[: max(0, limit - 3)].rstrip() + '...'
 
 
-# _llm_max_reviews_per_shop_rerank dihapus: tidak dipakai pipeline rekomendasi aktif (seed pill + BM25 hybrid).
-
 def _llm_max_reviews_per_shop_summary():
     """Batas ulasan per toko di prompt ringkasan rekomendasi. 0 / negatif / tidak di-set = semua ulasan di profil."""
     raw = (os.environ.get('COFIND_LLM_SUMMARY_MAX_REVIEWS_PER_SHOP') or '0').strip()
@@ -3777,11 +3809,9 @@ def _build_empty_supporting_evidence():
         'facilities_tab_intent': {'popular_for': [], 'highlights': [], 'atmosphere': []},
         'facilities_intent_aligned': False,
         'facilities_evidence_summary': '',
-        'review_pills': [],
         'review_quotes': [],
         'positive_review_quotes': [],
         'negative_review_quotes': [],
-        'custom_matches': [],
         'search_keywords': [],
         'llm_preference_keywords': [],
         'search_keyword_matches': [],
@@ -4005,6 +4035,23 @@ def _build_profiles_for_recommendation(place_ids, facilities_index=None, exclude
             shops_without_reviews.append(pid)
             continue
         profiles.append(profile)
+
+    if profiles:
+        community_ids = [p.get('place_id') for p in profiles if p.get('place_id')]
+        vote_by_place = get_vote_summaries_batch(community_ids, include_review_stars=False)
+        pros_by_place = get_top_voted_pros_batch(community_ids, limit=3)
+        for profile in profiles:
+            pid = profile.get('place_id')
+            vote = vote_by_place.get(pid) or {}
+            profile['community_signals'] = {
+                'vote': {
+                    'total_votes': vote.get('total_votes') or 0,
+                    'rating_counts': vote.get('rating_counts') or {},
+                    'best_for_counts': vote.get('best_for_counts') or {},
+                    'slider_averages': vote.get('slider_averages') or {},
+                },
+                'top_pros': pros_by_place.get(pid) or [],
+            }
     return profiles, shops_without_reviews
 
 
@@ -4041,13 +4088,15 @@ def _has_semantic_family_signal(review_text):
         'quality time',
     ]
     for pattern in direct_patterns:
-        if pattern in normalized:
+        if _matches_keyword_phrase(normalized, pattern):
             return True, pattern
 
     together_patterns = ['berkumpul', 'kumpul', 'kebersamaan', 'quality time', 'bersama']
     close_people_patterns = ['orang sayang', 'orang tersayang', 'keluarga', 'family', 'anak', 'pasangan']
 
-    if any(a in normalized for a in together_patterns) and any(b in normalized for b in close_people_patterns):
+    if any(_matches_keyword_phrase(normalized, a) for a in together_patterns) and any(
+        _matches_keyword_phrase(normalized, b) for b in close_people_patterns
+    ):
         return True, 'kebersamaan dengan orang terdekat'
 
     return False, None
@@ -4084,24 +4133,71 @@ def _keyword_variants(value):
     return variants
 
 
+# Imbuhan Indonesia yang boleh menempel pada kata kunci (anaknya, ngegame, berkeluarga).
+# Bukan substring bebas: "anak" di dalam "pontianak" atau "story" di dalam "history" tidak lolos.
+_ID_AFFIX_SUFFIXES = ('nya', 'lah', 'kah', 'pun', 'ku', 'mu', 'kan', 'an', 'i')
+_ID_AFFIX_PREFIXES = ('ber', 'me', 'di', 'ter', 'se', 'pe', 'per', 'ke', 'nge', 'ng')
+
+
+def _strip_match_token(token):
+    return re.sub(r'^[^\w]+|[^\w]+$', '', str(token or '').lower(), flags=re.UNICODE)
+
+
+def _token_matches_keyword_token(token, keyword):
+    """True jika token adalah kata kunci utuh, plus imbuhan wajar — bukan potongan di tengah kata lain."""
+    tok = _strip_match_token(token)
+    kw = str(keyword or '').strip().lower()
+    if not tok or not kw:
+        return False
+    if '-' in tok:
+        return any(_token_matches_keyword_token(part, kw) for part in tok.split('-') if part)
+    if tok == kw:
+        return True
+    if len(kw) <= 3:
+        return False
+    for suf in _ID_AFFIX_SUFFIXES:
+        if tok == kw + suf:
+            return True
+    for pre in _ID_AFFIX_PREFIXES:
+        if tok == pre + kw:
+            return True
+        for suf in _ID_AFFIX_SUFFIXES:
+            if tok == pre + kw + suf:
+                return True
+    return False
+
+
+def _find_keyword_token_spans(tokens, keyword_variant):
+    """Span indeks token inklusif tempat frasa kunci cocok sebagai kata, bukan substring."""
+    found = set()
+    kw_tokens = [t for t in str(keyword_variant or '').split() if t]
+    if not tokens or not kw_tokens:
+        return found
+    n = len(kw_tokens)
+    for i in range(0, len(tokens) - n + 1):
+        if all(_token_matches_keyword_token(tokens[i + j], kw_tokens[j]) for j in range(n)):
+            found.add((i, i + n - 1))
+    return found
+
+
 def _matches_keyword_phrase(text, keyword):
+    """
+    Cocokkan keyword sebagai kata/frasa bermakna, bukan substring di dalam kata lain.
+    Contoh: 'anak' cocok di 'bawa anak', tidak cocok di 'Pontianak'.
+    Berlaku untuk semua konteks pill, bukan hanya keluarga.
+    """
     normalized_text = _normalize_keyword_phrase(text)
     if not normalized_text:
         return False
+    tokens = normalized_text.split()
     stemmed_text = _stem_indonesian_text(normalized_text)
-    short_tokens = None
+    stem_tokens = stemmed_text.split() if stemmed_text else []
     for variant in _keyword_variants(keyword):
         if not variant:
             continue
-        # Variant sangat pendek: hanya cocok sebagai token utuh (bukan substring),
-        # supaya "ml" tidak match sembarang di dalam kata.
-        if len(variant) <= 3:
-            if short_tokens is None:
-                short_tokens = set(normalized_text.split()) | set(stemmed_text.split())
-            if variant in short_tokens:
-                return True
-            continue
-        if variant in normalized_text or variant in stemmed_text:
+        if _find_keyword_token_spans(tokens, variant):
+            return True
+        if stem_tokens and _find_keyword_token_spans(stem_tokens, variant):
             return True
     return False
 
@@ -4136,11 +4232,44 @@ _REVIEW_WEAKNESS_FRAGMENTS = _NEGATIVE_KEYWORD_FRAGMENTS | frozenset({
     'kurang', 'ramai', 'penuh', 'sempit', 'panas', 'gelap', 'lama',
     'antri', 'antre', 'noise', 'ribut', 'crowded', 'overpriced',
     'wifi lelet', 'wifi lemot', 'colokan kurang', 'parkir susah',
+    'kurang disarankan', 'kurang cocok', 'kurang direkomendasikan',
+    'tidak disarankan', 'tidak cocok', 'tidak direkomendasikan',
+    'ga cocok', 'gak cocok', 'nggak cocok', 'enggak cocok',
+    'tidak recommended', 'kurang recommended',
+})
+
+# Frasa “tidak/kurang cocok untuk …” di kalimat yang sama dengan keyword preferensi
+# = caveat, meski jarak token lebih jauh dari jendela kelemahan generik.
+_UNSUITABILITY_PHRASES = (
+    'kurang disarankan',
+    'kurang direkomendasikan',
+    'kurang recommended',
+    'kurang cocok',
+    'tidak disarankan',
+    'tidak direkomendasikan',
+    'tidak recommended',
+    'tidak cocok',
+    'ga cocok',
+    'gak cocok',
+    'nggak cocok',
+    'enggak cocok',
+    'bukan tempat yang cocok',
+    'bukan untuk',
+)
+
+# Kata terlalu longgar untuk meeting/pertemuan (boleh tetap dipakai pill lain).
+_MEETING_OVERBROAD_TERMS = frozenset({
+    'kumpul', 'ngumpul', 'berkumpul', 'grup', 'group', 'acara', 'komunitas',
+    'nongkrong', 'nongki', 'hangout',
+})
+_MEETING_OVERBROAD_KEEP_TOKENS = frozenset({
+    'kerja', 'kantor', 'rapat', 'meeting', 'bisnis', 'tim', 'klien', 'client',
+    'diskusi', 'profesional',
 })
 
 # Jendela ±N token dari blok keyword preferensi (pill + review_keywords) untuk
 # mengaitkan fragmen kelemahan dengan konteks preferensi user.
-_PREFERENCE_WEAKNESS_TOKEN_WINDOW = 2
+_PREFERENCE_WEAKNESS_TOKEN_WINDOW = 6
 
 _REVIEW_WEAKNESS_FRAGMENTS_SORTED = tuple(
     sorted(_REVIEW_WEAKNESS_FRAGMENTS, key=len, reverse=True)
@@ -4166,41 +4295,6 @@ def _split_tokens_with_spans(line):
     return tokens, spans
 
 
-def _find_substring_starts_nonoverlap(haystack, needle):
-    if not haystack or not needle or len(needle) > len(haystack):
-        return []
-    out = []
-    pos = 0
-    nlen = len(needle)
-    while pos <= len(haystack) - nlen:
-        idx = haystack.find(needle, pos)
-        if idx < 0:
-            break
-        out.append(idx)
-        pos = idx + max(1, nlen)
-    return out
-
-
-def _char_range_to_token_span(spans, ch_start, ch_end_excl):
-    """Map rentang karakter [ch_start, ch_end_excl) ke indeks token inklusif (i, j)."""
-    if ch_start >= ch_end_excl or not spans:
-        return None
-    start_tok = None
-    end_tok = None
-    for i, (a, b) in enumerate(spans):
-        if b <= ch_start:
-            continue
-        if a >= ch_end_excl:
-            break
-        if a < ch_end_excl and b > ch_start:
-            if start_tok is None:
-                start_tok = i
-            end_tok = i
-    if start_tok is None:
-        return None
-    return (start_tok, end_tok)
-
-
 def _collect_preference_anchor_spans_for_line(tokens, spans, line, preference_keywords):
     """Span anchor di satu ruang token (normalized atau stem), tidak dicampur."""
     found = set()
@@ -4211,15 +4305,7 @@ def _collect_preference_anchor_spans_for_line(tokens, spans, line, preference_ke
         for variant in _keyword_variants(kw):
             if not variant:
                 continue
-            if len(variant) <= 3:
-                for i, tok in enumerate(tokens):
-                    if tok == variant:
-                        found.add((i, i))
-                continue
-            for idx in _find_substring_starts_nonoverlap(line, variant):
-                span = _char_range_to_token_span(spans, idx, idx + len(variant))
-                if span:
-                    found.add(span)
+            found.update(_find_keyword_token_spans(tokens, variant))
     return found
 
 
@@ -4229,15 +4315,7 @@ def _collect_weakness_token_spans(tokens, spans, line):
     if not line or not tokens:
         return found
     for frag in _REVIEW_WEAKNESS_FRAGMENTS_SORTED:
-        if len(frag) <= 3:
-            for i, tok in enumerate(tokens):
-                if tok == frag:
-                    found.add((i, i))
-            continue
-        for idx in _find_substring_starts_nonoverlap(line, frag):
-            span = _char_range_to_token_span(spans, idx, idx + len(frag))
-            if span:
-                found.add(span)
+        found.update(_find_keyword_token_spans(tokens, frag))
     return found
 
 
@@ -4547,6 +4625,29 @@ def _filter_negative_search_keywords(keywords):
     return output
 
 
+def _is_overbroad_meeting_keyword(keyword):
+    """True jika frasa terlalu umum untuk bukti meeting (mis. 'kumpul' saja)."""
+    tokens = _normalize_keyword_phrase(keyword).split()
+    if not tokens:
+        return False
+    if len(tokens) == 1:
+        return tokens[0] in _MEETING_OVERBROAD_TERMS
+    if tokens[0] not in _MEETING_OVERBROAD_TERMS:
+        return False
+    return not any(token in _MEETING_OVERBROAD_KEEP_TOKENS for token in tokens[1:])
+
+
+def _filter_overbroad_meeting_keywords(keywords, pills):
+    """Buang kata longgar meeting kecuali pill lain (keluarga/bersantai) membutuhkannya."""
+    pill_set = {str(p).strip().lower() for p in (pills or []) if str(p).strip()}
+    cleaned = list(keywords or [])
+    if 'meeting_sosialisasi' not in pill_set:
+        return cleaned
+    if pill_set & {'keluarga', 'bersantai'}:
+        return cleaned
+    return [kw for kw in cleaned if not _is_overbroad_meeting_keyword(kw)]
+
+
 def _review_has_weakness_signal(text):
     normalized = _normalize_keyword_phrase(text)
     if not normalized:
@@ -4620,7 +4721,7 @@ def _preference_keywords_for_evidence(pills, search_keywords=None):
     for pill in pills or []:
         out.extend(_expand_pill_to_keywords(pill))
     out.extend(_light_keyword_phrase_list(search_keywords or []))
-    return list(dict.fromkeys(out))
+    return _filter_overbroad_meeting_keywords(list(dict.fromkeys(out)), pills)
 
 
 def _quote_is_caveat(quote_text, preference_keywords):
@@ -4632,6 +4733,11 @@ def _quote_is_caveat(quote_text, preference_keywords):
     text = str(quote_text or '')
     if len(text.strip()) < 10:
         return False
+    normalized = _normalize_keyword_phrase(text)
+    # "kurang cocok / tidak disarankan" tidak pernah jadi bukti pendukung,
+    # meski keyword pill tidak ada di kalimat yang sama.
+    if normalized and any(phrase in normalized for phrase in _UNSUITABILITY_PHRASES):
+        return True
     if preference_keywords:
         return _review_has_weakness_near_preference_keywords(text, preference_keywords)
     return _review_has_weakness_signal(text)
@@ -4713,12 +4819,6 @@ def _collect_modal_quote_groups(evidence, pills, search_keywords=None):
         row = {**item, 'reason': reason, 'pill_label': item.get('pill_label') or 'Catatan pengguna'}
         push(row)
 
-    if not candidates and review_quotes:
-        for item in review_quotes:
-            if not _reason_ok(item.get('reason')):
-                continue
-            push(item)
-
     supporting = []
     caveats = []
     for item in _sort_quotes_for_modal_display(candidates):
@@ -4740,16 +4840,6 @@ def _collect_modal_display_quotes(evidence, pills, search_keywords=None, limit=3
         evidence, pills, search_keywords=search_keywords,
     )
     return supporting[:limit]
-
-
-def _collect_modal_caveat_quotes(evidence, pills, search_keywords=None, limit=2):
-    """Catatan dari ulasan: kutipan relevan preferensi yang justru memuat keluhan."""
-    if limit <= 0:
-        return []
-    _, caveats = _collect_modal_quote_groups(
-        evidence, pills, search_keywords=search_keywords,
-    )
-    return caveats[:limit]
 
 
 def _build_modal_quote_summary_deterministic(shop_name, quotes, intent_phrase, evidence=None):
@@ -4881,8 +4971,109 @@ def _weakness_quote_lines_for_prompt(evidence, *, limit=2, char_limit=220):
     return lines
 
 
-def _shop_profile_lines_for_prompt(profile, evidence):
-    """Konteks profil toko dari database (rating pengguna, rating Google, rating kategori)."""
+def _community_score_from_signals(signals, pills):
+    """Skor 0..1 dari agregat vote/overall/best-for/pros. None jika tidak ada data."""
+    data = signals or {}
+    vote = data.get('vote') or {}
+    rating_counts = vote.get('rating_counts') or {}
+    parts = []
+    weights = []
+
+    weighted = 0.0
+    total_rating = 0
+    for label, weight in RATING_VOTE_WEIGHTS.items():
+        count = int(rating_counts.get(label) or 0)
+        weighted += weight * count
+        total_rating += count
+    if total_rating > 0:
+        parts.append(weighted / total_rating)
+        weights.append(0.40)
+
+    slider_vals = []
+    sliders = vote.get('slider_averages') or {}
+    for field in ('pelayanan', 'kebersihan', 'kenyamanan', 'harga'):
+        val = sliders.get(field)
+        if val is not None:
+            try:
+                slider_vals.append(max(0.0, min(1.0, (float(val) - 1.0) / 4.0)))
+            except (TypeError, ValueError):
+                pass
+    if slider_vals:
+        parts.append(sum(slider_vals) / len(slider_vals))
+        weights.append(0.25)
+
+    best_for_counts = vote.get('best_for_counts') or {}
+    mapped_tags = [PILL_TO_BEST_FOR[p] for p in (pills or []) if p in PILL_TO_BEST_FOR]
+    total_best = sum(int(v or 0) for v in best_for_counts.values())
+    if mapped_tags and total_best > 0:
+        aligned = sum(int(best_for_counts.get(tag) or 0) for tag in mapped_tags)
+        parts.append(min(1.0, aligned / float(total_best)))
+        weights.append(0.20)
+
+    pros = data.get('top_pros') or []
+    if pros:
+        nets = [max(0, int(item.get('net') or 0)) for item in pros]
+        avg_net = sum(nets) / max(1, len(nets))
+        parts.append(min(1.0, avg_net / 8.0))
+        weights.append(0.15)
+
+    if not parts:
+        return None
+    return round(sum(score * weight for score, weight in zip(parts, weights)) / sum(weights), 4)
+
+
+def _community_prompt_lines(signals, pills=None, indent='  - '):
+    """Baris fakta komunitas yang ringkas untuk prompt, tanpa mengubah gaya output."""
+    data = signals or {}
+    vote = data.get('vote') or {}
+    lines = []
+
+    rating_counts = vote.get('rating_counts') or {}
+    total_rating = sum(int(rating_counts.get(k) or 0) for k in RATING_VOTE_WEIGHTS)
+    if total_rating > 0:
+        bits = []
+        for key, label in (('love', 'sangat suka'), ('like', 'suka'), ('ok', 'biasa'), ('dislike', 'kurang suka'), ('hate', 'tidak suka')):
+            count = int(rating_counts.get(key) or 0)
+            if count:
+                bits.append(f'{label} {count}')
+        if bits:
+            lines.append(f'{indent}Penilaian pengunjung: {", ".join(bits[:4])} (dari {total_rating} penilaian)')
+
+    slider_bits = []
+    sliders = vote.get('slider_averages') or {}
+    for field, label in (('pelayanan', 'pelayanan'), ('kebersihan', 'kebersihan'), ('kenyamanan', 'kenyamanan'), ('harga', 'harga')):
+        val = sliders.get(field)
+        if val is not None:
+            slider_bits.append(f'{label} {float(val):.1f}/5')
+    if slider_bits:
+        lines.append(f'{indent}Pengalaman pengunjung: {", ".join(slider_bits)}')
+
+    best_for_counts = vote.get('best_for_counts') or {}
+    preferred_tags = [PILL_TO_BEST_FOR[p] for p in (pills or []) if p in PILL_TO_BEST_FOR]
+    ranked_tags = sorted(
+        ((tag, int(count or 0)) for tag, count in best_for_counts.items() if int(count or 0) > 0),
+        key=lambda item: (-item[1], item[0]),
+    )
+    if preferred_tags:
+        ranked_tags = [item for item in ranked_tags if item[0] in preferred_tags] + [
+            item for item in ranked_tags if item[0] not in preferred_tags
+        ]
+    if ranked_tags:
+        best_bits = [
+            f'{BEST_FOR_PROMPT_LABELS.get(tag, tag)} ({count})'
+            for tag, count in ranked_tags[:3]
+        ]
+        lines.append(f'{indent}Sering dipilih untuk: {", ".join(best_bits)}')
+
+    pros = data.get('top_pros') or []
+    pro_texts = [str(item.get('text') or '').strip() for item in pros if str(item.get('text') or '').strip()]
+    if pro_texts:
+        lines.append(f'{indent}Keunggulan yang disetujui pengunjung: {"; ".join(pro_texts[:3])}')
+    return lines
+
+
+def _shop_profile_lines_for_prompt(profile, evidence, pills=None):
+    """Konteks profil toko dari database (rating pengguna, rating Google, rating kategori, sinyal komunitas)."""
     prof = profile or {}
     ev = evidence or {}
     lines = []
@@ -4915,6 +5106,9 @@ def _shop_profile_lines_for_prompt(profile, evidence):
     ]
     if category_bits:
         lines.append('  - Rating kategori dari pengguna: ' + ', '.join(category_bits))
+
+    community = ev.get('community_signals') or prof.get('community_signals') or {}
+    lines.extend(_community_prompt_lines(community, pills=pills, indent='  - '))
     return lines
 
 
@@ -4950,7 +5144,7 @@ def _build_modal_quote_summary(shop_name, quotes, intent_phrase, evidence=None, 
     facilities_intent_aligned = bool(ev.get('facilities_intent_aligned'))
     ctx = str(intent_phrase or '').strip() or 'preferensi umum'
     keyword_line = ", ".join(_light_keyword_phrase_list(search_keywords or [])) or 'tidak ada'
-    profile_lines = _shop_profile_lines_for_prompt({}, ev) or ['  - (tidak ada data rating)']
+    profile_lines = _shop_profile_lines_for_prompt({}, ev, pills=pills) or ['  - (tidak ada data rating)']
 
     stats_lines = []
     for item in pill_stats[:6]:
@@ -5010,6 +5204,7 @@ Syarat ketat:
 - Hanya gunakan fakta dari data di bawah, dilarang mengarang fasilitas atau klaim yang tidak ada di data
 - Jangan gunakan markdown apapun dan jangan awali dengan "Berikut", "Berdasarkan data", atau menyebut kata "ulasan relevan"
 - Bahasa Indonesia santai tapi informatif, seperti rekomendasi dari teman yang pernah ke sana
+- Sinyal penilaian, pengalaman, dan keunggulan pengunjung adalah fakta pendukung; jangan sebut kata vote, survei, atau slider, dan jangan ubah gaya paragraf.
 
 Nama coffee shop: {name}
 Kebutuhan user: {ctx}
@@ -5145,10 +5340,7 @@ def _pick_sentiment_review_quotes(reviews, pills=None, search_keywords=None, *, 
         seen.add(key)
 
         rating = _review_rating_value(review)
-        if preference_keywords:
-            has_weakness = _review_has_weakness_near_preference_keywords(text, preference_keywords)
-        else:
-            has_weakness = _review_has_weakness_signal(text)
+        has_weakness = _quote_is_caveat(text, preference_keywords)
         matched_terms = [kw for kw in preference_keywords if _matches_keyword_phrase(text, kw)][:6]
         quote = {
             'quote': _truncate_evidence_text(text, _PROMPT_EVIDENCE_CHAR_LIMIT),
@@ -5189,10 +5381,11 @@ def _seed_search_keywords(valid_pills):
     seeds = []
     for pill in valid_pills or []:
         seeds.extend(_expand_pill_to_keywords(pill))
-    return _filter_negative_search_keywords(seeds)
+    return _filter_overbroad_meeting_keywords(
+        _filter_negative_search_keywords(seeds),
+        valid_pills,
+    )
 
-
-# _validate_search_keywords_with_llm dihapus: tidak dipakai pipeline rekomendasi aktif (seed pill + BM25 hybrid).
 
 def _pick_keyword_matched_reviews(reviews, search_keywords, limit=3):
     """Pilih review paling kuat berdasarkan search_keywords hasil ekspansi."""
@@ -5271,10 +5464,13 @@ def _score_shop_by_user_reviews(
     bm25_raw=None,
 ):
     """
-    Scoring 100% berbasis user review:
-        70% BM25 relevansi query (pill keywords + search_keywords) vs korpus review toko
+    Scoring berbasis user review, dengan boost komunitas bila ada data:
+        70% BM25 relevansi query vs korpus review toko
         20% alignment rating kategori (rating_suasana/makanan/layanan)
         10% rata-rata rating user (dari review, bukan Google)
+    Jika toko punya sinyal komunitas (vote/overall/best-for/pros):
+        62% BM25 + 16% kategori + 8% rating + 14% komunitas.
+    Toko tanpa data komunitas tidak dihukum: bobot lama 70/20/10 tetap.
 
     Keyword match per-pill tetap dihitung untuk evidence/UI (sample quotes),
     tetapi bobot utama ranking memakai skor BM25 yang dinormalisasi (0..1).
@@ -5285,8 +5481,14 @@ def _score_shop_by_user_reviews(
     """
     reviews = profile.get('reviews') or []
     review_count = len(reviews)
-    search_keywords = _light_keyword_phrase_list(search_keywords or [])
-    llm_preference_keywords = _filter_negative_search_keywords(llm_preference_keywords or [])
+    search_keywords = _filter_overbroad_meeting_keywords(
+        _light_keyword_phrase_list(search_keywords or []),
+        pills,
+    )
+    llm_preference_keywords = _filter_overbroad_meeting_keywords(
+        _filter_negative_search_keywords(llm_preference_keywords or []),
+        pills,
+    )
     if review_count == 0 or not pills:
         return {
             'total_score': 0.0,
@@ -5297,7 +5499,6 @@ def _score_shop_by_user_reviews(
             'category_score': 0.0,
             'rating_score': 0.0,
             'per_pill_stats': {},
-            'custom_query_matches': [],
             'expanded_keyword_matches': [],
             'llm_evidence_matches': [],
             'llm_preference_keywords': llm_preference_keywords,
@@ -5306,6 +5507,7 @@ def _score_shop_by_user_reviews(
             'review_count': review_count,
             'avg_user_rating': profile.get('avg_user_rating'),
             'has_quote_evidence': False,
+            'community_score': None,
         }
 
     avg_user_rating = profile.get('avg_user_rating')
@@ -5375,8 +5577,6 @@ def _score_shop_by_user_reviews(
     else:
         expanded_keyword_score = 0.0
 
-    custom_query_matches = []
-
     # BM25 sebagai sinyal utama relevansi teks (fallback ke keyword hit jika BM25 belum dihitung)
     try:
         bm25_norm_val = float(bm25_norm) if bm25_norm is not None else None
@@ -5397,15 +5597,22 @@ def _score_shop_by_user_reviews(
     else:
         bm25_norm_val = max(0.0, min(1.0, bm25_norm_val))
 
-    W_BM25 = 0.70
-    W_CATEGORY = 0.20
-    W_RATING = 0.10
-
-    total = (
-        bm25_norm_val * W_BM25
-        + category_score_avg * W_CATEGORY
-        + rating_score * W_RATING
-    )
+    community_score = _community_score_from_signals(profile.get('community_signals'), pills)
+    if community_score is not None:
+        W_BM25, W_CATEGORY, W_RATING, W_COMMUNITY = 0.62, 0.16, 0.08, 0.14
+        total = (
+            bm25_norm_val * W_BM25
+            + category_score_avg * W_CATEGORY
+            + rating_score * W_RATING
+            + community_score * W_COMMUNITY
+        )
+    else:
+        W_BM25, W_CATEGORY, W_RATING = 0.70, 0.20, 0.10
+        total = (
+            bm25_norm_val * W_BM25
+            + category_score_avg * W_CATEGORY
+            + rating_score * W_RATING
+        )
 
     # Wajib ada bukti kutipan PENDUKUNG (keyword match TANPA keluhan pada aspek
     # preferensi). Kutipan yang hanya mengeluh soal konteks yang sama tidak cukup
@@ -5440,7 +5647,6 @@ def _score_shop_by_user_reviews(
         'category_score': round(category_score_avg, 4),
         'rating_score': round(rating_score, 4),
         'per_pill_stats': per_pill_stats,
-        'custom_query_matches': custom_query_matches,
         'expanded_keyword_matches': expanded_keyword_matches,
         'llm_evidence_matches': llm_evidence_matches,
         'llm_preference_keywords': llm_preference_keywords,
@@ -5449,14 +5655,14 @@ def _score_shop_by_user_reviews(
         'review_count': review_count,
         'avg_user_rating': avg_user_rating,
         'has_quote_evidence': has_quote_evidence,
+        'community_score': community_score,
     }
 
 
 def _build_review_based_evidence(profile, score_detail, pills, search_keywords=None):
     """
     Bangun supporting_evidence hanya dari review user.
-    Mengikuti key lama (review_pills, review_quotes, custom_matches) untuk
-    kompatibilitas UI, dan menambah key baru: pill_stats, category_ratings,
+    Key utama: review_quotes, pill_stats, category_ratings,
     avg_user_rating, review_count.
     """
     per_pill_stats = (score_detail or {}).get('per_pill_stats') or {}
@@ -5467,7 +5673,6 @@ def _build_review_based_evidence(profile, score_detail, pills, search_keywords=N
         search_keywords or (score_detail or {}).get('search_keywords') or [],
     )
 
-    review_pills_out = []
     pill_stats_out = []
     review_quotes_out = []
     seen_quote_keys = set()
@@ -5565,8 +5770,6 @@ def _build_review_based_evidence(profile, score_detail, pills, search_keywords=N
             **_quote_ui_extras(match),
         })
 
-    custom_matches_out = []
-
     facilities_tab_full = profile.get('facilities_tab') or {
         'popular_for': [], 'highlights': [], 'atmosphere': []
     }
@@ -5591,11 +5794,9 @@ def _build_review_based_evidence(profile, score_detail, pills, search_keywords=N
         'facilities_tab_intent': facilities_tab_display,
         'facilities_intent_aligned': facilities_intent_aligned,
         'facilities_evidence_summary': facilities_evidence_summary,
-        'review_pills': review_pills_out[:3],
         'review_quotes': review_quotes_out[:12],
         'positive_review_quotes': positive_quotes,
         'negative_review_quotes': negative_quotes,
-        'custom_matches': custom_matches_out,
         'search_keywords': search_keywords,
         'llm_preference_keywords': (score_detail or {}).get('llm_preference_keywords') or [],
         'search_keyword_matches': search_keyword_matches_out,
@@ -5608,11 +5809,10 @@ def _build_review_based_evidence(profile, score_detail, pills, search_keywords=N
         'review_count': profile.get('review_count', 0),
         'google_rating': profile.get('google_rating'),
         'google_total_reviews': profile.get('google_total_reviews'),
+        'community_signals': profile.get('community_signals') or {},
         'is_low_confidence': False,
     }
 
-
-# _llm_semantic_rerank dihapus: tidak dipakai pipeline rekomendasi aktif (seed pill + BM25 hybrid).
 
 def _join_indonesian_topics(labels):
     """Gabung label topik untuk satu frasa (sudah huruf kecil / siap pakai)."""
@@ -5852,9 +6052,10 @@ def _build_summary_output_entry(shop, summary, pills, search_keywords):
 
 def _generate_llm_review_summary(top_shops, pills, search_keywords=None):
     """
-    NLP summary per shop dengan cache per (place_id + kombinasi pill).
+    NLP summary per shop dengan cache per (place_id + kombinasi pill + keyword ekspansi).
     Ringkasan ter-cache dipakai ulang (summary yang sama) sampai jumlah review
-    coffee shop berubah. Hanya shop tanpa cache valid yang dikirim ke LLM.
+    coffee shop berubah atau keyword intent berbeda. Hanya shop tanpa cache valid
+    yang dikirim ke LLM.
     Jika LLM tidak tersedia / gagal parse, pakai fallback deterministik.
     Shop tanpa kutipan relevan dibuang dari output.
     """
@@ -5869,6 +6070,7 @@ def _generate_llm_review_summary(top_shops, pills, search_keywords=None):
     for shop in top_shops:
         cached = _get_cached_recommendation_summary(
             shop['place_id'], pills, _summary_review_count_for_shop(shop),
+            search_keywords=search_keywords,
         )
         if cached:
             cached_summary_map[shop['place_id']] = cached
@@ -5884,18 +6086,21 @@ def _generate_llm_review_summary(top_shops, pills, search_keywords=None):
         shops_to_generate, pills, search_keywords,
     )
 
-    # 3) Simpan ringkasan baru ke cache (per place_id + pill).
-    _store_recommendation_summaries([
-        (
-            s['place_id'],
-            pills,
-            generated_summary_map.get(s['place_id']),
-            _summary_review_count_for_shop(s),
-            s.get('name') or '',
-        )
-        for s in shops_to_generate
-        if generated_summary_map.get(s['place_id'])
-    ])
+    # 3) Simpan ringkasan baru ke cache (per place_id + pill + keyword ekspansi).
+    _store_recommendation_summaries(
+        [
+            (
+                s['place_id'],
+                pills,
+                generated_summary_map.get(s['place_id']),
+                _summary_review_count_for_shop(s),
+                s.get('name') or '',
+            )
+            for s in shops_to_generate
+            if generated_summary_map.get(s['place_id'])
+        ],
+        search_keywords=search_keywords,
+    )
 
     # 4) Rakit output sesuai urutan asli; skip shop tanpa bukti kutipan.
     output = []
@@ -5929,8 +6134,141 @@ def _unverified_summary_quotes(summary, shop):
     return ungrounded_quotes(summary, corpus)
 
 
+def _normalize_place_id(value):
+    return re.sub(r'\s+', '', str(value or '')).strip()
+
+
+def _normalize_shop_name_key(value):
+    text = _normalize_whitespace(value).lower()
+    return re.sub(r'[^\w\s]+', '', text, flags=re.UNICODE).strip()
+
+
+def _llm_item_summary_text(item):
+    """Ambil paragraf summary dari satu objek JSON LLM (string, list, atau objek bersarang)."""
+    if not isinstance(item, dict):
+        return ''
+
+    def _as_text(value):
+        if value is None or value == '':
+            return ''
+        if isinstance(value, dict):
+            conclusion = value.get('conclusion') or value.get('kesimpulan') or ''
+            strengths = value.get('strengths') or value.get('kelebihan') or ''
+            weaknesses = (
+                value.get('weaknesses')
+                or value.get('kekurangan')
+                or value.get('catatan')
+                or ''
+            )
+            if isinstance(strengths, list):
+                strengths = '; '.join(
+                    _normalize_whitespace(str(v or '')) for v in strengths if str(v or '').strip()
+                )
+            if isinstance(weaknesses, list):
+                weaknesses = '; '.join(
+                    _normalize_whitespace(str(v or '')) for v in weaknesses if str(v or '').strip()
+                )
+            return _join_narrative_summary_parts(conclusion, strengths, weaknesses)
+        if isinstance(value, list):
+            return _join_narrative_summary_parts(*value)
+        return _strip_structured_summary_labels(str(value))
+
+    summary = _as_text(item.get('summary') or item.get('explanation'))
+    if summary:
+        return summary
+    return _join_narrative_summary_parts(
+        item.get('conclusion') or item.get('kesimpulan'),
+        item.get('strengths') or item.get('kelebihan'),
+        item.get('weaknesses') or item.get('kekurangan') or item.get('catatan'),
+    )
+
+
+def _assign_llm_summaries_to_shops(parsed_items, top_shops):
+    """
+    Pasangkan output JSON LLM ke toko: place_id exact, fuzzy, nama, lalu urutan.
+    Toko yang tidak ketemu dibiarkan kosong (pemanggil memakai fallback deterministik).
+    """
+    assigned = {}
+    used_pids = set()
+    used_item_idx = set()
+    items = list(parsed_items or [])
+
+    def take(shop, summary, item_idx, via):
+        if not shop or not summary:
+            return False
+        pid = shop.get('place_id')
+        if not pid or pid in used_pids:
+            return False
+        assigned[pid] = summary
+        used_pids.add(pid)
+        if item_idx is not None:
+            used_item_idx.add(item_idx)
+        if via != 'place_id':
+            print(
+                f"[RECOMMEND] Summary: match {via} → {shop.get('name')} ({pid})",
+                flush=True,
+            )
+        return True
+
+    pid_index = {_normalize_place_id(s.get('place_id')): s for s in top_shops if s.get('place_id')}
+
+    for idx, item in enumerate(items):
+        if not isinstance(item, dict):
+            continue
+        summary = _llm_item_summary_text(item)
+        shop = pid_index.get(_normalize_place_id(item.get('place_id')))
+        if shop:
+            take(shop, summary, idx, 'place_id')
+
+    for idx, item in enumerate(items):
+        if idx in used_item_idx or not isinstance(item, dict):
+            continue
+        summary = _llm_item_summary_text(item)
+        raw = _normalize_place_id(item.get('place_id'))
+        if not raw:
+            continue
+        hits = [
+            s for s in top_shops
+            if s.get('place_id') not in used_pids
+            and (
+                raw in _normalize_place_id(s.get('place_id'))
+                or _normalize_place_id(s.get('place_id')) in raw
+            )
+        ]
+        if len(hits) == 1:
+            take(hits[0], summary, idx, 'place_id_fuzzy')
+
+    name_index = {}
+    for shop in top_shops:
+        key = _normalize_shop_name_key(shop.get('name'))
+        if key:
+            name_index.setdefault(key, []).append(shop)
+
+    for idx, item in enumerate(items):
+        if idx in used_item_idx or not isinstance(item, dict):
+            continue
+        summary = _llm_item_summary_text(item)
+        key = _normalize_shop_name_key(item.get('name'))
+        hits = [s for s in name_index.get(key, []) if s.get('place_id') not in used_pids]
+        if len(hits) == 1:
+            take(hits[0], summary, idx, 'name')
+
+    leftover_shops = [s for s in top_shops if s.get('place_id') not in used_pids]
+    leftover_items = [
+        (idx, item)
+        for idx, item in enumerate(items)
+        if idx not in used_item_idx
+        and isinstance(item, dict)
+        and _llm_item_summary_text(item)
+    ]
+    for shop, (idx, item) in zip(leftover_shops, leftover_items):
+        take(shop, _llm_item_summary_text(item), idx, 'index')
+
+    return assigned
+
+
 def _llm_summaries_for_shops(top_shops, pills, search_keywords=None):
-    """Kembalikan {place_id: summary} untuk shop yang diberikan (LLM atau fallback deterministik)."""
+    """Kembalikan {place_id: summary} untuk shop yang diberikan (LLM atau fallback deterministik per toko)."""
     if not top_shops:
         return {}
 
@@ -5975,7 +6313,7 @@ def _llm_summaries_for_shops(top_shops, pills, search_keywords=None):
         if not stats_lines:
             stats_lines.append('  - (tidak ada sinyal pill yang cocok)')
 
-        profile_lines = _shop_profile_lines_for_prompt(profile, evidence) or [
+        profile_lines = _shop_profile_lines_for_prompt(profile, evidence, pills=pills) or [
             '  - (tidak ada data rating)'
         ]
 
@@ -6062,13 +6400,18 @@ def _llm_summaries_for_shops(top_shops, pills, search_keywords=None):
         "lokasi, harga, atau angka apa pun.\n"
         "- Parafrase ulasan dengan bahasa sendiri, jangan menyalin kutipan panjang kata per kata.\n"
         "- Prioritaskan kutipan pada bagian 'KUTIPAN PALING RELEVAN'; ulasan lain hanya pendukung.\n"
+        "- Sinyal penilaian, pengalaman, dan keunggulan pengunjung adalah fakta pendukung; "
+        "jangan sebut kata vote, survei, atau slider, dan jangan ubah gaya paragraf.\n"
         "- Ringkasan tiap tempat harus berbeda satu sama lain, jangan memakai kalimat template.\n"
         "- Bahasa Indonesia natural, tanpa markdown.\n\n"
         "Kandidat dan data:\n"
         + blocks_text
         + "\n\nAturan output:\n"
         "- JSON array valid saja, tanpa markdown/teks lain.\n"
-        "- place_id harus sama persis.\n"
+        f"- Wajib persis {len(top_shops)} objek, satu untuk setiap toko, jangan ada yang dilewati.\n"
+        "- place_id harus copy-paste sama persis dari daftar ini: "
+        + ", ".join(str(s.get('place_id') or '') for s in top_shops)
+        + "\n"
         "- summary adalah satu string paragraf naratif (bukan objek terpisah).\n"
         'Format: [{"place_id":"...","name":"...","summary":"..."}]'
     )
@@ -6095,7 +6438,7 @@ def _llm_summaries_for_shops(top_shops, pills, search_keywords=None):
                 },
                 {'role': 'user', 'content': prompt},
             ],
-            max_tokens=820,
+            max_tokens=900,
             temperature=0.2,
         )
         print(
@@ -6110,31 +6453,13 @@ def _llm_summaries_for_shops(top_shops, pills, search_keywords=None):
             model=(HF_MODEL or "meta-llama/Meta-Llama-3-8B").strip(),
         )
         if isinstance(parsed, dict):
-            parsed = parsed.get('recommendations', [])
+            parsed = parsed.get('recommendations') or parsed.get('items') or parsed.get('shops') or []
         if not isinstance(parsed, list):
             raise ValueError("summary: not a list")
 
-        summary_map = {}
-        for item in parsed:
-            if not isinstance(item, dict):
-                continue
-            pid = str(item.get('place_id') or '').strip()
-            summary = _strip_structured_summary_labels(
-                str(item.get('summary') or item.get('explanation') or '')
-            )
-            if not summary:
-                conclusion = _normalize_whitespace(str(item.get('conclusion') or item.get('kesimpulan') or ''))
-                strengths = item.get('strengths') or item.get('kelebihan') or ''
-                weaknesses = item.get('weaknesses') or item.get('kekurangan') or item.get('catatan') or ''
-                if isinstance(strengths, list):
-                    strengths = '; '.join(_normalize_whitespace(str(v or '')) for v in strengths if str(v or '').strip())
-                if isinstance(weaknesses, list):
-                    weaknesses = '; '.join(_normalize_whitespace(str(v or '')) for v in weaknesses if str(v or '').strip())
-                summary = _join_narrative_summary_parts(conclusion, strengths, weaknesses)
-            if pid and summary:
-                summary_map[pid] = summary
-
+        summary_map = _assign_llm_summaries_to_shops(parsed, top_shops)
         result_map = {}
+        skipped = []
         for shop in top_shops:
             summary = summary_map.get(shop['place_id'])
             invalid_reason = None
@@ -6147,21 +6472,29 @@ def _llm_summaries_for_shops(top_shops, pills, search_keywords=None):
                 if unverified:
                     invalid_reason = f'kutipan tidak ada di review: {unverified[0][:60]}'
             if invalid_reason:
-                if COFIND_DEV_LLM_STRICT:
-                    raise RuntimeError(
-                        f"LLM strict mode aktif: summary invalid untuk {shop['place_id']} ({invalid_reason})."
-                    )
+                skipped.append((shop, invalid_reason))
+                prefix = '[STRICT] ' if COFIND_DEV_LLM_STRICT else ''
                 print(
-                    f"[RECOMMEND] Summary fallback deterministik untuk {shop.get('name')}: {invalid_reason}",
+                    f"[RECOMMEND] {prefix}Summary fallback deterministik untuk "
+                    f"{shop.get('name')} ({shop.get('place_id')}): {invalid_reason}",
                     flush=True,
                 )
                 summary = _build_review_summary_deterministic(shop, pills)
             result_map[shop['place_id']] = summary
+        if skipped:
+            print(
+                f"[RECOMMEND] Summary: {len(summary_map)} LLM / {len(skipped)} fallback "
+                f"dari {len(top_shops)} toko — batch tetap dikirim",
+                flush=True,
+            )
         return result_map
     except Exception as e:
-        if COFIND_DEV_LLM_STRICT:
-            raise RuntimeError(f'LLM strict mode aktif: summary gagal ({e})') from e
-        print(f"[RECOMMEND] LLM summary error: {e}. Fallback to deterministic.", flush=True)
+        prefix = '[STRICT] ' if COFIND_DEV_LLM_STRICT else ''
+        print(
+            f"[RECOMMEND] {prefix}LLM summary error: {e}. "
+            "Fallback deterministik untuk semua toko, rekomendasi tetap dikirim.",
+            flush=True,
+        )
         return {
             s['place_id']: _build_review_summary_deterministic(s, pills)
             for s in top_shops
@@ -6327,7 +6660,10 @@ def _recommendation_pipeline_events(prefs, _auth_user):
                 corpus_vocabulary=corpus_vocabulary_from_tokens(corpus_tokens),
                 parse_json_fn=_parse_llm_json_with_repair,
             )
-            llm_preference_keywords = expansion_info.get('keywords') or []
+            llm_preference_keywords = _filter_overbroad_meeting_keywords(
+                expansion_info.get('keywords') or [],
+                valid_pills,
+            )
             print(
                 f"[RECOMMEND] Ekspansi keyword LLM ({expansion_info.get('source')}): "
                 f"{llm_preference_keywords} "
@@ -6391,7 +6727,8 @@ def _recommendation_pipeline_events(prefs, _auth_user):
                 valid_pills,
                 search_keywords=search_keywords,
             )
-            # Tolak kandidat tanpa kutipan review yang relevan untuk preferensi.
+            # Tolak kandidat tanpa kutipan PENDUKUNG. Hanya caveat (keluhan pada
+            # konteks yang sama) tidak cukup untuk merekomendasikan toko.
             if not _evidence_has_relevant_quotes(
                 evidence, valid_pills, search_keywords=query_keywords,
             ):
@@ -6513,7 +6850,6 @@ def _recommendation_pipeline_events(prefs, _auth_user):
             search_keywords=query_keywords,
         )
         stage_ms['llm_summary_ms'] = round((time.perf_counter() - stage_t0) * 1000, 1)
-        stage_ms['summary_async_enabled'] = COFIND_SUMMARY_ASYNC
         stage_ms['total_ms'] = round((time.perf_counter() - request_t0) * 1000, 1)
         print(f"[METRIC] recommend_by_preferences {stage_ms}", flush=True)
         print(
@@ -6551,7 +6887,6 @@ def _recommendation_pipeline_events(prefs, _auth_user):
             if 'total_ms' not in stage_ms:
                 stage_ms['total_ms'] = round((time.perf_counter() - request_t0) * 1000, 1)
             stage_ms.setdefault('rerank_backend', 'none')
-            stage_ms['summary_async_enabled'] = COFIND_SUMMARY_ASYNC
             print(f"[METRIC] recommend_by_preferences_final {stage_ms}")
         except Exception:
             pass
@@ -6858,7 +7193,6 @@ def health_check():
         'llm_backend': LLM_BACKEND,
         'rerank_backend': COFIND_RERANK_BACKEND,
         'llm_pipeline': llm_pipeline_config(),
-        'summary_async_enabled': COFIND_SUMMARY_ASYNC,
     }
     try:
         from redis_utils import get_redis_url, ping_redis
@@ -6902,11 +7236,9 @@ def save_sentiment_cache(cache):
     except Exception as e:
         print(f"[CACHE] Error saving cache: {e}")
 
-# Path untuk cache ringkasan rekomendasi LLM (per place_id + kombinasi pill)
-RECOMMENDATION_SUMMARY_CACHE_PATH = os.path.join(
-    'frontend-cofind', 'src', 'data', 'recommendation_summary_cache.json'
-)
-RECOMMENDATION_SUMMARY_CACHE_VERSION = 'v4'
+# Path untuk cache ringkasan rekomendasi LLM (folder cache/ di-gitignore, sama seperti sentiment).
+RECOMMENDATION_SUMMARY_CACHE_PATH = os.path.join(CACHE_DIR, 'recommendation_summary_cache.json')
+RECOMMENDATION_SUMMARY_CACHE_VERSION = 'v5'
 
 def load_recommendation_summary_cache():
     """Load cache ringkasan rekomendasi dari file."""
@@ -6921,6 +7253,7 @@ def load_recommendation_summary_cache():
 def save_recommendation_summary_cache(cache):
     """Save cache ringkasan rekomendasi ke file."""
     try:
+        os.makedirs(CACHE_DIR, exist_ok=True)
         with open(RECOMMENDATION_SUMMARY_CACHE_PATH, 'w', encoding='utf-8') as f:
             json.dump(cache, f, ensure_ascii=False, indent=2)
     except Exception as e:
@@ -6929,16 +7262,28 @@ def save_recommendation_summary_cache(cache):
 def _recommendation_summary_pill_key(pills):
     return '+'.join(sorted(str(p).strip().lower() for p in (pills or []) if str(p).strip()))
 
-def _recommendation_summary_cache_key(place_id, pills):
-    return f"{str(place_id).strip()}::{_recommendation_summary_pill_key(pills)}"
+def _recommendation_summary_keyword_digest(search_keywords):
+    """Hash stabil dari keyword intent (seed pill + ekspansi LLM)."""
+    terms = _light_keyword_phrase_list(search_keywords or [])
+    if not terms:
+        return ''
+    blob = '\n'.join(sorted(terms))
+    return hashlib.sha1(blob.encode('utf-8')).hexdigest()[:12]
 
-def _get_cached_recommendation_summary(place_id, pills, current_review_count):
-    """Kembalikan ringkasan ter-cache jika masih valid (review_count sama, versi cocok, belum kedaluwarsa)."""
+def _recommendation_summary_cache_key(place_id, pills, search_keywords=None):
+    pill_part = _recommendation_summary_pill_key(pills)
+    kw_digest = _recommendation_summary_keyword_digest(search_keywords)
+    if kw_digest:
+        return f"{str(place_id).strip()}::{pill_part}::{kw_digest}"
+    return f"{str(place_id).strip()}::{pill_part}"
+
+def _get_cached_recommendation_summary(place_id, pills, current_review_count, search_keywords=None):
+    """Kembalikan ringkasan ter-cache jika masih valid (review_count sama, keyword sama, versi cocok, belum kedaluwarsa)."""
     try:
         cache = load_recommendation_summary_cache()
     except Exception:
         return None
-    entry = cache.get(_recommendation_summary_cache_key(place_id, pills))
+    entry = cache.get(_recommendation_summary_cache_key(place_id, pills, search_keywords))
     if not isinstance(entry, dict):
         return None
     if entry.get('version') != RECOMMENDATION_SUMMARY_CACHE_VERSION:
@@ -6950,7 +7295,7 @@ def _get_cached_recommendation_summary(place_id, pills, current_review_count):
     summary = entry.get('summary')
     return summary if summary else None
 
-def _store_recommendation_summaries(entries):
+def _store_recommendation_summaries(entries, search_keywords=None):
     """entries: list of (place_id, pills, summary, review_count, shop_name)."""
     if not entries:
         return
@@ -6960,14 +7305,16 @@ def _store_recommendation_summaries(entries):
         cache = {}
     if not isinstance(cache, dict):
         cache = {}
+    keyword_list = _light_keyword_phrase_list(search_keywords or [])
     for place_id, pills, summary, review_count, shop_name in entries:
         if not summary:
             continue
-        cache[_recommendation_summary_cache_key(place_id, pills)] = {
+        cache[_recommendation_summary_cache_key(place_id, pills, search_keywords)] = {
             'version': RECOMMENDATION_SUMMARY_CACHE_VERSION,
             'timestamp': time.time(),
             'place_id': str(place_id).strip(),
             'pills': sorted(str(p).strip().lower() for p in (pills or []) if str(p).strip()),
+            'search_keywords': keyword_list,
             'shop_name': shop_name or '',
             'review_count': review_count,
             'summary': summary,

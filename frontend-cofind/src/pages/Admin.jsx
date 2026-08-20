@@ -17,7 +17,6 @@ const NAV_ITEMS = [
   { id: 'reviews', label: 'Reviews', description: 'Moderasi ulasan dan pantau engagement.' },
   { id: 'reports', label: 'Reports', description: 'Moderasi laporan review dari user.' },
   { id: 'suggestions', label: 'Saran Preferensi', description: 'Tinjau saran pill preferensi baru dari user.' },
-  { id: 'ai', label: 'AI', description: 'Trigger analisis sentimen dan lihat cache AI.' },
   { id: 'settings', label: 'Settings', description: 'Informasi sistem admin dan konfigurasi LLM.' },
 ];
 
@@ -55,13 +54,6 @@ function formatDate(value) {
   });
 }
 
-function formatTimestamp(value) {
-  if (!value) return '-';
-  const date = new Date(Number(value) * 1000);
-  if (Number.isNaN(date.getTime())) return '-';
-  return formatDate(date.toISOString());
-}
-
 function formatJson(value) {
   try {
     return JSON.stringify(value, null, 2);
@@ -90,10 +82,41 @@ function Toolbar({ search, onSearchChange, filters }) {
         value={search}
         onChange={(event) => onSearchChange(event.target.value)}
         placeholder="Cari data..."
-        className="w-full lg:max-w-md rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all duration-300 ease-out"
+        className="w-full lg:max-w-md cursor-text rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 shadow-sm transition-all duration-200 ease-out hover:border-amber-300 hover:bg-white hover:shadow-md focus:outline-none focus:ring-2 focus:ring-amber-500/70 focus:border-amber-500"
       />
-      {filters ? <div className="flex flex-wrap gap-2">{filters}</div> : null}
+      {filters ? <div className="flex flex-wrap items-center gap-2">{filters}</div> : null}
     </div>
+  );
+}
+
+function FilterSelect({ value, onChange, children, label, ariaLabel }) {
+  return (
+    <label className="flex min-w-[220px] max-w-full flex-col gap-1 sm:min-w-[260px]">
+      {label ? (
+        <span className="text-[11px] font-medium uppercase tracking-wide text-stone-500">
+          {label}
+        </span>
+      ) : null}
+      <span className="relative block">
+        <select
+          value={value}
+          onChange={onChange}
+          aria-label={ariaLabel || label}
+          className="w-full cursor-pointer appearance-none rounded-xl border border-stone-300/80 bg-white px-3.5 py-2.5 pr-10 text-sm text-stone-800 shadow-sm transition-all duration-200 ease-out hover:border-amber-400 hover:bg-amber-50/50 hover:shadow-md focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/70"
+        >
+          {children}
+        </select>
+        <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-stone-400">
+          <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path
+              fillRule="evenodd"
+              d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </span>
+      </span>
+    </label>
   );
 }
 
@@ -144,11 +167,6 @@ export default function Admin() {
   const [preferenceSuggestionsLoading, setPreferenceSuggestionsLoading] = useState(false);
   const [preferenceSuggestionsError, setPreferenceSuggestionsError] = useState('');
 
-  const [aiCache, setAiCache] = useState([]);
-  const [aiCacheLoading, setAiCacheLoading] = useState(false);
-  const [aiCacheError, setAiCacheError] = useState('');
-  const [aiRunningPlaceId, setAiRunningPlaceId] = useState('');
-  const [aiShops, setAiShops] = useState([]);
   const [settings, setSettings] = useState(null);
   const [settingsLoading, setSettingsLoading] = useState(false);
 
@@ -340,25 +358,6 @@ export default function Admin() {
     }
   }, []);
 
-  const loadAICache = useCallback(async () => {
-    setAiCacheLoading(true);
-    setAiCacheError('');
-    try {
-      const [cacheResult, shopResult, settingsResult] = await Promise.all([
-        adminService.getAICache(),
-        adminService.getShops({ page: 1, per_page: 100 }),
-        adminService.getSettings(),
-      ]);
-      setAiCache(cacheResult.items || []);
-      setAiShops(shopResult.items || []);
-      setSettings(settingsResult.settings || null);
-    } catch (error) {
-      setAiCacheError(error.message);
-    } finally {
-      setAiCacheLoading(false);
-    }
-  }, []);
-
   const loadSettings = useCallback(async () => {
     setSettingsLoading(true);
     try {
@@ -400,11 +399,6 @@ export default function Admin() {
     if (!isAdmin || activeSection !== 'suggestions') return;
     loadPreferenceSuggestions(1, preferenceSuggestionsSearch, preferenceSuggestionsStatusFilter);
   }, [isAdmin, activeSection, preferenceSuggestionsSearch, preferenceSuggestionsStatusFilter, loadPreferenceSuggestions]);
-
-  useEffect(() => {
-    if (!isAdmin || activeSection !== 'ai') return;
-    loadAICache();
-  }, [isAdmin, activeSection, loadAICache]);
 
   const openUserCreateModal = () => {
     setUserModalMode('create');
@@ -546,18 +540,26 @@ export default function Admin() {
     try {
       await adminService.deleteShop(placeId);
       showFeedback('success', 'Coffee shop berhasil dihapus.');
-      await Promise.all([loadShops(shopsPagination?.page || 1), loadDashboard(), loadAICache()]);
+      await Promise.all([loadShops(shopsPagination?.page || 1), loadDashboard()]);
     } catch (error) {
       showFeedback('error', error.message);
     }
   };
 
   const handleDeleteReview = async (reviewId) => {
-    if (!window.confirm('Hapus review ini?')) return;
+    if (!reviewId) {
+      showFeedback('error', 'Review terkait sudah tidak ada.');
+      return;
+    }
+    if (!window.confirm('Hapus review ini? Laporan terkait review ini juga akan dihapus.')) return;
     try {
       await adminService.deleteReview(reviewId);
       showFeedback('success', 'Review berhasil dihapus.');
-      await Promise.all([loadReviews(reviewsPagination?.page || 1), loadDashboard(), loadAICache()]);
+      await Promise.all([
+        loadReviews(reviewsPagination?.page || 1),
+        loadReviewReports(reviewReportsPagination?.page || 1, reviewReportsSearch, reviewReportsStatusFilter),
+        loadDashboard(),
+      ]);
     } catch (error) {
       showFeedback('error', error.message);
     }
@@ -677,33 +679,6 @@ export default function Admin() {
       showFeedback('error', error.message);
     } finally {
       setSuggestionSubmitting(false);
-    }
-  };
-
-  const handleRunSentiment = async (shop) => {
-    setAiRunningPlaceId(shop.place_id);
-    try {
-      const result = await adminService.triggerSentimentAnalysis({
-        place_id: shop.place_id,
-        shop_name: shop.name,
-      });
-      showFeedback('success', result.from_cache ? 'Analisis AI diambil dari cache.' : 'Analisis AI berhasil dijalankan.');
-      await loadAICache();
-    } catch (error) {
-      showFeedback('error', error.message);
-    } finally {
-      setAiRunningPlaceId('');
-    }
-  };
-
-  const handleDeleteCache = async (placeId) => {
-    if (!window.confirm('Hapus cache AI untuk coffee shop ini?')) return;
-    try {
-      await adminService.deleteAICache(placeId);
-      showFeedback('success', 'Cache AI berhasil dihapus.');
-      await loadAICache();
-    } catch (error) {
-      showFeedback('error', error.message);
     }
   };
 
@@ -868,22 +843,10 @@ export default function Admin() {
     },
     {
       key: 'scores',
-      label: 'Skor',
+      label: 'Rating',
+      align: 'center',
       render: (row) => (
-        <div className="text-xs space-y-1">
-          <p>Rating: {row.rating}</p>
-        </div>
-      ),
-    },
-    {
-      key: 'meta',
-      label: 'Meta',
-      render: (row) => (
-        <div className="text-xs space-y-1">
-          <p>{row.photo_count} foto</p>
-          <p>{row.like_count} like</p>
-          <p className="text-stone-500">{formatDate(row.created_at)}</p>
-        </div>
+        <p className="text-xs">{row.rating}</p>
       ),
     },
     {
@@ -946,13 +909,23 @@ export default function Admin() {
       key: 'actions',
       label: 'Aksi',
       render: (row) => (
-        <button
-          type="button"
-          onClick={() => openReportModal(row)}
-          className="rounded-lg bg-amber-700 px-3 py-2 text-xs font-medium text-stone-50 hover:bg-amber-800 transition-all duration-300 ease-out cursor-pointer"
-        >
-          Moderasi
-        </button>
+        <div className="flex flex-col items-stretch gap-2">
+          <button
+            type="button"
+            onClick={() => openReportModal(row)}
+            className="inline-flex h-8 min-w-[5.75rem] items-center justify-center rounded-lg bg-amber-700 px-3 text-xs font-medium text-stone-50 hover:bg-amber-800 transition-all duration-300 ease-out cursor-pointer"
+          >
+            Moderasi
+          </button>
+          <button
+            type="button"
+            disabled={!row.review_id}
+            onClick={() => handleDeleteReview(row.review_id)}
+            className="inline-flex h-8 min-w-[5.75rem] items-center justify-center rounded-lg bg-red-600 px-3 text-xs font-medium text-stone-50 hover:bg-red-700 transition-all duration-300 ease-out cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Hapus
+          </button>
+        </div>
       ),
     },
   ];
@@ -1005,44 +978,6 @@ export default function Admin() {
           className="rounded-lg bg-amber-700 px-3 py-2 text-xs font-medium text-stone-50 hover:bg-amber-800 transition-all duration-300 ease-out cursor-pointer"
         >
           Tinjau
-        </button>
-      ),
-    },
-  ];
-
-  const aiCacheColumns = [
-    {
-      key: 'shop_name',
-      label: 'Coffee Shop',
-      render: (row) => (
-        <div>
-          <p className="font-semibold text-stone-800">{row.shop_name}</p>
-          <p className="text-xs text-stone-500">{row.place_id}</p>
-        </div>
-      ),
-    },
-    {
-      key: 'summary',
-      label: 'Ringkasan Cache',
-      render: (row) => (
-        <div className="space-y-1">
-          <p className="text-xs line-clamp-3">{row.data?.ringkasan || '-'}</p>
-          <p className="text-xs text-stone-500">
-            {row.review_count} review • {formatTimestamp(row.timestamp)}
-          </p>
-        </div>
-      ),
-    },
-    {
-      key: 'actions',
-      label: 'Aksi',
-      render: (row) => (
-        <button
-          type="button"
-          onClick={() => handleDeleteCache(row.place_id)}
-          className="rounded-lg bg-red-600 px-3 py-2 text-xs font-medium text-stone-50 hover:bg-red-700 transition-all duration-300 ease-out cursor-pointer"
-        >
-          Hapus cache
         </button>
       ),
     },
@@ -1266,10 +1201,10 @@ export default function Admin() {
                   search={reviewsSearch}
                   onSearchChange={setReviewsSearch}
                   filters={
-                    <select
+                    <FilterSelect
+                      label="Coffee shop"
                       value={reviewShopFilter}
                       onChange={(event) => setReviewShopFilter(event.target.value)}
-                      className="rounded-xl border border-stone-300/70 bg-stone-50 px-3 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all duration-300 ease-out"
                     >
                       <option value="">Semua coffee shop</option>
                       {reviewShopOptions.map((shop) => (
@@ -1277,7 +1212,7 @@ export default function Admin() {
                           {shop.name}
                         </option>
                       ))}
-                    </select>
+                    </FilterSelect>
                   }
                 />
                 <AdminTable
@@ -1328,7 +1263,7 @@ export default function Admin() {
               <>
                 <SectionHeader
                   title="Saran Preferensi"
-                  description="Tinjau saran pill preferensi baru dari user. Status accepted berarti saran layak ditambahkan ke katalog pill."
+                  description="Tinjau saran pill preferensi baru dari user."
                 />
                 <Toolbar
                   search={preferenceSuggestionsSearch}
@@ -1359,69 +1294,9 @@ export default function Admin() {
               </>
             ) : null}
 
-            {activeSection === 'ai' ? (
-              <>
-                <SectionHeader title="AI Management" description="Jalankan analisis sentimen per coffee shop dan pantau hasil cache yang tersimpan." />
-                {aiCacheError ? (
-                  <div className="rounded-2xl bg-red-100 dark:bg-red-900/30 px-4 py-3 text-sm text-red-700 dark:text-red-400">
-                    {aiCacheError}
-                  </div>
-                ) : null}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="rounded-2xl border border-stone-200/50 bg-[#FAF9F6]/95 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-5">
-                    <h4 className="font-semibold text-stone-800 mb-4">Trigger analisis sentimen</h4>
-                    <div className="space-y-3 max-h-[420px] overflow-y-auto">
-                      {aiShops.map((shop) => (
-                        <div key={shop.place_id} className="rounded-xl border border-stone-200/60 p-4 flex items-center justify-between gap-3">
-                          <div>
-                            <p className="font-medium text-stone-800">{shop.name}</p>
-                            <p className="text-xs text-stone-500">{shop.place_id}</p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => handleRunSentiment(shop)}
-                            disabled={aiRunningPlaceId === shop.place_id}
-                            className="rounded-lg bg-amber-700 px-3 py-2 text-xs font-medium text-stone-50 hover:bg-amber-800 transition-all duration-300 ease-out cursor-pointer disabled:opacity-60"
-                          >
-                            {aiRunningPlaceId === shop.place_id ? 'Menganalisis...' : 'Analisis'}
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-stone-200/50 bg-[#FAF9F6]/95 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-5">
-                    <h4 className="font-semibold text-stone-800 mb-4">Status AI</h4>
-                    <div className="space-y-3 text-sm">
-                      <div className="rounded-xl bg-stone-100/40 border border-stone-200/60 p-4">
-                        <p className="text-stone-500">LLM tersedia</p>
-                        <p className="font-semibold text-stone-800">{settings?.llm_available ? 'Ya' : 'Tidak'}</p>
-                      </div>
-                      <div className="rounded-xl bg-stone-100/40 border border-stone-200/60 p-4">
-                        <p className="text-stone-500">Model</p>
-                        <p className="font-semibold text-stone-800 break-all">{settings?.llm_model || '-'}</p>
-                      </div>
-                      <div className="rounded-xl bg-stone-100/40 border border-stone-200/60 p-4">
-                        <p className="text-stone-500">Total cache</p>
-                        <p className="font-semibold text-stone-800">{aiCache.length}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <AdminTable
-                  columns={aiCacheColumns}
-                  rows={aiCache}
-                  loading={aiCacheLoading}
-                  error={aiCacheError}
-                  emptyMessage="Belum ada cache analisis sentimen."
-                />
-              </>
-            ) : null}
-
             {activeSection === 'settings' ? (
               <>
-                <SectionHeader title="Settings" description="Ringkasan konfigurasi admin, LLM, dan integrasi frontend-backend." />
+                <SectionHeader title="Settings" description="Ringkasan konfigurasi admin dan LLM." />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="rounded-2xl border border-stone-200/50 bg-[#FAF9F6]/95 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-5">
                     <h4 className="font-semibold text-stone-800 mb-3">Konfigurasi sistem</h4>
@@ -1432,18 +1307,9 @@ export default function Admin() {
                         <p><span className="font-medium">LLM tersedia:</span> {settings?.llm_available ? 'Ya' : 'Tidak'}</p>
                         <p><span className="font-medium">Model LLM:</span> {settings?.llm_model || '-'}</p>
                         <p><span className="font-medium">Cache sentiment:</span> {settings?.cache_expiry_days ?? '-'} hari</p>
-                        <p><span className="font-medium">Catatan:</span> {settings?.api_base_note || '-'}</p>
+                        
                       </div>
                     )}
-                  </div>
-
-                  <div className="rounded-2xl border border-stone-200/50 bg-[#FAF9F6]/95 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-5">
-                    <h4 className="font-semibold text-stone-800 mb-3">Saran operasional</h4>
-                    <div className="space-y-3 text-sm text-stone-600">
-                      <p>Gunakan tab Facilities untuk memperbarui latitude dan longitude dengan klik langsung di peta.</p>
-                      <p>Setelah menghapus review besar-besaran, jalankan ulang analisis AI pada coffee shop terkait agar cache tetap relevan.</p>
-                      <p>Cek tab Saran Preferensi untuk meninjau usulan pill baru dari user, lalu tambahkan ke katalog jika diterima.</p>
-                    </div>
                   </div>
                 </div>
               </>
@@ -1765,11 +1631,6 @@ export default function Admin() {
           </div>
 
           <div className="rounded-xl border border-stone-200/60 p-4">
-            <p className="text-xs text-stone-500">Detail laporan</p>
-            <p className="mt-1 text-sm text-stone-800 whitespace-pre-wrap">{reportForm.report_text || '(Tidak ada detail tambahan)'}</p>
-          </div>
-
-          <div className="rounded-xl border border-stone-200/60 p-4">
             <p className="text-xs text-stone-500">Review yang dilaporkan</p>
             <p className="mt-1 text-sm text-stone-800 whitespace-pre-wrap">{reportForm.review_text || '(Review sudah tidak tersedia)'}</p>
           </div>
@@ -1786,17 +1647,6 @@ export default function Admin() {
               <option value="resolved">resolved</option>
               <option value="dismissed">dismissed</option>
             </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1">Catatan admin</label>
-            <textarea
-              rows={4}
-              value={reportForm.admin_notes}
-              onChange={(event) => setReportForm((prev) => ({ ...prev, admin_notes: event.target.value }))}
-              className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
-              placeholder="Contoh: Review melanggar aturan spam, sudah dihapus."
-            />
           </div>
 
           <div className="flex justify-end gap-3">

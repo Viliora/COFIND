@@ -7,6 +7,7 @@ import base64
 import re
 from datetime import datetime
 from auth_utils import get_db_connection
+from db_backend import dict_from_row
 
 # Batas ukuran decoded image per foto (selaras dengan frontend review).
 MAX_REVIEW_PHOTO_BYTES = 2 * 1024 * 1024
@@ -279,6 +280,50 @@ def get_reviews_for_recommendation_batch(place_ids):
         return {'success': True, 'by_place': by_place}
     except Exception as e:
         return {'success': False, 'error': str(e), 'by_place': {}}
+
+
+def get_latest_reviews(limit=10):
+    """Ambil ulasan terbaru tanpa filter umur, untuk aside publik."""
+    try:
+        limit = min(max(int(limit), 1), 20)
+    except (TypeError, ValueError):
+        limit = 10
+
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        rows = cursor.execute(
+            '''
+            SELECT r.id, r.place_id, r.created_at,
+                   u.username,
+                   c.name AS shop_name,
+                   c.address
+            FROM reviews r
+            LEFT JOIN users u ON u.id = r.user_id
+            LEFT JOIN coffee_shops c ON c.place_id = r.place_id
+            ORDER BY r.created_at DESC
+            LIMIT ?
+            ''',
+            (limit,),
+        ).fetchall()
+        items = []
+        for row in rows:
+            rd = dict_from_row(cursor, row) or {}
+            items.append({
+                'id': rd.get('id'),
+                'place_id': rd.get('place_id'),
+                'shop_name': rd.get('shop_name') or 'Coffee shop',
+                'address': rd.get('address') or '',
+                'username': rd.get('username') or 'Anonim',
+                'created_at': rd.get('created_at'),
+            })
+        return {'success': True, 'items': items}
+    except Exception as e:
+        return {'success': False, 'error': str(e), 'items': []}
+    finally:
+        if conn is not None:
+            conn.close()
 
 
 def get_user_review_stats(user_id):
