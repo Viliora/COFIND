@@ -39,8 +39,8 @@ def signup(email: str, username: str, password: str, full_name: str = "") -> dic
         if not email or not username or not password:
             return {'success': False, 'error': 'Missing required fields'}
         
-        if len(password) < 6:
-            return {'success': False, 'error': 'Password must be at least 6 characters'}
+        if len(password) < 8:
+            return {'success': False, 'error': 'Password minimal 8 karakter'}
         
         with get_db_connection() as conn:
             cursor = conn.cursor()

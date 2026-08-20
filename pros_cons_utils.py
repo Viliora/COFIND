@@ -267,6 +267,76 @@ def get_pros_cons(place_id, user_id=None):
         conn.close()
 
 
+def get_top_voted_pros_batch(place_ids, limit=3):
+    """Poin keunggulan (pro) dengan net vote > 0, per toko. Return {place_id: [item, ...]}."""
+    ids = [str(pid).strip() for pid in (place_ids or []) if str(pid).strip()]
+    if not ids:
+        return {}
+    unique_ids = list(dict.fromkeys(ids))
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        placeholders = ','.join('?' * len(unique_ids))
+        rows = cursor.execute(
+            f'''
+            SELECT id, place_id, text
+            FROM shop_pros_cons
+            WHERE place_id IN ({placeholders}) AND point_type = 'pro'
+            ORDER BY id ASC
+            ''',
+            unique_ids,
+        ).fetchall()
+        if not rows:
+            return {pid: [] for pid in unique_ids}
+
+        point_ids = [r[0] for r in rows]
+        upvotes, downvotes = {}, {}
+        vote_placeholders = ','.join('?' * len(point_ids))
+        vote_rows = cursor.execute(
+            f'''
+            SELECT point_id, vote_type, COUNT(*)
+            FROM shop_pros_cons_votes
+            WHERE point_id IN ({vote_placeholders})
+            GROUP BY point_id, vote_type
+            ''',
+            point_ids,
+        ).fetchall()
+        for pid, vtype, count in vote_rows:
+            if vtype == 'up':
+                upvotes[pid] = count
+            elif vtype == 'down':
+                downvotes[pid] = count
+
+        by_place = {pid: [] for pid in unique_ids}
+        for point_id, place_id, text in rows:
+            pid = str(place_id or '').strip()
+            up = int(upvotes.get(point_id, 0) or 0)
+            down = int(downvotes.get(point_id, 0) or 0)
+            net = up - down
+            if net <= 0:
+                continue
+            cleaned = str(text or '').strip()
+            if not cleaned:
+                continue
+            if pid not in by_place:
+                by_place[pid] = []
+            by_place[pid].append({
+                'text': cleaned,
+                'upvotes': up,
+                'downvotes': down,
+                'net': net,
+            })
+        for pid, items in by_place.items():
+            items.sort(key=lambda x: (-int(x.get('net') or 0), -int(x.get('upvotes') or 0)))
+            by_place[pid] = items[: max(1, int(limit))]
+        return by_place
+    except Exception as e:
+        print(f'[PROS_CONS] get_top_voted_pros_batch failed: {e}')
+        return {pid: [] for pid in unique_ids}
+    finally:
+        conn.close()
+
+
 def toggle_pros_cons_vote(user_id, point_id, vote_type):
     """Upvote/downvote satu poin. Klik ulang pada vote yang sama -> batalkan vote.
     Klik vote berbeda -> ganti vote. Return { success, upvotes, downvotes, user_vote }."""

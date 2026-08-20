@@ -4,6 +4,14 @@ import { Link } from 'react-router-dom';
 import OptimizedImage from './OptimizedImage';
 import { getCoffeeShopImage } from '../utils/coffeeShopImages';
 
+/** Grid katalog di samping Latest Reviews: 3 kolom agar kartu tidak terpotong aside */
+export const SHOP_CATALOG_GRID_CLASS =
+  'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5';
+
+/** Item carousel: 2 kartu penuh di mobile, 3 di layar lebih lebar */
+export const SHOP_CAROUSEL_ITEM_CLASS =
+  'relative block shrink-0 snap-start overflow-hidden w-[calc((100%-1rem)/2)] min-w-[calc((100%-1rem)/2)] sm:w-[calc((100%-2rem)/3)] sm:min-w-[calc((100%-2rem)/3)]';
+
 const CoffeeShopCard = ({ shop, variant = 'default' }) => {
     const [isModalOpen] = useState(false);
     const [photoUrl, setPhotoUrl] = useState(null);
@@ -95,11 +103,11 @@ const CoffeeShopCard = ({ shop, variant = 'default' }) => {
                     }
                 }}
             >
-            <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 overflow-visible h-full flex flex-col shadow-lg hover:shadow-2xl transition duration-300 ${
-                isMini ? 'min-h-[14.5rem]' : 'min-h-[25.5rem]'
+            <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden h-full flex flex-col shadow-lg hover:shadow-2xl transition duration-300 ${
+                isMini ? 'min-h-[14.5rem]' : 'min-h-[21.5rem]'
             }`}>
                 <div className={`aspect-w-16 aspect-h-9 relative overflow-hidden rounded-t-xl ${
-                    isMini ? 'h-32' : 'h-48'
+                    isMini ? 'h-32' : 'h-40'
                 }`}>
                     <OptimizedImage
                         src={photoUrl}
@@ -111,7 +119,7 @@ const CoffeeShopCard = ({ shop, variant = 'default' }) => {
                 </div>
             
             <div className={`relative flex-1 ${isMini ? 'p-3' : 'p-4'}`}>
-                    <h2 className={`${isMini ? 'text-base mb-1.5' : 'text-xl mb-2'} font-bold text-gray-800 dark:text-gray-200 line-clamp-2 group-hover:text-indigo-600 transition-colors`}>
+                    <h2 className={`${isMini ? 'text-base mb-1.5' : 'text-lg mb-2'} font-bold text-gray-800 dark:text-gray-200 line-clamp-2 group-hover:text-indigo-600 transition-colors`}>
                         {shop.name}
                     </h2>
 

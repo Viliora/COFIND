@@ -5,7 +5,7 @@ import 'leaflet/dist/leaflet.css';
 
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-import CoffeeShopCard from './CoffeeShopCard';
+import CoffeeShopCard, { SHOP_CATALOG_GRID_CLASS } from './CoffeeShopCard';
 
 let DefaultIcon = L.icon({
   iconUrl: icon,
@@ -172,7 +172,7 @@ export default function CoffeeShopRadiusMap({
               {shopsInRadius.length} coffee shop dalam radius {formatRadius(radiusMeters)} dari lokasi Anda
             </p>
             {shopsInRadius.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+              <div className={SHOP_CATALOG_GRID_CLASS}>
                 {shopsInRadius.map((shop) => (
                   <div key={shop.place_id} className="relative">
                     <div className="absolute top-2 right-2 z-10 px-2 py-1 rounded bg-indigo-600 text-white text-xs font-medium">

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import CoffeeShopCard from '../components/CoffeeShopCard';
+import CoffeeShopCard, { SHOP_CATALOG_GRID_CLASS, SHOP_CAROUSEL_ITEM_CLASS } from '../components/CoffeeShopCard';
 import HeroSwiper from '../components/HeroSwiper';
 import CoffeeShopMap from '../components/CoffeeShopMap';
 import CoffeeShopRadiusMap from '../components/CoffeeShopRadiusMap';
@@ -18,6 +18,7 @@ import { getRecentlyViewedWithDetails } from '../utils/recentlyViewed';
 import heroBgImage from '../assets/1R modern cafe 1.5.jpg';
 import { useAuth } from '../context/authContext';
 import { authService } from '../services/authService';
+import LatestReviewsAside from '../components/LatestReviewsAside';
 // API Configuration
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
@@ -44,6 +45,48 @@ function sortShopsByGoogleMaps(shops) {
   });
 }
 
+function HorizontalCatalogScroller({ children, className = '' }) {
+  const scrollerRef = useRef(null);
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return undefined;
+
+    const onWheel = (event) => {
+      if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
+
+      const maxScroll = el.scrollWidth - el.clientWidth;
+      if (maxScroll <= 1) return;
+
+      let delta = event.deltaY;
+      if (event.deltaMode === 1) delta *= 16;
+      if (event.deltaMode === 2) delta *= el.clientHeight;
+      delta *= 0.28;
+
+      const goingRight = delta > 0;
+      const atStart = el.scrollLeft <= 1;
+      const atEnd = el.scrollLeft >= maxScroll - 1;
+
+      if ((goingRight && atEnd) || (!goingRight && atStart)) return;
+
+      event.preventDefault();
+      el.scrollLeft += delta;
+    };
+
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []);
+
+  return (
+    <div
+      ref={scrollerRef}
+      className={`flex gap-4 overflow-x-auto pb-4 snap-x snap-proximity ${className}`}
+    >
+      {children}
+    </div>
+  );
+}
+
 export default function ShopList() {
   const { loading: authLoading, user } = useAuth();
   const [coffeeShops, setCoffeeShops] = useState([]);
@@ -65,7 +108,6 @@ export default function ShopList() {
   const [suggestSubmitting, setSuggestSubmitting] = useState(false);
   const [suggestError, setSuggestError] = useState('');
   const [suggestSuccess, setSuggestSuccess] = useState('');
-  const featuredScrollRef = useRef(null);
   const hasLoadedRef = useRef(false);
 
   // Lokasi saat ini & radius dalam meter (untuk katalog "coffee shop dalam radius")
@@ -599,7 +641,8 @@ export default function ShopList() {
       )}
 
       <main className="w-full py-4 sm:py-6 md:py-8 px-4 sm:px-6">
-        
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-6 lg:gap-8 items-start">
+        <div className="min-w-0 overflow-x-hidden"> 
         {/* Statistics Cards - sesuai data yang tampil di aplikasi (filteredShops) */}
         {!error && !isLoading && coffeeShops.length > 0 && (
           <div className="relative grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
@@ -817,16 +860,12 @@ export default function ShopList() {
               Dipilih berdasarkan rating tinggi, popularitas, dan kelengkapan informasi
             </p>
             
-            <div className="relative">
-              <div
-                ref={featuredScrollRef}
-                className="flex gap-4 overflow-x-auto scroll-smooth pb-4 snap-x snap-mandatory"
-                style={{ paddingLeft: '16px', paddingRight: '16px' }}
-              >
+            <div className="relative min-w-0">
+              <HorizontalCatalogScroller>
                 {featuredShops.map((shop, index) => (
                   <div
                     key={shop.place_id}
-                    className="relative block hover:shadow-2xl transition duration-300 w-[240px] sm:w-[280px] md:w-[300px] shrink-0 snap-start group overflow-hidden"
+                    className={`${SHOP_CAROUSEL_ITEM_CLASS} hover:shadow-2xl transition duration-300 group`}
                   >
                     <div className="absolute top-2 left-2 z-20 bg-gradient-to-r from-yellow-400 to-orange-500 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shadow-lg">
                       {index + 1}
@@ -836,7 +875,7 @@ export default function ShopList() {
                     </div>
                   </div>
                 ))}
-              </div>
+              </HorizontalCatalogScroller>
             </div>
           </div>
         )}
@@ -891,19 +930,19 @@ export default function ShopList() {
               Coffee shop dengan rating tertinggi - pilihan terbaik dalam pengalaman ngopi
             </p>
             
-            <div className="relative">
-              <div className="flex gap-4 overflow-x-auto scroll-smooth pb-4 snap-x snap-mandatory">
+            <div className="relative min-w-0">
+              <HorizontalCatalogScroller>
                 {topRatedShops.map((shop) => (
                   <div
                     key={shop.place_id}
-                    className="relative block hover:shadow-2xl transition duration-300 w-[240px] sm:w-[280px] md:w-[300px] shrink-0 snap-start group"
+                    className={`${SHOP_CAROUSEL_ITEM_CLASS} hover:shadow-2xl transition duration-300 group`}
                   >
                     <div className="relative">
                       <CoffeeShopCard shop={shop} />
                     </div>
                   </div>
                 ))}
-              </div>
+              </HorizontalCatalogScroller>
             </div>
           </div>
         )}
@@ -921,19 +960,19 @@ export default function ShopList() {
               Coffee shop Hidden Gem (rating tinggi dengan sedikit review)
             </p>
             
-            <div className="relative">
-              <div className="flex gap-4 overflow-x-auto scroll-smooth pb-4 snap-x snap-mandatory">
+            <div className="relative min-w-0">
+              <HorizontalCatalogScroller>
                 {newestShops.map((shop) => (
                   <div
                     key={shop.place_id}
-                    className="relative block hover:shadow-2xl transition duration-300 w-[240px] sm:w-[280px] md:w-[300px] shrink-0 snap-start group"
+                    className={`${SHOP_CAROUSEL_ITEM_CLASS} hover:shadow-2xl transition duration-300 group`}
                   >
                     <div className="relative">
                       <CoffeeShopCard shop={shop} />
                     </div>
                   </div>
                 ))}
-              </div>
+              </HorizontalCatalogScroller>
             </div>
           </div>
         )}
@@ -951,7 +990,7 @@ export default function ShopList() {
               Coffee shop yang baru saja Anda lihat
             </p>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+            <div className={SHOP_CATALOG_GRID_CLASS}>
               {recentlyViewedShops.map((shop) => (
                 <div key={shop.place_id} className="block hover:shadow-2xl transition duration-300">
                   <CoffeeShopCard shop={shop} />
@@ -1025,7 +1064,7 @@ export default function ShopList() {
         )}
 
         {!error && filteredShops.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+          <div className={SHOP_CATALOG_GRID_CLASS}>
             {filteredShops.map((shop) => (
               <div
                 key={shop.place_id}
@@ -1047,6 +1086,9 @@ export default function ShopList() {
           </div>
         )}
         
+        </div>
+        <LatestReviewsAside className="lg:sticky lg:top-24" />
+        </div>
       </main>
 
       {showPillLoginModal && (

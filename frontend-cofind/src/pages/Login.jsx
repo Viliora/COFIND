@@ -14,7 +14,6 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -123,35 +122,16 @@ const Login = () => {
           setIsSubmitting(false);
           return;
         }
-        // Enhanced password validation
         if (password.length < 8) {
           setError('Password minimal 8 karakter.');
           setIsSubmitting(false);
           return;
         }
-        
-        // Additional password strength checks (optional but recommended)
-        if (password.length < 12) {
-          // Warn but don't block - allow 8-11 chars but suggest stronger
-          console.warn('[Login] Password kurang dari 12 karakter - disarankan menggunakan password yang lebih kuat');
-        }
 
         const { error } = await signUp(username.trim(), password, fullName.trim());
 
         if (error) {
-          // Handle leaked password error specifically (jika Leaked Password Protection enabled)
-          const errorMsg = error.message?.toLowerCase() || '';
-          if (errorMsg.includes('breach') || 
-              errorMsg.includes('pwned') || 
-              errorMsg.includes('compromised') || 
-              errorMsg.includes('leaked') ||
-              errorMsg.includes('data breach')) {
-            setError('Password ini telah ditemukan dalam data breach. Silakan pilih password yang berbeda dan lebih kuat untuk keamanan akun Anda.');
-          } else if (errorMsg.includes('password') && errorMsg.includes('weak')) {
-            setError('Password terlalu lemah. Gunakan password minimal 12 karakter dengan kombinasi huruf besar, huruf kecil, angka, dan karakter khusus.');
-          } else {
-            setError(error.message || 'Gagal mendaftar. Silakan coba lagi.');
-          }
+          setError(error.message || 'Gagal mendaftar. Silakan coba lagi.');
         } else {
           // After successful signup, auto-login
           const { error: loginError } = await signIn(username.trim(), password);
@@ -326,7 +306,7 @@ const Login = () => {
                       className="w-full px-4 py-3 bg-white/90 text-gray-900 rounded-lg border border-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                       placeholder="Kata Sandi"
                       required
-                      minLength={6}
+                      minLength={mode === 'register' ? 8 : undefined}
                     />
                   </div>
                 )}
@@ -345,23 +325,8 @@ const Login = () => {
                       className="w-full px-4 py-3 bg-white/90 text-gray-900 rounded-lg border border-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                       placeholder="••••••••"
                       required
-                      minLength={6}
+                      minLength={8}
                     />
-                  </div>
-                )}
-
-                {/* Remember Me & Forgot Password (only for login) */}
-                {mode === 'login' && (
-                  <div className="flex items-center">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={rememberMe}
-                        onChange={(e) => setRememberMe(e.target.checked)}
-                        className="w-4 h-4 rounded border-white/30 bg-white/20 text-orange-500 focus:ring-2 focus:ring-orange-500 focus:ring-offset-0"
-                      />
-                      <span className="text-sm text-white">Remember Me</span>
-                    </label>
                   </div>
                 )}
 
@@ -400,7 +365,7 @@ const Login = () => {
                         setError('');
                         setSuccess('');
                       }}
-                      className="text-orange-400 hover:text-orange-300 font-semibold underline underline-offset-2 transition-colors"
+                      className="bg-transparent p-0 border-0 rounded-none text-orange-400 hover:text-orange-300 hover:bg-transparent font-semibold underline underline-offset-2 transition-colors cursor-pointer"
                     >
                       Daftar sekarang
                     </button>
@@ -415,7 +380,7 @@ const Login = () => {
                         setError('');
                         setSuccess('');
                       }}
-                      className="text-orange-400 hover:text-orange-300 font-semibold underline underline-offset-2 transition-colors"
+                      className="bg-transparent p-0 border-0 rounded-none text-orange-400 hover:text-orange-300 hover:bg-transparent font-semibold underline underline-offset-2 transition-colors cursor-pointer"
                     >
                       Masuk di sini
                     </button>
@@ -430,7 +395,7 @@ const Login = () => {
                         setError('');
                         setSuccess('');
                       }}
-                      className="text-orange-400 hover:text-orange-300 font-semibold underline underline-offset-2 transition-colors"
+                      className="bg-transparent p-0 border-0 rounded-none text-orange-400 hover:text-orange-300 hover:bg-transparent font-semibold underline underline-offset-2 transition-colors cursor-pointer"
                     >
                       Kembali ke login
                     </button>
