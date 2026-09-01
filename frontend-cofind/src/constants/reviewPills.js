@@ -1,13 +1,55 @@
 /** Pill konteks aktivitas di beranda (rekomendasi berbasis review). */
 export const CONTEXT_PILL_OPTIONS = [
   { label: 'Belajar', value: 'belajar' },
-  { label: 'Kerja', value: 'kerja' },
+  { label: 'Kerja/WFC', value: 'kerja' },
   { label: 'Nge-game', value: 'bermain game' },
   { label: 'Meeting/Pertemuan', value: 'meeting_sosialisasi' },
-  { label: 'Bersantai', value: 'bersantai' },
   { label: 'Keluarga', value: 'keluarga' },
   { label: 'Instagrammable', value: 'instagrammable' },
 ];
+
+/**
+ * Preferensi lapis 2: atribut fasilitas yang dipilih setelah konteks aktivitas.
+ * Nilai `value` dipakai sebagai kunci preferensi tambahan (bukan teks bebas).
+ */
+export const FACILITY_ATTRIBUTE_GROUPS = [
+  {
+    id: 'kenyamanan',
+    label: 'Kenyamanan',
+    options: [
+      { label: 'Ruangan sejuk', value: 'ruangan_ac', icon: '❄️' },
+      { label: 'Suasana tenang', value: 'suasana_tenang', icon: '🔇' },
+      { label: 'Area non-smoking', value: 'area_non_smoking', icon: '🚭' },
+      { label: 'Smoking area', value: 'smoking_area', icon: '🚬' },
+    ],
+  },
+  {
+    id: 'produktivitas',
+    label: 'Produktivitas',
+    options: [
+      { label: 'Wifi kencang', value: 'wifi_kencang', icon: '📶' },
+      { label: 'Banyak colokan / terminal', value: 'banyak_colokan_terminal', icon: '🔌' },
+      { label: '24 hours', value: 'buka_sampai_malam_24_hours', icon: '🌙' },
+    ],
+  },
+  {
+    id: 'fasilitas_umum',
+    label: 'Fasilitas umum',
+    options: [
+      { label: 'Ada musholla', value: 'musholla', icon: '🕌' },
+      { label: 'Parkir luas', value: 'parkir_luas', icon: '🅿️' },
+      { label: 'Toilet bersih', value: 'toilet_bersih', icon: '🚻' },
+    ],
+  },
+];
+
+export const FACILITY_ATTRIBUTE_OPTIONS = FACILITY_ATTRIBUTE_GROUPS.flatMap(
+  (group) => group.options,
+);
+
+export const FACILITY_ATTRIBUTE_LABELS = Object.fromEntries(
+  FACILITY_ATTRIBUTE_OPTIONS.map((option) => [option.value, option.label]),
+);
 
 /**
  * Gaya Tailwind per nilai pill: `idle` vs `selected`.
@@ -37,12 +79,6 @@ export const CONTEXT_PILL_THEMES = {
       'border-0 bg-gradient-to-br from-amber-200 via-amber-100 to-orange-200 text-amber-950 dark:from-amber-700/50 dark:via-amber-600/40 dark:to-orange-800/55 dark:text-amber-50 shadow-md shadow-amber-500/15 hover:shadow-lg hover:shadow-amber-500/30',
     selected:
       'border-0 bg-gradient-to-r from-amber-500 via-orange-500 to-orange-600 text-white shadow-lg shadow-amber-600/35 dark:shadow-amber-900/60 hover:shadow-xl hover:shadow-amber-600/45 dark:hover:shadow-amber-900/70',
-  },
-  bersantai: {
-    idle:
-      'border-0 bg-gradient-to-br from-cyan-200 via-cyan-100 to-teal-200 text-cyan-950 dark:from-cyan-700/50 dark:via-cyan-600/40 dark:to-teal-800/55 dark:text-cyan-50 shadow-md shadow-cyan-500/15 hover:shadow-lg hover:shadow-cyan-500/30',
-    selected:
-      'border-0 bg-gradient-to-r from-cyan-500 via-teal-500 to-teal-600 text-white shadow-lg shadow-cyan-600/35 dark:shadow-cyan-900/60 hover:shadow-xl hover:shadow-cyan-600/45 dark:hover:shadow-cyan-900/70',
   },
   keluarga: {
     idle:

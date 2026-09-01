@@ -66,7 +66,7 @@ export default function About() {
                 </p>
 
                 <p>
-                  Dibangun dari gagasan bahwa coffee shop terbaik bukan selalu yang memiliki rating tertinggi, Cofind membantu menyaring berbagai informasi dari ulasan dan preferensi pengguna untuk menemukan tempat yang benar-benar relevan. Baik untuk belajar, bekerja, bersantai, bertemu teman, maupun berkumpul bersama keluarga. Rekomendasi Cofind dirancang untuk membantu Anda menemukan tempat yang sesuai dengan konteks dan kebutuhan. Setiap rekomendasi juga dilengkapi dengan kutipan ulasan yang relevan, memberikan gambaran nyata mengenai pengalaman pengunjung sebelum Anda berkunjung.
+                  Dibangun dari gagasan bahwa coffee shop terbaik bukan selalu yang memiliki rating tertinggi, Cofind membantu menyaring berbagai informasi dari ulasan dan preferensi pengguna untuk menemukan tempat yang benar-benar relevan. Baik untuk belajar, bekerja, nge-game, pertemuan, maupun berkumpul bersama keluarga. Rekomendasi Cofind dirancang untuk membantu Anda menemukan tempat yang sesuai dengan konteks dan kebutuhan. Setiap rekomendasi juga dilengkapi dengan kutipan ulasan yang relevan, memberikan gambaran nyata mengenai pengalaman pengunjung sebelum Anda berkunjung.
                 </p>
 
                 <p>

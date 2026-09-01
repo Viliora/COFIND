@@ -342,7 +342,15 @@ function ShopDetail() {
     const pid = placeIdForApi;
     if (!pid || isSubmittingVote) return;
 
-    const nextValue = myVote?.[field] === key ? null : key;
+    const currentBestFor = myVote?.best_for || [];
+    const nextValue =
+      field === 'best_for'
+        ? currentBestFor.includes(key)
+          ? currentBestFor.filter((k) => k !== key)
+          : [...currentBestFor, key]
+        : myVote?.[field] === key
+          ? null
+          : key;
     const voteData = {
       presence: myVote?.presence ?? null,
       rating: myVote?.rating ?? null,
@@ -684,6 +692,7 @@ function ShopDetail() {
             myVote={myVote}
             onSelectRating={(key) => handleQuickVote('rating', key)}
             onSelectPresence={(key) => handleQuickVote('presence', key)}
+            onToggleBestFor={(key) => handleQuickVote('best_for', key)}
             isSubmitting={isSubmittingVote}
           />
         </div>

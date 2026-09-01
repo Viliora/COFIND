@@ -22,6 +22,10 @@ Arsitektur:
 
 import json
 import re
+
+from logging_config import get_logger
+
+logger = get_logger('pros_cons')
 from datetime import datetime, timedelta
 
 from auth_utils import get_db_connection
@@ -102,7 +106,7 @@ Jawab HANYA JSON valid dengan format:
         cons = [str(c).strip() for c in (parsed.get('cons') or []) if str(c).strip()]
         return pros[:PROS_CONS_MAX_POINTS_PER_TYPE], cons[:PROS_CONS_MAX_POINTS_PER_TYPE]
     except Exception as e:
-        print(f"[PROS_CONS] LLM extraction failed: {e}")
+        logger.warning(f"Ekstraksi LLM gagal: {e}")
         return [], []
 
 
@@ -200,7 +204,7 @@ def maybe_refresh_pros_cons(place_id, shop_name):
         conn.commit()
     except Exception as e:
         conn.rollback()
-        print(f"[PROS_CONS] maybe_refresh_pros_cons failed for {place_id}: {e}")
+        logger.warning(f"maybe_refresh_pros_cons gagal untuk {place_id}: {e}")
     finally:
         conn.close()
 
@@ -331,7 +335,7 @@ def get_top_voted_pros_batch(place_ids, limit=3):
             by_place[pid] = items[: max(1, int(limit))]
         return by_place
     except Exception as e:
-        print(f'[PROS_CONS] get_top_voted_pros_batch failed: {e}')
+        logger.warning(f'get_top_voted_pros_batch gagal: {e}')
         return {pid: [] for pid in unique_ids}
     finally:
         conn.close()

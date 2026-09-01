@@ -6,11 +6,14 @@ import CoffeeShopMap from '../components/CoffeeShopMap';
 import CoffeeShopRadiusMap from '../components/CoffeeShopRadiusMap';
 import RecommendationModal from '../components/RecommendationModal';
 import RecommendationProgressOverlay from '../components/RecommendationProgressOverlay';
+import FacilityAttributePicker from '../components/FacilityAttributePicker';
 import { streamRecommendations } from '../services/recommendationStream';
 import {
   CONTEXT_PILL_OPTIONS,
   CONTEXT_PILL_THEMES,
   CONTEXT_PILL_THEME_DEFAULT,
+  FACILITY_ATTRIBUTE_LABELS,
+  FACILITY_ATTRIBUTE_OPTIONS,
 } from '../constants/reviewPills';
 import { preloadFeaturedImages } from '../utils/imagePreloader';
 import { ensureCoffeeShopImageMap } from '../utils/coffeeShopImages';
@@ -95,6 +98,8 @@ export default function ShopList() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [selectedPills, setSelectedPills] = useState([]);
   const [confirmedPills, setConfirmedPills] = useState([]);
+  const [selectedAttributes, setSelectedAttributes] = useState([]);
+  const [confirmedAttributes, setConfirmedAttributes] = useState([]);
   const [llmRecommendations, setLlmRecommendations] = useState([]);
   const [pillRecommendLoading, setPillRecommendLoading] = useState(false);
   const [pillRecommendProgress, setPillRecommendProgress] = useState(null);
@@ -125,12 +130,24 @@ export default function ShopList() {
 
   const isPillPreferenceAvailable = Boolean(user) && !authLoading;
 
+  useEffect(() => {
+    const validActivities = new Set(CONTEXT_PILL_OPTIONS.map((p) => p.value));
+    const validAttrs = new Set(FACILITY_ATTRIBUTE_OPTIONS.map((p) => p.value));
+    const prune = (list, allowed) => list.filter((value) => allowed.has(value));
+    setSelectedPills((prev) => prune(prev, validActivities));
+    setConfirmedPills((prev) => prune(prev, validActivities));
+    setSelectedAttributes((prev) => prune(prev, validAttrs));
+    setConfirmedAttributes((prev) => prune(prev, validAttrs));
+  }, []);
+
   // Pill + rekomendasi konteks hanya untuk pengguna login; bersihkan saat logout
   useEffect(() => {
     if (authLoading) return;
     if (user) return;
     setSelectedPills([]);
     setConfirmedPills([]);
+    setSelectedAttributes([]);
+    setConfirmedAttributes([]);
     setLlmRecommendations([]);
     setPillRecommendError('');
     setShowRecommendationModal(false);
@@ -404,7 +421,11 @@ export default function ShopList() {
     if (pillRecommendLoading) return;
     setPillRecommendError('');
     setSelectedPills((prev) => {
-      if (prev.includes(pillValue)) return [];
+      if (prev.includes(pillValue)) {
+        // Atribut lapis 2 hanya relevan selama ada konteks aktivitas terpilih.
+        setSelectedAttributes([]);
+        return [];
+      }
       return [pillValue];
     });
   };
@@ -476,12 +497,12 @@ export default function ShopList() {
   );
 
   const hasPendingPillChanges = useMemo(() => {
-    const selectedKey = [...selectedPills].sort().join('|');
-    const confirmedKey = [...confirmedPills].sort().join('|');
+    const selectedKey = [...selectedPills, ...selectedAttributes].sort().join('|');
+    const confirmedKey = [...confirmedPills, ...confirmedAttributes].sort().join('|');
     return selectedKey !== confirmedKey;
-  }, [selectedPills, confirmedPills]);
+  }, [selectedPills, selectedAttributes, confirmedPills, confirmedAttributes]);
 
-  const requestPillRecommendations = async (pillValues) => {
+  const requestPillRecommendations = async (pillValues, attributeValues = []) => {
     if (!isPillPreferenceAvailable) return;
     if (!Array.isArray(pillValues) || pillValues.length === 0) return;
     const token = authService.getToken();
@@ -494,6 +515,7 @@ export default function ShopList() {
       return;
     }
     setConfirmedPills([...pillValues]);
+    setConfirmedAttributes([...attributeValues]);
     setPillRecommendLoading(true);
     setPillRecommendProgress(null);
     setPillRecommendError('');
@@ -504,6 +526,7 @@ export default function ShopList() {
         apiBase: API_BASE,
         token,
         preferences: pillValues,
+        attributes: attributeValues,
         onProgress: setPillRecommendProgress,
       });
 
@@ -565,7 +588,7 @@ export default function ShopList() {
   // Konfirmasi pill konteks di beranda → POST rekomendasi review-based
   const handleConfirmPills = async () => {
     if (!isPillPreferenceAvailable || selectedPills.length === 0) return;
-    await requestPillRecommendations(selectedPills);
+    await requestPillRecommendations(selectedPills, selectedAttributes);
   };
 
   // Katalog homepage tetap utuh; hasil AI ditampilkan lewat overlay terpisah
@@ -774,6 +797,14 @@ export default function ShopList() {
                 );
               })}
             </div>
+            {isPillPreferenceAvailable && selectedPills.length > 0 && (
+              <FacilityAttributePicker
+                selected={selectedAttributes}
+                onChange={setSelectedAttributes}
+                disabled={authLoading || pillRecommendLoading}
+              />
+            )}
+
             <div className="mt-3">
               <button
                 type="button"
@@ -786,9 +817,10 @@ export default function ShopList() {
                     : 'Sarankan preferensi baru ke admin'
                 }
               >
-                Tidak ada yang cocok? Sarankan preferensi
+                Tidak ada yang cocok? Sarankan fasilitas tambahan atau preferensi baru.
               </button>
             </div>
+
             {isPillPreferenceAvailable && selectedPills.length > 0 && (
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <button
@@ -812,6 +844,16 @@ export default function ShopList() {
                       <span className="font-medium text-gray-800 dark:text-gray-100">
                         {confirmedPills.map((v) => pillLabelByValue[v] || v).join(', ')}
                       </span>
+                      {confirmedAttributes.length > 0 && (
+                        <>
+                          {' · Detail: '}
+                          <span className="font-medium text-gray-800 dark:text-gray-100">
+                            {confirmedAttributes
+                              .map((v) => FACILITY_ATTRIBUTE_LABELS[v] || v)
+                              .join(', ')}
+                          </span>
+                        </>
+                      )}
                     </>
                   )}
                 </p>
@@ -1246,6 +1288,7 @@ export default function ShopList() {
         recommendations={llmRecommendations}
         shopsByKey={shopsByKey}
         confirmedPills={confirmedPills}
+        confirmedAttributes={confirmedAttributes}
       />
     </div>
   );

@@ -14,19 +14,14 @@ const STAGE_SEQUENCE = [
         hint: 'Membaca pengalaman nyata dari coffee shop di Cofind.',
     },
     {
-        stage: 'keyword_expansion',
-        label: 'Mencari kata kunci yang relevan',
-        hint: 'AI membantu menemukan topik ulasan yang cocok dengan kebutuhan Anda.',
-    },
-    {
         stage: 'scoring',
-        label: 'Membandingkan tempat-tempat kandidat',
-        hint: 'Menilai seberapa sering ulasan membahas hal yang Anda cari.',
+        label: 'Mencari tempat yang relevan',
+        hint: 'Mencocokkan ulasan dengan kebutuhan Anda, termasuk makna yang ditulis dengan kata berbeda.',
     },
     {
         stage: 'rerank',
         label: 'Memilih yang paling cocok',
-        hint: 'AI mengurutkan coffee shop dengan bukti ulasan terkuat.',
+        hint: 'AI membaca ulasan, memilah kelebihan dan catatan, lalu memilih hingga tiga tempat terbaik.',
     },
     {
         stage: 'summary',

@@ -11,6 +11,9 @@ from datetime import datetime
 
 from auth_utils import get_db_connection
 from db_backend import dict_from_row
+from logging_config import get_logger
+
+logger = get_logger('startup')
 
 STATUS_OPTIONS = ('pending', 'reviewed', 'accepted', 'rejected')
 
@@ -189,7 +192,7 @@ def ensure_preference_suggestions_table():
         _TABLE_READY = True
         return True
     except Exception as e:
-        print(f"[WARN] ensure_preference_suggestions_table: {e}")
+        logger.warning(f"ensure_preference_suggestions_table: {e}")
         try:
             if conn:
                 conn.rollback()

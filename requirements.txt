@@ -11,3 +11,8 @@ redis
 json-repair
 psycopg2-binary>=2.9
 rank_bm25>=0.2.2
+numpy>=1.24
+# Gerbang makna (semantic_match.py). Menarik torch, jadi image jadi besar.
+# Kalau paket ini tidak ada, pipeline tetap jalan tanpa gerbang makna
+# (lihat semantic_match.load_model) — set COFIND_SEMANTIC_GATE=false agar eksplisit.
+sentence-transformers>=3.0

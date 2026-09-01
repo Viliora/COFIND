@@ -25,6 +25,7 @@ venv/
 env/
 ENV/
 .venv
+.venv*/
 
 # Environment Variables
 .env
@@ -84,6 +85,8 @@ backup_task.xml
 scripts/
 tests/
 pytest.ini
+.pytest_cache/
+smoke_*.py
 create_*.py
 add_*.py
 update_*.py

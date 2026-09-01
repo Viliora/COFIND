@@ -153,6 +153,15 @@ function formatPreferenceKey(key) {
   return String(key).split('+').map((part) => part.replace(/_/g, ' ')).join(' + ');
 }
 
+/** Pill konteks lama yang sudah tidak ada di opsi rekomendasi. */
+const RETIRED_PREFERENCE_PILLS = new Set(['bersantai']);
+
+function preferenceKeyHasRetiredPill(key) {
+  return String(key || '')
+    .split('+')
+    .some((part) => RETIRED_PREFERENCE_PILLS.has(part.trim().toLowerCase()));
+}
+
 export default function AdminDashboardCharts({ charts }) {
   const feedback = charts?.recommendation_feedback || {};
   const feedbackSegments = useMemo(() => ([
@@ -181,11 +190,13 @@ export default function AdminDashboardCharts({ charts }) {
     unique_reviewers: row.unique_reviewers || 0,
   }));
 
-  const preferenceBars = (charts?.feedback_by_preference || []).map((row) => ({
-    label: formatPreferenceKey(row.preferences_key),
-    helpful: row.helpful || 0,
-    not_helpful: row.not_helpful || 0,
-  }));
+  const preferenceBars = (charts?.feedback_by_preference || [])
+    .filter((row) => !preferenceKeyHasRetiredPill(row.preferences_key))
+    .map((row) => ({
+      label: formatPreferenceKey(row.preferences_key),
+      helpful: row.helpful || 0,
+      not_helpful: row.not_helpful || 0,
+    }));
 
   const trend = charts?.reviews_trend || [];
 

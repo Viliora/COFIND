@@ -17,6 +17,9 @@ from datetime import datetime
 
 from auth_utils import get_db_connection
 from db_backend import dict_from_row
+from logging_config import get_logger
+
+logger = get_logger('feedback')
 
 VOTE_OPTIONS = ('helpful', 'not_helpful')
 
@@ -115,7 +118,7 @@ def ensure_recommendation_feedback_table():
         _TABLE_READY = True
         return True
     except Exception as e:
-        print(f"[WARN] ensure_recommendation_feedback_table: {e}")
+        logger.warning(f"ensure_recommendation_feedback_table: {e}")
         try:
             if conn:
                 conn.rollback()
@@ -306,7 +309,7 @@ def get_user_feedback_map(user_id, preferences, place_ids=None):
             }
         return out
     except Exception as e:
-        print(f"[WARN] get_user_feedback_map: {e}")
+        logger.warning(f"get_user_feedback_map: {e}")
         return {}
     finally:
         if conn:

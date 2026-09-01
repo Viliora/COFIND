@@ -15,6 +15,10 @@ import unicodedata
 from functools import lru_cache
 from typing import Dict
 
+from logging_config import get_logger
+
+logger = get_logger('slang')
+
 _ROOT = os.path.dirname(os.path.abspath(__file__))
 _SLANG_JSON_PATH = os.path.join(_ROOT, 'data', 'indonesia_slang_map.json')
 
@@ -59,7 +63,7 @@ def _basic_clean(text: str) -> str:
 def load_slang_map() -> Dict[str, str]:
     """Load slang map dari JSON; kosong jika file belum ada."""
     if not os.path.exists(_SLANG_JSON_PATH):
-        print(f'[WARN] Slang map tidak ditemukan: {_SLANG_JSON_PATH}')
+        logger.warning(f'Slang map tidak ditemukan: {_SLANG_JSON_PATH}')
         return {}
     try:
         with open(_SLANG_JSON_PATH, 'r', encoding='utf-8') as f:
@@ -76,7 +80,7 @@ def load_slang_map() -> Dict[str, str]:
             out[s] = d
         return out
     except Exception as err:
-        print(f'[WARN] Gagal load slang map: {err}')
+        logger.warning(f'Gagal load slang map: {err}')
         return {}
 
 

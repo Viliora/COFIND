@@ -2,23 +2,21 @@
 Lapisan keputusan LLM untuk rekomendasi Cofind (input tetap pill, tanpa teks bebas).
 
 Tahap yang disediakan modul ini:
-  A. Ekspansi keyword pill oleh LLM, divalidasi terhadap kosakata korpus review
-     sehingga keyword yang masuk ke retrieval selalu kata yang benar-benar ada
-     di review (tidak mungkin mengarang istilah).
-  B. Rerank kandidat oleh LLM: LLM memberi fit score + alasan + kutipan bukti,
-     lalu skor akhir = campuran fit LLM dan skor statistik (BM25 hybrid).
+  B. Rerank kandidat oleh LLM (Fase 3 RAG): pilih 0–3 toko dari pool
+     retrieval yang kutipannya mendukung aktivitas user (bukan hanya fasilitas),
+     ekstrak kutipan pendukung dan caveat dengan NLU (bukan jendela token).
   C. Konteks personalisasi dari histori user (review, favorit, dan penilaian toko).
   D. Grounding check: setiap kutipan yang diklaim LLM harus benar-benar ada di
      korpus review toko tersebut, kalau tidak maka klaim itu dibuang.
 
 Env:
-  COFIND_LLM_KEYWORD_EXPANSION      aktifkan tahap A (default: true)
   COFIND_LLM_RERANK                 aktifkan tahap B (default: true)
   COFIND_LLM_PERSONALIZATION        aktifkan tahap C (default: true)
   COFIND_LLM_GROUNDING_CHECK        aktifkan tahap D (default: true)
-  COFIND_LLM_RERANK_CANDIDATES      jumlah kandidat yang dinilai LLM (default: 8)
+  COFIND_LLM_RERANK_CANDIDATES      jumlah kandidat yang dinilai LLM (default: 7)
   COFIND_LLM_RERANK_WEIGHT          bobot fit LLM pada skor akhir 0..1 (default: 0.6)
-  COFIND_LLM_EXPANSION_MAX_TERMS    batas frasa hasil ekspansi (default: 8)
+  COFIND_LLM_KEYWORD_EXPANSION      legacy, tidak dipakai pipeline RAG (default: false)
+  COFIND_LLM_EXPANSION_MAX_TERMS    batas frasa hasil ekspansi legacy (default: 8)
   COFIND_LLM_EXPANSION_CACHE_TTL    TTL cache ekspansi per kombinasi pill, detik (default: 3600)
 """
 
@@ -30,6 +28,8 @@ import re
 import threading
 import time
 from typing import Callable, Dict, List, Optional, Sequence
+
+from hybrid_retrieval import min_fit_score, text_matches_tokens
 
 try:  # opsional, sama seperti pemakaian di app.py
     import importlib
@@ -73,7 +73,7 @@ def _env_float(name: str, default: float, *, min_value: float, max_value: float)
 
 
 def keyword_expansion_enabled() -> bool:
-    return _env_flag('COFIND_LLM_KEYWORD_EXPANSION', True)
+    return _env_flag('COFIND_LLM_KEYWORD_EXPANSION', False)
 
 
 def rerank_enabled() -> bool:
@@ -89,7 +89,7 @@ def grounding_check_enabled() -> bool:
 
 
 def rerank_candidate_pool() -> int:
-    return _env_int('COFIND_LLM_RERANK_CANDIDATES', 8, min_value=2, max_value=20)
+    return _env_int('COFIND_LLM_RERANK_CANDIDATES', 7, min_value=2, max_value=20)
 
 
 def rerank_weight() -> float:
@@ -629,8 +629,13 @@ def format_user_taste_prompt_block(taste_profile: Optional[Dict[str, object]]) -
 
 _RERANK_SYSTEM_PROMPT = (
     'Anda mesin pemeringkat rekomendasi coffee shop Cofind. '
-    'Anda memilih dan mengurutkan kandidat berdasarkan kutipan review (bukti utama) '
-    'dan sinyal pengunjung yang diberikan. '
+    'Anda boleh memilih 0 sampai 3 toko. Jangan memaksa 3. '
+    'Toko hanya boleh dipilih jika kutipan benar-benar membahas aktivitas user '
+    '(misalnya bermain game), bukan hanya wifi, parkir, atau nongkrong. '
+    'Fasilitas tambahan hanya penguat. Ketiadaan ulasan fasilitas bukan alasan menolak '
+    'toko yang aktivitasnya terbukti, dan bukan alasan menaikkan skor. '
+    'Pahami bahasa alami: negasi mengubah nada ("harganya tidak mahal" = positif; '
+    '"tempatnya lumayan sumpek" = kelemahan). '
     'Jangan menambah kandidat, jangan mengarang fasilitas, jangan mengarang kutipan. '
     'Jawab HANYA JSON array valid tanpa markdown dan tanpa penjelasan di luar JSON.'
 )
@@ -638,7 +643,7 @@ _RERANK_SYSTEM_PROMPT = (
 _UNGROUNDED_FIT_PENALTY = 1.5
 _MAX_REASON_CHARS = 240
 _BANNED_REASON_FRAGMENTS = ('place_id', '```', 'json', '{', '}', '[fasilitas]', '[review]')
-# Alasan tanpa detail konkret tidak membantu user dan tidak bisa diverifikasi.
+# Alasan tanpa detail konkret tidak bisa diverifikasi terhadap kutipan.
 _GENERIC_REASON_RE = re.compile(
     r'(banyak|beberapa|satu|dua|tiga|sejumlah)\s+(review|ulasan)|'
     r'(review|ulasan)\s+menyebut(kan)?\s+(tempat|coffee shop)\s+ini\s+cocok',
@@ -647,13 +652,14 @@ _GENERIC_REASON_RE = re.compile(
 
 
 def _quote_candidates_for_prompt(evidence: Dict[str, object], *, limit: int, quote_chars: int) -> List[Dict[str, object]]:
-    """Kutipan review untuk satu kandidat, diprioritaskan dari bukti yang paling relevan."""
+    """Kutipan review untuk satu kandidat — utamakan cuplikan korpus, bukan hasil filter leksikon."""
     ordered_keys = (
-        'search_keyword_matches',
-        'llm_keyword_matches',
         'review_quotes',
         'positive_review_quotes',
         'negative_review_quotes',
+        'search_keyword_matches',
+        'llm_keyword_matches',
+        'semantic_matches',
     )
     quotes: List[Dict[str, object]] = []
     seen = set()
@@ -764,11 +770,11 @@ def _candidate_block(
     pills: Optional[Sequence[str]] = None,
 ) -> str:
     """
-    Blok bukti satu kandidat. Tiga hal yang disengaja di sini:
-    skor statistik sistem tidak dibocorkan (kalau ditampilkan, LLM cenderung menyalin
-    urutan statistik alih-alih menilai bukti); kandidat dirujuk dengan id angka, bukan
-    place_id panjang yang mudah salah tulis dan memakan token output; dan kutipan diberi
-    nomor supaya LLM menyitir lewat nomor, bukan menulis ulang teksnya.
+    Blok bukti satu kandidat untuk prompt rerank.
+
+    - Skor statistik tidak disertakan: LLM menilai dari bukti, tidak menyalin urutan.
+    - Kandidat dirujuk lewat id angka, bukan place_id, untuk menekan token output.
+    - Kutipan bernomor: LLM menyitir nomornya, tidak menulis ulang teks kutipan.
     """
     evidence = candidate.get('evidence') or {}
     pill_stats = evidence.get('pill_stats') or []
@@ -809,7 +815,7 @@ def _candidate_block(
         f"  rating kategori: {category_line}\n"
         f"  sinyal per konteks:\n" + '\n'.join(stat_lines) + '\n'
         + community_block
-        + f"  kutipan review bernomor (bukti utama; sinyal pengunjung di atas hanya pendukung):\n"
+        + "  kutipan review bernomor (bukti utama; sinyal pengunjung di atas hanya pendukung):\n"
         + '\n'.join(quote_lines)
     )
 
@@ -869,14 +875,22 @@ def llm_rerank_candidates(
     user_taste_block: str = '',
     keyword_line: str = '',
     max_candidates: Optional[int] = None,
-    quotes_per_candidate: int = 4,
-    quote_chars: int = 220,
+    quotes_per_candidate: int = 6,
+    quote_chars: int = 280,
     grounding: Optional[bool] = None,
+    cached_fits: Optional[Dict[str, Dict[str, object]]] = None,
+    activity_pills: Optional[Sequence[str]] = None,
+    activity_tokens: Optional[Sequence[str]] = None,
 ) -> Optional[Dict[str, object]]:
     """
     Tahap B. LLM menilai setiap kandidat (fit 0-10 + alasan + kutipan bukti),
     lalu skor akhir dicampur dengan skor statistik agar keputusan LLM tetap
     berlabuh pada sinyal review yang terukur.
+
+    `cached_fits` (place_id -> penilaian) melewati panggilan LLM sepenuhnya;
+    pencampuran skor tetap dihitung ulang di sini karena murah. Hasil penilaian
+    ikut dikembalikan pada kunci 'fits' supaya pemanggil bisa menyimpannya —
+    kebijakan cache (kunci, masa berlaku) sengaja dipegang pemanggil.
 
     Return None bila rerank tidak bisa dipakai (nonaktif / LLM gagal / output tidak valid),
     sehingga pemanggil memakai urutan statistik seperti sebelumnya.
@@ -889,10 +903,34 @@ def llm_rerank_candidates(
     if not pool:
         return None
 
+    pool_place_ids = {str(c.get('place_id')) for c in pool if c.get('place_id')}
+    reusable_fits = {
+        place_id: fit
+        for place_id, fit in (cached_fits or {}).items()
+        if place_id in pool_place_ids and isinstance(fit, dict)
+    }
+    if reusable_fits:
+        return _blend_rerank_scores(
+            pool,
+            reusable_fits,
+            telemetry={
+                'backend': 'cache',
+                'candidates': len(pool),
+                'scored_by_llm': 0,
+                'scored_from_cache': len(reusable_fits),
+                'latency_ms': 0.0,
+            },
+        )
+
     grounding_active = grounding_check_enabled() if grounding is None else bool(grounding)
+    activity_list = list(activity_pills) if activity_pills is not None else list(pills or [])
+    attribute_list = [p for p in (pills or []) if p not in set(activity_list)]
+    activity_line = ', '.join(str(pill_labels.get(p, p)) for p in activity_list) or 'preferensi umum'
+    attribute_line = ', '.join(str(pill_labels.get(p, p)) for p in attribute_list) or '(tidak ada)'
     labels_line = ', '.join(str(pill_labels.get(p, p)) for p in pills or []) or 'preferensi umum'
-    # Urutan prompt distabilkan oleh place_id, bukan skor, supaya posisi kandidat
-    # tidak memberi petunjuk peringkat statistik kepada LLM.
+    act_tokens = list(activity_tokens or [])
+    # Urutan prompt ditentukan place_id, bukan skor, agar posisi kandidat tidak
+    # membocorkan peringkat statistik.
     prompt_order = sorted(pool, key=lambda c: str(c.get('place_id') or ''))
     quotes_by_place: Dict[str, List[Dict[str, object]]] = {}
     blocks = []
@@ -906,30 +944,41 @@ def llm_rerank_candidates(
         blocks.append(_candidate_block(idx, candidate, quotes, pills=pills))
 
     prompt_parts = [
-        f'Preferensi aktivitas user: {labels_line}',
+        f'Preferensi aktivitas user (WAJIB ada bukti kutipan): {activity_line}',
+        f'Fasilitas tambahan (penguat, tidak wajib): {attribute_line}',
+        f'Semua preferensi: {labels_line}',
         f'Kata kunci pencarian yang dipakai sistem: {keyword_line or "tidak ada"}',
     ]
     if user_taste_block:
         prompt_parts.append(user_taste_block)
     prompt_parts.append('Kandidat coffee shop dan buktinya:\n\n' + '\n\n'.join(blocks))
     prompt_parts.append(
-        'Tugas: nilai seberapa cocok setiap kandidat dengan preferensi user, lalu urutkan dari paling cocok.\n'
+        'Tugas: nilai seberapa cocok setiap kandidat dengan AKTIVITAS user. '
+        'Pilih 0 sampai 3 toko. Kosong lebih baik daripada toko tanpa bukti aktivitas.\n'
         'Aturan ketat:\n'
         '- Urutan kandidat di atas acak dan TIDAK mencerminkan kualitas. '
         'Nilai dari kutipan review plus sinyal pengunjung bila ada.\n'
         f'- Wajib menilai SEMUA {len(pool)} kandidat, satu objek JSON per kandidat, tanpa kandidat baru.\n'
         '- id adalah angka kandidat (id=...) yang tertulis di atas.\n'
-        '- fit_score bilangan 0 sampai 10. Bukti lemah untuk preferensi user berarti fit_score rendah.\n'
+        '- selected=true HANYA jika ada kutipan yang membahas aktivitas user. '
+        'Boleh 0 toko. Jangan memaksa 3. Sisanya selected=false.\n'
+        '- Jangan pilih toko hanya karena wifi, parkir, AC, atau nongkrong jika aktivitas tidak disebut.\n'
+        '- Fasilitas tambahan menaikkan fit_score hanya jika aktivitas sudah terbukti. '
+        'Ketiadaan ulasan fasilitas bukan alasan selected=false.\n'
+        '- fit_score bilangan 0 sampai 10. Tanpa bukti aktivitas, fit_score maksimal 3 dan selected=false.\n'
+        '- Pahami negasi dan nada alami: "tidak mahal", "nggak berisik", "harganya tidak mahal" '
+        'adalah poin positif. "lumayan sumpek", "wifi lemot", "kurang nyaman buat kerja" adalah caveat.\n'
         '- Jika kutipan menunjukkan hambatan untuk aktivitas yang diminta user (misalnya berisik saat '
         'user ingin kerja), turunkan fit_score kandidat itu meskipun review lain positif.\n'
-        '- evidence_index wajib berupa nomor kutipan milik kandidat itu sendiri (angka dalam kurung siku). '
+        '- supporting_index wajib nomor kutipan yang membahas AKTIVITAS, bukan hanya fasilitas. '
         'Jangan menulis ulang isi kutipan.\n'
+        '- caveat_index nomor kutipan kelemahan bila ada; 0 jika tidak ada kelemahan yang relevan.\n'
         '- reason maksimal 18 kata bahasa Indonesia dan wajib menyebut detail konkret dari kutipan '
-        'kandidat itu, misalnya "ruangan AC di lantai 2" atau "colokan di tiap meja". '
+        'kandidat itu, misalnya "sering mabar" atau "colokan di tiap meja". '
         'Dilarang menulis kalimat umum seperti "banyak review menyebut cocok untuk kerja".\n'
         '- reason setiap kandidat harus berbeda.\n'
         'Format keluaran, satu objek per kandidat: '
-        '[{"id":1,"fit_score":8.5,"reason":"...","evidence_index":2}]'
+        '[{"id":1,"selected":true,"fit_score":8.5,"reason":"...","supporting_index":2,"caveat_index":0}]'
     )
 
     started = time.perf_counter()
@@ -939,8 +988,8 @@ def llm_rerank_candidates(
                 {'role': 'system', 'content': _RERANK_SYSTEM_PROMPT},
                 {'role': 'user', 'content': '\n\n'.join(prompt_parts)},
             ],
-            # Output tumbuh linear terhadap jumlah kandidat yang harus dinilai.
-            # Catatan: llm_backend memotong nilai ini ke HF_LLM_MAX_CHAT_TOKENS_CAP.
+            # Budget output linear terhadap jumlah kandidat.
+            # llm_backend memotong nilai ini ke HF_LLM_MAX_CHAT_TOKENS_CAP.
             max_tokens=min(1000, 140 + 70 * len(pool)),
             temperature=0.1,
         )
@@ -989,7 +1038,7 @@ def llm_rerank_candidates(
 
         fit_score = _clamp_fit_score(item.get('fit_score', item.get('score')))
         reason = _clean_reason(item.get('reason') or item.get('alasan'))
-        # Alasan identik untuk dua kandidat berarti LLM tidak benar-benar membedakan bukti.
+        # Alasan identik antar kandidat dianggap tidak membedakan bukti, jadi dibuang.
         reason_key = normalize_for_grounding(reason)
         if reason and reason_key in seen_reasons:
             reason = ''
@@ -998,25 +1047,68 @@ def llm_rerank_candidates(
         if not reason:
             dropped_reasons += 1
 
-        # Bukti disitir lewat nomor kutipan; teksnya diambil dari data kami sendiri
-        # sehingga tidak mungkin dikarang. Kutipan verbatim hanya jalur cadangan.
+        # Teks kutipan diambil dari data sistem berdasarkan nomor yang disitir LLM.
+        # Kutipan verbatim hanya jalur cadangan dan wajib lolos grounding.
         available_quotes = quotes_by_place.get(place_id) or []
-        quote = ''
-        quote_grounded = True
-        quote_index = _quote_index_value(item.get('evidence_index'))
-        if quote_index is not None and 1 <= quote_index <= len(available_quotes):
-            quote = str(available_quotes[quote_index - 1].get('text') or '')
-        else:
-            verbatim = re.sub(r'\s+', ' ', str(item.get('evidence_quote') or item.get('quote') or '')).strip()
-            if verbatim:
+
+        def _quote_at(raw_index, *, verbatim_keys=()):
+            index = _quote_index_value(raw_index)
+            if index is not None and 1 <= index <= len(available_quotes):
+                return str(available_quotes[index - 1].get('text') or ''), True
+            for key in verbatim_keys:
+                verbatim = re.sub(r'\s+', ' ', str(item.get(key) or '')).strip()
+                if not verbatim:
+                    continue
                 if place_id not in corpus_cache:
-                    corpus_cache[place_id] = shop_corpus_text((candidate.get('profile') or {}).get('reviews') or [])
+                    corpus_cache[place_id] = shop_corpus_text(
+                        (candidate.get('profile') or {}).get('reviews') or []
+                    )
                 if not grounding_active or text_is_grounded(verbatim, corpus_cache[place_id]):
-                    quote = verbatim
+                    return verbatim, True
+            return '', False
+
+        quote, _quote_found = _quote_at(
+            item.get('supporting_index', item.get('evidence_index')),
+            verbatim_keys=('evidence_quote', 'quote', 'supporting_quote'),
+        )
+        quote_grounded = True
         if not quote and available_quotes:
             quote_grounded = False
             ungrounded_quotes_count += 1
             fit_score = max(0.0, fit_score - _UNGROUNDED_FIT_PENALTY)
+
+        activity_supported = True
+        if act_tokens:
+            if quote and text_matches_tokens(quote, act_tokens):
+                activity_supported = True
+            else:
+                activity_supported = False
+                for row in available_quotes:
+                    alt = str((row or {}).get('text') or '')
+                    if text_matches_tokens(alt, act_tokens):
+                        quote = alt
+                        quote_grounded = True
+                        activity_supported = True
+                        break
+
+        caveat_quote, _ = _quote_at(
+            item.get('caveat_index'),
+            verbatim_keys=('caveat_quote', 'caveat'),
+        )
+        caveat_index = _quote_index_value(item.get('caveat_index'))
+        if caveat_index == 0:
+            caveat_quote = ''
+
+        raw_selected = item.get('selected')
+        if isinstance(raw_selected, str):
+            selected = raw_selected.strip().lower() in ('1', 'true', 'yes', 'on')
+        else:
+            selected = bool(raw_selected)
+        if act_tokens and not activity_supported:
+            selected = False
+            fit_score = min(fit_score, 3.0)
+        elif act_tokens and activity_supported and fit_score >= min_fit_score():
+            selected = True
 
         matched = []
         raw_matched = item.get('matched_pills') or item.get('pills') or []
@@ -1027,8 +1119,6 @@ def llm_rerank_candidates(
             if key in valid_pills and key not in matched:
                 matched.append(key)
         if not matched:
-            # Skema prompt tidak lagi meminta matched_pills (hemat token output),
-            # jadi ambil dari statistik keyword yang sudah terukur.
             matched = _matched_pills_from_stats(candidate, valid_pills)
 
         fits[place_id] = {
@@ -1036,6 +1126,8 @@ def llm_rerank_candidates(
             'reason': reason,
             'evidence_quote': quote,
             'evidence_grounded': quote_grounded,
+            'caveat_quote': caveat_quote,
+            'selected': selected,
             'matched_pills': matched,
         }
 
@@ -1050,6 +1142,29 @@ def llm_rerank_candidates(
             },
         }
 
+    return _blend_rerank_scores(
+        pool,
+        fits,
+        telemetry={
+            'backend': 'llm',
+            'candidates': len(pool),
+            'scored_by_llm': len(fits),
+            'unknown_place_ids': unknown_place_ids,
+            'ungrounded_quotes': ungrounded_quotes_count,
+            'dropped_reasons': dropped_reasons,
+            'grounding_check': grounding_active,
+            'latency_ms': latency_ms,
+        },
+    )
+
+
+def _blend_rerank_scores(
+    pool: Sequence[Dict[str, object]],
+    fits: Dict[str, Dict[str, object]],
+    *,
+    telemetry: Dict[str, object],
+) -> Dict[str, object]:
+    """Campur fit LLM dengan skor statistik lalu urutkan. Dipakai jalur LLM dan cache."""
     weight = rerank_weight()
     ranked: List[Dict[str, object]] = []
     for position, candidate in enumerate(pool):
@@ -1062,7 +1177,7 @@ def llm_rerank_candidates(
             entry['final_score'] = round(hybrid_score, 4)
             entry['llm_fit'] = None
         else:
-            blended = weight * (fit['fit_score'] / 10.0) + (1.0 - weight) * hybrid_score
+            blended = weight * (float(fit.get('fit_score') or 0.0) / 10.0) + (1.0 - weight) * hybrid_score
             entry['final_score'] = round(blended, 4)
             entry['llm_fit'] = dict(fit, hybrid_score=round(hybrid_score, 4))
         entry['hybrid_rank'] = position + 1
@@ -1075,19 +1190,12 @@ def llm_rerank_candidates(
             entry['llm_fit']['rank'] = position
             entry['llm_fit']['hybrid_rank'] = entry['hybrid_rank']
 
-    order_changed = any(entry['llm_rank'] != entry['hybrid_rank'] for entry in ranked)
     return {
         'ranked': ranked,
-        'telemetry': {
-            'backend': 'llm',
-            'candidates': len(pool),
-            'scored_by_llm': len(fits),
-            'unknown_place_ids': unknown_place_ids,
-            'ungrounded_quotes': ungrounded_quotes_count,
-            'dropped_reasons': dropped_reasons,
-            'weight': weight,
-            'order_changed': order_changed,
-            'grounding_check': grounding_active,
-            'latency_ms': latency_ms,
-        },
+        'fits': fits,
+        'telemetry': dict(
+            telemetry,
+            weight=weight,
+            order_changed=any(entry['llm_rank'] != entry['hybrid_rank'] for entry in ranked),
+        ),
     }

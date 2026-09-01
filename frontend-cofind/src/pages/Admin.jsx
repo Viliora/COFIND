@@ -25,6 +25,7 @@ const DEFAULT_USER_FORM = {
   email: '',
   username: '',
   password: '',
+  password_confirm: '',
   full_name: '',
   phone: '',
   bio: '',
@@ -42,7 +43,124 @@ const DEFAULT_SHOP_FORM = {
   longitude: '',
   map_embed_url: '',
   opening_hours_display: '',
+  opening_day_from: 'Senin',
+  opening_day_to: 'Minggu',
+  opening_time_from: '08.00',
+  opening_time_to: '22.00',
+  opening_hours_24h: false,
 };
+
+const OPENING_HOURS_24H_LABEL = '24 jam';
+
+const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+
+const OPENING_TIME_OPTIONS = (() => {
+  const options = [];
+  for (let hour = 0; hour < 24; hour += 1) {
+    for (const minute of [0, 30]) {
+      options.push(`${String(hour).padStart(2, '0')}.${String(minute).padStart(2, '0')}`);
+    }
+  }
+  return options;
+})();
+
+function normalizeOpeningTime(value) {
+  const match = String(value || '').trim().match(/^(\d{1,2})[.:](\d{2})$/);
+  if (!match) return '';
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return '';
+  return `${String(hour).padStart(2, '0')}.${String(minute).padStart(2, '0')}`;
+}
+
+function isOpeningHours24hDisplay(display) {
+  return /24\s*jam/i.test(String(display || '').trim());
+}
+
+function parseOpeningHoursDisplay(display) {
+  const defaults = {
+    opening_day_from: 'Senin',
+    opening_day_to: 'Minggu',
+    opening_time_from: '08.00',
+    opening_time_to: '22.00',
+    opening_hours_24h: false,
+  };
+  const text = String(display || '').trim();
+  if (!text) return defaults;
+
+  if (isOpeningHours24hDisplay(text)) {
+    const dayMatch = text.match(/^(.+?)-(.+?),/);
+    const dayFrom = dayMatch?.[1]?.trim() || 'Senin';
+    const dayTo = dayMatch?.[2]?.trim() || 'Minggu';
+    return {
+      opening_day_from: WEEKDAYS.includes(dayFrom) ? dayFrom : 'Senin',
+      opening_day_to: WEEKDAYS.includes(dayTo) ? dayTo : 'Minggu',
+      opening_time_from: '00.00',
+      opening_time_to: '23.30',
+      opening_hours_24h: true,
+    };
+  }
+
+  const match = text.match(/^(.+?)-(.+?),\s*(.+?)-(.+)$/);
+  if (!match) return defaults;
+
+  const dayFrom = match[1].trim();
+  const dayTo = match[2].trim();
+  const timeFrom = normalizeOpeningTime(match[3]);
+  const timeTo = normalizeOpeningTime(match[4]);
+
+  return {
+    opening_day_from: WEEKDAYS.includes(dayFrom) ? dayFrom : defaults.opening_day_from,
+    opening_day_to: WEEKDAYS.includes(dayTo) ? dayTo : defaults.opening_day_to,
+    opening_time_from: OPENING_TIME_OPTIONS.includes(timeFrom) ? timeFrom : defaults.opening_time_from,
+    opening_time_to: OPENING_TIME_OPTIONS.includes(timeTo) ? timeTo : defaults.opening_time_to,
+    opening_hours_24h: false,
+  };
+}
+
+function formatOpeningHoursDisplay(form) {
+  const dayFrom = form.opening_day_from || 'Senin';
+  const dayTo = form.opening_day_to || 'Minggu';
+  if (form.opening_hours_24h) {
+    return `${dayFrom}-${dayTo}, ${OPENING_HOURS_24H_LABEL}`;
+  }
+  const timeFrom = form.opening_time_from || '08.00';
+  const timeTo = form.opening_time_to || '22.00';
+  return `${dayFrom}-${dayTo}, ${timeFrom}-${timeTo}`;
+}
+
+function shopFormFromRecord(shop) {
+  const hours = parseOpeningHoursDisplay(shop.opening_hours_display);
+  return {
+    place_id: shop.place_id || '',
+    name: shop.name || '',
+    address: shop.address || '',
+    rating: shop.rating ?? '',
+    total_reviews: shop.total_reviews ?? '',
+    latitude: shop.latitude ?? '',
+    longitude: shop.longitude ?? '',
+    map_embed_url: shop.map_embed_url || '',
+    opening_hours_display: shop.opening_hours_display || '',
+    ...hours,
+  };
+}
+
+function shopPayloadFromForm(form, mode) {
+  const payload = {
+    name: form.name,
+    address: form.address,
+    rating: form.rating === '' ? 0 : Number(form.rating),
+    total_reviews: form.total_reviews === '' ? 0 : Number(form.total_reviews),
+    latitude: form.latitude === '' ? null : Number(form.latitude),
+    longitude: form.longitude === '' ? null : Number(form.longitude),
+    map_embed_url: form.map_embed_url,
+    opening_hours_display: formatOpeningHoursDisplay(form),
+  };
+  if (mode === 'edit') {
+    payload.place_id = form.place_id;
+  }
+  return payload;
+}
 
 function formatDate(value) {
   if (!value) return '-';
@@ -413,6 +531,7 @@ export default function Admin() {
       email: user.email || '',
       username: user.username || '',
       password: '',
+      password_confirm: '',
       full_name: user.full_name || '',
       phone: user.phone || '',
       bio: user.bio || '',
@@ -432,11 +551,41 @@ export default function Admin() {
     setUserSubmitting(true);
     try {
       if (userModalMode === 'create') {
-        await adminService.createUser(userForm);
+        const username = (userForm.username || '').trim();
+        const emailSlug = username.replace(/[^a-zA-Z0-9._-]/g, '').toLowerCase() || 'user';
+        await adminService.createUser({
+          username,
+          email: `${emailSlug}.${Date.now()}@cofind.local`,
+          password: userForm.password,
+          full_name: userForm.full_name,
+          is_admin: userForm.is_admin,
+        });
         showFeedback('success', 'User baru berhasil dibuat.');
       } else {
-        await adminService.updateUser(userForm.id, userForm);
-        showFeedback('success', 'User berhasil diperbarui.');
+        const password = (userForm.password || '').trim();
+        const passwordConfirm = (userForm.password_confirm || '').trim();
+        if (password || passwordConfirm) {
+          if (password.length < 6) {
+            throw new Error('Password baru minimal 6 karakter.');
+          }
+          if (password !== passwordConfirm) {
+            throw new Error('Konfirmasi password tidak sama.');
+          }
+        }
+        const payload = {
+          username: userForm.username,
+          full_name: userForm.full_name,
+          is_admin: userForm.is_admin,
+          is_active: userForm.is_active,
+        };
+        if (password) {
+          payload.password = password;
+        }
+        await adminService.updateUser(userForm.id, payload);
+        showFeedback(
+          'success',
+          password ? 'User dan password berhasil diperbarui.' : 'User berhasil diperbarui.',
+        );
       }
       closeUserModal();
       await Promise.all([loadUsers(usersPagination?.page || 1), loadDashboard()]);
@@ -466,17 +615,7 @@ export default function Admin() {
 
   const openShopEditModal = (shop) => {
     setShopModalMode('edit');
-    setShopForm({
-      place_id: shop.place_id || '',
-      name: shop.name || '',
-      address: shop.address || '',
-      rating: shop.rating ?? '',
-      total_reviews: shop.total_reviews ?? '',
-      latitude: shop.latitude ?? '',
-      longitude: shop.longitude ?? '',
-      map_embed_url: shop.map_embed_url || '',
-      opening_hours_display: shop.opening_hours_display || '',
-    });
+    setShopForm(shopFormFromRecord(shop));
     setShopModalOpen(true);
   };
 
@@ -511,13 +650,7 @@ export default function Admin() {
     event.preventDefault();
     setShopSubmitting(true);
     try {
-      const payload = {
-        ...shopForm,
-        rating: shopForm.rating === '' ? 0 : Number(shopForm.rating),
-        total_reviews: shopForm.total_reviews === '' ? 0 : Number(shopForm.total_reviews),
-        latitude: shopForm.latitude === '' ? null : Number(shopForm.latitude),
-        longitude: shopForm.longitude === '' ? null : Number(shopForm.longitude),
-      };
+      const payload = shopPayloadFromForm(shopForm, shopModalMode);
 
       if (shopModalMode === 'create') {
         await adminService.createShop(payload);
@@ -1306,7 +1439,7 @@ export default function Admin() {
                       <div className="space-y-3 text-sm">
                         <p><span className="font-medium">LLM tersedia:</span> {settings?.llm_available ? 'Ya' : 'Tidak'}</p>
                         <p><span className="font-medium">Model LLM:</span> {settings?.llm_model || '-'}</p>
-                        <p><span className="font-medium">Cache sentiment:</span> {settings?.cache_expiry_days ?? '-'} hari</p>
+                        <p><span className="font-medium">Cache rerank:</span> {settings?.rerank_cache_expiry_days ?? '-'} hari</p>
                         
                       </div>
                     )}
@@ -1325,38 +1458,6 @@ export default function Admin() {
         maxWidth="max-w-2xl"
       >
         <form onSubmit={handleUserSubmit} className="space-y-4">
-          {userModalMode === 'create' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1">
-                  Email <span className="text-red-500 dark:text-red-400">*</span>
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={userForm.email}
-                  onChange={(event) => setUserForm((prev) => ({ ...prev, email: event.target.value }))}
-                  placeholder="user@example.com"
-                  className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1">
-                  Password <span className="text-red-500 dark:text-red-400">*</span>
-                </label>
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  value={userForm.password}
-                  onChange={(event) => setUserForm((prev) => ({ ...prev, password: event.target.value }))}
-                  placeholder="Min. 6 karakter"
-                  className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                />
-              </div>
-            </div>
-          ) : null}
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-stone-700 mb-1">
@@ -1381,49 +1482,66 @@ export default function Admin() {
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1">Nomor telepon</label>
-            <input
-              type="text"
-              value={userForm.phone}
-              onChange={(event) => setUserForm((prev) => ({ ...prev, phone: event.target.value }))}
-              className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
-            />
-          </div>
+          {userModalMode === 'create' ? (
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1">
+                Password <span className="text-red-500 dark:text-red-400">*</span>
+              </label>
+              <input
+                type="password"
+                required
+                minLength={6}
+                value={userForm.password}
+                onChange={(event) => setUserForm((prev) => ({ ...prev, password: event.target.value }))}
+                placeholder="Min. 6 karakter"
+                className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              />
+            </div>
+          ) : (
+            <div className="space-y-1">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-stone-700 mb-1">Password baru</label>
+                  <input
+                    type="password"
+                    minLength={6}
+                    autoComplete="new-password"
+                    value={userForm.password}
+                    onChange={(event) => setUserForm((prev) => ({ ...prev, password: event.target.value }))}
+                    placeholder="Kosongkan jika tidak diubah"
+                    className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-stone-700 mb-1">Konfirmasi password</label>
+                  <input
+                    type="password"
+                    minLength={6}
+                    autoComplete="new-password"
+                    value={userForm.password_confirm}
+                    onChange={(event) => setUserForm((prev) => ({ ...prev, password_confirm: event.target.value }))}
+                    placeholder="Ulangi password baru"
+                    className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-stone-500">Minimal 6 karakter. Isi kedua kolom hanya jika ingin mengganti password.</p>
+            </div>
+          )}
 
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1">Bio</label>
-            <textarea
-              rows={3}
-              value={userForm.bio}
-              onChange={(event) => setUserForm((prev) => ({ ...prev, bio: event.target.value }))}
+            <label className="block text-sm font-medium text-stone-700 mb-1">Role</label>
+            <select
+              value={userForm.is_admin ? 'admin' : 'user'}
+              onChange={(event) => setUserForm((prev) => ({ ...prev, is_admin: event.target.value === 'admin' }))}
               className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <label className="flex items-center gap-3 rounded-xl border border-stone-200/60 p-4 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={userForm.is_admin}
-                onChange={(event) => setUserForm((prev) => ({ ...prev, is_admin: event.target.checked }))}
-              />
-              <div>
-                <p className="text-sm font-medium text-stone-700">Role admin</p>
-                <p className="text-xs text-stone-500">Akses ke dashboard admin</p>
-              </div>
-            </label>
-            <label className="flex items-center gap-3 rounded-xl border border-stone-200/60 p-4 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={userForm.is_active}
-                onChange={(event) => setUserForm((prev) => ({ ...prev, is_active: event.target.checked }))}
-              />
-              <div>
-                <p className="text-sm font-medium text-stone-700">Akun aktif</p>
-                <p className="text-xs text-stone-500">User bisa login jika aktif</p>
-              </div>
-            </label>
+            >
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+            </select>
+            <p className="mt-1 text-xs text-stone-500">
+              Admin dapat mengakses dashboard admin.
+            </p>
           </div>
 
           <div className="flex justify-end gap-3">
@@ -1431,7 +1549,7 @@ export default function Admin() {
               Batal
             </button>
             <button type="submit" disabled={userSubmitting} className="rounded-xl bg-amber-700 px-4 py-2 text-sm font-medium text-stone-50 hover:bg-amber-800 disabled:opacity-60 transition-all duration-300 ease-out cursor-pointer">
-              {userSubmitting ? 'Menyimpan...' : userModalMode === 'create' ? 'Buat user' : 'Simpan perubahan'}
+              {userSubmitting ? 'Menyimpan...' : userModalMode === 'create' ? 'Buat Akun' : 'Simpan perubahan'}
             </button>
           </div>
         </form>
@@ -1447,14 +1565,18 @@ export default function Admin() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-stone-700 mb-1">Place ID</label>
-              <input
-                type="text"
-                value={shopForm.place_id}
-                disabled={shopModalMode === 'edit'}
-                onChange={(event) => setShopForm((prev) => ({ ...prev, place_id: event.target.value }))}
-                placeholder="Kosongkan untuk generate otomatis"
-                className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-60"
-              />
+              {shopModalMode === 'create' ? (
+                <div className="w-full rounded-xl border border-dashed border-stone-300/70 bg-stone-100/80 px-4 py-2.5 text-sm text-stone-500">
+                  Dibuat otomatis saat disimpan
+                </div>
+              ) : (
+                <input
+                  type="text"
+                  value={shopForm.place_id}
+                  disabled
+                  className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-60"
+                />
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-stone-700 mb-1">Nama coffee shop</label>
@@ -1548,13 +1670,89 @@ export default function Admin() {
             </div>
             <div>
               <label className="block text-sm font-medium text-stone-700 mb-1">Jam operasional</label>
-              <input
-                type="text"
-                value={shopForm.opening_hours_display}
-                onChange={(event) => setShopForm((prev) => ({ ...prev, opening_hours_display: event.target.value }))}
-                placeholder="Contoh: Senin-Minggu, 08.00-22.00"
-                className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
-              />
+              <div className="rounded-xl border border-stone-300/70 bg-stone-50 px-3 py-3 space-y-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShopForm((prev) => ({
+                      ...prev,
+                      opening_hours_24h: !prev.opening_hours_24h,
+                    }))}
+                    aria-pressed={shopForm.opening_hours_24h}
+                    className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all duration-200 cursor-pointer ${
+                      shopForm.opening_hours_24h
+                        ? 'border-amber-600 bg-amber-700 text-white shadow-sm'
+                        : 'border-stone-300/80 bg-white text-stone-700 hover:border-amber-400 hover:bg-amber-50/60'
+                    }`}
+                  >
+                    24 jam
+                  </button>
+                  <span className="text-xs text-stone-500">
+                    {shopForm.opening_hours_24h
+                      ? 'Buka sepanjang hari pada rentang hari yang dipilih'
+                      : 'Atau pilih rentang hari dan jam manual di bawah'}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    value={shopForm.opening_day_from}
+                    onChange={(event) => setShopForm((prev) => ({ ...prev, opening_day_from: event.target.value }))}
+                    aria-label="Hari buka"
+                    className="min-w-[7rem] flex-1 rounded-lg border border-stone-300/80 bg-white px-3 py-2 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  >
+                    {WEEKDAYS.map((day) => (
+                      <option key={`from-${day}`} value={day}>{day}</option>
+                    ))}
+                  </select>
+                  <span className="text-xs text-stone-500 shrink-0">sampai</span>
+                  <select
+                    value={shopForm.opening_day_to}
+                    onChange={(event) => setShopForm((prev) => ({ ...prev, opening_day_to: event.target.value }))}
+                    aria-label="Hari tutup"
+                    className="min-w-[7rem] flex-1 rounded-lg border border-stone-300/80 bg-white px-3 py-2 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  >
+                    {WEEKDAYS.map((day) => (
+                      <option key={`to-${day}`} value={day}>{day}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className={`flex flex-wrap items-center gap-2 ${shopForm.opening_hours_24h ? 'opacity-50 pointer-events-none' : ''}`}>
+                  <select
+                    value={shopForm.opening_time_from}
+                    onChange={(event) => setShopForm((prev) => ({
+                      ...prev,
+                      opening_time_from: event.target.value,
+                      opening_hours_24h: false,
+                    }))}
+                    aria-label="Jam buka"
+                    disabled={shopForm.opening_hours_24h}
+                    className="min-w-[6.5rem] flex-1 rounded-lg border border-stone-300/80 bg-white px-3 py-2 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:cursor-not-allowed"
+                  >
+                    {OPENING_TIME_OPTIONS.map((time) => (
+                      <option key={`open-${time}`} value={time}>{time}</option>
+                    ))}
+                  </select>
+                  <span className="text-xs text-stone-500 shrink-0">sampai</span>
+                  <select
+                    value={shopForm.opening_time_to}
+                    onChange={(event) => setShopForm((prev) => ({
+                      ...prev,
+                      opening_time_to: event.target.value,
+                      opening_hours_24h: false,
+                    }))}
+                    aria-label="Jam tutup"
+                    disabled={shopForm.opening_hours_24h}
+                    className="min-w-[6.5rem] flex-1 rounded-lg border border-stone-300/80 bg-white px-3 py-2 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:cursor-not-allowed"
+                  >
+                    {OPENING_TIME_OPTIONS.map((time) => (
+                      <option key={`close-${time}`} value={time}>{time}</option>
+                    ))}
+                  </select>
+                </div>
+                <p className="text-xs text-stone-500">
+                  Preview: {formatOpeningHoursDisplay(shopForm)}
+                </p>
+              </div>
             </div>
           </div>
 
