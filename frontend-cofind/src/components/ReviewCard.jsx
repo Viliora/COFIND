@@ -461,6 +461,42 @@ const ReviewCard = ({ review, placeId, onDelete, onUpdate, onLike, highlightKeyw
       }`}
       title={canOpenShop ? 'Lihat coffee shop & review ini' : undefined}
     >
+      {/* Asal ulasan. Hanya muncul saat kartu dipakai di luar halaman detail toko
+          (prop `placeId` kosong, mis. halaman profil), karena di halaman detail
+          toko asal ulasan sudah jelas dari judul halaman. */}
+      {!placeId && review.shop_name && (
+        <div className="mb-3 flex items-center gap-1.5 pb-3 border-b border-dashed border-gray-200 dark:border-zinc-700 text-xs min-w-0">
+          <svg
+            className="w-3.5 h-3.5 flex-shrink-0 text-amber-600 dark:text-amber-500"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 8h11v6a4 4 0 01-4 4H8a4 4 0 01-4-4V8zm11 1h1.5a2.5 2.5 0 010 5H15M7 3v2m4-2v2"
+            />
+          </svg>
+          <span className="flex-shrink-0 text-gray-500 dark:text-gray-400">Ulasan untuk</span>
+          {effectivePlaceId ? (
+            <Link
+              to={`/shop/${encodeURIComponent(effectivePlaceId)}`}
+              className="truncate font-semibold text-amber-700 hover:underline dark:text-amber-400"
+              title={review.shop_name}
+            >
+              {review.shop_name}
+            </Link>
+          ) : (
+            <span className="truncate font-semibold text-gray-700 dark:text-gray-200" title={review.shop_name}>
+              {review.shop_name}
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Header: Foto profil, nama, total ulasan, kebab menu */}
       <div className="flex items-start gap-3 mb-3">
         {/* Avatar dengan border */}

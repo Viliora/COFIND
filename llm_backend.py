@@ -19,6 +19,10 @@ import os
 import time
 from typing import Dict, List, Optional
 
+from logging_config import get_logger
+
+logger = get_logger('llm')
+
 HF_API_TOKEN = (os.getenv("HF_API_TOKEN") or os.getenv("HF_TOKEN") or "").strip()
 HF_MODEL = os.getenv("HF_MODEL", "meta-llama/Llama-3.1-8B-Instruct:novita").strip()
 LLM_BACKEND = "hf_router_openai"
@@ -43,12 +47,12 @@ if HF_API_TOKEN:
             api_key=HF_API_TOKEN,
             timeout=_TIMEOUT_SECONDS,
         )
-        print(f"[INFO] LLM: OpenAI-compatible HF Router (timeout={_TIMEOUT_SECONDS}s)")
+        logger.info(f"LLM: OpenAI-compatible HF Router (timeout={_TIMEOUT_SECONDS}s)")
     except Exception as e:
-        print(f"[WARNING] OpenAI client init gagal: {e}")
+        logger.warning(f"OpenAI client init gagal: {e}")
         hf_client = None
 else:
-    print("[WARNING] HF_API_TOKEN/HF_TOKEN kosong. Backend HF Router tidak aktif.")
+    logger.warning("HF_API_TOKEN/HF_TOKEN kosong. Backend HF Router tidak aktif.")
 
 
 def _clamp_int(value: int, *, min_value: int, max_value: int) -> int:

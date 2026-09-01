@@ -1,7 +1,7 @@
 // src/components/RecommendationModal.jsx
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CONTEXT_PILL_OPTIONS } from '../constants/reviewPills';
+import { CONTEXT_PILL_OPTIONS, FACILITY_ATTRIBUTE_LABELS } from '../constants/reviewPills';
 import { authService } from '../services/authService';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
@@ -18,8 +18,20 @@ function normalizeMatchText(value) {
 }
 
 function pillLabelsFromValues(values) {
-    const map = Object.fromEntries(CONTEXT_PILL_OPTIONS.map((p) => [p.value, p.label]));
+    const map = {
+        ...FACILITY_ATTRIBUTE_LABELS,
+        ...Object.fromEntries(CONTEXT_PILL_OPTIONS.map((p) => [p.value, p.label])),
+    };
     return (Array.isArray(values) ? values : []).map((v) => map[v] || v).filter(Boolean);
+}
+
+function formatPreferenceContextLine(activityValues, attributeValues = []) {
+    const activityLabels = pillLabelsFromValues(activityValues);
+    const attributeLabels = pillLabelsFromValues(attributeValues);
+    if (!activityLabels.length && !attributeLabels.length) return '';
+    if (!attributeLabels.length) return activityLabels.join(', ');
+    if (!activityLabels.length) return attributeLabels.join(', ');
+    return `${activityLabels.join(', ')} (${attributeLabels.join(', ')})`;
 }
 
 function formatQuoteReason(value) {
@@ -188,17 +200,17 @@ function getModalEvidenceItems(rec, confirmedPills) {
         ...(Array.isArray(ev.negative_review_quotes) ? ev.negative_review_quotes : []),
     ]);
     const fromApi = Array.isArray(ev.modal_display_quotes) ? ev.modal_display_quotes : null;
-    const asSupporting = (items) =>
+    const asSupporting = (items, { trustBackend = false } = {}) =>
         (Array.isArray(items) ? items : []).filter((item) => {
             const quote = item?.quote;
             if (!quote) return false;
             if (caveatKeys.has(quoteDedupeKey(quote))) return false;
-            if (quoteLooksUnsuitable(quote)) return false;
+            if (!trustBackend && quoteLooksUnsuitable(quote)) return false;
             return true;
         });
     // Percayai pemisahan backend: jangan angkat ulang kutipan caveat sebagai bukti.
     if (fromApi) {
-        return asSupporting(fromApi).slice(0, 3);
+        return asSupporting(fromApi, { trustBackend: true }).slice(0, 3);
     }
     return sortModalQuotes(asSupporting(collectRelevantEvidence(rec, confirmedPills))).slice(0, 3);
 }
@@ -558,6 +570,7 @@ const RecommendationModal = ({
     recommendations = [],
     shopsByKey = {},
     confirmedPills = [],
+    confirmedAttributes = [],
 }) => {
     const [feedbackByPlaceId, setFeedbackByPlaceId] = useState({});
 
@@ -642,20 +655,26 @@ const RecommendationModal = ({
         .filter((entry) => entry.shop)
         // Jangan tampilkan toko tanpa bukti ulasan relevan.
         .filter((entry) => getModalEvidenceItems(entry.rec, confirmedPills).length > 0)
+        // Urutan mengikuti peringkat backend (final_score sudah memuat fit LLM dan
+        // bonus kelengkapan pill). Menyortir ulang di sini pernah membuat urutan
+        // modal berbeda dari hasil rerank, jadi jumlah kutipan hanya jadi tie-break.
         .sort((a, b) => {
+            const fa = Number(a.rec?.final_score ?? a.rec?.score);
+            const fb = Number(b.rec?.final_score ?? b.rec?.score);
+            const na = Number.isFinite(fa) ? fa : -Infinity;
+            const nb = Number.isFinite(fb) ? fb : -Infinity;
+            if (nb !== na) return nb - na;
             const ca = countRelevantEvidenceForSort(a.rec, confirmedPills);
             const cb = countRelevantEvidenceForSort(b.rec, confirmedPills);
             if (cb !== ca) return cb - ca;
-            const sa = Number(a.rec?.score);
-            const sb = Number(b.rec?.score);
-            const na = Number.isFinite(sa) ? sa : -Infinity;
-            const nb = Number.isFinite(sb) ? sb : -Infinity;
-            if (nb !== na) return nb - na;
             return a.apiIndex - b.apiIndex;
         })
         .map(({ rec, shop }, displayIndex) => ({ rec, shop, displayIndex }));
 
-    const confirmedLabels = pillLabelsFromValues(confirmedPills);
+    const confirmedContextLine = formatPreferenceContextLine(
+        confirmedPills,
+        confirmedAttributes,
+    );
 
     return (
         <div
@@ -679,14 +698,14 @@ const RecommendationModal = ({
                         >
                             Rekomendasi Coffee Shop Untuk Anda
                         </h2>
-                        {confirmedLabels.length > 0 && (
+                        {confirmedContextLine ? (
                             <p className="mt-1 text-xs sm:text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
                                 Konteks:{' '}
                                 <span className="font-medium text-gray-800 dark:text-gray-100">
-                                    {confirmedLabels.join(', ')}
+                                    {confirmedContextLine}
                                 </span>
                             </p>
-                        )}
+                        ) : null}
                     </div>
                     <button
                         type="button"

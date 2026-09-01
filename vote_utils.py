@@ -10,6 +10,9 @@ Menyimpan & mengagregasi vote user terhadap coffee shop:
 from datetime import datetime
 from auth_utils import get_db_connection
 from db_backend import dict_from_row
+from logging_config import get_logger
+
+logger = get_logger('votes')
 
 PRESENCE_OPTIONS = ('here', 'been', 'want')
 RATING_OPTIONS = ('love', 'like', 'ok', 'dislike', 'hate')
@@ -418,7 +421,7 @@ def get_vote_summaries_batch(place_ids, include_review_stars=True):
                 _accumulate_review_star(acc_by_place[pid], row[1])
         return {pid: _finalize_vote_summary(acc) for pid, acc in acc_by_place.items()}
     except Exception as e:
-        print(f'[VOTES] get_vote_summaries_batch failed: {e}')
+        logger.warning(f'get_vote_summaries_batch gagal: {e}')
         return {pid: _finalize_vote_summary(_empty_vote_accumulator()) for pid in unique_ids}
     finally:
         if conn:
