@@ -664,8 +664,8 @@ PILL_MAPPING = {
         ],
     },
     # --- Preferensi lapis 2: atribut fasilitas ---------------------------------
-    # Struktur identik dengan pill aktivitas, jadi seluruh pipeline (seed keyword,
-    # BM25, ekspansi LLM, evidence, rerank) otomatis mengenalinya tanpa cabang khusus.
+    # Struktur identik dengan pill aktivitas, jadi seluruh pipeline (BM25,
+    # evidence, rerank) otomatis mengenalinya tanpa cabang khusus.
     'ruangan_ac': {
         'facility_fields': {
             'atmosphere': ['nyaman', 'sejuk'],
@@ -938,9 +938,7 @@ def _build_empty_supporting_evidence():
         'positive_review_quotes': [],
         'negative_review_quotes': [],
         'search_keywords': [],
-        'llm_preference_keywords': [],
         'search_keyword_matches': [],
-        'llm_keyword_matches': [],
         'pill_stats': [],
         'category_ratings': {'makanan': None, 'layanan': None, 'suasana': None},
         'avg_user_rating': None,
@@ -1158,24 +1156,8 @@ _MANUAL_UNCLEAR_MESSAGE = (
 
 
 def _normalize_keyword_phrase(value):
-    """Normalisasi + slang map (bgt→banget, jgn→jangan, dll.) untuk matching/BM25."""
+    """Normalisasi + slang map (bgt→banget, jgn→jangan, dll.) untuk matching."""
     return normalize_text_with_slang(value)
-
-
-def _stem_indonesian_text(value):
-    """Alias ke _normalize_keyword_phrase (stemming dinonaktifkan)."""
-    return _normalize_keyword_phrase(value)
-
-
-def _keyword_variants(value):
-    normalized = _normalize_keyword_phrase(value)
-    if not normalized:
-        return []
-    variants = [normalized]
-    stemmed = _stem_indonesian_text(normalized)
-    if stemmed and stemmed not in variants:
-        variants.append(stemmed)
-    return variants
 
 
 # Imbuhan Indonesia yang boleh menempel pada kata kunci (anaknya, ngegame, berkeluarga).
@@ -1229,32 +1211,21 @@ def _matches_keyword_phrase(text, keyword):
     """
     Cocokkan keyword sebagai kata/frasa bermakna, bukan substring di dalam kata lain.
     Contoh: 'anak' cocok di 'bawa anak', tidak cocok di 'Pontianak'.
-    Berlaku untuk semua konteks pill, bukan hanya keluarga.
+    Imbuhan wajar (anaknya, ngegame) tetap lolos lewat _token_matches_keyword_token.
     """
     normalized_text = _normalize_keyword_phrase(text)
-    if not normalized_text:
+    variant = _normalize_keyword_phrase(keyword)
+    if not normalized_text or not variant:
         return False
-    tokens = normalized_text.split()
-    stemmed_text = _stem_indonesian_text(normalized_text)
-    stem_tokens = stemmed_text.split() if stemmed_text else []
-    for variant in _keyword_variants(keyword):
-        if not variant:
-            continue
-        if _find_keyword_token_spans(tokens, variant):
-            return True
-        if stem_tokens and _find_keyword_token_spans(stem_tokens, variant):
-            return True
-    return False
+    return bool(_find_keyword_token_spans(normalized_text.split(), variant))
 
 
-# Tokens stopword sederhana untuk text-overlap / keyword expansion.
+# Tokens stopword sederhana untuk text-overlap.
 _TEXT_OVERLAP_STOP = frozenset({
     'dan', 'atau', 'yang', 'dengan', 'untuk', 'di', 'ke', 'dari', 'pada', 'ini', 'itu',
     'ada', 'tidak', 'juga', 'lebih', 'sangat', 'banget', 'saja', 'akan', 'sudah', 'bisa', 'agar',
     'the', 'a', 'an', 'is', 'are', 'was', 'were', 'to', 'of', 'in', 'on', 'for', 'and', 'or', 'with', 'as', 'by',
 })
-# None = tidak membatasi jumlah frasa hasil sanitasi (tetap ada aturan panjang/token per frasa).
-_SEARCH_KEYWORD_MAX = None
 _PROMPT_EVIDENCE_CHAR_LIMIT = 600
 
 _NEGATIVE_KEYWORD_FRAGMENTS = frozenset({
@@ -1331,15 +1302,14 @@ def _split_tokens_with_spans(line):
 
 
 def _collect_preference_anchor_spans_for_line(tokens, spans, line, preference_keywords):
-    """Span anchor di satu ruang token (normalized atau stem), tidak dicampur."""
+    """Span token tempat keyword preferensi muncul di baris yang sudah dinormalisasi."""
     found = set()
     if not line or not tokens or not preference_keywords:
         return found
 
     for kw in preference_keywords:
-        for variant in _keyword_variants(kw):
-            if not variant:
-                continue
+        variant = _normalize_keyword_phrase(kw)
+        if variant:
             found.update(_find_keyword_token_spans(tokens, variant))
     return found
 
@@ -1364,27 +1334,17 @@ def _weakness_overlaps_anchor_window(weak_span, anchor_span, n_tokens, window):
     return not (w1 < zone_lo or w0 > zone_hi)
 
 
-def _line_has_weakness_near_anchors(tokens, spans, line, stem_tokens, stem_spans, stem_line, preference_keywords, window):
+def _line_has_weakness_near_anchors(tokens, spans, line, preference_keywords, window):
     """True jika ada fragmen kelemahan dalam ±window token dari blok keyword preferensi."""
     if not preference_keywords:
         return False
-    anchors_norm = _collect_preference_anchor_spans_for_line(tokens, spans, line, preference_keywords)
-    weak_norm = _collect_weakness_token_spans(tokens, spans, line)
+    anchors = _collect_preference_anchor_spans_for_line(tokens, spans, line, preference_keywords)
+    weak = _collect_weakness_token_spans(tokens, spans, line)
     n = len(tokens)
-    for anchor in anchors_norm:
-        for wsp in weak_norm:
+    for anchor in anchors:
+        for wsp in weak:
             if _weakness_overlaps_anchor_window(wsp, anchor, n, window):
                 return True
-    if stem_line and stem_tokens:
-        anchors_stem = _collect_preference_anchor_spans_for_line(
-            stem_tokens, stem_spans, stem_line, preference_keywords
-        )
-        weak_stem = _collect_weakness_token_spans(stem_tokens, stem_spans, stem_line)
-        n_st = len(stem_tokens)
-        for anchor in anchors_stem:
-            for wsp in weak_stem:
-                if _weakness_overlaps_anchor_window(wsp, anchor, n_st, window):
-                    return True
     return False
 
 
@@ -1401,13 +1361,9 @@ def _review_has_weakness_near_preference_keywords(text, preference_keywords, win
     normalized_line = _normalize_keyword_phrase(text)
     if not normalized_line:
         return False
-    stem_line = _stem_indonesian_text(normalized_line)
     tokens, spans = _split_tokens_with_spans(normalized_line)
-    stem_tokens, stem_spans = _split_tokens_with_spans(stem_line) if stem_line else ([], [])
     return _line_has_weakness_near_anchors(
-        tokens, spans, normalized_line,
-        stem_tokens, stem_spans, stem_line,
-        preference_keywords, window,
+        tokens, spans, normalized_line, preference_keywords, window,
     )
 
 
@@ -1417,71 +1373,6 @@ def _expand_pill_to_keywords(pill):
     out = [pill.lower()]
     out.extend([kw.lower() for kw in mapping.get('review_keywords', [])])
     return list(dict.fromkeys(out))
-
-
-# Helper legacy keyword-expansion LLM dihapus.
-
-def _sanitize_search_keywords(values, max_items=_SEARCH_KEYWORD_MAX):
-    """Bersihkan output keyword expansion agar aman dipakai untuk matching review.
-    max_items None = tidak memotong jumlah frasa (selain aturan per-frasa)."""
-    chunks = []
-    if isinstance(values, (list, tuple, set)):
-        for value in values:
-            chunks.extend(str(value or '').split(','))
-    else:
-        chunks = re.split(r'[,;\n]+', str(values or ''))
-
-    keywords = []
-    seen = set()
-    banned_tokens = {
-        'output', 'format', 'keyword', 'keywords', 'kata', 'kunci', 'user',
-        'preferensi', 'database', 'ulasan', 'review', 'reviews', 'coffee', 'shop',
-        'cafe', 'kafe', 'daftar',
-    }
-
-    for chunk in chunks:
-        item = re.sub(r'^\s*[-*\d.)]+', '', str(chunk or '')).strip()
-        if ':' in item and len(item.split(':', 1)[0].split()) <= 3:
-            item = item.split(':', 1)[1].strip()
-        normalized = _normalize_keyword_phrase(item)
-        if not normalized:
-            continue
-        tokens = normalized.split()
-        if len(normalized) < 2 or len(normalized) > 40 or len(tokens) > 4:
-            continue
-        if normalized in _TEXT_OVERLAP_STOP:
-            continue
-        if any(token in banned_tokens for token in tokens):
-            continue
-        if normalized in seen:
-            continue
-        seen.add(normalized)
-        keywords.append(normalized)
-        if max_items is not None and len(keywords) >= max_items:
-            break
-    return keywords
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def _looks_negative_keyword(keyword):
-    normalized = _normalize_keyword_phrase(keyword)
-    if not normalized:
-        return False
-    for fragment in _NEGATIVE_KEYWORD_FRAGMENTS:
-        if fragment in normalized:
-            return True
-    return False
 
 
 def _light_keyword_phrase_list(keywords):
@@ -1506,20 +1397,6 @@ def _light_keyword_phrase_list(keywords):
         seen.add(n)
         cleaned.append(n)
     return cleaned
-
-
-def _filter_negative_search_keywords(keywords):
-    """Filter lokal untuk menahan keyword bernada negatif/keluhan."""
-    if isinstance(keywords, (list, tuple, set)):
-        cleaned = _light_keyword_phrase_list(keywords)
-    else:
-        cleaned = _sanitize_search_keywords(keywords)
-    output = []
-    for keyword in cleaned:
-        if _looks_negative_keyword(keyword):
-            continue
-        output.append(keyword)
-    return output
 
 
 def _is_overbroad_meeting_keyword(keyword):
@@ -1613,7 +1490,7 @@ def _sort_quotes_for_modal_display(quotes):
 
 
 def _preference_keywords_for_evidence(pills, search_keywords=None):
-    """Keyword preferensi (leksikon pill + ekspansi) untuk mendeteksi keluhan pada kutipan."""
+    """Keyword preferensi (leksikon pill + search_keywords) untuk mendeteksi keluhan pada kutipan."""
     out = []
     for pill in pills or []:
         out.extend(_expand_pill_to_keywords(pill))
@@ -1727,7 +1604,6 @@ def _collect_modal_quote_groups(evidence, pills, search_keywords=None):
             if not (
                 pill in pill_set
                 or pill == 'search_keywords'
-                or pill == 'llm_preference'
                 or pill == 'semantic_match'
             ):
                 continue
@@ -1887,7 +1763,7 @@ def _relevant_quote_lines_for_prompt(evidence, *, limit=6, char_limit=260):
     """
     Baris kutipan review yang paling relevan dengan konteks preferensi user.
     Urutan sumber mengikuti kekuatan bukti: kutipan modal (sudah tersaring),
-    lalu match keyword pencarian/LLM, lalu kutipan positif umum.
+    lalu match keyword pencarian, lalu kutipan positif umum.
     """
     ev = evidence or {}
     lines = []
@@ -1895,7 +1771,6 @@ def _relevant_quote_lines_for_prompt(evidence, *, limit=6, char_limit=260):
     for key in (
         'modal_display_quotes',
         'search_keyword_matches',
-        'llm_keyword_matches',
         'review_quotes',
         'positive_review_quotes',
     ):
@@ -2413,19 +2288,8 @@ def _pick_sentiment_review_quotes(reviews, pills=None, search_keywords=None, *, 
     return _strip_score(positive[:positive_limit]), _strip_score(negative[:negative_limit])
 
 
-def _seed_search_keywords(valid_pills):
-    """Fallback non-LLM dari pill mapping."""
-    seeds = []
-    for pill in valid_pills or []:
-        seeds.extend(_expand_pill_to_keywords(pill))
-    return _filter_overbroad_meeting_keywords(
-        _filter_negative_search_keywords(seeds),
-        valid_pills,
-    )
-
-
 def _pick_keyword_matched_reviews(reviews, search_keywords, limit=3):
-    """Pilih review paling kuat berdasarkan search_keywords hasil ekspansi."""
+    """Pilih review paling kuat berdasarkan search_keywords."""
     keywords = _light_keyword_phrase_list(search_keywords or [])
     if not reviews or not keywords:
         return []
@@ -2464,7 +2328,7 @@ def _pick_keyword_matched_reviews(reviews, search_keywords, limit=3):
 
 def _semantic_reference_terms(pills, search_keywords=None, limit=24):
     """
-    Frasa acuan untuk gerbang makna: label pill + keyword pill + hasil ekspansi.
+    Frasa acuan untuk gerbang makna: label pill + keyword pill + search_keywords.
     Underscore diubah jadi spasi supaya frasa acuan tetap kalimat wajar saat di-encode.
     """
     terms = []
@@ -2503,10 +2367,10 @@ def _semantic_term_owner_pills(pills):
 
     for pill in pills or []:
         # Sengaja memakai leksikon PENUH, bukan 8 teratas seperti
-        # _semantic_reference_terms: frasa acuan juga bisa datang dari seed
+        # _semantic_reference_terms: frasa acuan juga bisa datang dari
         # search_keywords, dan semuanya harus bisa dilacak balik ke pill-nya.
         for value in [PILL_LABELS.get(pill, pill)] + list(_expand_pill_to_keywords(pill)):
-            # Daftarkan bentuk asli DAN bentuk ternormalisasi slang, karena seed
+            # Daftarkan bentuk asli DAN bentuk ternormalisasi slang, karena
             # search_keywords sudah lewat normalisasi (mis. "sholat" -> "salat").
             for key in {norm(value), norm(_normalize_keyword_phrase(value))}:
                 if len(key) >= 3:
@@ -2634,7 +2498,6 @@ def _score_shop_by_user_reviews(
     profile,
     pills,
     search_keywords=None,
-    llm_preference_keywords=None,
     bm25_norm=None,
     bm25_raw=None,
 ):
@@ -2649,19 +2512,11 @@ def _score_shop_by_user_reviews(
 
     Keyword match per-pill tetap dihitung untuk evidence/UI (sample quotes),
     tetapi bobot utama ranking memakai skor BM25 yang dinormalisasi (0..1).
-
-    llm_preference_keywords: frasa Bucket B dari ekspansi LLM (tidak overlap leksikon pill,
-    sudah divalidasi ada di korpus review). Di fungsi ini hanya dipakai untuk
-    llm_evidence_matches (kutipan UI); pengaruh ranking-nya lewat token query BM25.
     """
     reviews = profile.get('reviews') or []
     review_count = len(reviews)
     search_keywords = _filter_overbroad_meeting_keywords(
         _light_keyword_phrase_list(search_keywords or []),
-        pills,
-    )
-    llm_preference_keywords = _filter_overbroad_meeting_keywords(
-        _filter_negative_search_keywords(llm_preference_keywords or []),
         pills,
     )
     if review_count == 0 or not pills:
@@ -2688,8 +2543,6 @@ def _score_shop_by_user_reviews(
             'overall_experience_score': None,
             'per_pill_stats': {},
             'expanded_keyword_matches': [],
-            'llm_evidence_matches': [],
-            'llm_preference_keywords': llm_preference_keywords,
             'search_keywords': search_keywords,
             'category_detail': {},
             'review_count': review_count,
@@ -2757,11 +2610,6 @@ def _score_shop_by_user_reviews(
     category_score_avg, category_detail = _review_rating_category_scores(reviews, pills)
 
     expanded_keyword_matches = _pick_keyword_matched_reviews(reviews, search_keywords, limit=3)
-    llm_evidence_matches = (
-        _pick_keyword_matched_reviews(reviews, llm_preference_keywords, limit=5)
-        if llm_preference_keywords
-        else []
-    )
 
     expanded_keyword_hits = 0
     if search_keywords:
@@ -2809,7 +2657,7 @@ def _score_shop_by_user_reviews(
         bm25_raw_val = 0.0
 
     if bm25_norm_val is None:
-        # Fallback lokal (tanpa indeks korpus): rata keyword + ekspansi
+        # Fallback lokal (tanpa indeks korpus): rata keyword pill + search_keywords
         text_relevance = keyword_score_avg
         if search_keywords:
             text_relevance = (keyword_score_avg + expanded_keyword_score) / 2.0
@@ -2843,10 +2691,7 @@ def _score_shop_by_user_reviews(
     # Wajib ada bukti kutipan PENDUKUNG (keyword match TANPA keluhan pada aspek
     # preferensi). Kutipan yang hanya mengeluh soal konteks yang sama tidak cukup
     # untuk merekomendasikan toko.
-    pref_kws = _preference_keywords_for_evidence(
-        pills,
-        list(search_keywords) + list(llm_preference_keywords),
-    )
+    pref_kws = _preference_keywords_for_evidence(pills, search_keywords)
 
     def _is_supporting_quote(row):
         text = str((row or {}).get('quote') or '')
@@ -2906,7 +2751,6 @@ def _score_shop_by_user_reviews(
             for sq in ((per_pill_stats.get(p) or {}).get('sample_quotes') or [])
         )
         or any(_is_supporting_quote(m) for m in expanded_keyword_matches)
-        or any(_is_supporting_quote(m) for m in llm_evidence_matches)
         or any(_is_supporting_quote(m) for m in semantic_matches)
     )
     if not has_quote_evidence:
@@ -2938,8 +2782,6 @@ def _score_shop_by_user_reviews(
         'overall_experience_score': overall_experience_score,
         'per_pill_stats': per_pill_stats,
         'expanded_keyword_matches': expanded_keyword_matches,
-        'llm_evidence_matches': llm_evidence_matches,
-        'llm_preference_keywords': llm_preference_keywords,
         'search_keywords': search_keywords,
         'category_detail': category_detail,
         'review_count': review_count,
@@ -2963,7 +2805,6 @@ def _build_review_based_evidence(profile, score_detail, pills, search_keywords=N
     per_pill_stats = (score_detail or {}).get('per_pill_stats') or {}
     category_detail = (score_detail or {}).get('category_detail') or {}
     expanded_keyword_matches = (score_detail or {}).get('expanded_keyword_matches') or []
-    llm_evidence_matches = (score_detail or {}).get('llm_evidence_matches') or []
     search_keywords = _light_keyword_phrase_list(
         search_keywords or (score_detail or {}).get('search_keywords') or [],
     )
@@ -3039,32 +2880,6 @@ def _build_review_based_evidence(profile, score_detail, pills, search_keywords=N
             **_quote_ui_extras(match),
         })
 
-    llm_keyword_matches_out = []
-    for match in llm_evidence_matches[:5]:
-        quote_text = match.get('quote')
-        matched_terms = [str(t).strip() for t in (match.get('matched_terms') or []) if str(t).strip()]
-        if not quote_text or not matched_terms:
-            continue
-        key = _normalize_whitespace(quote_text).lower()[:120]
-        if key not in seen_quote_keys:
-            seen_quote_keys.add(key)
-            review_quotes_out.append({
-                'pill': 'llm_preference',
-                'pill_label': 'Konteks AI',
-                'quote': quote_text,
-                'reason': ', '.join(matched_terms[:6]),
-                'rating': match.get('rating'),
-                'username': match.get('username'),
-                **_quote_ui_extras(match),
-            })
-        llm_keyword_matches_out.append({
-            'matched_terms': matched_terms[:8],
-            'quote': quote_text,
-            'rating': match.get('rating'),
-            'username': match.get('username'),
-            **_quote_ui_extras(match),
-        })
-
     # Kutipan hasil gerbang makna: tidak memuat kata kunci persis, tapi maknanya
     # dekat dengan preferensi. Ditandai supaya bisa dibedakan di UI/telemetry.
     semantic_matches_out = []
@@ -3125,9 +2940,7 @@ def _build_review_based_evidence(profile, score_detail, pills, search_keywords=N
         'positive_review_quotes': positive_quotes,
         'negative_review_quotes': negative_quotes,
         'search_keywords': search_keywords,
-        'llm_preference_keywords': (score_detail or {}).get('llm_preference_keywords') or [],
         'search_keyword_matches': search_keyword_matches_out,
-        'llm_keyword_matches': llm_keyword_matches_out,
         'semantic_matches': semantic_matches_out,
         'semantic_score': (score_detail or {}).get('semantic_score', 0.0),
         'pill_stats': pill_stats_out,
@@ -3980,7 +3793,6 @@ def _candidate_quotes_for_sentiment(evidence, limit=_SENTIMENT_QUOTES_PER_CANDID
     ordered_keys = (
         'review_quotes',
         'search_keyword_matches',
-        'llm_keyword_matches',
         'semantic_matches',
         'positive_review_quotes',
         'negative_review_quotes',
@@ -4320,7 +4132,7 @@ def _recommendation_pipeline_events(prefs, _auth_user):
         stage_t0 = time.perf_counter()
         yield _recommendation_progress('profiles', shops_with_reviews=len(profiles))
 
-        # --- Fase 2: Hybrid Retrieval (BM25 + dense, tanpa leksikon/slang/ekspansi LLM) ---
+        # --- Fase 2: Hybrid Retrieval (BM25 + dense) ---
         quality_by_place = {
             str(profile.get('place_id')): _quality_score_for_profile(profile)
             for profile in profiles
@@ -4343,7 +4155,6 @@ def _recommendation_pipeline_events(prefs, _auth_user):
         attribute_tokens = retrieval.get('attribute_tokens') or []
         activity_query_text = retrieval.get('activity_query_text') or query_text
         search_keywords = query_tokens
-        llm_preference_keywords = []
         scored_candidates = []
         for item in retrieval.get('candidates') or []:
             profile = item.get('profile') or {}
@@ -4486,7 +4297,6 @@ def _recommendation_pipeline_events(prefs, _auth_user):
             'preference_activities': [p for p in valid_pills if p not in FACILITY_ATTRIBUTE_PILLS],
             'preference_attributes': [p for p in valid_pills if p in FACILITY_ATTRIBUTE_PILLS],
             'search_keywords': search_keywords,
-            'llm_preference_keywords': llm_preference_keywords,
             'llm_pipeline': {
                 'config': llm_pipeline_config(),
                 'retrieval': dict(retrieval_telemetry),
@@ -4826,7 +4636,7 @@ def _recommendation_summary_pill_key(pills):
     return '+'.join(sorted(str(p).strip().lower() for p in (pills or []) if str(p).strip()))
 
 def _recommendation_summary_keyword_digest(search_keywords):
-    """Hash stabil dari keyword intent (seed pill + ekspansi LLM)."""
+    """Hash stabil dari keyword intent (token query retrieval)."""
     terms = _light_keyword_phrase_list(search_keywords or [])
     if not terms:
         return ''

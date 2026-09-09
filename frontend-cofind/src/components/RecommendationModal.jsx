@@ -68,7 +68,7 @@ function quoteKeysFrom(items) {
 }
 
 /**
- * Bukti selaras preferensi: review_quotes (pill / keyword / llm_preference),
+ * Bukti selaras preferensi: review_quotes (pill / keyword),
  * lalu positive_review_quotes, lalu search_keyword_matches — tanpa duplikat.
  * Kutipan yang sudah masuk catatan kelemahan (modal_caveat_quotes /
  * negative_review_quotes) tidak dihitung sebagai bukti kecocokan.
@@ -106,8 +106,7 @@ function gatherRelevantEvidenceEntries(rec, confirmedPills = [], maxQuotesBefore
         const matchesPreference =
             pillSet.size === 0 ||
             pillSet.has(pill) ||
-            pill === 'search_keywords' ||
-            pill === 'llm_preference';
+            pill === 'search_keywords';
         if (!matchesPreference) continue;
         pushQuote(item.quote, {
             username: item.username,

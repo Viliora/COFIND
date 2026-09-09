@@ -1,8 +1,8 @@
 """
 Gerbang makna (semantic gate) untuk pipeline rekomendasi Cofind.
 
-Masalah yang diselesaikan: pencocokan kata kunci (exact/stem) hanya menangkap
-kata yang persis ada di `PILL_MAPPING`. Ulasan bersifat subjektif, sehingga
+Masalah yang diselesaikan: pencocokan kata kunci (kata utuh + imbuhan ringan) hanya
+menangkap istilah yang ada di `PILL_MAPPING`. Ulasan bersifat subjektif, sehingga
 "wifinya ngebut" atau "koneksinya kenceng" bisa lolos padahal maksudnya sama
 dengan pill "wifi kencang".
 

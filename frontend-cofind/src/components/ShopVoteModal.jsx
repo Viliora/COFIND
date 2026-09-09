@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { RATING_META, PRESENCE_META, BEST_FOR_META } from './ShopVotesSummary';
+import { BestForBar, BEST_FOR_META, PRESENCE_META, RATING_META, VoteBarGroup } from './ShopVotesSummary';
 
 export { BEST_FOR_META };
 
@@ -11,56 +11,6 @@ export const SLIDER_META = [
 ];
 
 const SLIDER_LABELS = ['Buruk', 'Kurang', 'Cukup', 'Baik', 'Istimewa'];
-
-function formatCount(n) {
-  const num = Number(n) || 0;
-  if (num >= 1000) return `${(num / 1000).toFixed(num % 1000 === 0 ? 0 : 1)}k`;
-  return String(num);
-}
-
-function VoteOptionRow({ items, counts, maxCount, selectedKey, onSelect, multi = false, selectedKeys = [] }) {
-  return (
-    <div className="flex justify-between gap-2 sm:gap-4">
-      {items.map((item) => {
-        const count = counts?.[item.key] || 0;
-        const pct = maxCount > 0 ? Math.max((count / maxCount) * 100, count > 0 ? 6 : 0) : 0;
-        const isSelected = multi ? selectedKeys.includes(item.key) : selectedKey === item.key;
-        return (
-          <button
-            key={item.key}
-            type="button"
-            onClick={() => onSelect(item.key)}
-            className="flex flex-col items-center gap-1.5 flex-1 group cursor-pointer"
-          >
-            <span
-              className={`flex h-11 w-11 items-center justify-center rounded-full text-2xl border-2 transition-all ${
-                isSelected
-                  ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/30 scale-105'
-                  : 'border-gray-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 group-hover:border-gray-300'
-              }`}
-            >
-              {item.emoji}
-            </span>
-            <span
-              className={`text-xs font-medium ${
-                isSelected ? 'text-amber-700 dark:text-amber-400' : 'text-gray-600 dark:text-gray-300'
-              }`}
-            >
-              {item.label}
-            </span>
-            <div className="w-full h-1.5 rounded-full bg-gray-200 dark:bg-zinc-600 overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${isSelected ? 'bg-amber-400' : 'bg-gray-300 dark:bg-zinc-500'}`}
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-            <span className="text-xs text-gray-500 dark:text-gray-400">{formatCount(count)}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 /**
  * Modal untuk memberikan vote pada coffee shop:
@@ -121,6 +71,7 @@ const ShopVoteModal = ({ isOpen, onClose, shopName, summary, myVote, onSubmit, i
 
   const presenceCounts = summary?.presence_counts || {};
   const ratingCounts = summary?.rating_counts || {};
+  const bestForCounts = summary?.best_for_counts || {};
 
   const maxPresence = Math.max(1, ...PRESENCE_META.map((p) => presenceCounts[p.key] || 0));
   const maxRating = Math.max(1, ...RATING_META.map((r) => ratingCounts[r.key] || 0));
@@ -163,34 +114,36 @@ const ShopVoteModal = ({ isOpen, onClose, shopName, summary, myVote, onSubmit, i
 
         {/* Body */}
         <div className="overflow-y-auto px-5 sm:px-6 py-5 space-y-6">
-          {/* Presence */}
-          <section>
-            <VoteOptionRow
-              items={PRESENCE_META}
-              counts={presenceCounts}
-              maxCount={maxPresence}
-              selectedKey={presence}
-              onSelect={setPresence}
-            />
-          </section>
-
-          <hr className="border-gray-100 dark:border-zinc-700" />
-
-          {/* Rating */}
-          <section>
-            <h3 className="text-center text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3">
-              Rating
-            </h3>
-            <VoteOptionRow
+          <section className="flex flex-col gap-4">
+            <VoteBarGroup
+              title="Rating"
+              titleEmoji="❤️"
               items={RATING_META}
               counts={ratingCounts}
               maxCount={maxRating}
               selectedKey={rating}
-              onSelect={setRating}
+              onSelect={(key) => setRating((prev) => (prev === key ? null : key))}
+              isSubmitting={isSubmitting}
+            />
+            <VoteBarGroup
+              title="Status Kunjungan"
+              titleEmoji="🕐"
+              items={PRESENCE_META}
+              counts={presenceCounts}
+              maxCount={maxPresence}
+              selectedKey={presence}
+              onSelect={(key) => setPresence((prev) => (prev === key ? null : key))}
+              isSubmitting={isSubmitting}
+            />
+            <BestForBar
+              counts={bestForCounts}
+              selectedKeys={bestFor}
+              onToggle={(key) => setBestFor((prev) => (
+                prev.includes(key) ? prev.filter((item) => item !== key) : [...prev, key]
+              ))}
+              isSubmitting={isSubmitting}
             />
           </section>
-
-          <hr className="border-gray-100 dark:border-zinc-700" />
 
           {/* Sliders (opsional, tidak ada default rating) */}
           <section className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
