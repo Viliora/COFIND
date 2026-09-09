@@ -15,9 +15,6 @@ Env:
   COFIND_LLM_GROUNDING_CHECK        aktifkan tahap D (default: true)
   COFIND_LLM_RERANK_CANDIDATES      jumlah kandidat yang dinilai LLM (default: 7)
   COFIND_LLM_RERANK_WEIGHT          bobot fit LLM pada skor akhir 0..1 (default: 0.6)
-  COFIND_LLM_KEYWORD_EXPANSION      legacy, tidak dipakai pipeline RAG (default: false)
-  COFIND_LLM_EXPANSION_MAX_TERMS    batas frasa hasil ekspansi legacy (default: 8)
-  COFIND_LLM_EXPANSION_CACHE_TTL    TTL cache ekspansi per kombinasi pill, detik (default: 3600)
 """
 
 from __future__ import annotations
@@ -25,7 +22,6 @@ from __future__ import annotations
 import json
 import os
 import re
-import threading
 import time
 from typing import Callable, Dict, List, Optional, Sequence
 
@@ -72,10 +68,6 @@ def _env_float(name: str, default: float, *, min_value: float, max_value: float)
     return max(min_value, min(max_value, value))
 
 
-def keyword_expansion_enabled() -> bool:
-    return _env_flag('COFIND_LLM_KEYWORD_EXPANSION', False)
-
-
 def rerank_enabled() -> bool:
     return _env_flag('COFIND_LLM_RERANK', True)
 
@@ -96,24 +88,14 @@ def rerank_weight() -> float:
     return _env_float('COFIND_LLM_RERANK_WEIGHT', 0.6, min_value=0.0, max_value=1.0)
 
 
-def expansion_max_terms() -> int:
-    return _env_int('COFIND_LLM_EXPANSION_MAX_TERMS', 8, min_value=1, max_value=20)
-
-
-def expansion_cache_ttl_seconds() -> int:
-    return _env_int('COFIND_LLM_EXPANSION_CACHE_TTL', 3600, min_value=0, max_value=86400)
-
-
 def pipeline_config() -> Dict[str, object]:
     """Ringkasan flag pipeline untuk telemetry / endpoint status."""
     return {
-        'keyword_expansion': keyword_expansion_enabled(),
         'rerank': rerank_enabled(),
         'personalization': personalization_enabled(),
         'grounding_check': grounding_check_enabled(),
         'rerank_candidate_pool': rerank_candidate_pool(),
         'rerank_weight': rerank_weight(),
-        'expansion_max_terms': expansion_max_terms(),
     }
 
 
@@ -232,7 +214,7 @@ def _parse_json_array(raw_text: object, parse_json_fn: Optional[Callable]) -> Op
             if isinstance(parsed, list):
                 return parsed
             if isinstance(parsed, dict):
-                for key in ('recommendations', 'keywords', 'results', 'items'):
+                for key in ('recommendations', 'results', 'items'):
                     if isinstance(parsed.get(key), list):
                         return parsed[key]
         except Exception:
@@ -241,191 +223,10 @@ def _parse_json_array(raw_text: object, parse_json_fn: Optional[Callable]) -> Op
     if isinstance(parsed, list):
         return parsed
     if isinstance(parsed, dict):
-        for key in ('recommendations', 'keywords', 'results', 'items'):
+        for key in ('recommendations', 'results', 'items'):
             if isinstance(parsed.get(key), list):
                 return parsed[key]
     return None
-
-
-# --------------------------------------------------------------------------
-# Tahap A: ekspansi keyword pill oleh LLM (kosakata tertutup + tervalidasi korpus)
-# --------------------------------------------------------------------------
-
-_EXPANSION_SYSTEM_PROMPT = (
-    'Anda mesin ekspansi kata kunci pencarian untuk aplikasi rekomendasi coffee shop Indonesia. '
-    'Anda hanya boleh mengeluarkan frasa bahasa Indonesia sehari-hari yang wajar ditulis pengunjung '
-    'di ulasan coffee shop. Jawab HANYA JSON array of string, tanpa markdown dan tanpa penjelasan.'
-)
-
-
-def _expansion_user_prompt(pill_labels_line: str, lexicon_line: str, max_terms: int) -> str:
-    return (
-        f'Konteks aktivitas yang dipilih user: {pill_labels_line}\n'
-        f'Kata kunci yang sudah dipakai sistem (jangan diulang atau diubah bentuknya): {lexicon_line}\n\n'
-        f'Tugas: tambahkan maksimal {max_terms} frasa pencarian baru yang membantu menemukan '
-        'ulasan pengunjung tentang konteks aktivitas di atas.\n'
-        'Aturan ketat:\n'
-        '- 1 sampai 3 kata per frasa, huruf kecil semua.\n'
-        '- Harus frasa yang realistis muncul di ulasan coffee shop Indonesia (boleh bahasa gaul umum).\n'
-        '- Nada netral atau positif. Jangan keluarkan frasa keluhan, larangan, atau kata negatif.\n'
-        '- Jangan menyebut nama coffee shop, nama kota, merek, atau angka.\n'
-        '- Jangan mengarang fasilitas yang tidak lazim ada di coffee shop.\n'
-        '- Tanpa duplikat dan tanpa sinonim dari daftar kata kunci yang sudah dipakai sistem.\n'
-        'Format keluaran: ["frasa satu", "frasa dua"]'
-    )
-
-
-_expansion_cache: Dict[str, tuple] = {}
-_expansion_cache_lock = threading.Lock()
-
-
-def _expansion_cache_key(pills: Sequence[str], max_terms: int) -> str:
-    normalized = sorted(str(p or '').strip().lower() for p in pills or [] if str(p or '').strip())
-    return '+'.join(normalized) + f'::{max_terms}'
-
-
-def _expansion_cache_get(key: str) -> Optional[List[str]]:
-    ttl = expansion_cache_ttl_seconds()
-    if ttl <= 0:
-        return None
-    with _expansion_cache_lock:
-        entry = _expansion_cache.get(key)
-    if not entry:
-        return None
-    stored_at, terms = entry
-    if (time.time() - stored_at) > ttl:
-        with _expansion_cache_lock:
-            _expansion_cache.pop(key, None)
-        return None
-    return list(terms)
-
-
-def _expansion_cache_put(key: str, terms: Sequence[str]) -> None:
-    if expansion_cache_ttl_seconds() <= 0:
-        return
-    with _expansion_cache_lock:
-        _expansion_cache[key] = (time.time(), list(terms))
-
-
-def _terms_grounded_in_vocabulary(terms: Sequence[str], vocabulary: Optional[set]) -> tuple:
-    """Pisahkan frasa yang semua tokennya ada di kosakata korpus review."""
-    if not vocabulary:
-        return list(terms), []
-    kept, rejected = [], []
-    for term in terms:
-        tokens = [t for t in str(term or '').split() if len(t) > 1]
-        if tokens and all(token in vocabulary for token in tokens):
-            kept.append(term)
-        else:
-            rejected.append(term)
-    return kept, rejected
-
-
-def expand_pill_keywords(
-    pills: Sequence[str],
-    *,
-    pill_labels: Dict[str, str],
-    pill_lexicon: Sequence[str],
-    chat_fn: Callable[..., str],
-    sanitize_keywords: Callable[[Sequence[str]], List[str]],
-    corpus_vocabulary: Optional[set] = None,
-    parse_json_fn: Optional[Callable] = None,
-    max_terms: Optional[int] = None,
-    use_cache: bool = True,
-) -> Dict[str, object]:
-    """
-    Tahap A. LLM mengusulkan frasa pencarian tambahan untuk kombinasi pill,
-    lalu setiap frasa harus lolos tiga saringan sebelum dipakai retrieval:
-      1. sanitizer aplikasi (buang frasa negatif / bentuk tidak valid)
-      2. bukan pengulangan leksikon pill yang sudah dipakai
-      3. semua tokennya ada di kosakata korpus review (kalau korpus tersedia)
-    """
-    result: Dict[str, object] = {
-        'keywords': [],
-        'source': 'disabled',
-        'raw_count': 0,
-        'rejected_lexicon': 0,
-        'rejected_vocabulary': 0,
-        'rejected_vocabulary_sample': [],
-        'latency_ms': 0.0,
-        'error': None,
-    }
-    if not pills or not keyword_expansion_enabled():
-        return result
-
-    limit = max_terms if max_terms is not None else expansion_max_terms()
-    cache_key = _expansion_cache_key(pills, limit)
-    raw_terms: Optional[List[str]] = _expansion_cache_get(cache_key) if use_cache else None
-    started = time.perf_counter()
-
-    if raw_terms is None:
-        labels_line = ', '.join(str(pill_labels.get(p, p)) for p in pills) or '-'
-        lexicon_sample = list(dict.fromkeys(str(k or '').strip() for k in pill_lexicon or [] if str(k or '').strip()))
-        lexicon_line = ', '.join(lexicon_sample[:60]) or '-'
-        try:
-            raw = chat_fn(
-                messages=[
-                    {'role': 'system', 'content': _EXPANSION_SYSTEM_PROMPT},
-                    {'role': 'user', 'content': _expansion_user_prompt(labels_line, lexicon_line, limit)},
-                ],
-                max_tokens=220,
-                temperature=0.2,
-            )
-        except Exception as err:
-            result['source'] = 'error'
-            result['error'] = str(err)[:200]
-            result['latency_ms'] = round((time.perf_counter() - started) * 1000, 1)
-            return result
-
-        parsed = _parse_json_array(raw, parse_json_fn)
-        if parsed is None:
-            result['source'] = 'error'
-            result['error'] = 'parse_failed'
-            result['latency_ms'] = round((time.perf_counter() - started) * 1000, 1)
-            return result
-
-        raw_terms = []
-        for item in parsed:
-            if isinstance(item, str):
-                raw_terms.append(item)
-            elif isinstance(item, dict):
-                value = item.get('keyword') or item.get('term') or item.get('phrase')
-                if isinstance(value, str):
-                    raw_terms.append(value)
-        _expansion_cache_put(cache_key, raw_terms)
-        result['source'] = 'llm'
-    else:
-        result['source'] = 'cache'
-
-    result['raw_count'] = len(raw_terms)
-    sanitized = sanitize_keywords(raw_terms) or []
-
-    lexicon_norm = {str(k or '').strip().lower() for k in pill_lexicon or []}
-    deduped, rejected_lexicon = [], 0
-    for term in sanitized:
-        if str(term).strip().lower() in lexicon_norm:
-            rejected_lexicon += 1
-            continue
-        deduped.append(term)
-
-    grounded, rejected_vocabulary = _terms_grounded_in_vocabulary(deduped, corpus_vocabulary)
-
-    result['keywords'] = list(dict.fromkeys(grounded))[:limit]
-    result['rejected_lexicon'] = rejected_lexicon
-    result['rejected_vocabulary'] = len(rejected_vocabulary)
-    result['rejected_vocabulary_sample'] = rejected_vocabulary[:5]
-    result['latency_ms'] = round((time.perf_counter() - started) * 1000, 1)
-    return result
-
-
-def corpus_vocabulary_from_tokens(tokenized_corpus: Sequence[Sequence[str]]) -> set:
-    """Kosakata gabungan korpus BM25 untuk validasi keyword hasil LLM."""
-    vocabulary = set()
-    for document in tokenized_corpus or []:
-        for token in document or []:
-            if token and token != '__empty__':
-                vocabulary.add(token)
-    return vocabulary
 
 
 # --------------------------------------------------------------------------
@@ -658,7 +459,6 @@ def _quote_candidates_for_prompt(evidence: Dict[str, object], *, limit: int, quo
         'positive_review_quotes',
         'negative_review_quotes',
         'search_keyword_matches',
-        'llm_keyword_matches',
         'semantic_matches',
     )
     quotes: List[Dict[str, object]] = []

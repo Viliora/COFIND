@@ -783,26 +783,35 @@
     },
     "ChIJE8-LfABZHS4R_MsSOwiHNL8": {
       "place_id": "ChIJE8-LfABZHS4R_MsSOwiHNL8",
-      "name": "Seremoni Coffee",
+      "name": "Rice 'N Shine (RnS)",
       "facilities": {
         "service_options": {
           "outdoor_seating": true,
+          "no_contact_delivery": true,
+          "delivery": true,
           "takeaway": true,
           "dine_in": true
         },
         "highlights": {
           "good_coffee": true,
+          "great_dessert": true,
           "good_tea_selection": true
         },
         "popular_for": {
+          "dinner": true,
           "solo_dining": true,
           "good_for_working_on_laptop": true
         },
         "offerings": {
+          "quick_bite": true,
           "coffee": true
         },
         "dining_options": {
-          "seating": true
+          "lunch": true,
+          "dinner": true,
+          "dessert": true,
+          "seating": true,
+          "table_service": true
         },
         "amenities": {
           "toilet": true
@@ -815,12 +824,21 @@
         ],
         "crowd": [
           "berkelompok",
-          "mahasiswa",
-          "turis"
+          "mahasiswa"
         ],
+        "planning": {
+          "accepts_reservations": true
+        },
         "payments": {
           "debit_card": true,
           "nfc_mobile_payments": true
+        },
+        "children": {
+          "good_for_kids": true
+        },
+        "parking": {
+          "plenty_of_parking": true,
+          "paid_parking_lot": true
         },
         "meta": {
           "source": "google_maps_copy_element",

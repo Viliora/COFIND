@@ -52,53 +52,6 @@ function ShopDetail() {
     return placeIdFromRoute;
   }, [shop?.place_id, placeIdFromRoute]);
 
-  const goldOverview = useMemo(() => {
-    const pid = placeIdForApi || shop?.place_id;
-    if (!pid || !facilitiesData?.facilities_by_place_id?.[pid]) return '';
-
-    const facs = facilitiesData.facilities_by_place_id[pid].facilities;
-    const highlights = facs.highlights || {};
-    const popular = facs.popular_for || {};
-    const atmosphere = facs.atmosphere || [];
-    const crowd = facs.crowd || [];
-
-    const translationMap = {
-      'good_coffee': 'kopi yang enak',
-      'good_desserts': 'pencuci mulut yang lezat',
-      'good_tea_selection': 'pilihan teh yang beragam',
-      'sports': 'cocok untuk menyaksikan pertandingan olahraga',
-      'live_music': 'pertunjukan musik',
-      'live_performances': 'pertunjukan langsung',
-      'breakfast': 'sarapan',
-      'lunch': 'makan siang',
-      'dinner': 'makan malam',
-      'solo_dining': 'bersantai sendiri (me time)',
-      'good_for_working_on_laptop': 'bekerja menggunakan laptop (wfc)',
-      'berkelompok': 'keluarga, komunitas',
-      'mahasiswa': 'mahasiswa',
-      'ramah_keluarga': 'keluarga',
-      'turis': 'turis'
-    };
-
-    const translate = (key) => translationMap[key] || key.replace(/_/g, ' ');
-
-    const hList = Object.keys(highlights).filter(k => highlights[k]).map(translate);
-    const pList = Object.keys(popular).filter(k => popular[k]).map(translate);
-    const aList = atmosphere;
-    const cList = crowd.map(translate);
-
-    const hStr = hList.length > 0 ? hList.join(', ') : 'berbagai sajian';
-    const pStr = pList.length > 0 ? pList.join(', ') : 'bersantai';
-    const aStr = aList.length > 0 ? aList.join(', ') : 'nyaman';
-    const cStr = cList.length > 0 ? cList.join(', ') : '';
-
-    let summary = `${shop?.name || 'Tempat ini'} adalah coffee shop yang memiliki keunggulan pada ${hStr}. Tempat ini sangat populer untuk ${pStr} dengan suasana yang ${aStr}.`;
-    if (cStr) {
-      summary += ` Pengunjung tempat ini mayoritas seperti ${cStr}.`;
-    }
-    return summary;
-  }, [placeIdForApi, shop?.place_id, shop?.name]);
-
   // Handle scroll to review form setelah login
   useEffect(() => {
     // Check if user just logged in and should scroll to review form
@@ -586,28 +539,6 @@ function ShopDetail() {
             </div>
           </div>
         </div>
-
-        {/* Overview gold summary non-LLM untuk pembanding evaluasi summary */}
-        {goldOverview && (
-          <section className="mb-6 rounded-xl border border-amber-200 bg-amber-50/70 p-4 sm:p-5 dark:border-amber-900/40 dark:bg-amber-950/20">
-            <div className="flex items-start gap-3">
-              <span className="mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white shadow-sm" aria-hidden>
-                <svg className="h-5 w-5" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" stroke="currentColor" viewBox="0 0 24 24">
-                  <path d="M4 19.5A2.5 2.5 0 016.5 17H20"></path>
-                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"></path>
-                </svg>
-              </span>
-              <div className="min-w-0">
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
-                  Overview
-                </h2>
-                <p className="mt-2 text-sm sm:text-base leading-7 text-gray-700 dark:text-gray-300">
-                  {goldOverview}
-                </p>
-              </div>
-            </div>
-          </section>
-        )}
 
         {/* Informasi Utama */}
         <div className="space-y-4">
