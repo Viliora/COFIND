@@ -131,6 +131,34 @@ REQUEST (online)
 
 ## 4. Fase kerja
 
+### Fase -1 — Prasyarat manusia (BUKAN pekerjaan agent)
+
+Agent **tidak boleh memulai Fase 2 sebelum poin 1–3 di bawah dikonfirmasi selesai
+oleh pemilik proyek.** Bila salah satu belum siap, hentikan dan laporkan, jangan
+mencari jalan pintas.
+
+1. **Supabase — aktifkan extension.** `vector` dan `pg_trgm` diaktifkan lewat
+   Dashboard > Database > Extensions, atau SQL Editor sebagai owner. Kredensial
+   aplikasi lewat pooler biasanya tidak punya privilese `CREATE EXTENSION`.
+2. **Supabase — pastikan koneksi mendukung DDL berat.** Pembuatan indeks HNSW
+   butuh sesi panjang; gunakan koneksi session (port 5432), bukan transaction
+   pooler (6543), saat menjalankan backfill dan pembuatan indeks.
+3. **Backup database.** Ambil `pg_dump` manual sebelum DDL Fase 1/2 dijalankan.
+4. **Railway — kapasitas memori.** Model embedding dan cross-encoder menambah
+   jejak RAM. Backfill dan indexing harus berjalan di service worker Celery,
+   **tidak** di web service (`gunicorn ... --workers 2 --threads 4`).
+5. **Railway — filesystem ephemeral.** `CACHE_DIR` berada di dalam direktori
+   aplikasi (`cache_paths.py:11`), jadi lapis cache file hilang setiap redeploy.
+   Jangan menjadikan cache file sebagai sumber kebenaran untuk embedding; itulah
+   salah satu alasan pindah ke pgvector.
+6. **Bobot model diunduh saat build, bukan saat request pertama.** Set `HF_HOME`
+   dan lakukan pre-download di tahap build agar cold start tidak menunggu unduhan.
+7. **Env var produksi diisi manual** di dashboard Railway; agent hanya menulis
+   `.env.example`.
+8. **Gold set dilabeli manusia** (lihat Fase 0). Ini tidak boleh didelegasikan
+   sepenuhnya ke LLM; bila terpaksa, tandai `"source": "llm-bootstrap"` dan
+   catat keterbatasannya secara jujur di laporan.
+
 ### Fase 0 — Baseline dan harness pengukuran
 
 **Kenapa pertama:** tanpa angka pembanding, tidak ada cara membuktikan fase
