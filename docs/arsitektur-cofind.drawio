@@ -1,0 +1,706 @@
+<mxfile host="app.diagrams.net" type="device" pages="3">
+  <diagram id="cofind-pipeline" name="1. Pipeline Rekomendasi">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2100" pageHeight="1560" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="p1-title" value="COFIND &#8212; PIPELINE REKOMENDASI (RAG 3 FASE)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=26;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="10" width="1200" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-sub" value="Input hanya pill dua lapis (tanpa teks bebas). Sumber: &lt;i&gt;app.py::_recommendation_pipeline_events&lt;/i&gt;, &lt;i&gt;hybrid_retrieval.py&lt;/i&gt;, &lt;i&gt;llm_recommender.py&lt;/i&gt;. Nilai default diambil dari &lt;i&gt;.env.example&lt;/i&gt;." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=13;fontColor=#555555" vertex="1" parent="1">
+          <mxGeometry x="40" y="48" width="1560" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p1-client" value="CLIENT &#8212; React 18 + Vite (Vercel)" style="swimlane;whiteSpace=wrap;html=1;startSize=30;fillColor=none;strokeColor=#6c8ebf;dashed=1;fontSize=13;fontStyle=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="90" width="300" height="660" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-actor" value="User (wajib login)" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontSize=11;" vertex="1" parent="p1-client">
+          <mxGeometry x="125" y="45" width="50" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-c1" value="&lt;b&gt;1. PILL SELECT&lt;/b&gt;&lt;br&gt;ShopList.jsx + FacilityAttributePicker&lt;br&gt;&lt;i&gt;1 pill aktivitas + maks 3 pill atribut&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="p1-client">
+          <mxGeometry x="20" y="145" width="260" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-c2" value="&lt;b&gt;2. SSE CLIENT&lt;/b&gt;&lt;br&gt;recommendationStream.js&lt;br&gt;&lt;i&gt;fetch + ReadableStream (butuh header&lt;br&gt;Authorization), fallback ke JSON biasa&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="p1-client">
+          <mxGeometry x="20" y="235" width="260" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-c3" value="&lt;b&gt;3. PROGRESS OVERLAY&lt;/b&gt;&lt;br&gt;RecommendationProgressOverlay.jsx&lt;br&gt;&lt;i&gt;start &#8594; profiles &#8594; scoring &#8594; rerank &#8594; summary&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="p1-client">
+          <mxGeometry x="20" y="335" width="260" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-c4" value="&lt;b&gt;4. RECOMMENDATION MODAL&lt;/b&gt;&lt;br&gt;RecommendationModal.jsx&lt;br&gt;&lt;i&gt;maks 3 kartu: ringkasan, kutipan bukti,&lt;br&gt;catatan (caveat), pill coverage&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="p1-client">
+          <mxGeometry x="20" y="425" width="260" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-c5" value="&lt;b&gt;5. FEEDBACK&lt;/b&gt; (thumbs up / down)&lt;br&gt;POST .../feedback&lt;br&gt;&lt;i&gt;not_helpful dipakai sebagai exclusion&lt;br&gt;pada permintaan berikutnya&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="p1-client">
+          <mxGeometry x="20" y="535" width="260" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p1-legend" value="LEGENDA" style="swimlane;whiteSpace=wrap;html=1;startSize=30;fillColor=none;strokeColor=#999999;fontSize=13;fontStyle=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="790" width="300" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-l1" value="Tahap deterministik (non-LLM)" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="p1-legend">
+          <mxGeometry x="20" y="40" width="260" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-l2" value="Tahap memakai LLM" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;" vertex="1" parent="p1-legend">
+          <mxGeometry x="20" y="78" width="260" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-l3" value="Sisi klien (browser)" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="p1-legend">
+          <mxGeometry x="20" y="116" width="260" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-l4" value="Penyimpanan data / model" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="p1-legend">
+          <mxGeometry x="20" y="154" width="260" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-l5" value="Cache / memoisasi" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="p1-legend">
+          <mxGeometry x="20" y="192" width="260" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-l6" value="Nonaktif / legacy (garis putus)" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#b3b3b3;dashed=1;fontColor=#666666;fontSize=11;" vertex="1" parent="p1-legend">
+          <mxGeometry x="20" y="230" width="260" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p1-proc" value="RECOMMENDATION PROCESS &#8212; app.py::_recommendation_pipeline_events (generator: progress + 1 result)" style="swimlane;whiteSpace=wrap;html=1;startSize=36;fillColor=none;strokeColor=#333333;fontSize=14;fontStyle=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="380" y="90" width="1220" height="1430" as="geometry" />
+        </mxCell>
+
+        <mxCell id="g0" value="FASE 0 &#8212; GERBANG REQUEST (deterministik)" style="swimlane;whiteSpace=wrap;html=1;startSize=30;fillColor=none;strokeColor=#82b366;dashed=1;fontSize=12;fontStyle=1;collapsible=0;" vertex="1" parent="p1-proc">
+          <mxGeometry x="40" y="50" width="1140" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="b01" value="&lt;b&gt;AUTENTIKASI (BEARER)&lt;/b&gt;&lt;br&gt;auth_guards.require_authenticated_user&lt;br&gt;&lt;i&gt;sesi disimpan di Postgres&lt;/i&gt;&lt;br&gt;&lt;i&gt;gerbang COFIND_DEV_LLM_STRICT &#8594; 503&lt;br&gt;bila LLM wajib tetapi mati&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="g0">
+          <mxGeometry x="20" y="45" width="340" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="b02" value="&lt;b&gt;PARSE + VALIDASI PILL&lt;/b&gt;&lt;br&gt;_read_recommendation_preferences&lt;br&gt;_split_preference_pills&lt;br&gt;&lt;i&gt;body {preferences, attributes}; pill harus ada&lt;br&gt;di PILL_MAPPING, kalau tidak &#8594; 400&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="g0">
+          <mxGeometry x="400" y="45" width="340" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="b03" value="&lt;b&gt;PRA-PERSONALISASI&lt;/b&gt;&lt;br&gt;get_not_helpful_place_ids &#8594; exclusion&lt;br&gt;build_user_taste_profile +&lt;br&gt;format_user_taste_prompt_block&lt;br&gt;&lt;i&gt;ulasan sendiri, favorit, vote&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="g0">
+          <mxGeometry x="780" y="45" width="340" height="105" as="geometry" />
+        </mxCell>
+
+        <mxCell id="g1" value="FASE 1 &#8212; HARD FILTER + BUILD PROFILE (deterministik)" style="swimlane;whiteSpace=wrap;html=1;startSize=30;fillColor=none;strokeColor=#82b366;dashed=1;fontSize=12;fontStyle=1;collapsible=0;" vertex="1" parent="p1-proc">
+          <mxGeometry x="40" y="240" width="1140" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="b11" value="&lt;b&gt;LOAD SEMUA KANDIDAT&lt;/b&gt;&lt;br&gt;_load_all_place_ids&lt;br&gt;&lt;i&gt;tabel coffee_shops&lt;/i&gt;&lt;br&gt;load_facilities_index (facilities.json)" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="g1">
+          <mxGeometry x="20" y="45" width="340" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="b12" value="&lt;b&gt;BUILD PROFILE + REVIEW (BATCH)&lt;/b&gt;&lt;br&gt;_build_profiles_for_recommendation&lt;br&gt;&lt;i&gt;1 query shops + 1 query reviews lean&lt;/i&gt;&lt;br&gt;get_vote_summaries_batch&lt;br&gt;get_top_voted_pros_batch" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="g1">
+          <mxGeometry x="400" y="45" width="340" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="b13" value="&lt;b&gt;HARD FILTER&lt;/b&gt;&lt;br&gt;&#8226; buang place_id hasil feedback not_helpful&lt;br&gt;&#8226; wajib &#8805; 1 ulasan Cofind&lt;br&gt;&#160;&#160;(REVIEW_BASED_MIN_REVIEWS = 1)&lt;br&gt;&lt;i&gt;toko tanpa ulasan tidak ikut dinilai&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="g1">
+          <mxGeometry x="780" y="45" width="340" height="115" as="geometry" />
+        </mxCell>
+
+        <mxCell id="g2" value="FASE 2 &#8212; HYBRID RETRIEVAL: BM25 + EMBEDDING + GERBANG AKTIVITAS (deterministik)" style="swimlane;whiteSpace=wrap;html=1;startSize=30;fillColor=none;strokeColor=#82b366;dashed=1;fontSize=12;fontStyle=1;collapsible=0;" vertex="1" parent="p1-proc">
+          <mxGeometry x="40" y="440" width="1140" height="400" as="geometry" />
+        </mxCell>
+        <mxCell id="b20" value="&lt;b&gt;KEYWORDS MAPPING (SPARSE)&lt;/b&gt;&lt;br&gt;build_sparse_query_tokens&lt;br&gt;&lt;i&gt;pill id + label + PILL_MAPPING.review_keywords&lt;br&gt;&#8594; token aktivitas &amp; token atribut&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="g2">
+          <mxGeometry x="20" y="45" width="340" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="b21" value="&lt;b&gt;QUERY TEXT (DENSE)&lt;/b&gt;&lt;br&gt;build_dense_query_text&lt;br&gt;&lt;i&gt;&quot;Cari coffee shop yang cocok untuk: &amp;lt;label&amp;gt;&quot;&lt;br&gt;query aktivitas dipisah dari atribut&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="g2">
+          <mxGeometry x="400" y="45" width="340" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="b23" value="&lt;b&gt;BM25 SPARSE&lt;/b&gt;&lt;br&gt;bm25_utils: build_bm25_index + score_shops_bm25&lt;br&gt;&lt;i&gt;rank_bm25.BM25Okapi; 1 dokumen = gabungan&lt;br&gt;teks ulasan per toko; skor aktivitas &amp; atribut&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="g2">
+          <mxGeometry x="780" y="45" width="340" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="b24" value="&lt;b&gt;DENSE EMBEDDING&lt;/b&gt;&lt;br&gt;score_shops_dense &#8594; semantic_match.score_documents&lt;br&gt;&lt;i&gt;cosine query vs ulasan, max-pool per toko&lt;br&gt;maks COFIND_DENSE_MAX_REVIEWS = 20 ulasan/toko&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="g2">
+          <mxGeometry x="780" y="160" width="340" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="b22" value="&lt;b&gt;GERBANG AKTIVITAS (WAJIB)&lt;/b&gt;&lt;br&gt;shop_has_activity_signal&lt;br&gt;&lt;i&gt;kata/frasa aktivitas harus benar-benar ada di&lt;br&gt;ulasan; atribut (wifi, colokan) hanya penguat&lt;br&gt;skor, bukan tiket lolos&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="g2">
+          <mxGeometry x="400" y="160" width="340" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="b25" value="&lt;b&gt;MINMAX + FUSI BOBOT&lt;/b&gt;&lt;br&gt;&lt;i&gt;normalisasi hanya antar toko yang lolos gerbang&lt;/i&gt;&lt;br&gt;aktivitas = 0.40&#183;bm25 + 0.35&#183;dense + 0.25&#183;leksikal&lt;br&gt;total = 0.65&#183;aktivitas + 0.25&#183;atribut + 0.10&#183;kualitas&lt;br&gt;&lt;i&gt;kualitas = 0.5&#183;overall experience + 0.5&#183;rating&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="g2">
+          <mxGeometry x="20" y="160" width="340" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="b26" value="&lt;b&gt;TOP-K KANDIDAT&lt;/b&gt;&lt;br&gt;retrieve_top_k &#8594; candidates[:K]&lt;br&gt;&lt;b&gt;K = COFIND_RETRIEVAL_TOP_K = 7&lt;/b&gt;&lt;br&gt;&lt;i&gt;telemetry: profiles, activity_gated, kept_with_signal&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="g2">
+          <mxGeometry x="20" y="275" width="340" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="b27" value="&lt;b&gt;RANK EVIDENCE PER TOKO&lt;/b&gt;&lt;br&gt;_build_retrieval_evidence &#8594; rank_reviews_for_query&lt;br&gt;&lt;i&gt;scan COFIND_PROMPT_REVIEW_SCAN = 60 ulasan,&lt;br&gt;simpan COFIND_PROMPT_REVIEW_LIMIT = 8 terbaik&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="g2">
+          <mxGeometry x="400" y="275" width="340" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="b28" value="&lt;b&gt;PILL COVERAGE&lt;/b&gt;&lt;br&gt;_attach_pill_coverage &#8594; compute_pill_coverage&lt;br&gt;&lt;i&gt;pill mana yang terbukti di ulasan (covered)&lt;br&gt;dan mana yang belum (uncovered)&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="g2">
+          <mxGeometry x="780" y="275" width="340" height="100" as="geometry" />
+        </mxCell>
+
+        <mxCell id="g3" value="FASE 3 &#8212; LLM RERANK + EKSTRAKSI KUTIPAN + SUMMARY" style="swimlane;whiteSpace=wrap;html=1;startSize=30;fillColor=none;strokeColor=#d79b00;dashed=1;fontSize=12;fontStyle=1;collapsible=0;" vertex="1" parent="p1-proc">
+          <mxGeometry x="40" y="860" width="1140" height="400" as="geometry" />
+        </mxCell>
+        <mxCell id="b30" value="&lt;b&gt;CEK CACHE RERANK&lt;/b&gt;&lt;br&gt;_get_cached_rerank_fits / _store_rerank_fits&lt;br&gt;&lt;i&gt;kunci = set pill + digest keyword + user_id +&lt;br&gt;sidik kandidat (place_id:review_count)&lt;/i&gt;&lt;br&gt;&lt;i&gt;cache hit &#8594; hemat 1 panggilan LLM&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="g3">
+          <mxGeometry x="20" y="45" width="340" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="b31" value="&lt;b&gt;LLM RERANK&lt;/b&gt;&lt;br&gt;llm_recommender.llm_rerank_candidates&lt;br&gt;&lt;i&gt;pool COFIND_LLM_RERANK_CANDIDATES = 7,&lt;br&gt;6 kutipan/kandidat; prompt memuat bukti ulasan,&lt;br&gt;selera user, sinyal komunitas (vote + top pros)&lt;/i&gt;&lt;br&gt;&lt;b&gt;output: fit_score 0&#8211;10, selected, alasan, indeks kutipan&lt;/b&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;" vertex="1" parent="g3">
+          <mxGeometry x="400" y="45" width="340" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="b32" value="&lt;b&gt;JSON REPAIR&lt;/b&gt;&lt;br&gt;_parse_llm_json_with_repair&lt;br&gt;&lt;i&gt;pustaka json_repair dulu, lalu maks 2 iterasi&lt;br&gt;perbaikan lewat LLM bila masih gagal parse&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;" vertex="1" parent="g3">
+          <mxGeometry x="780" y="45" width="340" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="b33" value="&lt;b&gt;GROUNDING CHECK&lt;/b&gt;&lt;br&gt;text_is_grounded / ungrounded_quotes&lt;br&gt;&lt;i&gt;COFIND_LLM_GROUNDING_CHECK = true&lt;br&gt;kutipan yang tidak ada di korpus ulasan dibuang&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="g3">
+          <mxGeometry x="780" y="160" width="340" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="b34" value="&lt;b&gt;BLEND SKOR&lt;/b&gt;&lt;br&gt;_blend_rerank_scores&lt;br&gt;&lt;b&gt;final = 0.6&#183;(fit_score/10) + 0.4&#183;skor hybrid&lt;/b&gt;&lt;br&gt;&lt;i&gt;COFIND_LLM_RERANK_WEIGHT = 0.6&lt;br&gt;(1.0 = murni LLM, 0.0 = murni retrieval)&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="g3">
+          <mxGeometry x="400" y="160" width="340" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="b35" value="&lt;b&gt;SELEKSI 0&#8211;3 TOKO&lt;/b&gt;&lt;br&gt;_select_top_shops (MAX_REC = 3)&lt;br&gt;&lt;i&gt;syarat: ada bukti aktivitas, selected = true,&lt;br&gt;fit_score &#8805; COFIND_LLM_MIN_FIT = 5.0&lt;/i&gt;&lt;br&gt;&lt;i&gt;slot kosong dibiarkan kosong, tidak diisi paksa&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="g3">
+          <mxGeometry x="20" y="160" width="340" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="b36" value="&lt;b&gt;KUTIPAN TAMPILAN&lt;/b&gt;&lt;br&gt;_apply_llm_extracted_quotes&lt;br&gt;&lt;i&gt;maks 3 modal_display_quotes (diprioritaskan&lt;br&gt;ulasan aktivitas) + 1 modal_caveat_quotes&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="g3">
+          <mxGeometry x="20" y="275" width="340" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="b37" value="&lt;b&gt;SUMMARY PER TOKO (PARALEL)&lt;/b&gt;&lt;br&gt;_generate_llm_review_summary &#8594;&lt;br&gt;_llm_summaries_for_shops (ThreadPoolExecutor)&lt;br&gt;&lt;i&gt;1 panggilan LLM per toko, sengaja tanpa cache&lt;br&gt;agar paragraf mengikuti kombinasi pill saat itu&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;" vertex="1" parent="g3">
+          <mxGeometry x="400" y="275" width="340" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="b38" value="&lt;b&gt;FALLBACK DETERMINISTIK&lt;/b&gt;&lt;br&gt;_build_review_summary_deterministic&lt;br&gt;&lt;i&gt;dipakai bila LLM mati / gagal parse; toko tanpa&lt;br&gt;kutipan tampilan dibuang dari hasil&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="g3">
+          <mxGeometry x="780" y="275" width="340" height="100" as="geometry" />
+        </mxCell>
+
+        <mxCell id="g4" value="OUTPUT" style="swimlane;whiteSpace=wrap;html=1;startSize=30;fillColor=none;strokeColor=#6c8ebf;dashed=1;fontSize=12;fontStyle=1;collapsible=0;" vertex="1" parent="p1-proc">
+          <mxGeometry x="40" y="1280" width="1140" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="b40" value="&lt;b&gt;RESPONS&lt;/b&gt; &#8212; event SSE &lt;i&gt;result&lt;/i&gt; / JSON sekali kirim&lt;br&gt;recommendations[] + preferences + search_keywords + llm_pipeline (config, retrieval, rerank, semantic)" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="g4">
+          <mxGeometry x="20" y="40" width="545" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="b41" value="&lt;b&gt;FINALLY&lt;/b&gt; &#8212; flush_semantic_cache + flush_clause_sentiment_cache&lt;br&gt;reset budget encode, LOG_METRIC per tahap (profile_load_ms, hybrid_retrieval_ms, rerank_ms, llm_summary_ms, total_ms)" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="g4">
+          <mxGeometry x="575" y="40" width="545" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p1-infratitle" value="DATA, MODEL &amp; CACHE" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=14;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="1660" y="60" width="380" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="i1" value="&lt;b&gt;SUPABASE POSTGRES&lt;/b&gt;&lt;br&gt;db_backend.py (DATABASE_URL)&lt;br&gt;&lt;i&gt;coffee_shops, reviews, users, sessions,&lt;br&gt;favorites, shop_votes, shop_pros_cons,&lt;br&gt;recommendation_feedback, preference_suggestions&lt;/i&gt;" style="shape=cylinder3;boundedLbl=1;backgroundOutline=1;size=12;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1660" y="100" width="380" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="i2" value="&lt;b&gt;HUGGING FACE ROUTER&lt;/b&gt; (OpenAI-compatible)&lt;br&gt;llm_backend.py &#8594; router.huggingface.co/v1&lt;br&gt;&lt;i&gt;HF_MODEL = meta-llama/Llama-3.1-8B-Instruct:novita&lt;br&gt;cap 900 token, timeout 60s, 1 retry&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1660" y="255" width="380" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="i3" value="&lt;b&gt;MODEL EMBEDDING (IN-PROCESS)&lt;/b&gt;&lt;br&gt;sentence-transformers&lt;br&gt;paraphrase-multilingual-MiniLM-L12-v2&lt;br&gt;&lt;i&gt;bukan API; preload saat startup&lt;br&gt;(COFIND_SEMANTIC_PRELOAD = true)&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1660" y="390" width="380" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="i4" value="&lt;b&gt;VECTOR CACHE 3 LAPIS&lt;/b&gt;&lt;br&gt;vector_cache.PersistentCache&lt;br&gt;&lt;i&gt;memori &#8594; Redis &#8594; cache/semantic_embeddings.json&lt;br&gt;TTL 30 hari, maks 200.000 entri&lt;br&gt;flush ke file 1x per request&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1660" y="525" width="380" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="i5" value="&lt;b&gt;REDIS / UPSTASH&lt;/b&gt; (redis_utils.py)&lt;br&gt;&lt;i&gt;broker + backend Celery, lapis-2 vector cache,&lt;br&gt;dipakai /health&lt;/i&gt;" style="shape=cylinder3;boundedLbl=1;backgroundOutline=1;size=12;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1660" y="670" width="380" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="i6" value="&lt;b&gt;FILE CACHE RERANK&lt;/b&gt;&lt;br&gt;cache/rerank_cache.json&lt;br&gt;&lt;i&gt;TTL 7 hari (cache_paths.py)&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1660" y="795" width="380" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="i7" value="&lt;b&gt;facilities.json&lt;/b&gt; (facilities_store.py)&lt;br&gt;&lt;i&gt;konteks tab fasilitas untuk prompt/tampilan;&lt;br&gt;bukan sinyal ranking utama&lt;/i&gt;" style="shape=note;size=15;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;fillColor=#f9f7ed;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1660" y="910" width="380" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="i8" value="&lt;b&gt;data/indonesia_slang_map.json&lt;/b&gt;&lt;br&gt;slang_normalize.py&lt;br&gt;&lt;i&gt;normalisasi slang (bgt &#8594; banget) untuk&lt;br&gt;pencocokan leksikal kutipan/keyword&lt;/i&gt;" style="shape=note;size=15;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;fillColor=#f9f7ed;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1660" y="1035" width="380" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="i9" value="&lt;b&gt;TIDAK AKTIF DI JALUR INI&lt;/b&gt;&lt;br&gt;&#8226; llm_clause_sentiment.py&lt;br&gt;&#160;&#160;(COFIND_LLM_CLAUSE_SENTIMENT = false)&lt;br&gt;&#8226; semantic_match.match_reviews (gerbang makna legacy)&lt;br&gt;&#8226; _score_shop_by_user_reviews (kode mati di app.py)&lt;br&gt;&#8226; COFIND_HYBRID_BM25/DENSE/QUALITY_WEIGHT&lt;br&gt;&#160;&#160;(tidak dibaca retrieve_top_k)&lt;br&gt;&#8226; Celery worker (di luar jalur rekomendasi)" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#b3b3b3;dashed=1;fontColor=#666666;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="1660" y="1160" width="380" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="i10" value="&lt;b&gt;GOOGLE PLACES API&lt;/b&gt; &#8212; hanya seeding (2025)&lt;br&gt;&lt;i&gt;tidak ada pemanggilan saat runtime; data toko sudah&lt;br&gt;berada di Postgres. Rating Google hanya ikut sebagai&lt;br&gt;bagian sinyal kualitas (~10%). Peta memakai&lt;br&gt;OpenStreetMap via Leaflet.&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#b3b3b3;dashed=1;fontColor=#666666;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1660" y="1335" width="380" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="p1-c1" target="p1-c2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="POST /api/recommend-by-preferences/stream&#10;(SSE) atau POST /api/recommend-by-preferences" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="p1-c2" target="b01">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="b01" target="b02">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="b02" target="b03">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="b03" target="b11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="b11" target="b12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="b12" target="b13">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" value="profil toko + ulasan" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="b13" target="b20">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="b20" target="b21">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="b21" target="b23">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="b23" target="b24">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="b24" target="b22">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" value="hanya toko yang lolos" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;exitX=0;exitY=0.5;entryX=1;entryY=0.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="b22" target="b25">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="b25" target="b26">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e15" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="b26" target="b27">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="b27" target="b28">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e17" value="7 kandidat + bukti kutipan" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="b28" target="b30">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e18" value="cache miss" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="b30" target="b31">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e19" value="JSON tidak valid" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="b31" target="b32">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e20" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="b32" target="b33">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e21" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="b33" target="b34">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e22" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="b34" target="b35">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e23" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="b35" target="b36">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e24" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="b36" target="b37">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e25" value="LLM mati / gagal parse" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;dashed=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="b37" target="b38">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e26" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="b37" target="b40">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e27" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="b40" target="b41">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e28" value="maks 3 rekomendasi" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;exitX=0;exitY=0.5;entryX=1;entryY=0.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="b40" target="p1-c4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e29" value="event: progress" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#6c8ebf;endArrow=open;exitX=0;exitY=0.25;entryX=1;entryY=0.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="p1-proc" target="p1-c3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e30" value="not_helpful" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#6c8ebf;endArrow=open;exitX=1;exitY=0.5;entryX=0;entryY=0.75;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="p1-c5" target="b03">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="d1" value="batch: coffee_shops + reviews" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#b85450;endArrow=open;startArrow=open;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="i1" target="b12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d2" value="feedback + selera user" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#b85450;endArrow=open;startArrow=open;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="i1" target="b03">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d3" value="chat completion (rerank)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#9673a6;endArrow=open;startArrow=open;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="i2" target="b31">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d4" value="1 panggilan / toko" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#9673a6;endArrow=open;startArrow=open;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="i2" target="b37">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d5" value="encode query + ulasan" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#b85450;endArrow=open;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="i3" target="b24">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d6" value="hit / miss" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#d6b656;endArrow=open;startArrow=open;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="i4" target="b24">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d7" value="lapis 2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#b85450;endArrow=open;startArrow=open;exitX=0.5;exitY=0;entryX=0.5;entryY=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="i5" target="i4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d8" value="TTL 7 hari" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#d6b656;endArrow=open;startArrow=open;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="i6" target="b30">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d9" value="konteks fasilitas" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#666666;endArrow=open;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="i7" target="b11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d10" value="normalisasi teks" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#666666;endArrow=open;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="i8" target="b36">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d11" value="seeding 2025 (sekali jalan, di luar runtime)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#b3b3b3;endArrow=open;fontColor=#666666;exitX=1;exitY=0.5;entryX=1;entryY=0.5;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="i10" target="i1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="cofind-topologi" name="2. Arsitektur Sistem &amp; Deployment">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1400" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="p2-title" value="COFIND &#8212; ARSITEKTUR SISTEM &amp; TOPOLOGI DEPLOYMENT" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=26;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="10" width="1400" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-sub" value="SPA di Vercel &#8594; Flask/gunicorn di Railway &#8594; Supabase Postgres, Redis (Upstash), dan Hugging Face Router. Worker Celery berjalan sebagai proses terpisah dan tidak berada di jalur request rekomendasi." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=13;fontColor=#555555" vertex="1" parent="1">
+          <mxGeometry x="40" y="48" width="1700" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p2-client" value="BROWSER / SPA &#8212; frontend-cofind (Vercel)" style="swimlane;whiteSpace=wrap;html=1;startSize=34;fillColor=none;strokeColor=#6c8ebf;fontSize=14;fontStyle=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="100" width="520" height="620" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-cl1" value="&lt;b&gt;HALAMAN&lt;/b&gt; (React Router 7)&lt;br&gt;ShopList (pemilih pill + rekomendasi), ShopDetail,&lt;br&gt;Favorite, WantToVisit, Profile, Login, About, Admin" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="p2-client">
+          <mxGeometry x="20" y="50" width="480" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-cl2" value="&lt;b&gt;KOMPONEN KUNCI&lt;/b&gt;&lt;br&gt;RecommendationModal (top 3 + kutipan + feedback),&lt;br&gt;RecommendationProgressOverlay (SSE), FacilityAttributePicker,&lt;br&gt;ShopVoteModal, ShopProsCons, FacilitiesTab,&lt;br&gt;CoffeeShopMap / CoffeeShopRadiusMap (react-leaflet)" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="p2-client">
+          <mxGeometry x="20" y="155" width="480" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-cl3" value="&lt;b&gt;SERVICES&lt;/b&gt;&lt;br&gt;recommendationStream.js (SSE + fallback JSON),&lt;br&gt;authService.js, adminService.js" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="p2-client">
+          <mxGeometry x="20" y="285" width="480" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-cl4" value="&lt;b&gt;STATE &amp; PWA&lt;/b&gt;&lt;br&gt;AuthContext (token Bearer di localStorage),&lt;br&gt;service worker (sw-register.js, cache-busting)" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="p2-client">
+          <mxGeometry x="20" y="385" width="480" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-cl5" value="&lt;b&gt;BUILD&lt;/b&gt;: Vite 7 + Tailwind 3 &#183; &lt;b&gt;KONFIG&lt;/b&gt;: VITE_API_BASE &#8594; URL Railway&lt;br&gt;&lt;i&gt;vercel.json: rewrite SPA&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;" vertex="1" parent="p2-client">
+          <mxGeometry x="20" y="485" width="480" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p2-api" value="BACKEND &#8212; Flask + gunicorn (Railway) &#183; web: 2 workers &#215; 4 threads, timeout 120s" style="swimlane;whiteSpace=wrap;html=1;startSize=34;fillColor=none;strokeColor=#82b366;fontSize=14;fontStyle=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="640" y="100" width="880" height="950" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-core" value="&lt;b&gt;app.py&lt;/b&gt; &#8212; CORS (CORS_ORIGINS), logging_config, error handler&lt;br&gt;&lt;i&gt;startup: preload model embedding (thread), pembuatan tabel recommendation_feedback &amp; preference_suggestions, migrate_review_ratings_to_votes&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="p2-api">
+          <mxGeometry x="20" y="45" width="840" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-h1" value="BLUEPRINT ROUTES (api/)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=12;fontStyle=1" vertex="1" parent="p2-api">
+          <mxGeometry x="20" y="125" width="400" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-bp1" value="auth_routes&lt;br&gt;&lt;i&gt;/api/auth/*&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="p2-api">
+          <mxGeometry x="20" y="150" width="270" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-bp2" value="coffeeshop_routes&lt;br&gt;&lt;i&gt;/api/coffeeshops/*&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="p2-api">
+          <mxGeometry x="305" y="150" width="270" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-bp3" value="review_routes&lt;br&gt;&lt;i&gt;/api/reviews/*&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="p2-api">
+          <mxGeometry x="590" y="150" width="270" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-bp4" value="vote_routes&lt;br&gt;&lt;i&gt;/api/coffeeshops/:place_id/votes&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="p2-api">
+          <mxGeometry x="20" y="220" width="270" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-bp5" value="favorite_routes + want_to_visit_routes&lt;br&gt;&lt;i&gt;/api/favorites, /api/want-to-visit&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="p2-api">
+          <mxGeometry x="305" y="220" width="270" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-bp6" value="admin_routes&lt;br&gt;&lt;i&gt;/api/admin/* (require_admin)&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="p2-api">
+          <mxGeometry x="590" y="220" width="270" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-rec" value="&lt;b&gt;ENDPOINT REKOMENDASI (di app.py)&lt;/b&gt;&lt;br&gt;POST /api/recommend-by-preferences &#183; POST /api/recommend-by-preferences/stream (SSE)&lt;br&gt;POST &amp; GET /api/recommend-by-preferences/feedback &#183; GET .../feedback/summary&lt;br&gt;POST /api/preference-suggestions &#183; GET /api/llm/status &#183; GET /health (web + Redis + worker)" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;fontStyle=0" vertex="1" parent="p2-api">
+          <mxGeometry x="20" y="295" width="840" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-h2" value="MODUL PIPELINE REKOMENDASI" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=12;fontStyle=1" vertex="1" parent="p2-api">
+          <mxGeometry x="20" y="405" width="400" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-pm1" value="hybrid_retrieval.py&lt;br&gt;&lt;i&gt;fase 2: gerbang + fusi skor&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="p2-api">
+          <mxGeometry x="20" y="430" width="270" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-pm2" value="bm25_utils.py&lt;br&gt;&lt;i&gt;rank_bm25.BM25Okapi&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="p2-api">
+          <mxGeometry x="305" y="430" width="270" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-pm3" value="semantic_match.py&lt;br&gt;&lt;i&gt;embedding + cosine + budget encode&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="p2-api">
+          <mxGeometry x="590" y="430" width="270" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-pm4" value="vector_cache.py&lt;br&gt;&lt;i&gt;memori &#8594; Redis &#8594; file&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="p2-api">
+          <mxGeometry x="20" y="500" width="270" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-pm5" value="llm_recommender.py&lt;br&gt;&lt;i&gt;rerank, grounding, selera user&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;" vertex="1" parent="p2-api">
+          <mxGeometry x="305" y="500" width="270" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-pm6" value="llm_backend.py&lt;br&gt;&lt;i&gt;klien HF Router (OpenAI-compatible)&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;" vertex="1" parent="p2-api">
+          <mxGeometry x="590" y="500" width="270" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-h3" value="MODUL DOMAIN &amp; AKSES DATA" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=12;fontStyle=1" vertex="1" parent="p2-api">
+          <mxGeometry x="20" y="575" width="400" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-dm1" value="review_utils, vote_utils, pros_cons_utils&lt;br&gt;&lt;i&gt;ulasan, vote komunitas, pros/cons&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="p2-api">
+          <mxGeometry x="20" y="600" width="270" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-dm2" value="favorites_utils, want_to_visit_utils&lt;br&gt;&lt;i&gt;bookmark pengguna&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="p2-api">
+          <mxGeometry x="305" y="600" width="270" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-dm3" value="recommendation_feedback_utils&lt;br&gt;preference_suggestion_utils" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="p2-api">
+          <mxGeometry x="590" y="600" width="270" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-dm4" value="auth_utils + auth_guards&lt;br&gt;&lt;i&gt;token Bearer, sesi, RBAC admin&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="p2-api">
+          <mxGeometry x="20" y="670" width="270" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-dm5" value="facilities_store.py&lt;br&gt;&lt;i&gt;facilities.json (baca/tulis admin)&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="p2-api">
+          <mxGeometry x="305" y="670" width="270" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-dm6" value="slang_normalize.py&lt;br&gt;&lt;i&gt;data/indonesia_slang_map.json&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="p2-api">
+          <mxGeometry x="590" y="670" width="270" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-dm7" value="&lt;b&gt;db_backend.py&lt;/b&gt; &#8212; adapter Postgres: placeholder gaya SQLite (?) diterjemahkan ke %s, retry koneksi, dict_from_row&lt;br&gt;&lt;i&gt;COFIND_DB_BACKEND dapat memaksa sqlite untuk pengembangan lokal&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="p2-api">
+          <mxGeometry x="20" y="740" width="840" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-dm8" value="&lt;b&gt;NONAKTIF / LEGACY&lt;/b&gt;: llm_clause_sentiment.py (COFIND_LLM_CLAUSE_SENTIMENT=false) &#183; _score_shop_by_user_reviews (kode mati) &#183; COFIND_HYBRID_*_WEIGHT (tidak dibaca retrieve_top_k)" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#b3b3b3;dashed=1;fontColor=#666666;fontSize=11;" vertex="1" parent="p2-api">
+          <mxGeometry x="20" y="820" width="840" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p2-worker" value="WORKER &#8212; Celery (Procfile: worker, concurrency 1)" style="swimlane;whiteSpace=wrap;html=1;startSize=34;fillColor=none;strokeColor=#9673a6;fontSize=14;fontStyle=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="640" y="1090" width="880" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-w1" value="&lt;b&gt;celery_app.py + tasks.py&lt;/b&gt;&lt;br&gt;summarize_review_task&lt;br&gt;&lt;i&gt;analisis/ringkasan ulasan untuk panel admin&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="p2-worker">
+          <mxGeometry x="20" y="50" width="410" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-w2" value="&lt;b&gt;Catatan&lt;/b&gt;&lt;br&gt;&lt;i&gt;Rekomendasi berjalan sinkron di proses web, bukan di worker.&lt;br&gt;Broker &amp; result backend = REDIS_URL.&lt;br&gt;/health melaporkan status worker.&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;" vertex="1" parent="p2-worker">
+          <mxGeometry x="450" y="50" width="410" height="95" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p2-exttitle" value="LAYANAN EKSTERNAL &amp; ARTEFAK" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=14;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="1600" y="70" width="500" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-x1" value="&lt;b&gt;SUPABASE POSTGRES&lt;/b&gt;&lt;br&gt;DATABASE_URL / SUPABASE_DB_URL (sslmode=require)&lt;br&gt;&lt;i&gt;users, sessions, coffee_shops, reviews, opening_hours,&lt;br&gt;favorites, want_to_visit, shop_votes, shop_pros_cons,&lt;br&gt;recommendation_feedback, preference_suggestions&lt;/i&gt;" style="shape=cylinder3;boundedLbl=1;backgroundOutline=1;size=12;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="110" width="500" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-x2" value="&lt;b&gt;REDIS (UPSTASH)&lt;/b&gt;&lt;br&gt;REDIS_URL (rediss:// wajib TLS)&lt;br&gt;&lt;i&gt;broker + backend Celery, lapis-2 vector cache&lt;/i&gt;" style="shape=cylinder3;boundedLbl=1;backgroundOutline=1;size=12;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="280" width="500" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-x3" value="&lt;b&gt;HUGGING FACE ROUTER&lt;/b&gt;&lt;br&gt;HF_API_TOKEN / HF_TOKEN &#183; HF_MODEL&lt;br&gt;&lt;i&gt;meta-llama/Llama-3.1-8B-Instruct:novita&lt;br&gt;dipakai untuk rerank, ringkasan, perbaikan JSON&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="420" width="500" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-x4" value="&lt;b&gt;OPENSTREETMAP TILES&lt;/b&gt;&lt;br&gt;&lt;i&gt;dipanggil langsung oleh browser lewat react-leaflet&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="565" width="500" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-x5" value="&lt;b&gt;cache/ (disk kontainer, efemeral)&lt;/b&gt;&lt;br&gt;semantic_embeddings.json &#183; rerank_cache.json &#183; clause_sentiment.json&lt;br&gt;&lt;i&gt;hilang saat redeploy; Redis dipakai agar cache tetap hangat&lt;/i&gt;" style="shape=note;size=15;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="680" width="500" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-x6" value="&lt;b&gt;warm_semantic_cache.py&lt;/b&gt; (CLI, offline)&lt;br&gt;&lt;i&gt;pra-hitung embedding ulasan agar request pertama tidak lambat&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="820" width="500" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-x7" value="&lt;b&gt;GOOGLE PLACES API&lt;/b&gt; &#8212; sumber data historis (2025)&lt;br&gt;&lt;i&gt;GOOGLE_PLACES_API_KEY hanya tersisa di .env.example;&lt;br&gt;tidak ada pemanggilan runtime. Data toko di-seed ke Postgres&lt;br&gt;dan kini dikelola lewat panel admin.&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#b3b3b3;dashed=1;fontColor=#666666;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="940" width="500" height="115" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p2-e1" value="HTTPS &#183; JSON + text/event-stream&#10;Authorization: Bearer &amp;lt;token&amp;gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="p2-client" target="p2-api">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-e2" value="psycopg2 (pooler)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=1;exitY=0.25;entryX=0;entryY=0.5;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="p2-api" target="p2-x1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-e3" value="cache vektor" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=1;exitY=0.4;entryX=0;entryY=0.5;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="p2-api" target="p2-x2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-e4" value="chat completion" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=1;exitY=0.55;entryX=0;entryY=0.5;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="p2-api" target="p2-x3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-e5" value="tile peta" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;exitX=0.5;exitY=1;entryX=0;entryY=0.5;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="p2-client" target="p2-x4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-e6" value="baca/tulis" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#d6b656;endArrow=open;startArrow=open;exitX=1;exitY=0.8;entryX=0;entryY=0.5;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="p2-api" target="p2-x5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-e7" value="broker + result" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=1.5;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=1;exitY=0.5;entryX=0.5;entryY=1;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="p2-worker" target="p2-x2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-e8" value="enqueue task" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#9673a6;endArrow=open;exitX=0.25;exitY=1;entryX=0.25;entryY=0;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="p2-api" target="p2-worker">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-e9" value="isi cache/" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#999999;endArrow=open;exitX=0.5;exitY=0;entryX=0.5;entryY=1;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="p2-x6" target="p2-x5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-e10" value="seeding data (sekali jalan)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#b3b3b3;endArrow=open;fontColor=#666666;exitX=1;exitY=0.5;entryX=1;entryY=0.5;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="p2-x7" target="p2-x1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="cofind-perubahan" name="3. Peta Perubahan vs Diagram Lama">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1560" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="p3-title" value="PETA PERUBAHAN &#8212; DIAGRAM LAMA VS SISTEM SEKARANG" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=26;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="10" width="1400" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-sub" value="Tiap baris memetakan kotak pada diagram lama ke kondisi kode saat ini, ditambah tahap baru yang belum tergambar sebelumnya." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=13;fontColor=#555555" vertex="1" parent="1">
+          <mxGeometry x="40" y="48" width="1600" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p3-hd1" value="TAHAP DI DIAGRAM LAMA" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#333333;strokeColor=#333333;fontColor=#ffffff;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="90" width="340" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-hd2" value="STATUS" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#333333;strokeColor=#333333;fontColor=#ffffff;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="380" y="90" width="160" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-hd3" value="KONDISI SEKARANG (fungsi / berkas / konstanta)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#333333;strokeColor=#333333;fontColor=#ffffff;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="540" y="90" width="1320" height="44" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p3-r1a" value="PILL SELECT" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="134" width="340" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r1b" value="TETAP" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="380" y="134" width="160" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r1c" value="Kini dua lapis: 1 pill aktivitas (CONTEXT_PILL_OPTIONS) + maksimum 3 pill atribut fasilitas (FACILITY_ATTRIBUTE_GROUPS). Batas ditegakkan di backend: _MAX_ACTIVITY_PILLS = 1, _MAX_ATTRIBUTE_PILLS = 3." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="540" y="134" width="1320" height="74" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p3-r2a" value="PARSE JSON" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="208" width="340" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r2b" value="BERGESER" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="380" y="208" width="160" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r2c" value="Input bukan JSON bebas: _read_recommendation_preferences() hanya menormalkan body {preferences, attributes}. Parsing JSON sekarang dipakai untuk OUTPUT LLM &#8212; _parse_llm_json_with_repair() dengan pustaka json_repair, lalu maksimum 2 iterasi perbaikan lewat LLM." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="540" y="208" width="1320" height="74" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p3-r3a" value="PILL VALIDATION" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="282" width="340" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r3b" value="TETAP" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="380" y="282" width="160" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r3c" value="Pill wajib terdaftar di PILL_MAPPING, lalu dipisah oleh _split_preference_pills() menjadi aktivitas vs atribut. Pill tak dikenal &#8594; HTTP 400. Tambahan gerbang baru: autentikasi Bearer wajib dan COFIND_DEV_LLM_STRICT (503 bila LLM wajib tetapi mati)." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="540" y="282" width="1320" height="74" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p3-r4a" value="BUILD PROFILE REVIEW" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="356" width="340" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r4b" value="TETAP (jadi batch)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="380" y="356" width="160" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r4c" value="_build_profiles_for_recommendation(): 1 query coffee_shops + 1 query reviews lean (tanpa foto/like), lalu diperkaya get_vote_summaries_batch() dan get_top_voted_pros_batch() sebagai community_signals untuk prompt rerank." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="540" y="356" width="1320" height="74" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p3-r5a" value="SCORING SHOP" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="430" width="340" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r5b" value="DIGANTI" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="380" y="430" width="160" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r5c" value="Digantikan hybrid_retrieval.retrieve_top_k(): BM25 sparse + embedding dense + sinyal kualitas. Fungsi lama _score_shop_by_user_reviews() masih ada di app.py tetapi tidak lagi dipanggil (kode mati) &#8212; termasuk gerbang makna semantic_match.match_reviews." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="540" y="430" width="1320" height="74" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p3-r6a" value="FILTER + SORT (TOP 10)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="504" width="340" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r6b" value="DIGANTI" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="380" y="504" width="160" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r6c" value="Gerbang aktivitas wajib (shop_has_activity_signal) &#8594; MinMax hanya di antara toko yang lolos &#8594; top 7 (COFIND_RETRIEVAL_TOP_K), bukan top 10. Bobot: aktivitas 0.65 (0.40 bm25 + 0.35 dense + 0.25 leksikal), atribut 0.25, kualitas 0.10. Keluaran akhir 0&#8211;3 (MAX_REC = 3)." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="540" y="504" width="1320" height="74" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p3-r7a" value="KEYWORDS MAPPING" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="578" width="340" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r7b" value="TETAP" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="380" y="578" width="160" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r7c" value="build_sparse_query_tokens(): pill id + label + PILL_MAPPING[...]['review_keywords'] menjadi token BM25 (dipisah token aktivitas dan atribut); build_dense_query_text() menyusun query embedding. Posisinya kini di awal Fase 2, bukan tahap terpisah di akhir." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="540" y="578" width="1320" height="74" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p3-r8a" value="EXPAND PREFERENCE KEYWORDS&lt;br&gt;(LLM PREFERENCE KEYWORDS)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="652" width="340" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r8b" value="DIHAPUS" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="380" y="652" width="160" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r8c" value="Tidak ada lagi tahap LLM untuk melebarkan kata kunci preferensi. Kedekatan makna (wifi ~ internet ~ koneksi) ditangani embedding multilingual pada Fase 2. Helper lama _expand_pill_to_keywords() hanya tersisa untuk pencocokan kutipan/evidence, bukan tahap pipeline." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="540" y="652" width="1320" height="74" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p3-r9a" value="RE-RANK TOP 10" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="726" width="340" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r9b" value="BERUBAH" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="380" y="726" width="160" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r9c" value="llm_rerank_candidates() menilai pool 7 kandidat (COFIND_LLM_RERANK_CANDIDATES, 6 kutipan per kandidat) dan memilih 0&#8211;3. Tambahan: konteks selera user, grounding check, blend final = 0.6&#183;(fit/10) + 0.4&#183;skor hybrid, ambang fit &#8805; 5.0, serta cache hasil rerank." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="540" y="726" width="1320" height="74" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p3-r10a" value="BUILD EVIDENCE &amp; SUMMARIZE&lt;br&gt;(TOP 3)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="800" width="340" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r10b" value="DIPECAH" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="380" y="800" width="160" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r10c" value="Menjadi tiga langkah: _build_retrieval_evidence() (rank_reviews_for_query: scan 60 ulasan, simpan 8) &#8594; _apply_llm_extracted_quotes() (maks 3 kutipan tampilan + 1 caveat) &#8594; _llm_summaries_for_shops() (ThreadPoolExecutor, 1 panggilan LLM per toko, tanpa cache) dengan fallback deterministik." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="540" y="800" width="1320" height="74" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p3-r11a" value="GOOGLE PLACES API &#8594; DATABASE" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="874" width="340" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r11b" value="TIDAK AKTIF" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="380" y="874" width="160" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r11c" value="Tidak ada pemanggilan Places API di kode runtime; GOOGLE_PLACES_API_KEY hanya tersisa di .env.example. Data toko sudah berada di Supabase Postgres (seeding 2025, kini dikelola panel admin); rating Google hanya bagian sinyal kualitas (~10%). Peta memakai OpenStreetMap via Leaflet." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="540" y="874" width="1320" height="74" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p3-r12a" value="GERBANG AUTENTIKASI" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="948" width="340" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r12b" value="BARU" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="380" y="948" width="160" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r12c" value="Seluruh endpoint rekomendasi mewajibkan login: auth_guards.require_authenticated_user() memverifikasi token Bearer terhadap sesi di Postgres. Diagram lama tidak punya lapis ini." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="540" y="948" width="1320" height="74" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p3-r13a" value="FEEDBACK LOOP" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="1022" width="340" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r13b" value="BARU" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="380" y="1022" width="160" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r13c" value="recommendation_feedback_utils: thumbs up/down per (user, place_id, set pill). get_not_helpful_place_ids() mengeluarkan toko yang ditandai tidak relevan dari kandidat pada permintaan berikutnya dengan preferensi yang sama." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="540" y="1022" width="1320" height="74" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p3-r14a" value="PERSONALISASI" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="1096" width="340" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r14b" value="BARU" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="380" y="1096" width="160" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r14c" value="build_user_taste_profile() + format_user_taste_prompt_block(): ulasan pengguna sendiri, favorit, dan vote ikut masuk prompt rerank (COFIND_LLM_PERSONALIZATION). Karena itu user_id menjadi bagian kunci cache rerank." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="540" y="1096" width="1320" height="74" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p3-r15a" value="PROGRESS STREAMING (SSE)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="1170" width="340" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r15b" value="BARU" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="380" y="1170" width="160" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r15c" value="POST /api/recommend-by-preferences/stream mengirim event progress per tahap (start 6%, profiles 22%, scoring 48%, rerank 72%, summary 88%, done 100%) lalu satu event result. Klien memakai fetch + ReadableStream karena butuh header Authorization." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="540" y="1170" width="1320" height="74" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p3-r16a" value="CACHE BERLAPIS" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="1244" width="340" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r16b" value="BARU" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="380" y="1244" width="160" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r16c" value="Embedding: memori &#8594; Redis &#8594; cache/semantic_embeddings.json (TTL 30 hari, maks 200.000 entri, flush 1x per request). Rerank: cache/rerank_cache.json (TTL 7 hari; kunci = pill + keyword + user_id + sidik kandidat). Ringkasan sengaja tanpa cache." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="540" y="1244" width="1320" height="74" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p3-r17a" value="GROUNDING + TELEMETRI" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="1318" width="340" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r17b" value="BARU" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="380" y="1318" width="160" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r17c" value="text_is_grounded() / ungrounded_quotes() membuang kutipan yang tidak ditemukan di korpus ulasan (COFIND_LLM_GROUNDING_CHECK). Respons memuat blok llm_pipeline (config, retrieval, rerank, semantic) dan LOG_METRIC mencatat durasi tiap tahap." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="540" y="1318" width="1320" height="74" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p3-r18a" value="MODUL DORMAN (catatan)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#b3b3b3;dashed=1;fontColor=#666666;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="1392" width="340" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r18b" value="NONAKTIF" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#b3b3b3;dashed=1;fontColor=#666666;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="380" y="1392" width="160" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-r18c" value="llm_clause_sentiment.py (COFIND_LLM_CLAUSE_SENTIMENT = false, tidak dipanggil dari pipeline) &#183; semantic_match.match_reviews (gerbang makna legacy) &#183; COFIND_HYBRID_BM25/DENSE/QUALITY_WEIGHT tidak dibaca retrieve_top_k karena bobot aktivitas/atribut/kualitas sudah pasti 0.65 / 0.25 / 0.10 &#183; worker Celery hanya untuk analisis ulasan panel admin." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b3b3b3;dashed=1;fontColor=#666666;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="540" y="1392" width="1320" height="74" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
