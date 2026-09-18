@@ -21,6 +21,7 @@ export const FACILITY_ATTRIBUTE_GROUPS = [
       { label: 'Suasana tenang', value: 'suasana_tenang', icon: '🔇' },
       { label: 'Area non-smoking', value: 'area_non_smoking', icon: '🚭' },
       { label: 'Smoking area', value: 'smoking_area', icon: '🚬' },
+      { label: 'Outdoor area', value: 'area_outdoor', icon: '🌿' },
     ],
   },
   {
