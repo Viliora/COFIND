@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="740" viewBox="0 0 1240 740">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1f1f1f"/></marker></defs>
+<rect width="1240" height="740" fill="#ffffff"/>
+<rect x="455" y="250" width="290" height="140" rx="10" fill="#ffffff" stroke="#6b6b6b" stroke-width="1.2" stroke-dasharray="5 4"/>
+<text x="600.0" y="268.0" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="bold" fill="#6b6b6b" text-anchor="middle"><tspan x="600.0" dy="0">Sumber Data</tspan></text>
+<path d="M 489.0 295.0 v 26 a 23.0 7 0 0 0 46 0 v -26 z" fill="#ffffff" stroke="#1f1f1f" stroke-width="1.8"/><ellipse cx="512" cy="295.0" rx="23.0" ry="7" fill="#ffffff" stroke="#1f1f1f" stroke-width="1.8"/><ellipse cx="512" cy="308.0" rx="23.0" ry="7" fill="#ffffff" stroke="#1f1f1f" stroke-width="1.8"/><ellipse cx="512" cy="321.0" rx="23.0" ry="7" fill="#ffffff" stroke="#1f1f1f" stroke-width="1.8"/>
+<text x="512.0" y="344.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" font-weight="normal" fill="#6b6b6b" text-anchor="middle"><tspan x="512.0" dy="0">Review Pengguna</tspan><tspan x="512.0" dy="14">(Supabase)</tspan></text>
+<path d="M 580.0 285.0 h 28 l 12 12 v 34 h -40 z" fill="#ffffff" stroke="#1f1f1f" stroke-width="1.8"/><path d="M 608.0 285.0 v 12 h 12" fill="none" stroke="#1f1f1f" stroke-width="1.8"/><text x="600" y="318.0" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="bold" fill="#1f1f1f" text-anchor="middle">JSON</text>
+<text x="600.0" y="344.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" font-weight="normal" fill="#6b6b6b" text-anchor="middle"><tspan x="600.0" dy="0">facilities.json</tspan></text>
+<rect x="669.0" y="286.0" width="42" height="44" rx="4" fill="#ffffff" stroke="#1f1f1f" stroke-width="1.8"/><line x1="678.0" y1="298.0" x2="702.0" y2="298.0" stroke="#1f1f1f" stroke-width="1.8"/><line x1="678.0" y1="308.0" x2="702.0" y2="308.0" stroke="#1f1f1f" stroke-width="1.8"/><line x1="678.0" y1="318.0" x2="702.0" y2="318.0" stroke="#1f1f1f" stroke-width="1.8"/>
+<text x="690.0" y="344.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" font-weight="normal" fill="#6b6b6b" text-anchor="middle"><tspan x="690.0" dy="0">shop_votes</tspan><tspan x="690.0" dy="14">&amp; pros-cons</tspan></text>
+<rect x="210" y="90" width="215" height="92" rx="6" fill="#ffffff" stroke="#1f1f1f" stroke-width="1.8"/>
+<text x="317.5" y="125.0" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="bold" fill="#1f1f1f" text-anchor="middle"><tspan x="317.5" dy="0">Query Building</tspan></text>
+<text x="317.5" y="140.5" font-family="Helvetica, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#1f1f1f" text-anchor="middle"><tspan x="317.5" dy="0">PILL_MAPPING → token BM25</tspan><tspan x="317.5" dy="14">+ kalimat intent dense</tspan></text>
+<rect x="354.6" y="97" width="62.4" height="15" rx="7.5" fill="#ffffff" stroke="#6b6b6b" stroke-width="1"/>
+<text x="385.8" y="107.5" font-family="Helvetica, Arial, sans-serif" font-size="9" font-weight="bold" fill="#6b6b6b" text-anchor="middle"><tspan x="385.8" dy="0">TANPA LLM</tspan></text>
+<rect x="485" y="90" width="230" height="92" rx="6" fill="#ffffff" stroke="#1f1f1f" stroke-width="1.8"/>
+<text x="600.0" y="125.0" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="bold" fill="#1f1f1f" text-anchor="middle"><tspan x="600.0" dy="0">Fase 1 — Hard Filter</tspan></text>
+<text x="600.0" y="140.5" font-family="Helvetica, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#1f1f1f" text-anchor="middle"><tspan x="600.0" dy="0">Validasi pill, eksklusi feedback</tspan><tspan x="600.0" dy="14">negatif, susun profil kandidat</tspan></text>
+<rect x="775" y="90" width="255" height="92" rx="6" fill="#ffffff" stroke="#1f1f1f" stroke-width="1.8"/>
+<text x="902.5" y="125.0" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="bold" fill="#1f1f1f" text-anchor="middle"><tspan x="902.5" dy="0">Fase 2 — Hybrid Retrieval</tspan></text>
+<text x="902.5" y="140.5" font-family="Helvetica, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#1f1f1f" text-anchor="middle"><tspan x="902.5" dy="0">BM25 + Dense (MiniLM), gerbang</tspan><tspan x="902.5" dy="14">aktivitas, fusi berbobot → TOP 7</tspan></text>
+<rect x="775" y="460" width="255" height="92" rx="6" fill="#ffffff" stroke="#1f1f1f" stroke-width="1.8"/>
+<text x="902.5" y="495.0" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="bold" fill="#1f1f1f" text-anchor="middle"><tspan x="902.5" dy="0">Fase 3 — Re-rank</tspan></text>
+<text x="902.5" y="510.5" font-family="Helvetica, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#1f1f1f" text-anchor="middle"><tspan x="902.5" dy="0">Llama 3.1 8B + grounding check</tspan><tspan x="902.5" dy="14">skor = 0,6 × LLM + 0,4 × hybrid</tspan></text>
+<rect x="993.2" y="467" width="28.8" height="15" rx="7.5" fill="#1f1f1f" stroke="#6b6b6b" stroke-width="1"/>
+<text x="1007.6" y="477.5" font-family="Helvetica, Arial, sans-serif" font-size="9" font-weight="bold" fill="#ffffff" text-anchor="middle"><tspan x="1007.6" dy="0">LLM</tspan></text>
+<rect x="485" y="460" width="230" height="92" rx="6" fill="#ffffff" stroke="#1f1f1f" stroke-width="1.8"/>
+<rect x="495" y="508.0" width="22" height="14" fill="#ffffff" stroke="#1f1f1f" stroke-width="1.6"/><text x="506.0" y="518.0" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#1f1f1f" text-anchor="middle">2</text><rect x="516" y="492.0" width="18" height="30" fill="#ffffff" stroke="#1f1f1f" stroke-width="1.6"/><text x="525.0" y="518.0" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#1f1f1f" text-anchor="middle">1</text><rect x="537" y="512.0" width="18" height="10" fill="#ffffff" stroke="#1f1f1f" stroke-width="1.6"/><text x="546.0" y="518.0" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#1f1f1f" text-anchor="middle">3</text>
+<text x="636.0" y="488.0" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="bold" fill="#1f1f1f" text-anchor="middle"><tspan x="636.0" dy="0">Seleksi TOP 3 + Evidence</tspan></text>
+<text x="636.0" y="503.5" font-family="Helvetica, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#1f1f1f" text-anchor="middle"><tspan x="636.0" dy="0">fit_score ≥ 5,0, kutipan</tspan><tspan x="636.0" dy="14">pendukung &amp; caveat</tspan><tspan x="636.0" dy="14">terpilih</tspan></text>
+<rect x="210" y="460" width="215" height="92" rx="6" fill="#ffffff" stroke="#1f1f1f" stroke-width="1.8"/>
+<text x="317.5" y="495.0" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="bold" fill="#1f1f1f" text-anchor="middle"><tspan x="317.5" dy="0">Ringkasan Naratif</tspan></text>
+<text x="317.5" y="510.5" font-family="Helvetica, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#1f1f1f" text-anchor="middle"><tspan x="317.5" dy="0">1 panggilan LLM per toko,</tspan><tspan x="317.5" dy="14">wajib mengutip review</tspan></text>
+<rect x="388.2" y="467" width="28.8" height="15" rx="7.5" fill="#1f1f1f" stroke="#6b6b6b" stroke-width="1"/>
+<text x="402.6" y="477.5" font-family="Helvetica, Arial, sans-serif" font-size="9" font-weight="bold" fill="#ffffff" text-anchor="middle"><tspan x="402.6" dy="0">LLM</tspan></text>
+<rect x="775" y="262" width="175" height="62" rx="6" fill="#ffffff" stroke="#6b6b6b" stroke-width="1.2" stroke-dasharray="5 4"/>
+<text x="862.5" y="289.0" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="bold" fill="#6b6b6b" text-anchor="middle"><tspan x="862.5" dy="0">Vector Cache</tspan></text>
+<text x="862.5" y="304.5" font-family="Helvetica, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#6b6b6b" text-anchor="middle"><tspan x="862.5" dy="0">memori → Redis → file</tspan></text>
+<rect x="775" y="610" width="255" height="62" rx="6" fill="#ffffff" stroke="#6b6b6b" stroke-width="1.2" stroke-dasharray="5 4"/>
+<text x="902.5" y="637.0" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="bold" fill="#6b6b6b" text-anchor="middle"><tspan x="902.5" dy="0">Profil Selera Pengguna</tspan></text>
+<text x="902.5" y="652.5" font-family="Helvetica, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#6b6b6b" text-anchor="middle"><tspan x="902.5" dy="0">review sendiri, favorit, vote</tspan></text>
+<circle cx="96" cy="116" r="14" fill="#ffffff" stroke="#1f1f1f" stroke-width="2"/><path d="M 72 160 a 24 26 0 0 1 48 0 z" fill="#ffffff" stroke="#1f1f1f" stroke-width="2"/>
+<text x="96.0" y="180.0" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="bold" fill="#1f1f1f" text-anchor="middle"><tspan x="96.0" dy="0">Pengguna</tspan></text>
+<line x1="146" y1="136" x2="205" y2="136" stroke="#1f1f1f" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="176.0" y="110.0" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="normal" fill="#6b6b6b" text-anchor="middle"><tspan x="176.0" dy="0">Pill</tspan><tspan x="176.0" dy="14">Selected</tspan></text>
+<line x1="425" y1="136" x2="480" y2="136" stroke="#1f1f1f" stroke-width="1.6" marker-end="url(#arrow)"/>
+<line x1="715" y1="136" x2="770" y2="136" stroke="#1f1f1f" stroke-width="1.6" marker-end="url(#arrow)"/>
+<line x1="600" y1="250" x2="600" y2="187" stroke="#1f1f1f" stroke-width="1.6" marker-end="url(#arrow)"/>
+<line x1="862" y1="262" x2="862" y2="187" stroke="#1f1f1f" stroke-width="1.6" marker-end="url(#arrow)"/>
+<line x1="990" y1="182" x2="990" y2="455" stroke="#1f1f1f" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="1055.0" y="300.0" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="normal" fill="#6b6b6b" text-anchor="start"><tspan x="1055.0" dy="0">TOP 7 kandidat</tspan><tspan x="1055.0" dy="14">+ kutipan bernomor</tspan></text>
+<line x1="902" y1="610" x2="902" y2="557" stroke="#1f1f1f" stroke-width="1.6" marker-end="url(#arrow)"/>
+<line x1="770" y1="506" x2="720" y2="506" stroke="#1f1f1f" stroke-width="1.6" marker-end="url(#arrow)"/>
+<line x1="480" y1="506" x2="430" y2="506" stroke="#1f1f1f" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M 205 506 L 96 506 L 96 187" fill="none" stroke="#1f1f1f" stroke-width="1.6" marker-end="url(#arrow)"/><text x="150.0" y="490.0" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="normal" fill="#6b6b6b" text-anchor="middle"><tspan x="150.0" dy="0">Output (Modal)</tspan></text>
+<path d="M 96 90 L 96 34 L 600 34 L 600 85" fill="none" stroke="#1f1f1f" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#arrow)"/><text x="348.0" y="26.0" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="normal" fill="#6b6b6b" text-anchor="middle"><tspan x="348.0" dy="0">Feedback helpful / not helpful → eksklusi kandidat</tspan></text>
+</svg>

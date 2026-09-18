@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="1708" viewBox="0 0 980 1708">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1f1f1f"/></marker></defs>
+<rect width="980" height="1708" fill="#ffffff"/>
+<ellipse cx="490.0" cy="68.0" rx="90.0" ry="28.0" fill="#ffffff" stroke="#1f1f1f" stroke-width="1.4"/>
+<text x="490.0" y="72.5" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="bold" fill="#1f1f1f" text-anchor="middle"><tspan x="490.0" dy="0">Start</tspan></text>
+<rect x="100" y="140" width="780" height="118" rx="10" ry="10" fill="#ffffff" stroke="#1f1f1f" stroke-width="1.4"/>
+<text x="490.0" y="161.0" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="bold" fill="#1f1f1f" text-anchor="middle"><tspan x="490.0" dy="0">Analisis Masalah</tspan></text>
+<rect x="118.0" y="192.0" width="744.0" height="48.0" rx="4" ry="4" fill="#ffffff" stroke="#1f1f1f" stroke-width="1"/>
+<text x="490.0" y="218.0" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#1f1f1f" text-anchor="middle"><tspan x="490.0" dy="0">Menentukan Latar Belakang dan Rumusan Masalah</tspan></text>
+<rect x="100" y="302" width="780" height="178" rx="10" ry="10" fill="#ffffff" stroke="#1f1f1f" stroke-width="1.4"/>
+<text x="490.0" y="323.0" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="bold" fill="#1f1f1f" text-anchor="middle"><tspan x="490.0" dy="0">Studi Literatur</tspan></text>
+<rect x="118.0" y="354.0" width="366.0" height="48.0" rx="4" ry="4" fill="#ffffff" stroke="#1f1f1f" stroke-width="1"/>
+<text x="301.0" y="380.0" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#1f1f1f" text-anchor="middle"><tspan x="301.0" dy="0">Retrieval-Augmented Generation (RAG)</tspan></text>
+<rect x="496.0" y="354.0" width="366.0" height="48.0" rx="4" ry="4" fill="#ffffff" stroke="#1f1f1f" stroke-width="1"/>
+<text x="679.0" y="380.0" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#1f1f1f" text-anchor="middle"><tspan x="679.0" dy="0">Hybrid Retrieval: BM25 + Dense Embedding</tspan></text>
+<rect x="118.0" y="414.0" width="366.0" height="48.0" rx="4" ry="4" fill="#ffffff" stroke="#1f1f1f" stroke-width="1"/>
+<text x="301.0" y="440.0" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#1f1f1f" text-anchor="middle"><tspan x="301.0" dy="0">LLM Reranking &amp; Grounding Kutipan</tspan></text>
+<rect x="496.0" y="414.0" width="366.0" height="48.0" rx="4" ry="4" fill="#ffffff" stroke="#1f1f1f" stroke-width="1"/>
+<text x="679.0" y="440.0" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#1f1f1f" text-anchor="middle"><tspan x="679.0" dy="0">Evaluasi Ringkasan: ROUGE &amp; BERTScore</tspan></text>
+<rect x="100" y="524" width="780" height="182" rx="10" ry="10" fill="#ffffff" stroke="#1f1f1f" stroke-width="1.4"/>
+<text x="490.0" y="545.0" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="bold" fill="#1f1f1f" text-anchor="middle"><tspan x="490.0" dy="0">Pengumpulan Data</tspan></text>
+<rect x="118.0" y="576.0" width="366.0" height="50.0" rx="4" ry="4" fill="#ffffff" stroke="#1f1f1f" stroke-width="1"/>
+<text x="301.0" y="596.0" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#1f1f1f" text-anchor="middle"><tspan x="301.0" dy="0">Review Pengguna Cofind</tspan><tspan x="301.0" dy="14">(Supabase PostgreSQL)</tspan></text>
+<rect x="496.0" y="576.0" width="366.0" height="50.0" rx="4" ry="4" fill="#ffffff" stroke="#1f1f1f" stroke-width="1"/>
+<text x="679.0" y="596.0" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#1f1f1f" text-anchor="middle"><tspan x="679.0" dy="0">Metadata &amp; Rating Coffee Shop</tspan><tspan x="679.0" dy="14">(salinan Google Maps, input admin)</tspan></text>
+<rect x="118.0" y="638.0" width="366.0" height="50.0" rx="4" ry="4" fill="#ffffff" stroke="#1f1f1f" stroke-width="1"/>
+<text x="301.0" y="658.0" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#1f1f1f" text-anchor="middle"><tspan x="301.0" dy="0">Data Fasilitas per Toko</tspan><tspan x="301.0" dy="14">(facilities.json)</tspan></text>
+<rect x="496.0" y="638.0" width="366.0" height="50.0" rx="4" ry="4" fill="#ffffff" stroke="#1f1f1f" stroke-width="1"/>
+<text x="679.0" y="658.0" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#1f1f1f" text-anchor="middle"><tspan x="679.0" dy="0">Vote Komunitas &amp; Pros-Cons</tspan><tspan x="679.0" dy="14">(shop_votes, shop_pros_cons)</tspan></text>
+<rect x="100" y="750" width="780" height="182" rx="10" ry="10" fill="#ffffff" stroke="#1f1f1f" stroke-width="1.4"/>
+<text x="490.0" y="771.0" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="bold" fill="#1f1f1f" text-anchor="middle"><tspan x="490.0" dy="0">Pemrosesan Data</tspan></text>
+<rect x="118.0" y="802.0" width="366.0" height="50.0" rx="4" ry="4" fill="#ffffff" stroke="#1f1f1f" stroke-width="1"/>
+<text x="301.0" y="822.0" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#1f1f1f" text-anchor="middle"><tspan x="301.0" dy="0">Build Profile Review</tspan><tspan x="301.0" dy="14">(review + vote + fasilitas per toko)</tspan></text>
+<rect x="496.0" y="802.0" width="366.0" height="50.0" rx="4" ry="4" fill="#ffffff" stroke="#1f1f1f" stroke-width="1"/>
+<text x="679.0" y="822.0" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#1f1f1f" text-anchor="middle"><tspan x="679.0" dy="0">Keywords Mapping</tspan><tspan x="679.0" dy="14">(PILL_MAPPING: aktivitas + atribut)</tspan></text>
+<rect x="118.0" y="864.0" width="366.0" height="50.0" rx="4" ry="4" fill="#ffffff" stroke="#1f1f1f" stroke-width="1"/>
+<text x="301.0" y="884.0" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#1f1f1f" text-anchor="middle"><tspan x="301.0" dy="0">Filtering</tspan><tspan x="301.0" dy="14">(min. 1 review, eksklusi feedback not_helpful)</tspan></text>
+<rect x="496.0" y="864.0" width="366.0" height="50.0" rx="4" ry="4" fill="#ffffff" stroke="#1f1f1f" stroke-width="1"/>
+<text x="679.0" y="884.0" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#1f1f1f" text-anchor="middle"><tspan x="679.0" dy="0">Indeks BM25 + Embedding Kalimat</tspan><tspan x="679.0" dy="14">(MiniLM multilingual) &amp; Vector Cache</tspan></text>
+<rect x="100" y="976" width="780" height="366" rx="10" ry="10" fill="#ffffff" stroke="#1f1f1f" stroke-width="1.4"/>
+<text x="490.0" y="997.0" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="bold" fill="#1f1f1f" text-anchor="middle"><tspan x="490.0" dy="0">Integrasi &amp; Implementasi — Pipeline RAG 3 Fase</tspan></text>
+<rect x="118.0" y="1028.0" width="744.0" height="48.0" rx="4" ry="4" fill="#ffffff" stroke="#1f1f1f" stroke-width="1"/>
+<text x="490.0" y="1054.0" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#1f1f1f" text-anchor="middle"><tspan x="490.0" dy="0">Fase 1 — Hard Filter: validasi pill, eksklusi feedback negatif, susun profil kandidat</tspan></text>
+<rect x="118.0" y="1088.0" width="744.0" height="50.0" rx="4" ry="4" fill="#ffffff" stroke="#1f1f1f" stroke-width="1"/>
+<text x="490.0" y="1108.0" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#1f1f1f" text-anchor="middle"><tspan x="490.0" dy="0">Fase 2 — Hybrid Retrieval: skor BM25 (sparse) + Dense Embedding (cosine), gerbang aktivitas wajib, normalisasi min-max &amp;</tspan><tspan x="490.0" dy="14">fusi berbobot dengan skor kualitas toko → Top-K = 7 kandidat</tspan></text>
+<rect x="118.0" y="1150.0" width="744.0" height="50.0" rx="4" ry="4" fill="#ffffff" stroke="#1f1f1f" stroke-width="1"/>
+<text x="490.0" y="1170.0" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#1f1f1f" text-anchor="middle"><tspan x="490.0" dy="0">Fase 3 — Penggunaan LLM (Llama 3.1 8B Instruct via HF Router): rerank fit_score 0–10, grounding check kutipan, skor akhir =</tspan><tspan x="490.0" dy="14">0,6 × LLM + 0,4 × Hybrid</tspan></text>
+<rect x="118.0" y="1212.0" width="366.0" height="50.0" rx="4" ry="4" fill="#ffffff" stroke="#1f1f1f" stroke-width="1"/>
+<text x="301.0" y="1232.0" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#1f1f1f" text-anchor="middle"><tspan x="301.0" dy="0">Seleksi Top-3 Rekomendasi</tspan><tspan x="301.0" dy="14">(fit_score ≥ 5,0 + bukti aktivitas)</tspan></text>
+<rect x="496.0" y="1212.0" width="366.0" height="50.0" rx="4" ry="4" fill="#ffffff" stroke="#1f1f1f" stroke-width="1"/>
+<text x="679.0" y="1232.0" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#1f1f1f" text-anchor="middle"><tspan x="679.0" dy="0">Build Evidence</tspan><tspan x="679.0" dy="14">(kutipan pendukung &amp; caveat dari review)</tspan></text>
+<rect x="118.0" y="1274.0" width="366.0" height="50.0" rx="4" ry="4" fill="#ffffff" stroke="#1f1f1f" stroke-width="1"/>
+<text x="301.0" y="1294.0" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#1f1f1f" text-anchor="middle"><tspan x="301.0" dy="0">Ringkasan Naratif per Toko</tspan><tspan x="301.0" dy="14">(LLM, fallback deterministik)</tspan></text>
+<rect x="496.0" y="1274.0" width="366.0" height="50.0" rx="4" ry="4" fill="#ffffff" stroke="#1f1f1f" stroke-width="1"/>
+<text x="679.0" y="1294.0" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#1f1f1f" text-anchor="middle"><tspan x="679.0" dy="0">Pembuatan User Interface Output Recommendation</tspan><tspan x="679.0" dy="14">(React + progres SSE)</tspan></text>
+<rect x="100" y="1386" width="780" height="182" rx="10" ry="10" fill="#ffffff" stroke="#1f1f1f" stroke-width="1.4"/>
+<text x="490.0" y="1407.0" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="bold" fill="#1f1f1f" text-anchor="middle"><tspan x="490.0" dy="0">Pengujian</tspan></text>
+<rect x="118.0" y="1438.0" width="366.0" height="50.0" rx="4" ry="4" fill="#ffffff" stroke="#1f1f1f" stroke-width="1"/>
+<text x="301.0" y="1458.0" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#1f1f1f" text-anchor="middle"><tspan x="301.0" dy="0">ROUGE-Score &amp; BERT-Score</tspan><tspan x="301.0" dy="14">(kualitas ringkasan naratif)</tspan></text>
+<rect x="496.0" y="1438.0" width="366.0" height="50.0" rx="4" ry="4" fill="#ffffff" stroke="#1f1f1f" stroke-width="1"/>
+<text x="679.0" y="1458.0" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#1f1f1f" text-anchor="middle"><tspan x="679.0" dy="0">Grounding Rate</tspan><tspan x="679.0" dy="14">(kutipan terverifikasi ada di korpus review)</tspan></text>
+<rect x="118.0" y="1500.0" width="366.0" height="50.0" rx="4" ry="4" fill="#ffffff" stroke="#1f1f1f" stroke-width="1"/>
+<text x="301.0" y="1520.0" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#1f1f1f" text-anchor="middle"><tspan x="301.0" dy="0">Feedback Pengguna</tspan><tspan x="301.0" dy="14">(helpful / not helpful)</tspan></text>
+<rect x="496.0" y="1500.0" width="366.0" height="50.0" rx="4" ry="4" fill="#ffffff" stroke="#1f1f1f" stroke-width="1"/>
+<text x="679.0" y="1527.0" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#1f1f1f" text-anchor="middle"><tspan x="679.0" dy="0">Pengujian Fungsional &amp; Latensi Pipeline</tspan></text>
+<ellipse cx="490.0" cy="1640.0" rx="90.0" ry="28.0" fill="#ffffff" stroke="#1f1f1f" stroke-width="1.4"/>
+<text x="490.0" y="1644.5" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="bold" fill="#1f1f1f" text-anchor="middle"><tspan x="490.0" dy="0">Kesimpulan</tspan></text>
+<line x1="490" y1="96" x2="490" y2="138" stroke="#1f1f1f" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="490" y1="258" x2="490" y2="300" stroke="#1f1f1f" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="490" y1="480" x2="490" y2="522" stroke="#1f1f1f" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="490" y1="706" x2="490" y2="748" stroke="#1f1f1f" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="490" y1="932" x2="490" y2="974" stroke="#1f1f1f" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="490" y1="1342" x2="490" y2="1384" stroke="#1f1f1f" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="490" y1="1568" x2="490" y2="1610" stroke="#1f1f1f" stroke-width="1.4" marker-end="url(#arrow)"/>
+</svg>
