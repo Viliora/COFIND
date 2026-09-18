@@ -797,6 +797,18 @@ export default function ShopList() {
                 );
               })}
             </div>
+            {user && selectedPills.length > 0 && (() => {
+              const selectedActivity = CONTEXT_PILL_OPTIONS.find(
+                (option) => selectedPills.includes(option.value),
+              );
+              if (!selectedActivity?.desc) return null;
+              return (
+                <p className="mt-2 text-xs sm:text-sm text-gray-600 dark:text-gray-300">
+                  💡 <span className="font-semibold">{selectedActivity.label}:</span>{' '}
+                  {selectedActivity.desc}
+                </p>
+              );
+            })()}
             {isPillPreferenceAvailable && selectedPills.length > 0 && (
               <FacilityAttributePicker
                 selected={selectedAttributes}

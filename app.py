@@ -45,13 +45,17 @@ from hybrid_retrieval import (
     rank_reviews_for_query,
     text_matches_tokens,
     text_has_activity_signal,
+    extract_activity_support_text,
+    text_rejects_requested_activity,
     compile_activity_matcher,
     compute_pill_coverage,
     min_fit_score,
     shop_has_activity_signal,
+    review_text,
 )
 from llm_recommender import (
     build_user_taste_profile,
+    format_activity_context_block,
     format_user_taste_prompt_block,
     grounding_check_enabled as llm_grounding_check_enabled,
     llm_rerank_candidates,
@@ -61,6 +65,7 @@ from llm_recommender import (
     shop_corpus_text,
     ungrounded_quotes,
 )
+from metadata_prior import _NEGATION_PREFIXES, _phrase_unnegated
 from semantic_match import (
     begin_encode_budget as begin_semantic_encode_budget,
     encode_budget_state as semantic_encode_budget_state,
@@ -73,6 +78,9 @@ from semantic_match import (
     semantic_score_cap,
 )
 from llm_clause_sentiment import (
+    candidate_pool as clause_sentiment_pool,
+    classify_quotes as classify_clause_quotes,
+    clause_sentiment_enabled,
     flush_cache as flush_clause_sentiment_cache,
     quote_key as clause_quote_key,
     sentiment_config as clause_sentiment_config,
@@ -592,6 +600,15 @@ def _normalize_match_text(value):
 
 PILL_MAPPING = {
     'belajar': {
+        'label': 'Belajar',
+        'definition': (
+            'Aktivitas mandiri atau kelompok kecil seperti membaca buku, mengerjakan tugas, '
+            'skripsi, atau belajar ujian yang menuntut suasana kondusif, tenang, dan tidak bising.'
+        ),
+        'negative_scope': (
+            'Bukan tempat nongkrong komunal yang riuh, kafe dengan live music keras, '
+            'atau tempat yang hanya cocok untuk mengobrol santai tanpa konsentrasi.'
+        ),
         'facility_fields': {
             'popular_for': ['good_for_working_on_laptop'],
             'amenities': ['wifi', 'free_wifi'],
@@ -604,6 +621,15 @@ PILL_MAPPING = {
         ],
     },
     'kerja': {
+        'label': 'Kerja/WFC',
+        'definition': (
+            'Aktivitas kerja jarak jauh (work from cafe/remote/WFA), produktif dengan laptop '
+            'dalam durasi lama, rapat daring, atau menyelesaikan deadline profesional.'
+        ),
+        'negative_scope': (
+            'Bukan sekadar mampir minum kopi sebentar (grab-and-go), dan bukan kunjungan santai '
+            'tanpa niat kerja remote atau menyelesaikan pekerjaan.'
+        ),
         'facility_fields': {
             'popular_for': ['good_for_working_on_laptop'],
             'amenities': ['wifi', 'free_wifi'],
@@ -621,6 +647,15 @@ PILL_MAPPING = {
         ],
     },
     'bermain game': {
+        'label': 'Nge-game',
+        'definition': (
+            'Aktivitas bermain mobile/online game bersama teman (mabar) seperti Mobile Legends, '
+            'PUBG, atau turnamen game.'
+        ),
+        'negative_scope': (
+            'Bukan kafe hening/perpustakaan yang melarang obrolan seru, dan bukan tempat yang '
+            'membatasi waktu kunjungan singkat.'
+        ),
         'facility_fields': {
             'popular_for': ['good_for_groups'],
         },
@@ -633,6 +668,16 @@ PILL_MAPPING = {
         ],
     },
     'meeting_sosialisasi': {
+        'label': 'Meeting/Pertemuan',
+        'definition': (
+            'Pertemuan terencana kelompok seperti rapat kerja formal, diskusi tim/komunitas, '
+            'arisan, presentasi bisnis, atau sesi jejaring yang membutuhkan tata ruang meja '
+            'yang memadai untuk banyak orang.'
+        ),
+        'negative_scope': (
+            'Bukan nongkrong santai perorangan, dan bukan tempat dengan kapasitas tempat duduk '
+            'sangat sempit untuk kelompok.'
+        ),
         'facility_fields': {
             'popular_for': ['good_for_groups'],
             'crowd': ['berkelompok'],
@@ -647,19 +692,37 @@ PILL_MAPPING = {
         ],
     },
     'keluarga': {
+        'label': 'Keluarga',
+        'definition': (
+            'Kunjungan santai bersama anggota keluarga lintas usia (anak-anak, orang tua) '
+            'yang membutuhkan tempat makan dan minum yang aman untuk anak, nyaman, dan ramah keluarga.'
+        ),
+        'negative_scope': (
+            'Bukan area bar/lounge yang tidak ramah anak, dan bukan tempat sempit yang berbahaya '
+            'bagi anak kecil dan orang tua.'
+        ),
         'facility_fields': {
             'children': ['good_for_kids', 'kids_menu', 'high_chairs'],
             'popular_for': ['good_for_groups'],
             'crowd': ['keluarga', 'ramah_keluarga', 'berkelompok'],
         },
         'review_keywords': [
-            'keluarga', 'anak', 'family', 'anak-anak', 'ramah keluarga',
-            'cocok keluarga', 'bawa anak', 'family friendly',
+            'keluarga', 'family', 'anak-anak', 'ramah keluarga',
+            'cocok keluarga', 'bawa anak kecil', 'family friendly',
             'berkumpul bersama', 'kumpul bersama', 'quality time',
             'ramah anak', 'playground', 'area bermain', 'kursi bayi', 'menu anak',
         ],
     },
     'instagrammable': {
+        'label': 'Instagrammable',
+        'definition': (
+            'Kunjungan untuk berswafoto, konten visual, atau menikmati estetika interior dan '
+            'arsitektur tempat yang unik, artistik, trendi, dan memiliki pencahayaan menarik.'
+        ),
+        'negative_scope': (
+            'Bukan tempat dengan visual kumuh, pencahayaan gelap/suram tanpa konsep estetik, '
+            'atau kafe ruko polos tanpa elemen dekoratif visual.'
+        ),
         'facility_fields': {
             'atmosphere': ['trendi', 'artistic'],
         },
@@ -691,24 +754,16 @@ PILL_MAPPING = {
             'nggak ribut', 'suasana tenang', 'kondusif', 'damai',
         ],
     },
-    'area_non_smoking': {
-        'facility_fields': {
-            'amenities': ['non_smoking', 'no_smoking'],
-        },
-        'review_keywords': [
-            'non smoking', 'no smoking', 'bebas asap', 'tidak berasap',
-            'area bebas rokok', 'ruangan bebas rokok', 'smoking area terpisah',
-            'tanpa asap rokok',
-        ],
-    },
     'area_outdoor': {
         'facility_fields': {
             'service_options': ['outdoor_seating'],
         },
         'review_keywords': [
-            'outdoor', 'area outdoor', 'tempat outdoor', 'outdoor seating',
+            'outdoor', 'area outdoor', 'outdoor seating', 'tempat outdoor',
+            'area terbuka', 'tempat terbuka', 'teras outdoor', 'taman outdoor',
+            'duduk di luar', 'kursi outdoor', 'al fresco',
             'di luar ruangan', 'lesehan outdoor', 'rooftop', 'open space',
-            'taman', 'area terbuka',
+            'taman',
         ],
     },
     'smoking_area': {
@@ -789,6 +844,17 @@ PILL_MAPPING = {
             'toiletnya wangi', 'kamar mandi bersih',
         ],
     },
+    'makanan_berat': {
+        'facility_fields': {
+            'offerings': ['restaurant'],
+        },
+        'review_keywords': [
+            'makanan berat', 'menu makanan berat', 'nasi', 'nasi goreng',
+            'makan siang', 'makan malam', 'kenyang', 'lauk', 'ayam goreng',
+            'steak', 'pasta', 'rice bowl', 'soto', 'bakso', 'mie ayam',
+            'menu lengkap', 'bisa makan berat',
+        ],
+    },
 }
 
 # Pill lapis 2 dibedakan dari pill aktivitas hanya saat validasi input & pembatasan
@@ -796,26 +862,18 @@ PILL_MAPPING = {
 # Nilainya harus sama dengan FACILITY_ATTRIBUTE_GROUPS di
 # frontend-cofind/src/constants/reviewPills.js.
 FACILITY_ATTRIBUTE_PILLS = frozenset({
-    'ruangan_ac', 'suasana_tenang', 'area_non_smoking', 'smoking_area',
+    'ruangan_ac', 'suasana_tenang', 'area_outdoor', 'smoking_area',
     'wifi_kencang', 'banyak_colokan_terminal', 'ruang_privat',
     'buka_sampai_malam_24_hours', 'musholla', 'parkir_luas', 'toilet_bersih',
-    'area_outdoor',
+    'makanan_berat',
 })
 
-PILL_LABELS = {
-    'belajar': 'Belajar',
-    # Label mengikuti teks tombol di frontend (CONTEXT_PILL_OPTIONS).
-    'kerja': 'Kerja/WFC',
-    'bermain game': 'Bermain game',
-    'meeting_sosialisasi': 'Meeting/sosialisasi',
-    'keluarga': 'Keluarga',
-    'instagrammable': 'Instagrammable',
-    # Label lapis 2 mengikuti teks di FACILITY_ATTRIBUTE_GROUPS (frontend).
+# Label lapis 2: fallback jika mapping fasilitas belum punya kunci `label`.
+_FACILITY_PILL_LABELS = {
     'ruangan_ac': 'Ruangan sejuk',
     'suasana_tenang': 'Suasana tenang',
-    'area_non_smoking': 'Area non-smoking',
-    'smoking_area': 'Smoking area',
     'area_outdoor': 'Outdoor area',
+    'smoking_area': 'Smoking area',
     'wifi_kencang': 'Wifi kencang',
     'banyak_colokan_terminal': 'Banyak colokan / terminal',
     'ruang_privat': 'Ruang privat / meeting',
@@ -823,7 +881,19 @@ PILL_LABELS = {
     'musholla': 'Ada musholla',
     'parkir_luas': 'Parkir luas',
     'toilet_bersih': 'Toilet bersih',
+    'makanan_berat': 'Makanan & Minuman',
 }
+
+PILL_LABELS = {}
+for _pill_key, _pill_spec in PILL_MAPPING.items():
+    _spec = _pill_spec if isinstance(_pill_spec, dict) else {}
+    PILL_LABELS[_pill_key] = (
+        str(_spec.get('label') or '').strip()
+        or _FACILITY_PILL_LABELS.get(_pill_key)
+        or _pill_key
+    )
+for _pill_key, _pill_label in _FACILITY_PILL_LABELS.items():
+    PILL_LABELS.setdefault(_pill_key, _pill_label)
 
 PILL_TO_BEST_FOR = {
     'belajar': 'belajar',
@@ -951,6 +1021,10 @@ def _build_empty_supporting_evidence():
         'facilities_tab_intent': {'popular_for': [], 'highlights': [], 'atmosphere': []},
         'facilities_intent_aligned': False,
         'facilities_evidence_summary': '',
+        'metadata_gate': {},
+        'matched_facility_pills': [],
+        'matched_facility_labels': [],
+        'metadata_contradiction_quotes': [],
         'review_quotes': [],
         'positive_review_quotes': [],
         'negative_review_quotes': [],
@@ -970,10 +1044,10 @@ def _build_empty_supporting_evidence():
 # ============================================================================
 # REVIEW-ONLY RECOMMENDATION PIPELINE
 # ----------------------------------------------------------------------------
-# Semua ranking, evidence, dan summary rekomendasi HANYA dibangun dari review
-# user di tabel `reviews`. Tidak menggunakan facilities.json ataupun rating
-# Google Maps sebagai sinyal peringkat. Data Google hanya untuk fallback
-# tampilan nama/rating ketika toko belum punya review.
+# Semua ranking, evidence, dan summary rekomendasi dibangun dari review
+# user di tabel `reviews`. Data facilities.json hanya prior/penguat lemah
+# (bisa self-claim owner) dan dipotong jika ulasan menentang klaim itu.
+# Rating Google hanya untuk fallback tampilan nama/rating.
 # ============================================================================
 
 # Pemetaan pill -> kategori rating review (makanan/layanan/suasana) sebagai
@@ -1037,6 +1111,7 @@ def _profile_from_shop_and_reviews(shop_data, reviews, facilities_index=None):
         },
         'facilities_tab': facilities_tab,
         'facilities_tab_text': facilities_tab.get('text') or '',
+        'facilities_raw': facility_entry.get('facilities') or {},
         'google_rating': float(shop_data.get('rating') or 0),
         'google_total_reviews': int(shop_data.get('total_reviews') or 0),
     }
@@ -1280,6 +1355,9 @@ _UNSUITABILITY_PHRASES = (
     'bukan untuk',
 )
 
+# Bukti pendek yang sah ("wifi ok"); di bawah ini dianggap noise.
+_MIN_QUOTE_CHARS = 6
+
 # Kata terlalu longgar untuk meeting/pertemuan (boleh tetap dipakai pill lain).
 _MEETING_OVERBROAD_TERMS = frozenset({
     'kumpul', 'ngumpul', 'berkumpul', 'grup', 'group', 'acara', 'komunitas',
@@ -1332,12 +1410,21 @@ def _collect_preference_anchor_spans_for_line(tokens, spans, line, preference_ke
 
 
 def _collect_weakness_token_spans(tokens, spans, line):
-    """Span token inklusif tempat fragmen kelemahan muncul di line ter-normalisasi."""
+    """Span token inklusif tempat fragmen kelemahan muncul di line ter-normalisasi.
+
+    Fragmen yang dinegasi ("tidak berisik", "ga mahal", "wifi nggak lemot")
+    tidak dihitung sebagai kelemahan.
+    """
     found = set()
     if not line or not tokens:
         return found
     for frag in _REVIEW_WEAKNESS_FRAGMENTS_SORTED:
-        found.update(_find_keyword_token_spans(tokens, frag))
+        for span in _find_keyword_token_spans(tokens, frag):
+            start = span[0]
+            prev = tokens[start - 1] if start > 0 else ''
+            if prev in _NEGATION_PREFIXES:
+                continue
+            found.add(span)
     return found
 
 
@@ -1443,7 +1530,10 @@ def _review_has_weakness_signal(text):
     normalized = _normalize_keyword_phrase(text)
     if not normalized:
         return False
-    return any(fragment in normalized for fragment in _REVIEW_WEAKNESS_FRAGMENTS)
+    return any(
+        _phrase_unnegated(normalized, fragment)
+        for fragment in _REVIEW_WEAKNESS_FRAGMENTS
+    )
 
 
 def _review_rating_value(review):
@@ -1544,29 +1634,243 @@ def _quote_llm_verdict(quote_text):
     return verdicts.get(clause_quote_key(quote_text))
 
 
+def _quote_has_unsuitability_phrase(quote_text):
+    """True jika kutipan secara eksplisit menolak kecocokan (kurang/tidak disarankan)."""
+    normalized = _normalize_keyword_phrase(quote_text)
+    if not normalized:
+        return False
+    return any(phrase in normalized for phrase in _UNSUITABILITY_PHRASES)
+
+
+def _quote_mentions_activity(quote_text, activity_pills, activity_tokens):
+    text = str(quote_text or '')
+    if not text.strip():
+        return False
+    if activity_tokens and text_matches_tokens(text, activity_tokens):
+        return True
+    for pill in activity_pills or []:
+        for keyword in _expand_pill_to_keywords(pill):
+            if _matches_keyword_phrase(text, keyword):
+                return True
+    return False
+
+
+def _quote_rejects_activity(quote_text, activity_pills, activity_tokens, activity_matcher=None):
+    """Kontradiksi: klausa yang sama menyebut aktivitas dan menolaknya."""
+    return text_rejects_requested_activity(
+        quote_text, activity_matcher, activity_tokens,
+    )
+
+
+def _quote_llm_label(quote_text):
+    """Label sentimen LLM: supporting | caveat | irrelevant, atau None bila belum dinilai."""
+    verdict = _quote_llm_verdict(quote_text)
+    if not isinstance(verdict, dict):
+        return None
+    label = str(verdict.get('label') or '').strip().lower()
+    if label in ('supporting', 'caveat', 'irrelevant'):
+        return label
+    return None
+
+
+def _quote_destination(quote_text, default):
+    """
+    Bucket kutipan: supporting | caveat | None (buang).
+    Frasa ekstrem (kurang/tidak disarankan) selalu caveat, termasuk jika LLM
+    sempat menandai supporting. Tanpa itu, verdict LLM menang.
+    """
+    if _quote_has_unsuitability_phrase(quote_text):
+        return 'caveat'
+    label = _quote_llm_label(quote_text)
+    if label is None:
+        return default
+    if label == 'irrelevant':
+        return None
+    return label
+
+
+def _quote_marker_key(quote_text):
+    return clause_quote_key(str(quote_text or '').strip())
+
+
+def _merge_caveat_quote_rows(*groups, limit=2):
+    """Gabung kutipan caveat; kontradiksi metadata didahulukan."""
+    seen = set()
+    out = []
+    for group in groups:
+        for row in group or []:
+            if not isinstance(row, dict):
+                continue
+            quote = str(row.get('quote') or '').strip()
+            if len(quote) < _MIN_QUOTE_CHARS:
+                continue
+            marker = _quote_marker_key(quote)
+            if not marker or marker in seen:
+                continue
+            seen.add(marker)
+            item = dict(row)
+            item['quote'] = quote
+            item['sentiment'] = item.get('sentiment') or 'caveat'
+            out.append(item)
+            if len(out) >= limit:
+                return out
+    return out
+
+
+def _matched_facility_from_gate(gate, score_detail=None):
+    """Fasilitas lapis 2 yang diklaim profil dan tidak ditentang ulasan."""
+    gate = gate if isinstance(gate, dict) else {}
+    score_detail = score_detail if isinstance(score_detail, dict) else {}
+    pills = list(
+        gate.get('matched_attribute_pills')
+        or score_detail.get('metadata_matched_attribute_pills')
+        or []
+    )
+    labels = list(
+        gate.get('matched_attribute_labels')
+        or score_detail.get('metadata_matched_attribute_labels')
+        or []
+    )
+    if pills and not labels:
+        labels = [PILL_LABELS.get(p, p) for p in pills]
+    if not pills:
+        contradicted = set(
+            gate.get('contradicted_pills')
+            or score_detail.get('metadata_contradicted_pills')
+            or []
+        )
+        claimed = list(
+            gate.get('claimed_pills')
+            or score_detail.get('metadata_claimed_pills')
+            or []
+        )
+        pills = [p for p in claimed if p in FACILITY_ATTRIBUTE_PILLS and p not in contradicted]
+        labels = [PILL_LABELS.get(p, p) for p in pills]
+    if len(labels) < len(pills):
+        labels.extend(PILL_LABELS.get(p, p) for p in pills[len(labels):])
+    return pills, labels[:len(pills)]
+
+
+def _attach_metadata_gate_to_evidence(evidence, score_detail=None, metadata_gate=None):
+    """Salin prior/penalti metadata ke evidence + caveat jika ulasan menentang klaim."""
+    ev = dict(evidence or {})
+    gate = metadata_gate or (score_detail or {}).get('metadata_gate')
+    if not isinstance(gate, dict) and isinstance(score_detail, dict):
+        gate = {
+            'claimed_pills': score_detail.get('metadata_claimed_pills') or [],
+            'contradicted_pills': score_detail.get('metadata_contradicted_pills') or [],
+            'matched_attribute_pills': score_detail.get('metadata_matched_attribute_pills') or [],
+            'matched_attribute_labels': score_detail.get('metadata_matched_attribute_labels') or [],
+            'prior': score_detail.get('metadata_prior') or 0.0,
+            'contradiction': score_detail.get('metadata_contradiction') or 0.0,
+            'quotes': [],
+        }
+    gate = gate or {}
+    quotes = list(gate.get('quotes') or ev.get('metadata_contradiction_quotes') or [])
+    claimed = list(gate.get('claimed_pills') or [])
+    contradicted = list(gate.get('contradicted_pills') or [])
+    matched_pills, matched_labels = _matched_facility_from_gate(gate, score_detail)
+    ev['metadata_gate'] = {
+        'claimed_pills': claimed,
+        'contradicted_pills': contradicted,
+        'matched_attribute_pills': matched_pills,
+        'matched_attribute_labels': matched_labels,
+        'prior': gate.get('prior') or 0.0,
+        'contradiction': gate.get('contradiction') or 0.0,
+        'prior_boost': (score_detail or {}).get('metadata_prior_boost'),
+        'penalty': (score_detail or {}).get('metadata_penalty'),
+    }
+    ev['matched_facility_pills'] = matched_pills
+    ev['matched_facility_labels'] = matched_labels
+    ev['metadata_contradiction_quotes'] = quotes
+    if contradicted:
+        labels = [PILL_LABELS.get(p, p) for p in contradicted]
+        ev['facilities_evidence_summary'] = (
+            'Profil tempat menandai '
+            + _join_indonesian_topics([str(label).lower() for label in labels])
+            + ', tetapi ulasan pengunjung menentang klaim itu.'
+        )
+    elif matched_labels:
+        note = (
+            'Profil tempat menandai '
+            + _join_indonesian_topics([str(label).lower() for label in matched_labels])
+            + ' (klaim pendukung, bukan bukti utama).'
+        )
+        if not ev.get('facilities_evidence_summary'):
+            ev['facilities_evidence_summary'] = note
+    if quotes:
+        ev['modal_caveat_quotes'] = _merge_caveat_quote_rows(
+            quotes,
+            ev.get('modal_caveat_quotes'),
+            limit=2,
+        )
+    return ev
+
+
 def _quote_is_caveat(quote_text, preference_keywords):
     """
     True bila kutipan tidak layak dipakai sebagai bukti kecocokan.
 
-    Tiga lapis, dari yang paling murah dan paling pasti:
-      1. frasa "tidak/kurang cocok ..." — selalu caveat
-      2. verdict LLM per klausa (bila kutipan ini termasuk yang diverifikasi)
-      3. heuristik jendela token di sekitar keyword preferensi (fallback)
+    Urutan:
+      1. frasa ekstrem ("kurang/tidak disarankan") — selalu caveat
+      2. verdict LLM per kutipan
+      3. heuristik jendela token (fallback)
     """
     text = str(quote_text or '')
-    if len(text.strip()) < 10:
+    if len(text.strip()) < _MIN_QUOTE_CHARS:
         return False
+    if _quote_has_unsuitability_phrase(text):
+        return True
+    llm_label = _quote_llm_label(text)
+    if llm_label is not None:
+        return llm_label in ('caveat', 'irrelevant')
     normalized = _normalize_keyword_phrase(text)
-    # "kurang cocok / tidak disarankan" tidak pernah jadi bukti pendukung,
-    # meski keyword pill tidak ada di kalimat yang sama.
     if normalized and any(phrase in normalized for phrase in _UNSUITABILITY_PHRASES):
         return True
-    verdict = _quote_llm_verdict(text)
-    if verdict is not None:
-        return str(verdict.get('label')) in ('caveat', 'irrelevant')
     if preference_keywords:
         return _review_has_weakness_near_preference_keywords(text, preference_keywords)
     return _review_has_weakness_signal(text)
+
+
+def _apply_llm_verdicts_to_quote_groups(supporting, caveats):
+    """
+    Re-bucket kutipan rerank/modal menurut verdict LLM.
+    Tanpa verdict, bucket asal dipertahankan (rule tidak menimpa rerank).
+    """
+    out_supporting = []
+    out_caveats = []
+    seen = set()
+
+    def push(row, default_bucket):
+        if not isinstance(row, dict):
+            return
+        quote = str(row.get('quote') or '').strip()
+        if len(quote) < _MIN_QUOTE_CHARS:
+            return
+        marker = clause_quote_key(quote)
+        if not marker or marker in seen:
+            return
+        dest = _quote_destination(quote, default_bucket)
+        if dest is None:
+            return
+        seen.add(marker)
+        item = dict(row)
+        item['quote'] = quote
+        item['sentiment'] = dest
+        verdict = _quote_llm_verdict(quote)
+        if verdict is not None:
+            item['sentiment_source'] = 'llm'
+            item['sentiment_clause'] = verdict.get('clause') or ''
+        if dest == 'caveat':
+            out_caveats.append(item)
+        else:
+            out_supporting.append(item)
+
+    for row in supporting or []:
+        push(row, 'supporting')
+    for row in caveats or []:
+        push(row, 'caveat')
+    return out_supporting, out_caveats
 
 
 def _collect_modal_quote_groups(evidence, pills, search_keywords=None):
@@ -1590,7 +1894,7 @@ def _collect_modal_quote_groups(evidence, pills, search_keywords=None):
             dict(row) for row in (evidence.get('modal_caveat_quotes') or [])
             if isinstance(row, dict) and str(row.get('quote') or '').strip()
         ]
-        return supporting, caveats
+        return _apply_llm_verdicts_to_quote_groups(supporting, caveats)
     search_keywords = _light_keyword_phrase_list(
         search_keywords or evidence.get('search_keywords') or [],
     )
@@ -1606,10 +1910,10 @@ def _collect_modal_quote_groups(evidence, pills, search_keywords=None):
 
     def push(item):
         q = str(item.get('quote') or '').strip()
-        if len(q) < 10:
+        if len(q) < _MIN_QUOTE_CHARS:
             return
-        k = q.lower()[:160]
-        if k in seen:
+        k = clause_quote_key(q)
+        if not k or k in seen:
             return
         seen.add(k)
         candidates.append(dict(item))
@@ -1686,6 +1990,22 @@ def _collect_modal_quote_groups(evidence, pills, search_keywords=None):
         else:
             row['sentiment'] = 'supporting'
             supporting.append(row)
+
+    meta_caveats = []
+    for item in evidence.get('metadata_contradiction_quotes') or []:
+        if not isinstance(item, dict):
+            continue
+        row = dict(item)
+        row['sentiment'] = 'caveat'
+        row['source'] = row.get('source') or 'metadata_contradiction'
+        meta_caveats.append(row)
+    if meta_caveats:
+        caveats = _merge_caveat_quote_rows(meta_caveats, caveats, limit=max(2, len(caveats) + 2))
+        support_keys = {_quote_marker_key(row.get('quote')) for row in caveats}
+        supporting = [
+            row for row in supporting
+            if _quote_marker_key(row.get('quote')) not in support_keys
+        ]
     return supporting, caveats
 
 
@@ -1797,10 +2117,10 @@ def _relevant_quote_lines_for_prompt(evidence, *, limit=6, char_limit=260):
             if not isinstance(row, dict):
                 continue
             text = _normalize_whitespace(str(row.get('quote') or row.get('text') or ''))
-            if len(text) < 12:
+            if len(text) < _MIN_QUOTE_CHARS:
                 continue
-            dedupe = text.lower()[:160]
-            if dedupe in seen:
+            dedupe = clause_quote_key(text)
+            if not dedupe or dedupe in seen:
                 continue
             seen.add(dedupe)
             rating = row.get('rating')
@@ -1833,7 +2153,7 @@ def _weakness_quote_lines_for_prompt(evidence, *, limit=2, char_limit=220):
         if not isinstance(row, dict):
             continue
         text = _normalize_whitespace(str(row.get('quote') or row.get('text') or ''))
-        if len(text) < 12:
+        if len(text) < _MIN_QUOTE_CHARS:
             continue
         rating = row.get('rating')
         rating_text = str(rating) if rating not in (None, '') else '?'
@@ -2427,17 +2747,17 @@ def activity_coverage_share():
     """
     Porsi cakupan yang langsung didapat begitu pill aktivitas terbukti (0..1).
 
-    Sisanya (1 - nilai ini) disumbang lapis fasilitas. Nilai 0.6 berarti toko
+    Sisanya (1 - nilai ini) disumbang lapis fasilitas. Nilai 0.8 berarti toko
     yang cocok aktivitasnya tapi belum terbukti fasilitasnya tetap unggul atas
     toko yang hanya terbukti fasilitasnya (cakupan 0), sesuai niat utama user.
     """
     raw = (os.getenv('COFIND_ACTIVITY_COVERAGE_SHARE') or '').strip()
     if not raw:
-        return 0.6
+        return 0.8
     try:
         return max(0.0, min(1.0, float(raw)))
     except ValueError:
-        return 0.6
+        return 0.8
 
 
 def _pick_semantic_matched_reviews(reviews, reference_terms, limit=3):
@@ -3323,6 +3643,10 @@ def _build_summary_output_entry(shop, summary, pills, search_keywords):
         return None
     llm_fit = shop.get('llm_fit') if isinstance(shop.get('llm_fit'), dict) else None
     detail = shop.get('score_detail') or {}
+    matched_pills, matched_labels = _matched_facility_from_gate(
+        evidence_out.get('metadata_gate'),
+        detail,
+    )
     return {
         'place_id': shop['place_id'],
         'name': shop['name'],
@@ -3331,6 +3655,8 @@ def _build_summary_output_entry(shop, summary, pills, search_keywords):
         'ranking_source': 'llm' if llm_fit else 'hybrid',
         'llm_fit': llm_fit,
         'explanation': summary,
+        'matched_facility_pills': matched_pills,
+        'matched_facility_labels': matched_labels,
         # Kelengkapan pemenuhan pill: dipakai untuk jujur menyebut atribut yang
         # belum punya bukti ulasan pada ringkasan tiap toko.
         'pill_coverage': {
@@ -3560,6 +3886,57 @@ def _invalid_llm_summary_reason(summary, shop, all_shops):
     return None
 
 
+_GENERIC_PRAISE_MARKERS = (
+    'kopi enak', 'kopinya enak', 'makanan enak', 'makanannya enak',
+    'pelayanan ramah', 'pelayanannya ramah', 'recommended', 'worth it',
+    'tempatnya nyaman', 'tempat nyaman', 'enak banget', 'recommended banget',
+    'rasanya enak', 'menu enak',
+)
+
+
+def _quote_has_activity_or_semantic_link(row, pills, search_keywords=None):
+    """True jika kutipan terhubung ke aktivitas, rerank, atau gerbang makna."""
+    if not isinstance(row, dict):
+        return False
+    pill = str(row.get('pill') or '').strip().lower()
+    if row.get('match_source') == 'semantic' or pill == 'semantic_match':
+        return True
+    if row.get('llm_extracted') or row.get('supporting_index'):
+        return True
+    activity_pills, _ = _split_preference_pills(pills)
+    activity_set = {str(p).strip().lower() for p in activity_pills if p}
+    if pill and pill in activity_set:
+        return True
+    if row.get('matched_terms'):
+        return True
+    text = str(row.get('quote') or '')
+    keywords = _preference_keywords_for_evidence(activity_pills or pills, search_keywords)
+    return any(_matches_keyword_phrase(text, keyword) for keyword in keywords)
+
+
+def _looks_like_generic_praise(text):
+    normalized = _normalize_keyword_phrase(text)
+    if not normalized or len(normalized) > 90:
+        return False
+    return any(marker in normalized for marker in _GENERIC_PRAISE_MARKERS)
+
+
+def _filter_generic_unrelated_quotes(quotes, pills, search_keywords=None):
+    """Buang pujian generik tanpa kaitan aktivitas; jangan sampai kehabisan bukti."""
+    rows = [row for row in (quotes or []) if isinstance(row, dict)]
+    if not rows:
+        return list(quotes or [])
+    kept = []
+    for row in rows:
+        if _quote_has_activity_or_semantic_link(row, pills, search_keywords):
+            kept.append(row)
+            continue
+        if _looks_like_generic_praise(row.get('quote') or ''):
+            continue
+        kept.append(row)
+    return kept if kept else list(rows)
+
+
 def _shop_summary_data_block(shop, pills, search_keywords):
     """
     Blok data SATU toko untuk prompt ringkasan.
@@ -3572,6 +3949,10 @@ def _shop_summary_data_block(shop, pills, search_keywords):
     supporting_quotes, caveat_quotes = _collect_modal_quote_groups(
         evidence, pills, search_keywords=search_keywords,
     )
+    if not evidence.get('llm_extracted'):
+        supporting_quotes = _filter_generic_unrelated_quotes(
+            supporting_quotes, pills, search_keywords,
+        )
     relevant_quote_lines = _relevant_quote_lines_for_prompt(
         {'modal_display_quotes': supporting_quotes[:4]}, limit=4, char_limit=220,
     ) or ['- (tidak ada kutipan yang cocok konteks)']
@@ -3610,9 +3991,17 @@ def _single_shop_summary_prompt(shop, pills, search_keywords, intent_line):
     data_block = _compact_prompt_block(
         _shop_summary_data_block(shop, pills, search_keywords), 2200,
     )
+    activity_pills, _ = _split_preference_pills(pills)
+    activity_context = format_activity_context_block(
+        activity_pills,
+        pill_mapping=PILL_MAPPING,
+        pill_labels=PILL_LABELS,
+    )
+    context_section = f'{activity_context}\n\n' if activity_context else ''
     return (
         f"Tulis 1 paragraf (3-4 kalimat padat) tentang {shop_name} berdasarkan ulasan pelanggan.\n\n"
         f"Kebutuhan user: {intent_line}.\n\n"
+        f"{context_section}"
         f"{data_block}\n\n"
         "Aturan Penulisan:\n"
         "1. Faktual & Objektif: Gunakan sudut pandang orang ketiga. JANGAN menyalin kata 'saya' atau 'kami' dari ulasan. Parafrase pengalaman personal menjadi ringkasan umum (misal: 'Terdapat keluhan pengunjung mengenai...').\n"
@@ -3805,6 +4194,48 @@ _RECOMMENDATION_PROGRESS_BY_STAGE = _build_recommendation_progress_map(
 _SENTIMENT_QUOTES_PER_CANDIDATE = 6
 
 
+def _preference_line_for_sentiment(pills):
+    labels = [str(PILL_LABELS.get(p, p) or p).strip() for p in (pills or []) if p]
+    return ', '.join(label for label in labels if label) or 'preferensi umum'
+
+
+def _run_clause_sentiment_for_candidates(candidates, pills):
+    """
+    Nilai sentimen kutipan kandidat (pool kecil). Return (verdicts, telemetry).
+    Kosong jika flag mati, LLM tidak tersedia, atau tidak ada kutipan.
+    """
+    telemetry = {'skipped': None, 'quotes': 0, 'verdicts': 0}
+    if not clause_sentiment_enabled():
+        telemetry['skipped'] = 'disabled'
+        return {}, telemetry
+    if not llm_is_available():
+        telemetry['skipped'] = 'llm_unavailable'
+        return {}, telemetry
+    pool = list(candidates or [])[:clause_sentiment_pool()]
+    quotes = []
+    seen = set()
+    for shop in pool:
+        for text in _candidate_quotes_for_sentiment(shop.get('evidence') or {}):
+            marker = clause_quote_key(text)
+            if not marker or marker in seen:
+                continue
+            seen.add(marker)
+            quotes.append(text)
+    telemetry['quotes'] = len(quotes)
+    if not quotes:
+        telemetry['skipped'] = 'no_quotes'
+        return {}, telemetry
+    verdicts, sentiment_telemetry = classify_clause_quotes(
+        quotes,
+        preference_line=_preference_line_for_sentiment(pills),
+        chat_fn=_llm_chat_for_pipeline,
+        parse_json_fn=_parse_llm_json_with_repair,
+    )
+    telemetry.update(sentiment_telemetry or {})
+    telemetry['verdicts'] = len(verdicts or {})
+    return verdicts or {}, telemetry
+
+
 def _candidate_quotes_for_sentiment(evidence, limit=_SENTIMENT_QUOTES_PER_CANDIDATE):
     """Kutipan kandidat yang perlu diverifikasi sentimennya oleh LLM."""
     ordered_keys = (
@@ -3821,7 +4252,7 @@ def _candidate_quotes_for_sentiment(evidence, limit=_SENTIMENT_QUOTES_PER_CANDID
             if len(quotes) >= limit:
                 return quotes
             text = _normalize_whitespace((row or {}).get('quote') or '')
-            if len(text) < 12:
+            if len(text) < _MIN_QUOTE_CHARS:
                 continue
             marker = clause_quote_key(text)
             if marker in seen:
@@ -3891,32 +4322,134 @@ def _attach_pill_coverage(shop, pills):
     return shop
 
 
-def _shop_has_activity_evidence(shop, activity_tokens, activity_matcher=None):
+def _iter_shop_quote_texts(shop):
+    fit = shop.get('llm_fit') if isinstance(shop.get('llm_fit'), dict) else {}
+    for key in ('evidence_quote', 'caveat_quote'):
+        text = str(fit.get(key) or '').strip()
+        if text:
+            yield text
+    evidence = shop.get('evidence') or {}
+    for group in (
+        'review_quotes',
+        'modal_display_quotes',
+        'modal_caveat_quotes',
+        'positive_review_quotes',
+        'negative_review_quotes',
+    ):
+        for row in evidence.get(group) or []:
+            if isinstance(row, dict):
+                text = str(row.get('quote') or '').strip()
+            else:
+                text = str(row or '').strip()
+            if text:
+                yield text
+
+
+def _activity_support_span(text, activity_matcher=None, activity_tokens=None):
+    """Klausul pendukung aktivitas; caveat keluarga di kalimat lain dibuang."""
+    return extract_activity_support_text(
+        text, activity_matcher, activity_tokens,
+    )
+
+
+def _shop_has_activity_contradiction(
+    shop, activity_pills, activity_tokens, activity_matcher=None,
+):
+    """
+    True hanya jika toko menolak aktivitas tanpa klausa pendukung.
+    'Main game, keluarga kurang disarankan' tetap lolos.
+    """
+    has_support = False
+    has_reject = False
+
+    def _note(text):
+        nonlocal has_support, has_reject
+        if _activity_support_span(text, activity_matcher, activity_tokens):
+            has_support = True
+        if text_rejects_requested_activity(text, activity_matcher, activity_tokens):
+            has_reject = True
+
+    for text in _iter_shop_quote_texts(shop):
+        _note(text)
+        if has_support:
+            return False
+    for row in (shop.get('profile') or {}).get('reviews') or []:
+        _note(review_text(row))
+        if has_support:
+            return False
+    return has_reject and not has_support
+
+
+def _supporting_quotes_without_activity_contradiction(
+    quotes, activity_pills, activity_tokens, activity_matcher=None,
+):
+    """Sisakan klausa pendukung; jangan buang ulasan campuran utuh."""
+    out = []
+    for row in quotes or []:
+        quote = row.get('quote') if isinstance(row, dict) else str(row or '')
+        span = _activity_support_span(quote, activity_matcher, activity_tokens)
+        if not span:
+            if text_rejects_requested_activity(quote, activity_matcher, activity_tokens):
+                continue
+            if _quote_has_unsuitability_phrase(quote):
+                continue
+            continue
+        if isinstance(row, dict):
+            item = dict(row)
+            item['quote'] = span
+            out.append(item)
+        else:
+            out.append(span)
+    return out
+
+
+def _shop_has_activity_evidence(
+    shop, activity_tokens, activity_pills=None, activity_matcher=None,
+):
+    activity_pills = list(activity_pills or [])
+
+    def _usable(quote):
+        text = str(quote or '')
+        if _activity_support_span(text, activity_matcher, activity_tokens):
+            return True
+        if text_rejects_requested_activity(text, activity_matcher, activity_tokens):
+            return False
+        if activity_matcher and activity_matcher.get('pills'):
+            return text_has_activity_signal(text, activity_matcher)
+        if not activity_tokens:
+            return True
+        return text_matches_tokens(text, activity_tokens)
+
     if activity_matcher and activity_matcher.get('pills'):
         fit = shop.get('llm_fit') if isinstance(shop.get('llm_fit'), dict) else {}
-        if text_has_activity_signal(str(fit.get('evidence_quote') or ''), activity_matcher):
+        if _usable(fit.get('evidence_quote') or ''):
             return True
         evidence = shop.get('evidence') or {}
         for key in ('modal_display_quotes', 'review_quotes'):
             for row in evidence.get(key) or []:
                 quote = row.get('quote') if isinstance(row, dict) else str(row or '')
-                if text_has_activity_signal(quote or '', activity_matcher):
+                if _usable(quote):
                     return True
         reviews = (shop.get('profile') or {}).get('reviews') or []
-        if shop_has_activity_signal(reviews, activity_tokens or [], activity_matcher=activity_matcher):
+        if shop_has_activity_signal(
+            reviews, activity_tokens or [], activity_matcher=activity_matcher,
+        ):
             return True
         return False
     if not activity_tokens:
         return True
     fit = shop.get('llm_fit') if isinstance(shop.get('llm_fit'), dict) else {}
-    if text_matches_tokens(str(fit.get('evidence_quote') or ''), activity_tokens):
+    if _usable(fit.get('evidence_quote') or ''):
         return True
     evidence = shop.get('evidence') or {}
     for key in ('modal_display_quotes', 'review_quotes'):
         for row in evidence.get(key) or []:
             quote = row.get('quote') if isinstance(row, dict) else str(row or '')
-            if text_matches_tokens(quote or '', activity_tokens):
+            if _usable(quote):
                 return True
+    reviews = (shop.get('profile') or {}).get('reviews') or []
+    if shop_has_activity_signal(reviews, activity_tokens or [], activity_matcher=activity_matcher):
+        return True
     return False
 
 
@@ -3929,18 +4462,28 @@ def _activity_quote_rows(evidence, pills, activity_tokens, *, limit=3, activity_
         if not isinstance(row, dict):
             continue
         quote = (row.get('quote') or '').strip()
-        if len(quote) < 8:
+        if len(quote) < _MIN_QUOTE_CHARS:
             continue
-        if activity_matcher and activity_matcher.get('pills'):
+        span = _activity_support_span(quote, activity_matcher, activity_tokens)
+        if span:
+            quote = span
+        elif text_rejects_requested_activity(quote, activity_matcher, activity_tokens):
+            continue
+        elif _quote_has_unsuitability_phrase(quote):
+            continue
+        elif activity_matcher and activity_matcher.get('pills'):
             if not text_has_activity_signal(quote, activity_matcher):
                 continue
         elif activity_tokens and not text_matches_tokens(quote, activity_tokens):
             continue
-        marker = quote.lower()[:120]
-        if marker in seen:
+        if len(quote) < _MIN_QUOTE_CHARS:
+            continue
+        marker = clause_quote_key(quote)
+        if not marker or marker in seen:
             continue
         seen.add(marker)
         item = dict(row)
+        item['quote'] = quote
         item['pill'] = pill
         item['pill_label'] = PILL_LABELS.get(pill, pill) if pill else 'Ulasan pengunjung'
         rows.append(item)
@@ -3975,7 +4518,7 @@ def _build_retrieval_evidence(
         if not isinstance(review, dict):
             continue
         text = _normalize_whitespace(review.get('text') or '')
-        if len(text) < 15:
+        if len(text) < _MIN_QUOTE_CHARS:
             continue
         excerpts.append({
             'pill': pill,
@@ -4001,7 +4544,7 @@ def _build_retrieval_evidence(
 
 
 def _apply_llm_extracted_quotes(shop, pills, activity_tokens=None, activity_matcher=None):
-    """Isi kutipan tampilan: utamakan ulasan aktivitas, bukan wifi/parkir."""
+    """Isi kutipan tampilan: utamakan ulasan aktivitas; label sentimen LLM menang."""
     fit = shop.get('llm_fit') if isinstance(shop.get('llm_fit'), dict) else {}
     evidence = dict(shop.get('evidence') or _build_empty_supporting_evidence())
     supporting = str(fit.get('evidence_quote') or '').strip()
@@ -4010,6 +4553,8 @@ def _apply_llm_extracted_quotes(shop, pills, activity_tokens=None, activity_matc
     pill = pills[0] if pills else ''
 
     def _is_activity_quote(text):
+        if _activity_support_span(text, activity_matcher, activity_tokens):
+            return True
         if activity_matcher and activity_matcher.get('pills'):
             return text_has_activity_signal(text, activity_matcher)
         if activity_tokens:
@@ -4020,22 +4565,72 @@ def _apply_llm_extracted_quotes(shop, pills, activity_tokens=None, activity_matc
         evidence, pills, activity_tokens, limit=3, activity_matcher=activity_matcher,
     )
     display = []
-    if supporting and _is_activity_quote(supporting):
-        display.append({
+    caveats_out = []
+    seen = set()
+
+    def _row(quote, row_reason, extra=None):
+        item = {
             'pill': pill,
             'pill_label': PILL_LABELS.get(pill, pill) if pill else 'Ulasan pengunjung',
-            'quote': supporting,
-            'reason': reason,
-        })
-        evidence['llm_extracted'] = True
+            'quote': quote,
+            'reason': row_reason,
+        }
+        if extra:
+            item.update({k: v for k, v in extra.items() if k not in item})
+        return item
+
+    def _accept(quote, row_reason, default_dest, extra=None):
+        text = str(quote or '').strip()
+        if default_dest == 'supporting':
+            span = _activity_support_span(text, activity_matcher, activity_tokens)
+            if span:
+                text = span
+            elif text_rejects_requested_activity(text, activity_matcher, activity_tokens):
+                return
+        if len(text) < _MIN_QUOTE_CHARS:
+            return
+        marker = clause_quote_key(text)
+        if not marker or marker in seen:
+            return
+        dest = _quote_destination(text, default_dest)
+        if dest is None:
+            return
+        seen.add(marker)
+        item = _row(text, row_reason, extra)
+        item['sentiment'] = dest
+        if _quote_llm_label(text):
+            item['sentiment_source'] = 'llm'
+        if dest == 'caveat':
+            caveats_out.append(item)
+        else:
+            display.append(item)
+
+    if supporting and _is_activity_quote(supporting):
+        _accept(supporting, reason, 'supporting')
     for row in activity_rows:
-        marker = (row.get('quote') or '').strip().lower()[:120]
-        if any((d.get('quote') or '').strip().lower()[:120] == marker for d in display):
-            continue
-        display.append(row)
         if len(display) >= 3:
             break
-    # Jangan fallback ke kutipan fasilitas (WFC / nge-charge) jika aktivitas diminta.
+        _accept(
+            row.get('quote'),
+            row.get('reason') or reason,
+            'supporting',
+            extra=row,
+        )
+    # Jangan fallback ke kutipan fasilitas jika aktivitas diminta.
+    if not display:
+        for row in _activity_quotes_from_reviews(
+            shop, activity_matcher, activity_tokens, limit=3,
+        ):
+            _accept(
+                row.get('quote'),
+                row.get('reason') or reason,
+                'supporting',
+                extra=row,
+            )
+            if len(display) >= 3:
+                break
+    if caveat:
+        _accept(caveat, 'catatan dari ulasan', 'caveat')
     if display:
         evidence['modal_display_quotes'] = display[:3]
         evidence['llm_extracted'] = True
@@ -4043,55 +4638,90 @@ def _apply_llm_extracted_quotes(shop, pills, activity_tokens=None, activity_matc
             fit = dict(fit)
             fit['evidence_quote'] = display[0]['quote']
             shop['llm_fit'] = fit
-    if caveat:
-        evidence['modal_caveat_quotes'] = [{
-            'quote': caveat,
-            'reason': 'catatan dari ulasan',
-        }]
-        evidence['llm_extracted'] = True
+    merged_caveats = _merge_caveat_quote_rows(
+        evidence.get('metadata_contradiction_quotes'),
+        caveats_out,
+        evidence.get('modal_caveat_quotes'),
+        limit=2,
+    )
+    if merged_caveats:
+        evidence['modal_caveat_quotes'] = merged_caveats
+        if display or caveats_out:
+            evidence['llm_extracted'] = True
     shop['evidence'] = evidence
     return shop
 
 
-def _select_top_shops(ranked_candidates, max_rec=3, activity_tokens=None, activity_matcher=None):
-    """
-    Ambil 0–max_rec toko. Jangan mengisi slot dengan toko tanpa bukti aktivitas
-    atau fit_score di bawah ambang.
-    """
-    threshold = min_fit_score()
-    llm_ran = any(
-        isinstance(shop.get('llm_fit'), dict) for shop in (ranked_candidates or [])
-    )
+def _activity_quotes_from_reviews(shop, activity_matcher=None, activity_tokens=None, *, limit=3):
+    """Cadangan kutipan aktivitas dari korpus ulasan, tanpa syarat fasilitas."""
+    detail = shop.get('score_detail') if isinstance(shop.get('score_detail'), dict) else {}
+    pills = list(detail.get('activity_pills') or [])
+    pill = pills[0] if pills else ''
+    rows = []
+    seen = set()
+    for row in (shop.get('profile') or {}).get('reviews') or []:
+        span = _activity_support_span(review_text(row), activity_matcher, activity_tokens)
+        if not span or len(span) < _MIN_QUOTE_CHARS:
+            continue
+        marker = clause_quote_key(span)
+        if not marker or marker in seen:
+            continue
+        seen.add(marker)
+        rows.append({
+            'pill': pill,
+            'pill_label': PILL_LABELS.get(pill, pill) if pill else 'Ulasan pengunjung',
+            'quote': span,
+            'reason': 'ulasan membahas aktivitas',
+            'rating': row.get('rating') if isinstance(row, dict) else None,
+            'username': (row.get('username') or row.get('full_name')) if isinstance(row, dict) else None,
+        })
+        if len(rows) >= limit:
+            break
+    return rows
 
+
+def _shop_relevance_sort_key(shop):
+    """Aktivitas dulu, lalu fasilitas sebagai penguat, lalu skor campuran."""
+    detail = shop.get('score_detail') if isinstance(shop.get('score_detail'), dict) else {}
+    final = float(shop.get('final_score') or shop.get('score') or 0.0)
+    act = float(detail.get('activity_combo') or detail.get('activity_lex') or 0.0)
+    attr = float(detail.get('attribute_bm25') or 0.0)
+    attr_cov = float(detail.get('attribute_coverage') or 0.0)
+    act_hits = int(detail.get('activity_hits') or 0)
+    return (-final, -attr_cov, -attr, -act, -act_hits)
+
+
+def _select_top_shops(
+    ranked_candidates,
+    max_rec=3,
+    activity_tokens=None,
+    activity_pills=None,
+    activity_matcher=None,
+):
+    """
+    Ambil toko yang punya bukti aktivitas. Fasilitas tambahan tidak wajib.
+    Urutan: aktivitas terkuat, lalu kecocokan fasilitas, lalu skor campuran.
+    """
     def _eligible(shop):
-        if not _shop_has_activity_evidence(
-            shop, activity_tokens, activity_matcher=activity_matcher,
+        if _shop_has_activity_contradiction(
+            shop, activity_pills, activity_tokens, activity_matcher=activity_matcher,
         ):
             return False
-        fit = shop.get('llm_fit') if isinstance(shop.get('llm_fit'), dict) else None
-        if fit is None:
-            return not llm_ran
-        if llm_ran and not fit.get('selected'):
-            # LLM kadang menolak karena kutipan fasilitas; jika korpus toko
-            # benar-benar membahas aktivitas, tetap layak masuk daftar.
-            reviews = (shop.get('profile') or {}).get('reviews') or []
-            if activity_matcher and shop_has_activity_signal(
-                reviews, activity_tokens or [], activity_matcher=activity_matcher,
-            ):
-                try:
-                    score = float(fit.get('fit_score') or 0.0)
-                except (TypeError, ValueError):
-                    score = 0.0
-                return score >= min(threshold, 4.0)
-            return False
-        try:
-            score = float(fit.get('fit_score') or 0.0)
-        except (TypeError, ValueError):
-            score = 0.0
-        return score >= threshold
+        return _shop_has_activity_evidence(
+            shop, activity_tokens,
+            activity_pills=activity_pills,
+            activity_matcher=activity_matcher,
+        )
 
     picked = [shop for shop in (ranked_candidates or []) if _eligible(shop)]
-    picked.sort(key=lambda item: -(item.get('final_score') or item.get('score') or 0))
+    if ranked_candidates and not picked:
+        for shop in ranked_candidates:
+            fit = shop.get('llm_fit') if isinstance(shop.get('llm_fit'), dict) else {}
+            LOG_RECOMMEND.info(
+                f"Fase 3 skip {shop.get('name')}: selected={fit.get('selected')} "
+                f"fit={fit.get('fit_score')} quote={(fit.get('evidence_quote') or '')[:80]}"
+            )
+    picked.sort(key=_shop_relevance_sort_key)
     return picked[:max_rec]
 
 
@@ -4101,8 +4731,11 @@ def _recommendation_pipeline_events(prefs, _auth_user):
 
       Fase 1 — Hard filter: pill valid di PILL_MAPPING, exclude not_helpful,
                wajib minimal 1 review Cofind.
-      Fase 2 — Hybrid retrieval: BM25 + embedding, gerbang aktivitas wajib.
+      Fase 2 — Hybrid retrieval: BM25 + embedding. Gerbang aktivitas:
+               kata/frasa ATAU cosine aktivitas >= COFIND_ACTIVITY_DENSE_MIN.
                Fasilitas tambahan hanya penguat skor. Top 7 ke LLM.
+      Fase 2b — Sentimen kutipan kandidat (opsional, COFIND_LLM_CLAUSE_SENTIMENT):
+                LLM label supporting/caveat; rule hanya fallback.
       Fase 3 — LLM rerank: pilih 0–3 toko yang kutipannya mendukung aktivitas,
                ekstrak kutipan pendukung (bukan jendela ±6 token).
 
@@ -4113,6 +4746,8 @@ def _recommendation_pipeline_events(prefs, _auth_user):
     request_t0 = time.perf_counter()
     stage_t0 = request_t0
     stage_ms = {}
+    clause_sentiment_token = None
+    clause_sentiment_telemetry = {}
     semantic_budget_token = begin_semantic_encode_budget()
     try:
         if not prefs:
@@ -4216,15 +4851,19 @@ def _recommendation_pipeline_events(prefs, _auth_user):
                 'score': item.get('score', 0),
                 'profile': profile,
                 'score_detail': item.get('score_detail') or {},
-                'evidence': _build_retrieval_evidence(
-                    profile,
-                    valid_pills,
-                    query_text=query_text,
-                    query_tokens=query_tokens,
-                    activity_tokens=activity_tokens,
-                    activity_query_text=activity_query_text,
-                    attribute_tokens=attribute_tokens,
-                    activity_matcher=activity_matcher,
+                'evidence': _attach_metadata_gate_to_evidence(
+                    _build_retrieval_evidence(
+                        profile,
+                        valid_pills,
+                        query_text=query_text,
+                        query_tokens=query_tokens,
+                        activity_tokens=activity_tokens,
+                        activity_query_text=activity_query_text,
+                        attribute_tokens=attribute_tokens,
+                        activity_matcher=activity_matcher,
+                    ),
+                    score_detail=item.get('score_detail') or {},
+                    metadata_gate=item.get('metadata_gate'),
                 ),
             }
             _attach_pill_coverage(shop, valid_pills)
@@ -4234,6 +4873,11 @@ def _recommendation_pipeline_events(prefs, _auth_user):
         LOG_RECOMMEND.info(
             f"Fase 2 selesai: {len(scored_candidates)}/{retrieval_telemetry.get('kept_with_signal', 0)} "
             f"kandidat (gated={retrieval_telemetry.get('activity_gated')}, "
+            f"lex={retrieval_telemetry.get('activity_pass_lexical', 0)}, "
+            f"dense_only={retrieval_telemetry.get('activity_pass_dense_only', 0)}, "
+            f"rejected={retrieval_telemetry.get('activity_rejected', 0)}, "
+            f"meta_prior={retrieval_telemetry.get('metadata_prior_applied', 0)}, "
+            f"meta_penalty={retrieval_telemetry.get('metadata_penalized', 0)}) "
             f"bm25_shops={retrieval_telemetry.get('bm25_shops')}, "
             f"dense={retrieval_telemetry.get('dense')})")
         yield _recommendation_progress('scoring', candidates=len(scored_candidates))
@@ -4246,6 +4890,22 @@ def _recommendation_pipeline_events(prefs, _auth_user):
                 'recommendations': [],
             }, 200))
             return
+
+        sentiment_t0 = time.perf_counter()
+        verdicts, clause_sentiment_telemetry = _run_clause_sentiment_for_candidates(
+            scored_candidates, valid_pills,
+        )
+        if verdicts:
+            clause_sentiment_token = _set_clause_verdicts(verdicts)
+        stage_ms['clause_sentiment_ms'] = round((time.perf_counter() - sentiment_t0) * 1000, 1)
+        if clause_sentiment_telemetry.get('skipped'):
+            LOG_RECOMMEND.info(
+                f"Clause sentiment dilewati: {clause_sentiment_telemetry.get('skipped')}")
+        else:
+            LOG_RECOMMEND.info(
+                f"Clause sentiment: quotes={clause_sentiment_telemetry.get('quotes', 0)} "
+                f"verdicts={clause_sentiment_telemetry.get('verdicts', 0)} "
+                f"llm_calls={clause_sentiment_telemetry.get('llm_calls', 0)}")
 
         # --- Fase 3: LLM rerank + ekstraksi kutipan/caveat (fallback: urutan hybrid) ---
         rerank_backend = 'hybrid'
@@ -4265,6 +4925,7 @@ def _recommendation_pipeline_events(prefs, _auth_user):
                 scored_candidates,
                 valid_pills,
                 pill_labels=PILL_LABELS,
+                pill_mapping=PILL_MAPPING,
                 chat_fn=_llm_chat_for_pipeline,
                 parse_json_fn=_parse_llm_json_with_repair,
                 user_taste_block=user_taste_block,
@@ -4298,17 +4959,65 @@ def _recommendation_pipeline_events(prefs, _auth_user):
 
         top_shops = _select_top_shops(
             ranked_candidates,
-            max_rec=MAX_REC,
+            max_rec=max(MAX_REC, retrieval_top_k()),
             activity_tokens=activity_tokens,
+            activity_pills=activity_pills,
             activity_matcher=activity_matcher,
         )
+        kept = []
+        dropped_activity = 0
         for shop in top_shops:
             _apply_llm_extracted_quotes(
                 shop, valid_pills,
                 activity_tokens=activity_tokens,
                 activity_matcher=activity_matcher,
             )
+            if _shop_has_activity_contradiction(
+                shop, activity_pills, activity_tokens, activity_matcher=activity_matcher,
+            ):
+                dropped_activity += 1
+                LOG_RECOMMEND.info(
+                    f"Drop {shop.get('name')}: kutipan menolak aktivitas "
+                    f"{[PILL_LABELS.get(p, p) for p in activity_pills]}"
+                )
+                continue
+            evidence = shop.get('evidence') or {}
+            caveat_rows = list(evidence.get('modal_caveat_quotes') or [])
+            caveat_keys = {
+                clause_quote_key(row.get('quote') if isinstance(row, dict) else row)
+                for row in caveat_rows
+            }
+            display = _supporting_quotes_without_activity_contradiction(
+                evidence.get('modal_display_quotes') or [],
+                activity_pills,
+                activity_tokens,
+                activity_matcher=activity_matcher,
+            )
+            display = [
+                row for row in display
+                if clause_quote_key(
+                    row.get('quote') if isinstance(row, dict) else row
+                ) not in caveat_keys
+            ]
+            if not display:
+                display = _activity_quotes_from_reviews(
+                    shop, activity_matcher, activity_tokens, limit=3,
+                )
+            evidence['modal_display_quotes'] = display
+            shop['evidence'] = evidence
+            if not display:
+                LOG_RECOMMEND.info(
+                    f"Keep {shop.get('name')}: bukti aktivitas tanpa kutipan fasilitas"
+                )
             _attach_pill_coverage(shop, valid_pills)
+            kept.append(shop)
+            if len(kept) >= MAX_REC:
+                break
+        top_shops = kept
+        if dropped_activity:
+            LOG_RECOMMEND.info(
+                f"Fase 3: {dropped_activity} toko dibuang karena kontradiksi aktivitas"
+            )
         stage_ms['rerank_ms'] = round((time.perf_counter() - stage_t0) * 1000, 1)
         stage_ms['rerank_backend'] = rerank_backend
         stage_t0 = time.perf_counter()
@@ -4360,6 +5069,10 @@ def _recommendation_pipeline_events(prefs, _auth_user):
                 'config': llm_pipeline_config(),
                 'retrieval': dict(retrieval_telemetry),
                 'rerank': dict(rerank_telemetry, backend=rerank_backend),
+                'clause_sentiment': dict(
+                    clause_sentiment_config(),
+                    **clause_sentiment_telemetry,
+                ),
                 'personalization_used': bool(user_taste_block),
                 'semantic': dict(
                     semantic_gate_config(),
@@ -4374,7 +5087,7 @@ def _recommendation_pipeline_events(prefs, _auth_user):
         LOG_RECOMMEND.exception("Pipeline rekomendasi gagal")
         yield ('result', ({'status': 'error', 'message': str(e), 'recommendations': []}, 500))
     finally:
-        _reset_clause_verdicts(None)
+        _reset_clause_verdicts(clause_sentiment_token)
         reset_semantic_encode_budget(semantic_budget_token)
         # Vektor & verdict baru ditulis ke lapis file sekali per request, bukan
         # per kalimat, supaya request berikutnya tidak menghitung ulang.
@@ -4703,6 +5416,18 @@ def _recommendation_summary_keyword_digest(search_keywords):
     return hashlib.sha1(blob.encode('utf-8')).hexdigest()[:12]
 
 
+def _preference_definition_digest(pills):
+    """Hash pendek dari definition + negative_scope preferensi terpilih."""
+    parts = []
+    for pill in sorted({str(p).strip().lower() for p in (pills or []) if str(p).strip()}):
+        spec = PILL_MAPPING.get(pill) or {}
+        definition = ' '.join(str(spec.get('definition') or '').split())
+        negative_scope = ' '.join(str(spec.get('negative_scope') or '').split())
+        parts.append(f'{pill}|{definition}|{negative_scope}')
+    blob = '\n'.join(parts)
+    return hashlib.md5(blob.encode('utf-8')).hexdigest()[:12]
+
+
 # Cache penilaian rerank LLM (fit_score + alasan + kutipan per toko).
 RERANK_CACHE_PATH = os.path.join(CACHE_DIR, 'rerank_cache.json')
 RERANK_CACHE_VERSION = 'v3-pill-set'
@@ -4754,14 +5479,17 @@ def _rerank_candidate_fingerprint(candidates):
 
 def _rerank_cache_key(candidates, pills, user_id=None, search_keywords=None):
     """
-    Kunci cache rerank: kombinasi pill + user + sidik jari kandidat.
+    Kunci cache rerank: kombinasi pill + hash definisi + user + sidik jari kandidat.
 
-    user_id wajib masuk kunci karena prompt rerank memuat konteks selera user
-    (review sendiri + favorit). Tanpa itu, user kedua dengan pill sama akan
-    memakai penilaian yang dipersonalisasi untuk user pertama.
+    Hash definisi membuat cache otomatis usang jika definition/negative_scope
+    di PILL_MAPPING berubah. user_id wajib masuk kunci karena prompt rerank
+    memuat konteks selera user (review sendiri + favorit). Tanpa itu, user
+    kedua dengan pill sama akan memakai penilaian yang dipersonalisasi untuk
+    user pertama.
     """
     blob = '\u241f'.join([
         _recommendation_summary_pill_key(pills),
+        _preference_definition_digest(pills),
         _recommendation_summary_keyword_digest(search_keywords),
         str(user_id or 'anon'),
         _rerank_candidate_fingerprint(candidates),

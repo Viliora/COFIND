@@ -8,8 +8,8 @@ dengan pill "wifi kencang".
 
 Modul ini menambahkan jaring kedua: kalimat/klausa yang GAGAL pencocokan kata
 dibandingkan maknanya dengan frasa acuan pill memakai sentence embedding
-(cosine similarity). Perannya hanya penyaring murah — keputusan sentimen tetap
-diserahkan ke LLM (lihat llm_clause_sentiment.py).
+(cosine similarity). Perannya hanya penyaring murah — keputusan sentimen kutipan
+bisa diisi llm_clause_sentiment.py bila COFIND_LLM_CLAUSE_SENTIMENT=true.
 
 Vektor yang sudah dihitung disimpan di vector_cache (memori → Redis → file),
 jadi review yang sama tidak pernah di-encode dua kali.
