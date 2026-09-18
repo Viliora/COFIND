@@ -39,15 +39,50 @@ logger = get_logger('recommend')
 
 _TOKEN_RE = re.compile(r'[a-z0-9]+', re.IGNORECASE)
 _MIN_REVIEW_CHARS = 15
+_MIN_ACTIVITY_QUOTE_CHARS = 8
 _LEXICAL_WEIGHT = 0.3
 _DENSE_WEIGHT = 0.7
 # Token generik hasil pecahan frasa "nongkrong game" / "main game" / "push rank".
-# Kalau ikut gerbang aktivitas, ulasan "enak nongkrong" ikut lolos.
+# Kalau ikut gerbang aktivitas, ulasan "enak nongkrong" atau "nge-charge" ikut lolos.
 _ACTIVITY_STOP_TOKENS_BY_PILL = {
     'bermain game': frozenset({
         'nongkrong', 'main', 'bareng', 'gas', 'push', 'rank', 'bermain', 'mobile',
+        'nge',  # pecahan nge-game; "nge-charge" / "ngecas" bukan bukti nge-game
+        'cari', 'cocok', 'coffee', 'shop', 'kafe', 'cafe',
     }),
 }
+
+# Frasa/istilah khas yang tidak boleh dipecah jadi token generik.
+_ACTIVITY_EXTRA_PHRASES = {
+    'bermain game': (
+        'nge game', 'ngegame', 'main game', 'bermain game', 'main bareng game',
+        'mobile legends', 'mobile legend', 'mlbb', 'valorant', 'pubg',
+        'free fire', 'honor of kings', 'push rank', 'nge rank', 'ngerank',
+        'mabar', 'ngemabar', 'gas game', 'turnamen', 'esport', 'e sport',
+        'playstation', 'ps5', 'ps4', 'nintendo', 'steam deck',
+        'main ml', 'main ff', 'main pubg', 'main valorant', 'main hok',
+        'gamer', 'gaming', 'gamers',
+    ),
+}
+_ACTIVITY_WHOLE_WORDS = {
+    'bermain game': frozenset({
+        'game', 'games', 'gaming', 'gamer', 'gamers', 'ngegame', 'ngemabar',
+        'mabar', 'mlbb', 'valorant', 'pubg', 'esport', 'esports',
+        'playstation', 'turnamen', 'nintendo',
+    }),
+}
+# Akronim pendek hanya dihitung bila ada konteks game di sekitarnya.
+_ACTIVITY_SHORT_ACRONYMS = {
+    'bermain game': frozenset({'ml', 'ff', 'hok', 'lol'}),
+}
+_ACRONYM_CONTEXT_TOKENS = frozenset({
+    'main', 'mabar', 'game', 'gaming', 'gamer', 'legends', 'mobile', 'rank',
+    'push', 'bareng', 'temen', 'teman', 'squad', 'slot', 'rank', 'ngerank',
+})
+_GAME_WORD_RE = re.compile(
+    r'^(?:nge)?game(?:nya|an)?$|^gaming$|^gamers?$',
+    re.IGNORECASE,
+)
 
 
 def _env_int(name: str, default: int, *, min_value: int, max_value: int) -> int:
@@ -134,6 +169,8 @@ def lexical_review_score(text: str, query_tokens: Sequence[str]) -> float:
     unique_q = list(dict.fromkeys(q))
 
     def hit(query_tok: str) -> bool:
+        if len(query_tok) < 3:
+            return False
         if query_tok in tokens:
             return True
         if len(query_tok) < 4:
@@ -153,14 +190,137 @@ def lexical_review_score(text: str, query_tokens: Sequence[str]) -> float:
     return hits / max(1, len(unique_q))
 
 
-def _usable_reviews(reviews: Sequence[object]) -> List[object]:
+def _normalize_activity_text(text: str) -> str:
+    """Lowercase + hyphen jadi spasi, tanpa kamus slang (mabar tidak boleh jadi 'main bareng')."""
+    raw = str(text or '').lower().replace('-', ' ').replace('_', ' ')
+    return re.sub(r'\s+', ' ', raw).strip()
+
+
+def compile_activity_matcher(
+    activity_pills: Sequence[str],
+    *,
+    pill_labels: Optional[Dict[str, str]] = None,
+    pill_mapping: Optional[Dict[str, dict]] = None,
+) -> Dict[str, object]:
+    """
+    Kompilasi gerbang aktivitas: frasa utuh + kata bermakna + akronim berkonteks.
+
+    Token pendek hasil pecahan hyphen (nge dari nge-game) sengaja dibuang supaya
+    'nge-charge laptop' tidak lolos sebagai bukti bermain game.
+    """
+    pills = [str(p or '').strip() for p in (activity_pills or []) if str(p or '').strip()]
+    labels = pill_labels or {}
+    mapping = pill_mapping or {}
+    phrases: List[str] = []
+    seen_phrases = set()
+
+    def _add_phrase(raw: str):
+        phrase = _normalize_activity_text(raw)
+        if len(phrase) < 3:
+            return
+        if phrase in seen_phrases:
+            return
+        parts = phrase.split()
+        if len(parts) == 1 and (phrase in stops or (len(phrase) < 3 and phrase not in acronyms)):
+            return
+        seen_phrases.add(phrase)
+        phrases.append(phrase)
+
+    stops = set()
+    acronyms = set()
+    words: set = set()
+    for pill in pills:
+        stops |= _ACTIVITY_STOP_TOKENS_BY_PILL.get(pill, frozenset())
+        acronyms |= _ACTIVITY_SHORT_ACRONYMS.get(pill, frozenset())
+        words.update(_ACTIVITY_WHOLE_WORDS.get(pill, ()))
+
+    for pill in pills:
+        _add_phrase(labels.get(pill, pill))
+        for kw in (mapping.get(pill) or {}).get('review_keywords') or []:
+            _add_phrase(str(kw))
+        for extra in _ACTIVITY_EXTRA_PHRASES.get(pill, ()):
+            _add_phrase(extra)
+
+    bm25_tokens: List[str] = []
+    seen_tok = set()
+    for phrase in phrases:
+        for tok in tokenize_simple(phrase):
+            if tok in stops or tok in seen_tok:
+                continue
+            if len(tok) < 3 and tok not in acronyms and tok not in words:
+                continue
+            seen_tok.add(tok)
+            bm25_tokens.append(tok)
+    for tok in sorted(words):
+        if tok not in seen_tok and tok not in stops:
+            seen_tok.add(tok)
+            bm25_tokens.append(tok)
+
+    return {
+        'pills': pills,
+        'phrases': phrases,
+        'words': frozenset(words),
+        'acronyms': frozenset(acronyms),
+        'stop_tokens': frozenset(stops),
+        'bm25_tokens': bm25_tokens,
+    }
+
+
+def activity_text_score(text: str, matcher: Optional[dict]) -> float:
+    """
+    Skor 0..1 seberapa jelas ulasan membahas aktivitas.
+    1.0 = frasa khas / kata game utuh; 0.6 = akronim (ML) dengan konteks.
+    """
+    if not matcher or not text:
+        return 0.0
+    normalized = _normalize_activity_text(text)
+    if not normalized:
+        return 0.0
+    tokens = tokenize_simple(normalized)
+    token_set = set(tokens)
+
+    best = 0.0
+    for phrase in matcher.get('phrases') or []:
+        if ' ' in phrase:
+            if phrase in normalized:
+                best = max(best, 1.0)
+        elif phrase in token_set:
+            best = max(best, 1.0)
+        if best >= 1.0:
+            return 1.0
+
+    for tok in tokens:
+        if tok in (matcher.get('words') or ()) or _GAME_WORD_RE.match(tok):
+            best = max(best, 1.0)
+            return 1.0
+
+    acronyms = matcher.get('acronyms') or ()
+    if acronyms:
+        for idx, tok in enumerate(tokens):
+            if tok not in acronyms:
+                continue
+            window = set(tokens[max(0, idx - 3): idx + 4])
+            if window & _ACRONYM_CONTEXT_TOKENS or window & set(matcher.get('words') or ()):
+                best = max(best, 0.6)
+    return best
+
+
+def text_has_activity_signal(text: str, matcher: Optional[dict]) -> bool:
+    return activity_text_score(text, matcher) > 0
+
+
+def empty_activity_matcher() -> Dict[str, object]:
+    return compile_activity_matcher([])
+
+
+def _usable_reviews(reviews: Sequence[object], *, min_chars: int = _MIN_REVIEW_CHARS) -> List[object]:
     out = []
     seen = set()
     for review in reviews or []:
         text = review_text(review)
-        if len(text) < _MIN_REVIEW_CHARS:
+        if len(text) < min_chars:
             continue
-        key = text.lower()[:160]
+        key = text.lower()
         if key in seen:
             continue
         seen.add(key)
@@ -174,10 +334,12 @@ def _select_reviews_for_embedding(
     *,
     limit: int,
     primary_tokens: Optional[Sequence[str]] = None,
+    activity_matcher: Optional[dict] = None,
 ) -> List[object]:
     """
-    Pilih ulasan yang akan di-encode. Utamakan overlap token aktivitas
-    (`primary_tokens`), lalu query lengkap, lalu ulasan terbaru.
+    Pilih ulasan yang akan di-encode. Utamakan bukti aktivitas (frasa/kata khas),
+    lalu overlap token query, lalu ulasan terbaru. Jangan berhenti saat overlap
+    leksikal nol — ulasan bersinonim masih perlu sampai ke embedding.
     """
     usable = _usable_reviews(reviews)
     if len(usable) <= limit:
@@ -185,28 +347,13 @@ def _select_reviews_for_embedding(
 
     def rank_key(row: object) -> tuple:
         text = review_text(row)
+        activity = activity_text_score(text, activity_matcher)
         primary = lexical_review_score(text, primary_tokens or [])
         full = lexical_review_score(text, query_tokens)
-        return (primary, full)
+        return (activity, primary, full)
 
     ranked = sorted(usable, key=rank_key, reverse=True)
-    chosen = []
-    seen = set()
-    for row in ranked:
-        if len(chosen) >= limit:
-            break
-        primary, full = rank_key(row)
-        if primary <= 0 and full <= 0:
-            break
-        chosen.append(row)
-        seen.add(id(row))
-    for row in usable:
-        if len(chosen) >= limit:
-            break
-        if id(row) in seen:
-            continue
-        chosen.append(row)
-    return chosen[:limit]
+    return ranked[:limit]
 
 
 def rank_reviews_for_query(
@@ -219,25 +366,39 @@ def rank_reviews_for_query(
     activity_tokens: Optional[Sequence[str]] = None,
     activity_query_text: str = '',
     attribute_tokens: Optional[Sequence[str]] = None,
+    activity_matcher: Optional[dict] = None,
 ) -> List[object]:
     """
-    Urutkan ulasan menurut relevansi. Sinyal aktivitas (nge-game, kerja, …)
-    lebih berat daripada fasilitas tambahan, supaya kutipan game mengalahkan
-    ulasan 'wifi lancar' yang tidak membahas aktivitas.
+    Urutkan ulasan menurut relevansi. Ulasan yang benar-benar membahas aktivitas
+    (nge-game, kerja, …) selalu di depan fasilitas tambahan, supaya kutipan
+    'main ML' mengalahkan 'wifi lancar' / 'nge-charge laptop'.
     """
     take = limit if limit is not None else prompt_review_limit()
     scan = scan_limit if scan_limit is not None else prompt_review_scan()
+    matcher = activity_matcher or empty_activity_matcher()
+    activity_hits = [
+        row for row in (reviews or [])
+        if text_has_activity_signal(review_text(row), matcher)
+        and len(review_text(row)) >= _MIN_ACTIVITY_QUOTE_CHARS
+    ]
     usable = _usable_reviews(reviews)
-    if not usable:
+    if not usable and not activity_hits:
         return []
-    act_tokens = list(activity_tokens or [])
+    act_tokens = list(activity_tokens or matcher.get('bm25_tokens') or [])
     attr_tokens = list(attribute_tokens or [])
     pool = _select_reviews_for_embedding(
-        usable,
+        usable or activity_hits,
         query_tokens,
         limit=scan,
         primary_tokens=act_tokens,
+        activity_matcher=matcher if matcher.get('pills') else None,
     )
+    # Jaminan: semua ulasan berbukti aktivitas ikut dinilai, tidak terpotong kuota scan.
+    seen_ids = {id(row) for row in pool}
+    for row in activity_hits:
+        if id(row) not in seen_ids:
+            pool.append(row)
+            seen_ids.add(id(row))
     texts = [review_text(row) for row in pool]
     full_cosines, telemetry = score_documents(query_text, texts)
     if telemetry.get('skipped'):
@@ -252,25 +413,34 @@ def rank_reviews_for_query(
     scored = []
     for idx, row in enumerate(pool):
         text = texts[idx]
-        act_lex = lexical_review_score(text, act_tokens) if act_tokens else 0.0
+        act_hit = activity_text_score(text, matcher) if matcher.get('pills') else 0.0
+        act_lex = act_hit if act_hit else (
+            lexical_review_score(text, act_tokens) if act_tokens else 0.0
+        )
         attr_lex = lexical_review_score(text, attr_tokens) if attr_tokens else 0.0
         full_lex = lexical_review_score(text, query_tokens)
         act_dense = max(0.0, float(act_cosines[idx]) if idx < len(act_cosines) else 0.0)
         full_dense = max(0.0, float(full_cosines[idx]) if idx < len(full_cosines) else 0.0)
-        if act_tokens:
+        if matcher.get('pills'):
             combined = (
                 0.45 * act_dense
                 + 0.30 * act_lex
                 + 0.15 * full_dense
                 + 0.10 * attr_lex
             )
-            if act_lex > 0:
-                combined += 0.20
+            if act_hit > 0:
+                combined += 0.45
         else:
             combined = _DENSE_WEIGHT * full_dense + _LEXICAL_WEIGHT * full_lex
         scored.append((combined, act_lex, act_dense, row))
     scored.sort(key=lambda item: (-item[0], -item[1], -item[2]))
-    return [row for _, _, _, row in scored[:take]]
+    ordered = [row for _, _, _, row in scored]
+    if activity_hits:
+        hit_ids = {id(row) for row in activity_hits}
+        guaranteed = [row for row in ordered if id(row) in hit_ids]
+        filler = [row for row in ordered if id(row) not in hit_ids]
+        return (guaranteed + filler)[: max(take, len(guaranteed))]
+    return ordered[:take]
 
 
 def build_sparse_query_tokens(
@@ -308,6 +478,7 @@ def score_shops_dense(
     *,
     query_tokens: Optional[Sequence[str]] = None,
     primary_tokens: Optional[Sequence[str]] = None,
+    activity_matcher: Optional[dict] = None,
 ) -> Tuple[Dict[str, float], Dict[str, object]]:
     """
     Skor dense per toko = cosine tertinggi di antara ulasannya (max-pool).
@@ -329,6 +500,7 @@ def score_shops_dense(
             query_tokens or [],
             limit=cap,
             primary_tokens=primary,
+            activity_matcher=activity_matcher,
         )
         if not selected:
             reviews_per_shop[pid] = 0
@@ -363,11 +535,22 @@ def activity_signal_tokens(
     tokens: Sequence[str],
     activity_pills: Optional[Sequence[str]] = None,
 ) -> List[str]:
-    """Buang token generik agar gerbang/kutipan aktivitas tidak tertipu 'nongkrong'."""
+    """Buang token generik agar gerbang/kutipan aktivitas tidak tertipu 'nongkrong'/'nge'."""
     stops = set()
+    acronyms = set()
     for pill in activity_pills or []:
         stops |= _ACTIVITY_STOP_TOKENS_BY_PILL.get(pill, frozenset())
-    return [t for t in tokens if t and t not in stops]
+        acronyms |= _ACTIVITY_SHORT_ACRONYMS.get(pill, frozenset())
+    out = []
+    seen = set()
+    for tok in tokens or []:
+        if not tok or tok in stops or tok in seen:
+            continue
+        if len(tok) < 3 and tok not in acronyms:
+            continue
+        seen.add(tok)
+        out.append(tok)
+    return out
 
 
 def activity_phrases(
@@ -376,55 +559,50 @@ def activity_phrases(
     pill_labels: Dict[str, str],
     pill_mapping: Dict[str, dict],
 ) -> List[str]:
-    """Frasa multi-kata untuk gerbang (mobile legends, push rank, nge-game)."""
-    phrases = []
-    seen = set()
-    for pill in activity_pills or []:
-        mapping = pill_mapping.get(pill) or {}
-        candidates = [str(pill_labels.get(pill, pill) or '')]
-        candidates.extend(str(kw) for kw in (mapping.get('review_keywords') or []))
-        for raw in candidates:
-            phrase = ' '.join(str(raw or '').lower().split())
-            if len(phrase) < 6:
-                continue
-            if 'nongkrong' in phrase:
-                continue
-            if pill == 'bermain game' and not any(
-                marker in phrase
-                for marker in ('game', 'mabar', 'legends', 'valorant', 'pubg', 'turnamen', 'rank')
-            ):
-                continue
-            if ' ' not in phrase and '-' not in phrase:
-                continue
-            if phrase in seen:
-                continue
-            seen.add(phrase)
-            phrases.append(phrase)
-    return phrases
+    """Frasa gerbang aktivitas; delegasi ke compile_activity_matcher."""
+    matcher = compile_activity_matcher(
+        activity_pills, pill_labels=pill_labels, pill_mapping=pill_mapping,
+    )
+    return list(matcher.get('phrases') or [])
 
 
 def shop_has_activity_signal(
     reviews: Sequence[object],
     activity_tokens: Sequence[str],
     phrases: Optional[Sequence[str]] = None,
+    activity_matcher: Optional[dict] = None,
 ) -> bool:
-    if shop_activity_lexical_max(reviews, activity_tokens) > 0:
+    matcher = activity_matcher
+    if matcher:
+        for row in reviews or []:
+            if text_has_activity_signal(review_text(row), matcher):
+                return True
+        return False
+    if shop_activity_lexical_max(reviews, activity_tokens, activity_matcher=None) > 0:
         return True
     needles = [p for p in (phrases or []) if p]
     if not needles:
         return False
-    for row in _usable_reviews(reviews):
+    for row in reviews or []:
         text = review_text(row).lower()
         if any(p in text for p in needles):
             return True
     return False
 
 
-def shop_activity_lexical_max(reviews: Sequence[object], activity_tokens: Sequence[str]) -> float:
+def shop_activity_lexical_max(
+    reviews: Sequence[object],
+    activity_tokens: Sequence[str],
+    activity_matcher: Optional[dict] = None,
+) -> float:
     """Skor leksikal aktivitas tertinggi di seluruh ulasan toko (tanpa embedding)."""
     best = 0.0
-    for row in _usable_reviews(reviews):
-        best = max(best, lexical_review_score(review_text(row), activity_tokens))
+    for row in reviews or []:
+        text = review_text(row)
+        if activity_matcher:
+            best = max(best, activity_text_score(text, activity_matcher))
+        else:
+            best = max(best, lexical_review_score(text, activity_tokens))
         if best >= 1.0:
             break
     return best
@@ -440,15 +618,24 @@ def compute_pill_coverage(
     *,
     pill_labels: Dict[str, str],
     pill_mapping: Dict[str, dict],
+    activity_pills: Optional[Sequence[str]] = None,
 ) -> Tuple[List[str], List[str]]:
     """Pill yang disebut di kumpulan teks vs yang belum."""
     covered = []
     uncovered = []
+    activity_set = set(activity_pills or [])
     for pill in pills or []:
-        tokens = build_sparse_query_tokens(
-            [pill], pill_labels=pill_labels, pill_mapping=pill_mapping,
-        )
-        if any(text_matches_tokens(str(text or ''), tokens) for text in texts):
+        if pill in activity_set:
+            matcher = compile_activity_matcher(
+                [pill], pill_labels=pill_labels, pill_mapping=pill_mapping,
+            )
+            hit = any(text_has_activity_signal(str(text or ''), matcher) for text in texts)
+        else:
+            tokens = build_sparse_query_tokens(
+                [pill], pill_labels=pill_labels, pill_mapping=pill_mapping,
+            )
+            hit = any(text_matches_tokens(str(text or ''), tokens) for text in texts)
+        if hit:
             covered.append(pill)
         else:
             uncovered.append(pill)
@@ -523,15 +710,18 @@ def retrieve_top_k(
     query_tokens = build_sparse_query_tokens(
         pills, pill_labels=pill_labels, pill_mapping=pill_mapping,
     )
-    activity_tokens = activity_signal_tokens(
-        build_sparse_query_tokens(
-            activity_list, pill_labels=pill_labels, pill_mapping=pill_mapping,
-        ) if activity_list else [],
-        activity_list,
-    )
-    activity_phrase_list = activity_phrases(
+    activity_matcher = compile_activity_matcher(
         activity_list, pill_labels=pill_labels, pill_mapping=pill_mapping,
-    ) if activity_list else []
+    ) if activity_list else empty_activity_matcher()
+    activity_tokens = list(activity_matcher.get('bm25_tokens') or [])
+    if not activity_tokens:
+        activity_tokens = activity_signal_tokens(
+            build_sparse_query_tokens(
+                activity_list, pill_labels=pill_labels, pill_mapping=pill_mapping,
+            ) if activity_list else [],
+            activity_list,
+        )
+    activity_phrase_list = list(activity_matcher.get('phrases') or [])
     attribute_tokens = build_sparse_query_tokens(
         attribute_list, pill_labels=pill_labels, pill_mapping=pill_mapping,
     ) if attribute_list else []
@@ -566,6 +756,7 @@ def retrieve_top_k(
         activity_query_text,
         query_tokens=query_tokens,
         primary_tokens=activity_tokens or query_tokens,
+        activity_matcher=activity_matcher if activity_list else None,
     )
     telemetry['dense'] = dense_telemetry
 
@@ -577,13 +768,22 @@ def retrieve_top_k(
         if not pid:
             continue
         reviews = profile.get('reviews') or []
-        act_lex = shop_activity_lexical_max(reviews, activity_tokens) if activity_tokens else 0.0
+        act_lex = shop_activity_lexical_max(
+            reviews, activity_tokens, activity_matcher=activity_matcher if activity_list else None,
+        )
+        act_hits = sum(
+            1 for row in reviews
+            if text_has_activity_signal(review_text(row), activity_matcher)
+        ) if activity_list else 0
         act_bm25 = float(activity_bm25_raw.get(pid) or 0.0)
         act_dense = float(dense_raw.get(pid) or 0.0)
         if activity_list:
-            # Bukti aktivitas: kata/frasa di ulasan mana pun (bukan BM25/dense
-            # semata). Token generik seperti "nongkrong" tidak dihitung.
-            if not shop_has_activity_signal(reviews, activity_tokens, activity_phrase_list):
+            # Bukti aktivitas: frasa/kata khas di ulasan mana pun.
+            # "nge-charge" tidak dihitung; "main ML" / "mabar" dihitung.
+            if not shop_has_activity_signal(
+                reviews, activity_tokens, activity_phrase_list,
+                activity_matcher=activity_matcher,
+            ):
                 continue
         else:
             if act_bm25 + act_dense <= 1e-9:
@@ -597,11 +797,12 @@ def retrieve_top_k(
             'place_id': pid,
             'name': profile.get('name') or '',
             'profile': profile,
-            'act_lex': act_lex,
+            'act_lex': act_lex + 0.15 * min(act_hits, 3) / 3.0,
             'act_bm25_raw': act_bm25,
             'act_dense_raw': act_dense,
             'attr_bm25_raw': float(attribute_bm25_raw.get(pid) or 0.0),
             'quality_s': quality_s,
+            'act_hits': act_hits,
         })
 
     telemetry['activity_gated'] = len(gated_rows)
@@ -644,6 +845,7 @@ def retrieve_top_k(
                 'dense_raw': round(row['act_dense_raw'], 4),
                 'dense_score': round(float(act_dense_norm.get(pid) or 0.0), 4),
                 'activity_lex': round(row['act_lex'], 4),
+                'activity_hits': int(row.get('act_hits') or 0),
                 'attribute_bm25': round(row['attr_bm25_raw'], 4),
                 'quality_score': None if quality_s is None else round(quality_s, 4),
                 'score_weights': weights,
@@ -663,5 +865,6 @@ def retrieve_top_k(
         'activity_tokens': activity_tokens,
         'attribute_tokens': attribute_tokens,
         'activity_query_text': activity_query_text,
+        'activity_matcher': activity_matcher,
         'telemetry': telemetry,
     }
