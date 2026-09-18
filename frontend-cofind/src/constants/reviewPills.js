@@ -1,11 +1,35 @@
 /** Pill konteks aktivitas di beranda (rekomendasi berbasis review). */
 export const CONTEXT_PILL_OPTIONS = [
-  { label: 'Belajar', value: 'belajar' },
-  { label: 'Kerja/WFC', value: 'kerja' },
-  { label: 'Nge-game', value: 'bermain game' },
-  { label: 'Meeting/Pertemuan', value: 'meeting_sosialisasi' },
-  { label: 'Keluarga', value: 'keluarga' },
-  { label: 'Instagrammable', value: 'instagrammable' },
+  {
+    label: 'Belajar',
+    value: 'belajar',
+    desc: 'Suasana tenang dan kondusif untuk membaca buku atau mengerjakan tugas/skripsi.',
+  },
+  {
+    label: 'Kerja/WFC',
+    value: 'kerja',
+    desc: 'Kebutuhan kerja remote/WFC berdurasi lama, laptopan, dan fokus deadline.',
+  },
+  {
+    label: 'Nge-game',
+    value: 'bermain game',
+    desc: 'Koneksi stabil untuk mabar game online tanpa pembatasan waktu ketat.',
+  },
+  {
+    label: 'Meeting/Pertemuan',
+    value: 'meeting_sosialisasi',
+    desc: 'Kapasitas meja kelompok dan ruang yang nyaman untuk diskusi/rapat.',
+  },
+  {
+    label: 'Keluarga',
+    value: 'keluarga',
+    desc: 'Tempat luas, ramah anak, nyaman untuk keluarga, dan menu variatif.',
+  },
+  {
+    label: 'Instagrammable',
+    value: 'instagrammable',
+    desc: 'Estetika interior visual, pencahayaan bagus, dan spot foto menarik.',
+  },
 ];
 
 /**
@@ -19,9 +43,8 @@ export const FACILITY_ATTRIBUTE_GROUPS = [
     options: [
       { label: 'Ruangan sejuk', value: 'ruangan_ac', icon: '❄️' },
       { label: 'Suasana tenang', value: 'suasana_tenang', icon: '🔇' },
-      { label: 'Area non-smoking', value: 'area_non_smoking', icon: '🚭' },
-      { label: 'Smoking area', value: 'smoking_area', icon: '🚬' },
       { label: 'Outdoor area', value: 'area_outdoor', icon: '🌿' },
+      { label: 'Smoking area', value: 'smoking_area', icon: '🚬' },
     ],
   },
   {
@@ -40,6 +63,13 @@ export const FACILITY_ATTRIBUTE_GROUPS = [
       { label: 'Ada musholla', value: 'musholla', icon: '🕌' },
       { label: 'Parkir luas', value: 'parkir_luas', icon: '🅿️' },
       { label: 'Toilet bersih', value: 'toilet_bersih', icon: '🚻' },
+    ],
+  },
+  {
+    id: 'menu',
+    label: 'Menu',
+    options: [
+      { label: 'Makanan & Minuman', value: 'makanan_berat', icon: '🍽️' },
     ],
   },
 ];

@@ -16,7 +16,7 @@ Efisiensi: klausa dikelompokkan per batch dalam satu panggilan LLM, dan hasilnya
 disimpan di vector_cache sehingga klausa yang sama tidak dinilai dua kali.
 
 Env:
-  COFIND_LLM_CLAUSE_SENTIMENT           aktifkan tahap ini (default: true)
+  COFIND_LLM_CLAUSE_SENTIMENT           aktifkan tahap ini (default: false)
   COFIND_CLAUSE_SENTIMENT_BATCH         klausa per panggilan LLM (default: 16)
   COFIND_CLAUSE_SENTIMENT_MAX           batas klausa per request rekomendasi (default: 96)
   COFIND_CLAUSE_SENTIMENT_POOL          jumlah kandidat toko yang diverifikasi (default: 6)
@@ -36,7 +36,7 @@ from vector_cache import PersistentCache, digest_key
 _cache = PersistentCache('clause_sentiment')
 
 _ALLOWED_SENTIMENTS = ('positif', 'negatif', 'netral')
-_MIN_CLAUSE_CHARS = 8
+_MIN_CLAUSE_CHARS = 3
 
 _SYSTEM_PROMPT = (
     'Anda mesin analisis sentimen aspek untuk ulasan coffee shop Indonesia. '

@@ -4,6 +4,7 @@ Normalisasi slang Indonesia untuk matching review / BM25.
 Memuat data/indonesia_slang_map.json
 dan menggabungkannya dengan canonical replacements domain coffee shop.
 Domain replacements selalu menang atas kamus slang umum.
+Parafrase dan bahasa beragam ditangani embedding, bukan kamus daerah.
 """
 
 from __future__ import annotations
@@ -37,7 +38,6 @@ DOMAIN_CANONICAL_REPLACEMENTS: Dict[str, str] = {
     'cas': 'charge',
     'ngecas': 'charge',
     'parkiran': 'parkir',
-    # Domain slang yang sering muncul di review coffee shop
     'wfc': 'work from cafe',
     'nongki': 'nongkrong',
     'nongky': 'nongkrong',
@@ -59,6 +59,21 @@ def _basic_clean(text: str) -> str:
     return text
 
 
+def _pairs_from_mapping(raw: object) -> Dict[str, str]:
+    if isinstance(raw, dict) and isinstance(raw.get('map'), dict):
+        raw = raw.get('map')
+    if not isinstance(raw, dict):
+        return {}
+    out: Dict[str, str] = {}
+    for src, dest in raw.items():
+        s = _basic_clean(src)
+        d = _basic_clean(dest)
+        if not s or not d or s == d or ' ' in s:
+            continue
+        out[s] = d
+    return out
+
+
 @lru_cache(maxsize=1)
 def load_slang_map() -> Dict[str, str]:
     """Load slang map dari JSON; kosong jika file belum ada."""
@@ -66,19 +81,9 @@ def load_slang_map() -> Dict[str, str]:
         logger.warning(f'Slang map tidak ditemukan: {_SLANG_JSON_PATH}')
         return {}
     try:
-        with open(_SLANG_JSON_PATH, 'r', encoding='utf-8') as f:
-            payload = json.load(f)
-        raw = payload.get('map') if isinstance(payload, dict) else payload
-        if not isinstance(raw, dict):
-            return {}
-        out: Dict[str, str] = {}
-        for src, dest in raw.items():
-            s = _basic_clean(src)
-            d = _basic_clean(dest)
-            if not s or not d or s == d or ' ' in s:
-                continue
-            out[s] = d
-        return out
+        with open(_SLANG_JSON_PATH, 'r', encoding='utf-8') as handle:
+            payload = json.load(handle)
+        return _pairs_from_mapping(payload)
     except Exception as err:
         logger.warning(f'Gagal load slang map: {err}')
         return {}
@@ -91,9 +96,7 @@ def get_replacement_pairs() -> tuple:
     Domain canonical menang; slang mengisi sisanya.
     """
     merged: Dict[str, str] = {}
-    slang = load_slang_map()
-    merged.update(slang)
-    # Domain override terakhir
+    merged.update(load_slang_map())
     for src, dest in DOMAIN_CANONICAL_REPLACEMENTS.items():
         merged[_basic_clean(src)] = _basic_clean(dest)
 
@@ -119,14 +122,11 @@ def _compiled_replacements() -> tuple:
 
     multiword_re = None
     if multiword:
-        # Urutan panjang menurun sudah dijamin get_replacement_pairs().
         pattern = '|'.join(re.escape(src) for src, _ in multiword)
         multiword_re = re.compile(rf'\b(?:{pattern})\b')
     return token_map, dict(multiword), multiword_re
 
 
-# Ekspansi bisa memunculkan token baru (mis. "wfc" -> "work from cafe").
-# Dua lintasan sudah cukup dan tetap jauh lebih murah daripada regex per aturan.
 _MAX_TOKEN_PASSES = 2
 
 

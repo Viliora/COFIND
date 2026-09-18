@@ -1,7 +1,7 @@
 // src/components/RecommendationModal.jsx
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CONTEXT_PILL_OPTIONS, FACILITY_ATTRIBUTE_LABELS } from '../constants/reviewPills';
+import { CONTEXT_PILL_OPTIONS, FACILITY_ATTRIBUTE_LABELS, FACILITY_ATTRIBUTE_OPTIONS } from '../constants/reviewPills';
 import { authService } from '../services/authService';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
@@ -45,6 +45,36 @@ function formatQuoteReason(value) {
 
 function getShopDisplayName(rec, shop) {
     return String(rec?.name || shop?.name || 'Coffee shop').trim();
+}
+
+const FACILITY_ICON_BY_VALUE = Object.fromEntries(
+    FACILITY_ATTRIBUTE_OPTIONS.map((option) => [option.value, option.icon]),
+);
+
+function getMatchedFacilityBadges(rec) {
+    const ev = rec?.supporting_evidence || {};
+    const gate = ev.metadata_gate || {};
+    const contradicted = new Set(
+        (Array.isArray(gate.contradicted_pills) ? gate.contradicted_pills : []).map(String),
+    );
+    let pills = Array.isArray(rec?.matched_facility_pills) && rec.matched_facility_pills.length
+        ? rec.matched_facility_pills
+        : (Array.isArray(gate.matched_attribute_pills) ? gate.matched_attribute_pills : []);
+    let labels = Array.isArray(rec?.matched_facility_labels) && rec.matched_facility_labels.length
+        ? rec.matched_facility_labels
+        : (Array.isArray(gate.matched_attribute_labels) ? gate.matched_attribute_labels : []);
+    if (!pills.length) {
+        const claimed = Array.isArray(gate.claimed_pills) ? gate.claimed_pills : [];
+        pills = claimed.filter((pill) => FACILITY_ATTRIBUTE_LABELS[pill] && !contradicted.has(String(pill)));
+        labels = pills.map((pill) => FACILITY_ATTRIBUTE_LABELS[pill] || pill);
+    }
+    return pills
+        .map((pill, index) => ({
+            pill,
+            label: labels[index] || FACILITY_ATTRIBUTE_LABELS[pill] || pill,
+            icon: FACILITY_ICON_BY_VALUE[pill] || '',
+        }))
+        .filter((item) => item.label);
 }
 
 function quoteDedupeKey(quote) {
@@ -199,17 +229,16 @@ function getModalEvidenceItems(rec, confirmedPills) {
         ...(Array.isArray(ev.negative_review_quotes) ? ev.negative_review_quotes : []),
     ]);
     const fromApi = Array.isArray(ev.modal_display_quotes) ? ev.modal_display_quotes : null;
-    const asSupporting = (items, { trustBackend = false } = {}) =>
+    const asSupporting = (items) =>
         (Array.isArray(items) ? items : []).filter((item) => {
             const quote = item?.quote;
             if (!quote) return false;
             if (caveatKeys.has(quoteDedupeKey(quote))) return false;
-            if (!trustBackend && quoteLooksUnsuitable(quote)) return false;
+            if (quoteLooksUnsuitable(quote)) return false;
             return true;
         });
-    // Percayai pemisahan backend: jangan angkat ulang kutipan caveat sebagai bukti.
     if (fromApi) {
-        return asSupporting(fromApi, { trustBackend: true }).slice(0, 3);
+        return asSupporting(fromApi).slice(0, 3);
     }
     return sortModalQuotes(asSupporting(collectRelevantEvidence(rec, confirmedPills))).slice(0, 3);
 }
@@ -743,11 +772,13 @@ const RecommendationModal = ({
                                         const caveatItems = getModalCaveatItems(rec);
                                         const summaryText = getModalSummaryText(rec);
                                         const existingFb = placeId ? feedbackByPlaceId[placeId] : null;
+                                        const facilityBadges = getMatchedFacilityBadges(rec);
                                         return (
                                             <li
                                                 key={rec.place_id || `${rec.name}-${displayIndex}`}
                                                 className="rounded-xl border border-gray-100 bg-gray-50/70 px-3 py-3 dark:border-gray-700 dark:bg-gray-900/50"
                                             >
+                                                <div className="flex flex-wrap items-center gap-2">
                                                 {placeId ? (
                                                     <Link
                                                         to={`/shop/${placeId}`}
@@ -761,6 +792,17 @@ const RecommendationModal = ({
                                                         {shopName}
                                                     </p>
                                                 )}
+                                                {facilityBadges.map((badge) => (
+                                                    <span
+                                                        key={`${placeId || shopName}-${badge.pill}`}
+                                                        title="Menurut profil fasilitas tempat, bukan ulasan"
+                                                        className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-800 dark:border-emerald-800/70 dark:bg-emerald-950/40 dark:text-emerald-100"
+                                                    >
+                                                        {badge.icon ? <span aria-hidden>{badge.icon}</span> : null}
+                                                        {badge.label}
+                                                    </span>
+                                                ))}
+                                                </div>
                                                 {summaryText ? (
                                                     <p className="mt-2 text-sm leading-relaxed text-gray-700 dark:text-gray-200">
                                                         {summaryText}

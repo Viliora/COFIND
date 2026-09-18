@@ -26,9 +26,9 @@ import time
 from typing import Callable, Dict, List, Optional, Sequence
 
 from hybrid_retrieval import (
+    extract_activity_support_text,
     min_fit_score,
-    text_matches_tokens,
-    text_has_activity_signal,
+    review_text,
 )
 
 try:  # opsional, sama seperti pemakaian di app.py
@@ -436,8 +436,9 @@ _RERANK_SYSTEM_PROMPT = (
     'Anda mesin pemeringkat rekomendasi coffee shop Cofind. '
     'Anda boleh memilih 0 sampai 3 toko. Jangan memaksa 3. '
     'Toko hanya boleh dipilih jika kutipan benar-benar membahas aktivitas user '
-    '(misalnya bermain game), bukan hanya wifi, parkir, atau nongkrong. '
-    'Fasilitas tambahan hanya penguat. Ketiadaan ulasan fasilitas bukan alasan menolak '
+    '(belajar, kerja/WFC, bermain game, meeting, keluarga, atau instagrammable), '
+    'bukan hanya wifi, parkir, atau nongkrong. '
+    'Fasilitas tambahan hanya penguat ranking. Ketiadaan ulasan fasilitas bukan alasan menolak '
     'toko yang aktivitasnya terbukti, dan bukan alasan menaikkan skor. '
     'Pahami bahasa alami: negasi mengubah nada ("harganya tidak mahal" = positif; '
     '"tempatnya lumayan sumpek" = kelemahan). '
@@ -456,8 +457,15 @@ _GENERIC_REASON_RE = re.compile(
 )
 
 
-def _quote_candidates_for_prompt(evidence: Dict[str, object], *, limit: int, quote_chars: int) -> List[Dict[str, object]]:
-    """Kutipan review untuk satu kandidat — utamakan cuplikan korpus, bukan hasil filter leksikon."""
+def _quote_candidates_for_prompt(
+    evidence: Dict[str, object],
+    *,
+    limit: int,
+    quote_chars: int,
+    activity_matcher: Optional[dict] = None,
+    activity_tokens: Optional[Sequence[str]] = None,
+) -> List[Dict[str, object]]:
+    """Kutipan review untuk satu kandidat — utamakan bukti aktivitas, bukan fasilitas."""
     ordered_keys = (
         'review_quotes',
         'positive_review_quotes',
@@ -469,21 +477,27 @@ def _quote_candidates_for_prompt(evidence: Dict[str, object], *, limit: int, quo
     seen = set()
     for key in ordered_keys:
         for row in (evidence or {}).get(key) or []:
-            if len(quotes) >= limit:
-                return quotes
             if not isinstance(row, dict):
                 continue
             text = re.sub(r'\s+', ' ', str(row.get('quote') or row.get('text') or '')).strip()
-            if len(text) < 12:
+            if len(text) < 6:
                 continue
-            dedupe_key = text.lower()[:120]
-            if dedupe_key in seen:
+            dedupe_key = re.sub(r'\s+', ' ', text).strip().lower()
+            if not dedupe_key or dedupe_key in seen:
                 continue
             seen.add(dedupe_key)
             if len(text) > quote_chars:
                 text = text[: quote_chars - 3].rstrip() + '...'
-            quotes.append({'text': text, 'rating': row.get('rating')})
-    return quotes
+            support = extract_activity_support_text(
+                text, activity_matcher, activity_tokens,
+            )
+            quotes.append({
+                'text': text,
+                'rating': row.get('rating'),
+                'activity_support': bool(support),
+            })
+    quotes.sort(key=lambda row: int(bool(row.get('activity_support'))), reverse=True)
+    return quotes[:limit]
 
 
 _RATING_PROMPT_LABELS = {
@@ -567,6 +581,29 @@ def _community_signal_lines(evidence: Dict[str, object], pills: Optional[Sequenc
     return lines
 
 
+def _metadata_gate_prompt_block(evidence: Dict[str, object]) -> str:
+    """Profil fasilitas resmi yang cocok dengan pilihan user: prior lemah."""
+    gate = (evidence or {}).get('metadata_gate') or {}
+    matched_labels = [str(p) for p in (gate.get('matched_attribute_labels') or []) if p]
+    if not matched_labels:
+        matched_labels = [str(p) for p in (evidence or {}).get('matched_facility_labels') or [] if p]
+    claimed = [str(p) for p in (gate.get('claimed_pills') or []) if p]
+    contradicted = [str(p) for p in (gate.get('contradicted_pills') or []) if p]
+    if not matched_labels and not claimed and not contradicted:
+        return ''
+    lines = ['  profil fasilitas (klaim pendukung, BUKAN bukti; utamakan kutipan review):']
+    if matched_labels:
+        lines.append(f"    - cocok dengan pilihan user: {', '.join(matched_labels)}")
+    elif claimed:
+        lines.append(f"    - menandai: {', '.join(claimed)}")
+    if contradicted:
+        lines.append(
+            f"    - ulasan menentang klaim: {', '.join(contradicted)} "
+            '(wajib disebut sebagai caveat, jangan diabaikan)'
+        )
+    return '\n'.join(lines) + '\n'
+
+
 def _candidate_block(
     index: int,
     candidate: Dict[str, object],
@@ -613,13 +650,16 @@ def _candidate_block(
     if community_lines:
         community_block = '  sinyal pengunjung:\n' + '\n'.join(community_lines) + '\n'
 
+    metadata_block = _metadata_gate_prompt_block(evidence)
+
     return (
         f"id={index} | {candidate.get('name') or '-'}\n"
         f"  jumlah review: {evidence.get('review_count', 0)}, rata-rata rating user: {evidence.get('avg_user_rating')}\n"
         f"  rating kategori: {category_line}\n"
         f"  sinyal per konteks:\n" + '\n'.join(stat_lines) + '\n'
         + community_block
-        + "  kutipan review bernomor (bukti utama; sinyal pengunjung di atas hanya pendukung):\n"
+        + metadata_block
+        + "  kutipan review bernomor (bukti utama; sinyal pengunjung dan profil fasilitas hanya pendukung):\n"
         + '\n'.join(quote_lines)
     )
 
@@ -669,6 +709,35 @@ def _clamp_fit_score(raw_value: object) -> float:
     return max(0.0, min(10.0, value))
 
 
+def format_activity_context_block(
+    activity_pills: Sequence[str],
+    *,
+    pill_mapping: Optional[Dict[str, dict]] = None,
+    pill_labels: Optional[Dict[str, str]] = None,
+) -> str:
+    """Blok definisi + batasan aktivitas untuk prompt rerank/summary."""
+    mapping = pill_mapping or {}
+    labels = pill_labels or {}
+    lines = ['Kebutuhan Aktivitas Pengguna:']
+    added = False
+    for pill in activity_pills or []:
+        spec = mapping.get(pill) or {}
+        label = str(spec.get('label') or labels.get(pill) or pill).strip()
+        definition = re.sub(r'\s+', ' ', str(spec.get('definition') or '')).strip()
+        negative = re.sub(r'\s+', ' ', str(spec.get('negative_scope') or '')).strip()
+        if definition:
+            lines.append(f'- {label}: {definition}')
+            if negative:
+                lines.append(f'  Batasan (bukan tujuan): {negative}')
+            added = True
+        elif label:
+            lines.append(f'- {label}')
+            added = True
+    if not added:
+        return ''
+    return '\n'.join(lines)
+
+
 def llm_rerank_candidates(
     candidates: Sequence[Dict[str, object]],
     pills: Sequence[str],
@@ -686,6 +755,7 @@ def llm_rerank_candidates(
     activity_pills: Optional[Sequence[str]] = None,
     activity_tokens: Optional[Sequence[str]] = None,
     activity_matcher: Optional[dict] = None,
+    pill_mapping: Optional[Dict[str, dict]] = None,
 ) -> Optional[Dict[str, object]]:
     """
     Tahap B. LLM menilai setiap kandidat (fit 0-10 + alasan + kutipan bukti),
@@ -733,6 +803,11 @@ def llm_rerank_candidates(
     activity_line = ', '.join(str(pill_labels.get(p, p)) for p in activity_list) or 'preferensi umum'
     attribute_line = ', '.join(str(pill_labels.get(p, p)) for p in attribute_list) or '(tidak ada)'
     labels_line = ', '.join(str(pill_labels.get(p, p)) for p in pills or []) or 'preferensi umum'
+    activity_context = format_activity_context_block(
+        activity_list,
+        pill_mapping=pill_mapping,
+        pill_labels=pill_labels,
+    )
     act_tokens = list(activity_tokens or [])
     # Urutan prompt ditentukan place_id, bukan skor, agar posisi kandidat tidak
     # membocorkan peringkat statistik.
@@ -744,42 +819,81 @@ def llm_rerank_candidates(
             candidate.get('evidence') or {},
             limit=quotes_per_candidate,
             quote_chars=quote_chars,
+            activity_matcher=activity_matcher,
+            activity_tokens=act_tokens,
         )
+        if activity_matcher and activity_matcher.get('pills') and not any(
+            row.get('activity_support') for row in quotes
+        ):
+            seen_texts = {
+                re.sub(r'\s+', ' ', str(row.get('text') or '')).strip().lower()
+                for row in quotes
+            }
+            extras = []
+            for row in (candidate.get('profile') or {}).get('reviews') or []:
+                span = extract_activity_support_text(
+                    review_text(row), activity_matcher, act_tokens,
+                )
+                if not span:
+                    continue
+                key = re.sub(r'\s+', ' ', span).strip().lower()
+                if not key or key in seen_texts:
+                    continue
+                seen_texts.add(key)
+                extras.append({
+                    'text': span[:quote_chars],
+                    'rating': row.get('rating') if isinstance(row, dict) else None,
+                    'activity_support': True,
+                })
+                if len(extras) + len(quotes) >= quotes_per_candidate:
+                    break
+            if extras:
+                quotes = (extras + quotes)[:quotes_per_candidate]
         quotes_by_place[str(candidate.get('place_id'))] = quotes
         blocks.append(_candidate_block(idx, candidate, quotes, pills=pills))
 
     prompt_parts = [
         f'Preferensi aktivitas user (WAJIB ada bukti kutipan): {activity_line}',
+        activity_context,
         f'Fasilitas tambahan (penguat, tidak wajib): {attribute_line}',
         f'Semua preferensi: {labels_line}',
         f'Kata kunci pencarian yang dipakai sistem: {keyword_line or "tidak ada"}',
     ]
+    prompt_parts = [part for part in prompt_parts if part]
     if user_taste_block:
         prompt_parts.append(user_taste_block)
     prompt_parts.append('Kandidat coffee shop dan buktinya:\n\n' + '\n\n'.join(blocks))
     prompt_parts.append(
         'Tugas: nilai seberapa cocok setiap kandidat dengan AKTIVITAS user. '
-        'Pilih 0 sampai 3 toko. Kosong lebih baik daripada toko tanpa bukti aktivitas.\n'
+        'Pilih toko yang kutipannya membahas aktivitas. Fasilitas tambahan hanya penguat ranking.\n'
         'Aturan ketat:\n'
         '- Urutan kandidat di atas acak dan TIDAK mencerminkan kualitas. '
         'Nilai dari kutipan review plus sinyal pengunjung bila ada.\n'
         f'- Wajib menilai SEMUA {len(pool)} kandidat, satu objek JSON per kandidat, tanpa kandidat baru.\n'
         '- id adalah angka kandidat (id=...) yang tertulis di atas.\n'
-        '- selected=true HANYA jika ada kutipan yang membahas aktivitas user. '
-        'Boleh 0 toko. Jangan memaksa 3. Sisanya selected=false.\n'
+        '- selected=true WAJIB jika ada kutipan yang membahas aktivitas user, '
+        'meskipun fasilitas tambahan (wifi, colokan, outdoor, smoking, AC, dll.) tidak disebut. '
+        'Jangan menolak toko hanya karena fasilitas tidak ada di ulasan.\n'
+        '- selected=false HANYA jika tidak ada bukti aktivitas, atau kutipan menolak aktivitas itu.\n'
         '- Jangan pilih toko hanya karena wifi, parkir, AC, atau nongkrong jika aktivitas tidak disebut.\n'
         '- Fasilitas tambahan menaikkan fit_score hanya jika aktivitas sudah terbukti. '
-        'Ketiadaan ulasan fasilitas bukan alasan selected=false.\n'
+        'Toko dengan aktivitas + fasilitas lebih tinggi dari toko yang hanya aktivitas.\n'
+        '- Profil fasilitas resmi (good for working, wifi, musholla, dll.) hanyalah klaim pendukung. '
+        'Jangan menaikkan fit_score tinggi hanya karena profil. Jika tercatat ulasan menentang klaim, '
+        'wajib caveat_index dan turunkan fit_score, tetapi tetap selected=true bila aktivitas terbukti.\n'
         '- fit_score bilangan 0 sampai 10. Tanpa bukti aktivitas, fit_score maksimal 3 dan selected=false.\n'
         '- Pahami negasi dan nada alami: "tidak mahal", "nggak berisik", "harganya tidak mahal" '
         'adalah poin positif. "lumayan sumpek", "wifi lemot", "kurang nyaman buat kerja" adalah caveat.\n'
         '- Jika kutipan menunjukkan hambatan untuk aktivitas yang diminta user (misalnya berisik saat '
         'user ingin kerja), turunkan fit_score kandidat itu meskipun review lain positif.\n'
+        '- Ulasan yang menyinggung Batasan (bukan tujuan) menurunkan fit_score dan wajib caveat_index '
+        'jika ada nomor kutipannya. Batasan bukan alasan selected=false bila bukti aktivitas utama tetap kuat.\n'
         '- supporting_index wajib nomor kutipan yang membahas AKTIVITAS, bukan hanya fasilitas. '
         'Jangan menulis ulang isi kutipan.\n'
-        '- caveat_index nomor kutipan kelemahan bila ada; 0 jika tidak ada kelemahan yang relevan.\n'
+        '- caveat_index nomor kutipan kelemahan yang relevan dengan definisi, batasan, atau fasilitas '
+        'yang diminta; 0 jika tidak ada keluhan yang relevan.\n'
         '- reason maksimal 18 kata bahasa Indonesia dan wajib menyebut detail konkret dari kutipan '
-        'kandidat itu, misalnya "sering mabar" atau "colokan di tiap meja". '
+        'kandidat itu, misalnya "sering mabar", "enak nugas skripsi", atau "colokan di tiap meja". '
         'Dilarang menulis kalimat umum seperti "banyak review menyebut cocok untuk kerja".\n'
         '- reason setiap kandidat harus berbeda.\n'
         'Format keluaran, satu objek per kandidat: '
@@ -883,23 +997,37 @@ def llm_rerank_candidates(
             fit_score = max(0.0, fit_score - _UNGROUNDED_FIT_PENALTY)
 
         activity_supported = True
-        if act_tokens or (activity_matcher and activity_matcher.get('pills')):
-            def _quote_supports_activity(sample: str) -> bool:
-                if activity_matcher and activity_matcher.get('pills'):
-                    return text_has_activity_signal(sample, activity_matcher)
-                return bool(act_tokens and text_matches_tokens(sample, act_tokens))
+        activity_required = bool(
+            act_tokens or (activity_matcher and activity_matcher.get('pills'))
+        )
+        if activity_required:
+            def _quote_supports_activity(sample: str) -> str:
+                return extract_activity_support_text(
+                    sample, activity_matcher, act_tokens,
+                )
 
-            if quote and _quote_supports_activity(quote):
+            support_span = _quote_supports_activity(quote) if quote else ''
+            if support_span:
+                quote = support_span
                 activity_supported = True
             else:
                 activity_supported = False
                 for row in available_quotes:
                     alt = str((row or {}).get('text') or '')
-                    if _quote_supports_activity(alt):
-                        quote = alt
+                    span = _quote_supports_activity(alt)
+                    if span:
+                        quote = span
                         quote_grounded = True
                         activity_supported = True
                         break
+                if not activity_supported:
+                    for row in (candidate.get('profile') or {}).get('reviews') or []:
+                        span = _quote_supports_activity(review_text(row))
+                        if span:
+                            quote = span
+                            quote_grounded = True
+                            activity_supported = True
+                            break
 
         caveat_quote, _ = _quote_at(
             item.get('caveat_index'),
@@ -914,10 +1042,13 @@ def llm_rerank_candidates(
             selected = raw_selected.strip().lower() in ('1', 'true', 'yes', 'on')
         else:
             selected = bool(raw_selected)
-        if (act_tokens or (activity_matcher and activity_matcher.get('pills'))) and not activity_supported:
+        corpus_floor = min(min_fit_score(), 4.0)
+        if activity_required and not activity_supported:
             selected = False
             fit_score = min(fit_score, 3.0)
-        elif (act_tokens or (activity_matcher and activity_matcher.get('pills'))) and activity_supported and fit_score >= min_fit_score():
+        elif activity_required and activity_supported:
+            if fit_score < corpus_floor:
+                fit_score = corpus_floor
             selected = True
 
         matched = []
