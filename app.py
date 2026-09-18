@@ -44,8 +44,11 @@ from hybrid_retrieval import (
     retrieval_top_k,
     rank_reviews_for_query,
     text_matches_tokens,
+    text_has_activity_signal,
+    compile_activity_matcher,
     compute_pill_coverage,
     min_fit_score,
+    shop_has_activity_signal,
 )
 from llm_recommender import (
     build_user_taste_profile,
@@ -622,9 +625,11 @@ PILL_MAPPING = {
             'popular_for': ['good_for_groups'],
         },
         'review_keywords': [
-            'main game', 'gaming', 'game', 'ngegame', 'nge-game', 'nge game',
-            'mobile legends', 'pubg', 'valorant', 'mabar', 'gas game',
-            'turnamen', 'push rank', 'bermain game', 'mainbareng',
+            'main game', 'gaming', 'gamer', 'game', 'ngegame', 'nge-game', 'nge game',
+            'mobile legends', 'mobile legend', 'mlbb', 'main ml', 'main ML',
+            'pubg', 'valorant', 'free fire', 'main ff', 'honor of kings',
+            'mabar', 'ngemabar', 'gas game', 'turnamen', 'push rank', 'ngerank',
+            'bermain game', 'mainbareng', 'playstation', 'ps5', 'esport',
         ],
     },
     'meeting_sosialisasi': {
@@ -694,6 +699,16 @@ PILL_MAPPING = {
             'non smoking', 'no smoking', 'bebas asap', 'tidak berasap',
             'area bebas rokok', 'ruangan bebas rokok', 'smoking area terpisah',
             'tanpa asap rokok',
+        ],
+    },
+    'area_outdoor': {
+        'facility_fields': {
+            'service_options': ['outdoor_seating'],
+        },
+        'review_keywords': [
+            'outdoor', 'area outdoor', 'tempat outdoor', 'outdoor seating',
+            'di luar ruangan', 'lesehan outdoor', 'rooftop', 'open space',
+            'taman', 'area terbuka',
         ],
     },
     'smoking_area': {
@@ -784,6 +799,7 @@ FACILITY_ATTRIBUTE_PILLS = frozenset({
     'ruangan_ac', 'suasana_tenang', 'area_non_smoking', 'smoking_area',
     'wifi_kencang', 'banyak_colokan_terminal', 'ruang_privat',
     'buka_sampai_malam_24_hours', 'musholla', 'parkir_luas', 'toilet_bersih',
+    'area_outdoor',
 })
 
 PILL_LABELS = {
@@ -799,6 +815,7 @@ PILL_LABELS = {
     'suasana_tenang': 'Suasana tenang',
     'area_non_smoking': 'Area non-smoking',
     'smoking_area': 'Smoking area',
+    'area_outdoor': 'Outdoor area',
     'wifi_kencang': 'Wifi kencang',
     'banyak_colokan_terminal': 'Banyak colokan / terminal',
     'ruang_privat': 'Ruang privat / meeting',
@@ -3853,6 +3870,7 @@ def _attach_pill_coverage(shop, pills):
         pills,
         pill_labels=PILL_LABELS,
         pill_mapping=PILL_MAPPING,
+        activity_pills=[p for p in (pills or []) if p not in FACILITY_ATTRIBUTE_PILLS],
     )
     activity_pills, attribute_pills = _split_preference_pills(pills)
     covered_set = set(covered)
@@ -3873,7 +3891,21 @@ def _attach_pill_coverage(shop, pills):
     return shop
 
 
-def _shop_has_activity_evidence(shop, activity_tokens):
+def _shop_has_activity_evidence(shop, activity_tokens, activity_matcher=None):
+    if activity_matcher and activity_matcher.get('pills'):
+        fit = shop.get('llm_fit') if isinstance(shop.get('llm_fit'), dict) else {}
+        if text_has_activity_signal(str(fit.get('evidence_quote') or ''), activity_matcher):
+            return True
+        evidence = shop.get('evidence') or {}
+        for key in ('modal_display_quotes', 'review_quotes'):
+            for row in evidence.get(key) or []:
+                quote = row.get('quote') if isinstance(row, dict) else str(row or '')
+                if text_has_activity_signal(quote or '', activity_matcher):
+                    return True
+        reviews = (shop.get('profile') or {}).get('reviews') or []
+        if shop_has_activity_signal(reviews, activity_tokens or [], activity_matcher=activity_matcher):
+            return True
+        return False
     if not activity_tokens:
         return True
     fit = shop.get('llm_fit') if isinstance(shop.get('llm_fit'), dict) else {}
@@ -3888,7 +3920,7 @@ def _shop_has_activity_evidence(shop, activity_tokens):
     return False
 
 
-def _activity_quote_rows(evidence, pills, activity_tokens, *, limit=3):
+def _activity_quote_rows(evidence, pills, activity_tokens, *, limit=3, activity_matcher=None):
     """Kutipan yang membahas aktivitas, urutan sudah dari rank_reviews_for_query."""
     pill = pills[0] if pills else ''
     rows = []
@@ -3897,9 +3929,12 @@ def _activity_quote_rows(evidence, pills, activity_tokens, *, limit=3):
         if not isinstance(row, dict):
             continue
         quote = (row.get('quote') or '').strip()
-        if len(quote) < 12:
+        if len(quote) < 8:
             continue
-        if activity_tokens and not text_matches_tokens(quote, activity_tokens):
+        if activity_matcher and activity_matcher.get('pills'):
+            if not text_has_activity_signal(quote, activity_matcher):
+                continue
+        elif activity_tokens and not text_matches_tokens(quote, activity_tokens):
             continue
         marker = quote.lower()[:120]
         if marker in seen:
@@ -3922,6 +3957,7 @@ def _build_retrieval_evidence(
     activity_tokens=None,
     activity_query_text='',
     attribute_tokens=None,
+    activity_matcher=None,
 ):
     """Cuplikan review paling relevan; sinyal aktivitas diutamakan."""
     ranked = rank_reviews_for_query(
@@ -3931,6 +3967,7 @@ def _build_retrieval_evidence(
         activity_tokens=activity_tokens or [],
         activity_query_text=activity_query_text or '',
         attribute_tokens=attribute_tokens or [],
+        activity_matcher=activity_matcher,
     )
     excerpts = []
     pill = pills[0] if pills else ''
@@ -3963,7 +4000,7 @@ def _build_retrieval_evidence(
     return ev
 
 
-def _apply_llm_extracted_quotes(shop, pills, activity_tokens=None):
+def _apply_llm_extracted_quotes(shop, pills, activity_tokens=None, activity_matcher=None):
     """Isi kutipan tampilan: utamakan ulasan aktivitas, bukan wifi/parkir."""
     fit = shop.get('llm_fit') if isinstance(shop.get('llm_fit'), dict) else {}
     evidence = dict(shop.get('evidence') or _build_empty_supporting_evidence())
@@ -3971,13 +4008,19 @@ def _apply_llm_extracted_quotes(shop, pills, activity_tokens=None):
     caveat = str(fit.get('caveat_quote') or '').strip()
     reason = str(fit.get('reason') or '').strip() or 'cocok dengan preferensi'
     pill = pills[0] if pills else ''
+
+    def _is_activity_quote(text):
+        if activity_matcher and activity_matcher.get('pills'):
+            return text_has_activity_signal(text, activity_matcher)
+        if activity_tokens:
+            return text_matches_tokens(text, activity_tokens)
+        return True
+
     activity_rows = _activity_quote_rows(
-        evidence, pills, activity_tokens, limit=3,
+        evidence, pills, activity_tokens, limit=3, activity_matcher=activity_matcher,
     )
     display = []
-    if supporting and (
-        not activity_tokens or text_matches_tokens(supporting, activity_tokens)
-    ):
+    if supporting and _is_activity_quote(supporting):
         display.append({
             'pill': pill,
             'pill_label': PILL_LABELS.get(pill, pill) if pill else 'Ulasan pengunjung',
@@ -3992,14 +4035,7 @@ def _apply_llm_extracted_quotes(shop, pills, activity_tokens=None):
         display.append(row)
         if len(display) >= 3:
             break
-    if not display and supporting:
-        display.append({
-            'pill': pill,
-            'pill_label': PILL_LABELS.get(pill, pill) if pill else 'Ulasan pengunjung',
-            'quote': supporting,
-            'reason': reason,
-        })
-        evidence['llm_extracted'] = True
+    # Jangan fallback ke kutipan fasilitas (WFC / nge-charge) jika aktivitas diminta.
     if display:
         evidence['modal_display_quotes'] = display[:3]
         evidence['llm_extracted'] = True
@@ -4017,7 +4053,7 @@ def _apply_llm_extracted_quotes(shop, pills, activity_tokens=None):
     return shop
 
 
-def _select_top_shops(ranked_candidates, max_rec=3, activity_tokens=None):
+def _select_top_shops(ranked_candidates, max_rec=3, activity_tokens=None, activity_matcher=None):
     """
     Ambil 0–max_rec toko. Jangan mengisi slot dengan toko tanpa bukti aktivitas
     atau fit_score di bawah ambang.
@@ -4028,12 +4064,25 @@ def _select_top_shops(ranked_candidates, max_rec=3, activity_tokens=None):
     )
 
     def _eligible(shop):
-        if not _shop_has_activity_evidence(shop, activity_tokens):
+        if not _shop_has_activity_evidence(
+            shop, activity_tokens, activity_matcher=activity_matcher,
+        ):
             return False
         fit = shop.get('llm_fit') if isinstance(shop.get('llm_fit'), dict) else None
         if fit is None:
             return not llm_ran
         if llm_ran and not fit.get('selected'):
+            # LLM kadang menolak karena kutipan fasilitas; jika korpus toko
+            # benar-benar membahas aktivitas, tetap layak masuk daftar.
+            reviews = (shop.get('profile') or {}).get('reviews') or []
+            if activity_matcher and shop_has_activity_signal(
+                reviews, activity_tokens or [], activity_matcher=activity_matcher,
+            ):
+                try:
+                    score = float(fit.get('fit_score') or 0.0)
+                except (TypeError, ValueError):
+                    score = 0.0
+                return score >= min(threshold, 4.0)
             return False
         try:
             score = float(fit.get('fit_score') or 0.0)
@@ -4154,6 +4203,9 @@ def _recommendation_pipeline_events(prefs, _auth_user):
         activity_tokens = retrieval.get('activity_tokens') or []
         attribute_tokens = retrieval.get('attribute_tokens') or []
         activity_query_text = retrieval.get('activity_query_text') or query_text
+        activity_matcher = retrieval.get('activity_matcher') or compile_activity_matcher(
+            activity_pills, pill_labels=PILL_LABELS, pill_mapping=PILL_MAPPING,
+        )
         search_keywords = query_tokens
         scored_candidates = []
         for item in retrieval.get('candidates') or []:
@@ -4172,6 +4224,7 @@ def _recommendation_pipeline_events(prefs, _auth_user):
                     activity_tokens=activity_tokens,
                     activity_query_text=activity_query_text,
                     attribute_tokens=attribute_tokens,
+                    activity_matcher=activity_matcher,
                 ),
             }
             _attach_pill_coverage(shop, valid_pills)
@@ -4220,6 +4273,7 @@ def _recommendation_pipeline_events(prefs, _auth_user):
                 max_candidates=retrieval_top_k(),
                 activity_pills=activity_pills,
                 activity_tokens=activity_tokens,
+                activity_matcher=activity_matcher,
             ) or {}
             rerank_telemetry = rerank_result.get('telemetry') or {}
             if rerank_result.get('ranked'):
@@ -4246,9 +4300,14 @@ def _recommendation_pipeline_events(prefs, _auth_user):
             ranked_candidates,
             max_rec=MAX_REC,
             activity_tokens=activity_tokens,
+            activity_matcher=activity_matcher,
         )
         for shop in top_shops:
-            _apply_llm_extracted_quotes(shop, valid_pills, activity_tokens=activity_tokens)
+            _apply_llm_extracted_quotes(
+                shop, valid_pills,
+                activity_tokens=activity_tokens,
+                activity_matcher=activity_matcher,
+            )
             _attach_pill_coverage(shop, valid_pills)
         stage_ms['rerank_ms'] = round((time.perf_counter() - stage_t0) * 1000, 1)
         stage_ms['rerank_backend'] = rerank_backend

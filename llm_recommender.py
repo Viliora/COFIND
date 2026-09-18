@@ -25,7 +25,11 @@ import re
 import time
 from typing import Callable, Dict, List, Optional, Sequence
 
-from hybrid_retrieval import min_fit_score, text_matches_tokens
+from hybrid_retrieval import (
+    min_fit_score,
+    text_matches_tokens,
+    text_has_activity_signal,
+)
 
 try:  # opsional, sama seperti pemakaian di app.py
     import importlib
@@ -681,6 +685,7 @@ def llm_rerank_candidates(
     cached_fits: Optional[Dict[str, Dict[str, object]]] = None,
     activity_pills: Optional[Sequence[str]] = None,
     activity_tokens: Optional[Sequence[str]] = None,
+    activity_matcher: Optional[dict] = None,
 ) -> Optional[Dict[str, object]]:
     """
     Tahap B. LLM menilai setiap kandidat (fit 0-10 + alasan + kutipan bukti),
@@ -878,14 +883,19 @@ def llm_rerank_candidates(
             fit_score = max(0.0, fit_score - _UNGROUNDED_FIT_PENALTY)
 
         activity_supported = True
-        if act_tokens:
-            if quote and text_matches_tokens(quote, act_tokens):
+        if act_tokens or (activity_matcher and activity_matcher.get('pills')):
+            def _quote_supports_activity(sample: str) -> bool:
+                if activity_matcher and activity_matcher.get('pills'):
+                    return text_has_activity_signal(sample, activity_matcher)
+                return bool(act_tokens and text_matches_tokens(sample, act_tokens))
+
+            if quote and _quote_supports_activity(quote):
                 activity_supported = True
             else:
                 activity_supported = False
                 for row in available_quotes:
                     alt = str((row or {}).get('text') or '')
-                    if text_matches_tokens(alt, act_tokens):
+                    if _quote_supports_activity(alt):
                         quote = alt
                         quote_grounded = True
                         activity_supported = True
@@ -904,10 +914,10 @@ def llm_rerank_candidates(
             selected = raw_selected.strip().lower() in ('1', 'true', 'yes', 'on')
         else:
             selected = bool(raw_selected)
-        if act_tokens and not activity_supported:
+        if (act_tokens or (activity_matcher and activity_matcher.get('pills'))) and not activity_supported:
             selected = False
             fit_score = min(fit_score, 3.0)
-        elif act_tokens and activity_supported and fit_score >= min_fit_score():
+        elif (act_tokens or (activity_matcher and activity_matcher.get('pills'))) and activity_supported and fit_score >= min_fit_score():
             selected = True
 
         matched = []
