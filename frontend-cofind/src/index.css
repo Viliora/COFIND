@@ -298,3 +298,11 @@ img {
   -ms-user-select: none;
   user-select: none;
 }
+
+/* Tombol rute di popup Leaflet — override warna link global (#646cff) */
+.leaflet-popup-content a.cofind-map-route-btn,
+.leaflet-popup-content a.cofind-map-route-btn:hover,
+.leaflet-popup-content a.cofind-map-route-btn:visited,
+.leaflet-popup-content a.cofind-map-route-btn span {
+  color: #ffffff !important;
+}

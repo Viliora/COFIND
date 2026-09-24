@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { BestForBar, BEST_FOR_META, PRESENCE_META, RATING_META, VoteBarGroup } from './ShopVotesSummary';
+import { BEST_FOR_META, PRESENCE_META, RATING_META } from '../constants/shopVoteMeta';
+import { BestForBar, VoteBarGroup } from './ShopVotesSummary';
 
-export { BEST_FOR_META };
 
 export const SLIDER_META = [
   { key: 'pelayanan', label: 'Pelayanan', emoji: '🛎️', color: 'accent-blue-500' },

@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import CoffeeShopCard, { SHOP_CATALOG_GRID_CLASS, SHOP_CAROUSEL_ITEM_CLASS } from '../components/CoffeeShopCard';
 import HeroSwiper from '../components/HeroSwiper';
 import CoffeeShopMap from '../components/CoffeeShopMap';
-import CoffeeShopRadiusMap from '../components/CoffeeShopRadiusMap';
 import RecommendationModal from '../components/RecommendationModal';
 import RecommendationProgressOverlay from '../components/RecommendationProgressOverlay';
 import FacilityAttributePicker from '../components/FacilityAttributePicker';
@@ -115,11 +114,13 @@ export default function ShopList() {
   const [suggestSuccess, setSuggestSuccess] = useState('');
   const hasLoadedRef = useRef(false);
 
-  // Lokasi saat ini & radius dalam meter (untuk katalog "coffee shop dalam radius")
+  // Lokasi saat ini & radius (peta di atas All Coffee Shops + modal rekomendasi)
   const [userLocation, setUserLocation] = useState(null);
   const [radiusMeters, setRadiusMeters] = useState(2000);
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState(null);
+  const [showLocationChoiceModal, setShowLocationChoiceModal] = useState(false);
+  const [locationChoiceSubmitting, setLocationChoiceSubmitting] = useState(false);
   const [showStatsInfoBubble, setShowStatsInfoBubble] = useState(false);
 
   // Title halaman
@@ -287,13 +288,13 @@ export default function ShopList() {
       .slice(0, 5);
   }, [coffeeShops]);
 
-  // Dapatkan Coffee Shop Terbaru (rating bagus tapi review masih sedikit)
+  // Hidden gem: rating Google ≥ 4.4, total ulasan Google di bawah 100
   const newestShops = useMemo(() => {
     if (coffeeShops.length === 0) return [];
     
     return coffeeShops
       .filter(
-        (shop) => getGoogleRating(shop) >= 4.0 && getGoogleReviewCount(shop) < 100
+        (shop) => getGoogleRating(shop) >= 4.4 && getGoogleReviewCount(shop) < 100
       )
       .sort((a, b) => {
         // Sort berdasarkan rating Google tertinggi, lalu review paling sedikit (hidden gem)
@@ -379,31 +380,41 @@ export default function ShopList() {
       .sort((a, b) => a._distanceKm - b._distanceKm);
   }, [coffeeShops, userLocation, radiusMeters]);
 
-  // Ambil lokasi saat ini (Browser Geolocation API)
-  const getCurrentLocation = () => {
+  const getCurrentLocationAsync = () => {
     setLocationError(null);
     setLocationLoading(true);
-    if (!navigator.geolocation) {
-      setLocationError('Browser tidak mendukung geolokasi.');
-      setLocationLoading(false);
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        setLocationError(null);
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        const message = 'Browser tidak mendukung geolokasi.';
+        setLocationError(message);
         setLocationLoading(false);
-      },
-      (err) => {
-        setLocationError(
-          err.code === 1
+        reject(new Error(message));
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          setUserLocation(loc);
+          setLocationError(null);
+          setLocationLoading(false);
+          resolve(loc);
+        },
+        (err) => {
+          const message = err.code === 1
             ? 'Akses lokasi ditolak. Izinkan lokasi di pengaturan browser.'
-            : 'Tidak dapat mengambil lokasi. Coba lagi.'
-        );
-        setLocationLoading(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
-    );
+            : 'Tidak dapat mengambil lokasi. Coba lagi.';
+          setLocationError(message);
+          setLocationLoading(false);
+          reject(new Error(message));
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+      );
+    });
+  };
+
+  // Ambil lokasi saat ini (Browser Geolocation API) — untuk peta / kontrol cepat
+  const getCurrentLocation = () => {
+    getCurrentLocationAsync().catch(() => {});
   };
 
   const pillLabelByValue = useMemo(
@@ -585,10 +596,44 @@ export default function ShopList() {
     return map;
   }, [coffeeShops]);
 
-  // Konfirmasi pill konteks di beranda → POST rekomendasi review-based
-  const handleConfirmPills = async () => {
+  const closeLocationChoiceModal = () => {
+    if (locationChoiceSubmitting || pillRecommendLoading) return;
+    setShowLocationChoiceModal(false);
+    setLocationError(null);
+  };
+
+  const handleConfirmPills = () => {
     if (!isPillPreferenceAvailable || selectedPills.length === 0) return;
-    await requestPillRecommendations(selectedPills, selectedAttributes);
+    setLocationError(null);
+    setShowLocationChoiceModal(true);
+  };
+
+  const handleRecommendWithLocation = async () => {
+    if (!isPillPreferenceAvailable || selectedPills.length === 0) return;
+    setLocationChoiceSubmitting(true);
+    setLocationError(null);
+    try {
+      if (!userLocation) {
+        await getCurrentLocationAsync();
+      }
+      setShowLocationChoiceModal(false);
+      await requestPillRecommendations(selectedPills, selectedAttributes);
+    } catch (err) {
+      setLocationError(err?.message || 'Tidak dapat mengambil lokasi.');
+    } finally {
+      setLocationChoiceSubmitting(false);
+    }
+  };
+
+  const handleRecommendWithoutLocation = async () => {
+    if (!isPillPreferenceAvailable || selectedPills.length === 0) return;
+    setLocationChoiceSubmitting(true);
+    setShowLocationChoiceModal(false);
+    try {
+      await requestPillRecommendations(selectedPills, selectedAttributes);
+    } finally {
+      setLocationChoiceSubmitting(false);
+    }
   };
 
   // Katalog homepage tetap utuh; hasil AI ditampilkan lewat overlay terpisah
@@ -811,10 +856,10 @@ export default function ShopList() {
             })()}
             {isPillPreferenceAvailable && selectedPills.length > 0 && (
               <FacilityAttributePicker
-                selected={selectedAttributes}
-                onChange={setSelectedAttributes}
-                disabled={authLoading || pillRecommendLoading}
-              />
+              selected={selectedAttributes}
+              onChange={setSelectedAttributes}
+              disabled={authLoading || pillRecommendLoading}
+            />
             )}
 
             <div className="mt-3">
@@ -834,22 +879,28 @@ export default function ShopList() {
             </div>
 
             {isPillPreferenceAvailable && selectedPills.length > 0 && (
-              <div className="mt-3 flex flex-wrap items-center gap-2">
+              <div className="mt-3 flex flex-wrap items-center gap-3">
                 <button
                   type="button"
                   onClick={handleConfirmPills}
-                  disabled={pillRecommendLoading}
-                  className="px-3 sm:px-4 py-2 rounded-full text-sm font-medium bg-indigo-600 text-white shadow-md hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200"
+                  disabled={pillRecommendLoading || locationChoiceSubmitting}
+                  className="px-4 py-2 rounded-full text-sm font-medium bg-indigo-600 text-white shadow-md hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200"
                   title="Konfirmasi konteks dan lihat rekomendasi"
                 >
                   {pillRecommendLoading ? 'Menganalisis...' : 'OK'}
                 </button>
+                {userLocation ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 dark:border-emerald-800/60 dark:bg-emerald-950/30 dark:text-emerald-300">
+                    <span aria-hidden>📍</span>
+                    Lokasi aktif untuk jarak rekomendasi
+                  </span>
+                ) : null}
               </div>
             )}
 
             {hasConfirmedRecommendation && (
               <div className="mt-3 space-y-2">
-                <p className="text-sm text-gray-600 dark:text-gray-300">
+                {/* <p className="text-sm text-gray-600 dark:text-gray-300">
                   {confirmedPills.length > 0 && (
                     <>
                       Konteks:{' '}
@@ -868,7 +919,7 @@ export default function ShopList() {
                       )}
                     </>
                   )}
-                </p>
+                </p> */}
                 {hasPendingPillChanges && !pillRecommendLoading && (
                   <p className="text-sm text-amber-700 dark:text-amber-300">
                     Konteks pill berubah. Tekan OK lagi untuk memperbarui rekomendasi.
@@ -981,7 +1032,7 @@ export default function ShopList() {
               </h2>
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              Coffee shop dengan rating tertinggi - pilihan terbaik dalam pengalaman ngopi
+              Coffee shop dengan rating tertinggi
             </p>
             
             <div className="relative min-w-0">
@@ -1011,7 +1062,7 @@ export default function ShopList() {
               </h2>
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              Coffee shop Hidden Gem (rating tinggi dengan sedikit review)
+            Coffee shop Hidden Gem (rating tinggi dengan sedikit review)
             </p>
             
             <div className="relative min-w-0">
@@ -1054,9 +1105,10 @@ export default function ShopList() {
           </div>
         )}
 
-        {/* Coffee shop dalam radius - di atas peta All Coffee Shops */}
+        {/* Peta Leaflet + lokasi — di atas All Coffee Shops */}
         {!error && !isLoading && coffeeShops.length > 0 && (
-          <CoffeeShopRadiusMap
+          <CoffeeShopMap
+            coffeeShops={coffeeShops}
             userLocation={userLocation}
             radiusMeters={radiusMeters}
             setRadiusMeters={setRadiusMeters}
@@ -1065,11 +1117,6 @@ export default function ShopList() {
             getCurrentLocation={getCurrentLocation}
             shopsInRadius={shopsInRadius}
           />
-        )}
-
-        {/* Coffee Shop Map - Tampilkan di atas judul All Coffee Shops */}
-        {!error && !isLoading && coffeeShops.length > 0 && (
-          <CoffeeShopMap coffeeShops={coffeeShops} />
         )}
 
         <div className="flex items-center justify-between mb-4 sm:mb-6 flex-wrap gap-2">
@@ -1188,6 +1235,97 @@ export default function ShopList() {
         </div>
       )}
 
+      {showLocationChoiceModal && (
+        <div
+          className="fixed inset-0 z-[105] flex items-center justify-center p-4 sm:p-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="location-choice-modal-title"
+        >
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            aria-hidden="true"
+            onClick={closeLocationChoiceModal}
+          />
+          <div className="relative z-10 w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-gray-700 dark:bg-gray-900">
+            <h3
+              id="location-choice-modal-title"
+              className="text-lg font-bold text-gray-900 dark:text-white"
+            >
+              Gunakan lokasi untuk rekomendasi?
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+              Lokasi membantu menampilkan perkiraan jarak ke coffee shop yang direkomendasikan
+              dan menyaring peta di beranda. Anda tetap bisa melihat rekomendasi tanpa membagikan lokasi.
+            </p>
+            {!!locationError && (
+              <div
+                role="alert"
+                className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
+              >
+                {locationError}
+              </div>
+            )}
+            <div className="mt-6 space-y-2.5">
+              <button
+                type="button"
+                onClick={handleRecommendWithLocation}
+                disabled={locationChoiceSubmitting || locationLoading || pillRecommendLoading}
+                className="flex w-full items-center gap-3 rounded-xl border border-indigo-200 bg-indigo-600 px-4 py-3.5 text-left text-white shadow-md transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-indigo-500/40 dark:shadow-indigo-950/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
+              >
+                <span
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/15 text-lg"
+                  aria-hidden
+                >
+                  📍
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold leading-snug">
+                    {locationLoading || locationChoiceSubmitting
+                      ? 'Mendeteksi lokasi...'
+                      : 'Gunakan lokasi saat ini'}
+                  </span>
+                  <span className="mt-0.5 block text-xs font-normal text-indigo-100/90">
+                    Jarak ke coffee shop & peta di beranda lebih relevan
+                  </span>
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={handleRecommendWithoutLocation}
+                disabled={locationChoiceSubmitting || locationLoading || pillRecommendLoading}
+                className="flex w-full items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5 text-left transition hover:border-gray-300 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-600 dark:bg-gray-800/80 dark:hover:border-gray-500 dark:hover:bg-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
+              >
+                <span
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-lg shadow-sm dark:bg-gray-700"
+                  aria-hidden
+                >
+                  ☕
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    Lanjutkan tanpa lokasi
+                  </span>
+                  <span className="mt-0.5 block text-xs text-gray-600 dark:text-gray-400">
+                    Rekomendasi tetap ditampilkan tanpa jarak
+                  </span>
+                </span>
+              </button>
+              <div className="flex justify-center pt-1">
+                <button
+                  type="button"
+                  onClick={closeLocationChoiceModal}
+                  disabled={locationChoiceSubmitting || locationLoading}
+                  className="rounded-full px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 disabled:opacity-60 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"
+                >
+                  Batal
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showPreferenceSuggestModal && (
         <div
           className="fixed inset-0 z-[105] flex items-center justify-center p-4 sm:p-6"
@@ -1301,6 +1439,7 @@ export default function ShopList() {
         shopsByKey={shopsByKey}
         confirmedPills={confirmedPills}
         confirmedAttributes={confirmedAttributes}
+        userLocation={userLocation}
       />
     </div>
   );

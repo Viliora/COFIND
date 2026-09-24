@@ -26,9 +26,11 @@ import time
 from typing import Callable, Dict, List, Optional, Sequence
 
 from hybrid_retrieval import (
+    build_sparse_query_tokens,
     extract_activity_support_text,
     min_fit_score,
     review_text,
+    text_matches_tokens,
 )
 
 try:  # opsional, sama seperti pemakaian di app.py
@@ -849,6 +851,44 @@ def llm_rerank_candidates(
                     break
             if extras:
                 quotes = (extras + quotes)[:quotes_per_candidate]
+        if attribute_list:
+            seen_texts = {
+                re.sub(r'\s+', ' ', str(row.get('text') or '')).strip().lower()
+                for row in quotes
+            }
+            attr_extras = []
+            for attr_pill in attribute_list:
+                tokens = build_sparse_query_tokens(
+                    [attr_pill],
+                    pill_labels=pill_labels,
+                    pill_mapping=pill_mapping,
+                )
+                if not tokens:
+                    continue
+                for row in (candidate.get('profile') or {}).get('reviews') or []:
+                    raw = review_text(row)
+                    if not text_matches_tokens(raw, tokens):
+                        continue
+                    snippet = re.sub(r'\s+', ' ', str(raw or '')).strip()
+                    if len(snippet) > quote_chars:
+                        snippet = snippet[: quote_chars - 3].rstrip() + '...'
+                    key = snippet.lower()
+                    if not key or key in seen_texts:
+                        continue
+                    seen_texts.add(key)
+                    attr_extras.append({
+                        'text': snippet,
+                        'rating': row.get('rating') if isinstance(row, dict) else None,
+                        'activity_support': False,
+                    })
+                    break
+            if attr_extras:
+                combined = list(quotes)
+                for extra in attr_extras:
+                    if len(combined) >= quotes_per_candidate:
+                        break
+                    combined.append(extra)
+                quotes = combined[:quotes_per_candidate]
         quotes_by_place[str(candidate.get('place_id'))] = quotes
         blocks.append(_candidate_block(idx, candidate, quotes, pills=pills))
 

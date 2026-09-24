@@ -5,6 +5,9 @@ Metadata resmi (Google / owner / tab fasilitas) hanya penguat lemah: bisa jadi
 self-claim. Skor tertinggi tetap dari ulasan relevan. Jika ulasan menentang
 klaim itu, prior dibatalkan dan skor dipotong, lalu kutipan masuk caveat.
 
+Kontradiksi ulasan dinilai lewat pill_aspect_sentiment (keyword + keluhan
+dekat aspek), bukan daftar frasa terpisah per insiden.
+
 Env:
   COFIND_METADATA_GATE              default true
   COFIND_METADATA_PRIOR_WEIGHT      default 0.08 (plafon penguat)
@@ -17,6 +20,7 @@ import os
 from typing import Dict, List, Optional, Sequence
 
 from slang_normalize import normalize_text_with_slang
+from recommendation_coverage import hours_indicate_24_7
 
 _PARKING_HARD = frozenset({
     'sulit', 'agak_sulit', 'sangat_sulit', 'sempit', 'sulit parkir',
@@ -27,69 +31,6 @@ _PARKING_EASY = frozenset({
 _NEGATION_PREFIXES = frozenset({
     'tidak', 'bukan', 'jangan', 'belum', 'tanpa', 'ga', 'gak', 'nggak', 'enggak',
 })
-
-# Frasa (setelah normalisasi slang) yang menentang klaim pill.
-# "tidak berisik" tidak masuk karena dicek unnegated.
-_CONTRADICTION_PHRASES: Dict[str, tuple] = {
-    'kerja': (
-        'wifi lemot', 'wifi lambat', 'wifi lelet', 'tidak ada wifi',
-        'tidak nyaman kerja', 'tidak cocok kerja', 'tidak kondusif',
-        'susah kerja', 'tidak bisa kerja', 'ribut tidak bisa fokus',
-        'colokan kurang', 'tidak ada colokan',
-    ),
-    'belajar': (
-        'tidak nyaman belajar', 'tidak cocok belajar', 'tidak kondusif',
-        'berisik', 'bising', 'ribut', 'wifi lemot', 'wifi lambat',
-        'tidak ada wifi',
-    ),
-    'wifi_kencang': (
-        'wifi lemot', 'wifi lambat', 'wifi lelet', 'wifi putus', 'wifi jelek',
-        'wifi error', 'tidak ada wifi', 'internet lemot', 'koneksi lemot',
-        'koneksi lambat', 'sinyal lemah', 'wifi tidak kencang', 'wifi tidak lancar',
-        'wifi tidak stabil',
-    ),
-    'banyak_colokan_terminal': (
-        'tidak ada colokan', 'colokan kurang', 'susah charge', 'susah ngecas',
-        'tidak ada stopkontak',
-    ),
-    'suasana_tenang': (
-        'berisik', 'bising', 'ribut', 'sangat ramai', 'ramai sekali',
-        'noisy', 'ribut sekali',
-    ),
-    'ruangan_ac': (
-        'ac rusak', 'ac mati', 'tidak ada ac', 'ruangan panas', 'gerah',
-        'pengap',
-    ),
-    'musholla': (
-        'tidak ada musholla', 'tidak ada tempat salat', 'tidak ada ruang salat',
-    ),
-    'parkir_luas': (
-        'parkir susah', 'parkir sempit', 'parkir sulit', 'sulit parkir',
-        'parkiran sempit', 'susah parkir',
-    ),
-    'toilet_bersih': (
-        'toilet kotor', 'toilet jorok', 'wc kotor', 'kamar mandi kotor',
-        'toilet bau',
-    ),
-    'area_outdoor': (
-        'tidak ada outdoor', 'tidak ada area outdoor', 'tidak ada tempat outdoor',
-        'tidak ada outdoor seating', 'tidak ada teras outdoor',
-    ),
-    'buka_sampai_malam_24_hours': (
-        'tidak buka 24 jam', 'tutup cepat', 'jam tutup cepat',
-    ),
-    'ruang_privat': (
-        'tidak ada ruang privat', 'tidak ada private room',
-        'tidak ada ruang meeting',
-    ),
-    'meeting_sosialisasi': (
-        'tidak cocok meeting', 'tidak nyaman rapat', 'ribut tidak bisa diskusi',
-    ),
-    'keluarga': (
-        'tidak ramah anak', 'tidak cocok keluarga', 'tidak ramah keluarga',
-    ),
-}
-
 
 def _env_flag(name: str, default: bool) -> bool:
     raw = (os.getenv(name) or '').strip().lower()
@@ -183,15 +124,15 @@ def _phrase_unnegated(normalized: str, phrase: str) -> bool:
     return True
 
 
-def _contradiction_hits_for_text(text: str, pill: str) -> List[str]:
-    normalized = normalize_text_with_slang(text)
-    if not normalized:
-        return []
-    found = []
-    for phrase in _CONTRADICTION_PHRASES.get(pill) or ():
-        if _phrase_unnegated(normalized, phrase):
-            found.append(phrase)
-    return found
+def facility_pill_negative_in_review(
+    text: str,
+    pill: str,
+    pill_mapping: Optional[Dict[str, dict]] = None,
+) -> bool:
+    """True jika ulasan menentang klaim pill (lihat pill_aspect_sentiment)."""
+    from pill_aspect_sentiment import review_negates_pill
+
+    return review_negates_pill(text, pill, pill_mapping or {})
 
 
 def collect_contradiction_quotes(
@@ -199,9 +140,13 @@ def collect_contradiction_quotes(
     claimed_pills: Sequence[str],
     *,
     pill_labels: Optional[Dict[str, str]] = None,
+    pill_mapping: Optional[Dict[str, dict]] = None,
     limit_per_pill: int = 2,
 ) -> List[dict]:
+    from pill_aspect_sentiment import _explicit_contradiction_hits, review_contradicts_metadata_claim
+
     pill_labels = pill_labels or {}
+    pill_mapping = pill_mapping or {}
     quotes: List[dict] = []
     seen = set()
     for pill in claimed_pills:
@@ -210,9 +155,11 @@ def collect_contradiction_quotes(
             text = review_text(review)
             if len(text) < 6:
                 continue
-            hits = _contradiction_hits_for_text(text, pill)
-            if not hits:
+            if not review_contradicts_metadata_claim(text, pill, pill_mapping):
                 continue
+            hits = _explicit_contradiction_hits(text, pill, pill_mapping)
+            if not hits:
+                hits = ['keluhan terhadap aspek fasilitas']
             key = normalize_text_with_slang(text)[:120]
             marker = f'{pill}:{key}'
             if marker in seen:
@@ -289,11 +236,25 @@ def evaluate_metadata_gate(
             claimed_pills.append(pill)
             claimed_fields.extend(hits)
 
+    hours_display = str((profile or {}).get('opening_hours_display') or '').strip()
+    if (
+        'buka_sampai_malam_24_hours' in score_pills
+        and hours_indicate_24_7(hours_display)
+        and 'buka_sampai_malam_24_hours' not in claimed_pills
+    ):
+        claimed_pills.append('buka_sampai_malam_24_hours')
+        claimed_fields.append({
+            'pill': 'buka_sampai_malam_24_hours',
+            'group': 'opening_hours',
+            'key': 'hours_display_24_7',
+        })
+
     prior = (len(claimed_pills) / eligible) if eligible else 0.0
     quotes = collect_contradiction_quotes(
         (profile or {}).get('reviews') or [],
         claimed_pills,
         pill_labels=pill_labels,
+        pill_mapping=pill_mapping,
     )
     contradicted = list(dict.fromkeys(str(row.get('pill')) for row in quotes if row.get('pill')))
     # 1 ulasan menentang = 0.6; 2+ = 1.0. Jangan biarkan satu keluhan menghapus semua.

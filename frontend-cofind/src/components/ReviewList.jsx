@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/authContext';
 import ReviewCard from './ReviewCard';
 import ReviewForm from './ReviewForm';
+import { parseReviewIdFromHash, scrollToReviewById } from '../utils/scrollToReview';
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 const REVIEW_KEYWORD_STOPWORDS = new Set([
   'yang', 'dan', 'atau', 'untuk', 'dengan', 'juga', 'karena', 'dari', 'pada',
@@ -153,28 +154,6 @@ const ReviewList = ({ placeId, shopName, newReview, onReviewSubmitted }) => {
       // Cleanup: Jangan abort, biarkan fetch selesai
     };
   }, [placeId, fetchReviews, authInitialized, user?.id, isAuthenticated]);
-  
-  // Auto-scroll ke review saat dibuka dari link (e.g. dari profile page dengan hash #review-123)
-  useEffect(() => {
-    if (loading || reviews.length === 0) return;
-    const hash = location.hash || window.location.hash;
-    const match = hash && /^#review-(\d+)$/.exec(hash);
-    if (!match) return;
-    const reviewId = match[1];
-    if (!reviews.some((r) => String(r.id) === reviewId)) return;
-    const id = `review-${reviewId}`;
-    const timer = setTimeout(() => {
-      const el = document.getElementById(id);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        el.classList.add('ring-2', 'ring-amber-500', 'ring-offset-2');
-        setTimeout(() => {
-          el.classList.remove('ring-2', 'ring-amber-500', 'ring-offset-2');
-        }, 2000);
-      }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [reviews, loading, location.hash]);
 
   // Handle new review from prop
   useEffect(() => {
@@ -258,6 +237,42 @@ const ReviewList = ({ placeId, shopName, newReview, onReviewSubmitted }) => {
         return reviews;
     }
   }, [reviews, reviewTab]);
+
+  useEffect(() => {
+    if (loading || reviews.length === 0) return undefined;
+
+    const fromState = location.state?.focusReviewId;
+    const fromHash = parseReviewIdFromHash(location.hash || window.location.hash);
+    const reviewId = fromState != null && fromState !== '' ? String(fromState) : fromHash;
+    if (!reviewId) return undefined;
+
+    if (!reviews.some((r) => String(r.id) === reviewId)) return undefined;
+
+    const visibleInTab = tabFilteredReviews.some((r) => String(r.id) === reviewId);
+    if (!visibleInTab && reviewTab !== 'all') {
+      setReviewTab('all');
+      return undefined;
+    }
+
+    let cancelled = false;
+    let attempts = 0;
+    const maxAttempts = 24;
+
+    const tryScroll = () => {
+      if (cancelled) return;
+      if (scrollToReviewById(reviewId)) return;
+      attempts += 1;
+      if (attempts < maxAttempts) {
+        window.setTimeout(tryScroll, 120);
+      }
+    };
+
+    const starter = window.setTimeout(tryScroll, 180);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(starter);
+    };
+  }, [reviews, loading, location.hash, location.state, reviewTab, tabFilteredReviews]);
 
   const displayedReviews = useMemo(() => {
     const list = [...tabFilteredReviews];
