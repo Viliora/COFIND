@@ -2,8 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/authContext';
 import { authService } from '../services/authService';
-import { RATING_META } from './ShopVotesSummary';
-import { BEST_FOR_META, SLIDER_META } from './ShopVoteModal';
+import { BEST_FOR_META, RATING_META } from '../constants/shopVoteMeta';
+import { SLIDER_META } from './ShopVoteModal';
 import { SLIDER_LABELS_MAP } from './ShopOverallExperience';
 
 const OVERALL_SLIDER_FIELDS = ['pelayanan', 'kebersihan', 'kenyamanan', 'harga'];

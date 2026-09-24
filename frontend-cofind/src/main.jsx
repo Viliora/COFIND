@@ -9,7 +9,7 @@ import { registerServiceWorker } from './utils/sw-register';
 import ErrorBoundary from './components/ErrorBoundary';
 
 // Suppress React DevTools warning
-if (process.env.NODE_ENV === 'development') {
+if (import.meta.env.DEV) {
   console.info = (function(original) {
     return function(...args) {
       if (typeof args[0] === 'string' && args[0].includes('React DevTools')) {
@@ -29,7 +29,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <ErrorBoundary>
       <BrowserRouter>
         <App />
-        <SpeedInsights />
+        <SpeedInsights debug={false} />
       </BrowserRouter>
     </ErrorBoundary>
   </React.StrictMode>,

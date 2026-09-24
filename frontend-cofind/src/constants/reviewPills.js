@@ -69,7 +69,7 @@ export const FACILITY_ATTRIBUTE_GROUPS = [
     id: 'menu',
     label: 'Menu',
     options: [
-      { label: 'Makanan & Minuman', value: 'makanan_berat', icon: '🍽️' },
+      { label: 'Menu Lengkap (Makanan & Minuman)', value: 'makanan_berat', icon: '🍽️' },
     ],
   },
 ];
