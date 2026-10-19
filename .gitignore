@@ -112,3 +112,11 @@ frontend-cofind/playwright.config.js
 # Local DB dumps / bak
 *.db.bak
 *.bak
+
+# Repo: tes safety + docs arsitektur (override aturan di atas)
+!tests/
+!tests/**
+!docs/
+!docs/**
+!docs/*.md
+!tests/test_*.py
