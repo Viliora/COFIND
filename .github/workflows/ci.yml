@@ -1,0 +1,55 @@
+# Cofind — unit test safety net (Fase 2 retrieval tests)
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11"]
+
+    env:
+      # Test suite meng-set ini juga; eksplisit di CI agar dense/embedding tidak wajib model.
+      COFIND_SEMANTIC_GATE: "false"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run unit tests
+        run: |
+          set -euo pipefail
+          OUT=$(python -m unittest discover -s tests -p "test_*.py" -v 2>&1)
+          echo "$OUT"
+          echo "$OUT" | grep -E 'Ran [0-9]+ tests' >/dev/null || {
+            echo "FAIL: unittest output missing 'Ran N tests' (tests dir empty or not checked out?)"
+            exit 1
+          }
+          N=$(echo "$OUT" | grep -oE 'Ran [0-9]+ tests' | tail -1 | grep -oE '[0-9]+')
+          if [ "${N:-0}" -lt 22 ]; then
+            echo "FAIL: expected at least 22 tests, got ${N:-0}"
+            exit 1
+          fi

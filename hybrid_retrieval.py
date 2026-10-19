@@ -927,6 +927,36 @@ def shop_has_activity_signal(
     return False
 
 
+def shop_passes_activity_gate(
+    reviews: Sequence[object],
+    activity_tokens: Sequence[str],
+    phrases: Optional[Sequence[str]] = None,
+    activity_matcher: Optional[dict] = None,
+    *,
+    dense_activity_score: float = 0.0,
+) -> tuple:
+    """
+    Gerbang admisi aktivitas: hanya bukti leksikal/frasa (shop_has_activity_signal).
+
+    Return (passed, pass_mode):
+      - passed True hanya bila ada sinyal leksikal.
+      - pass_mode 'dense_only' = tidak lolos admisi, tetapi dense >= COFIND_ACTIVITY_DENSE_MIN
+        (hanya untuk telemetri activity_pass_dense_only, bukan admisi).
+      - pass_mode '' = ditolak penuh.
+    """
+    if shop_has_activity_signal(
+        reviews, activity_tokens, phrases, activity_matcher=activity_matcher,
+    ):
+        return True, 'lexical'
+    try:
+        dense_score = float(dense_activity_score or 0.0)
+    except (TypeError, ValueError):
+        dense_score = 0.0
+    if dense_score >= activity_dense_min():
+        return False, 'dense_only'
+    return False, ''
+
+
 def shop_activity_lexical_max(
     reviews: Sequence[object],
     activity_tokens: Sequence[str],
@@ -1083,6 +1113,11 @@ def _hybrid_retrieve_rrf_core(
     telemetry.setdefault('mode', 'hybrid_rrf')
     telemetry.setdefault('rrf_k', rrf_k_constant())
     telemetry.setdefault('rrf_pool_size', pool_size)
+    if apply_activity_gate:
+        telemetry.setdefault('activity_pass_lexical', 0)
+        telemetry.setdefault('activity_pass_dense_only', 0)
+        telemetry.setdefault('activity_rejected', 0)
+        telemetry['activity_dense_min'] = activity_dense_min()
 
     bm25_raw: Dict[str, float] = {}
     try:
@@ -1171,12 +1206,24 @@ def _hybrid_retrieve_rrf_core(
         rrf_norm = (rrf_score / max_rrf) if max_rrf > 0 else 0.0
 
         if apply_activity_gate and activity_pills:
-            if not shop_has_activity_signal(
-                reviews, act_tokens_gate, act_phrases, activity_matcher=act_matcher,
-            ):
+            passed, pass_mode = shop_passes_activity_gate(
+                reviews,
+                act_tokens_gate,
+                act_phrases,
+                act_matcher,
+                dense_activity_score=float(dense_raw.get(pid) or 0.0),
+            )
+            if pass_mode == 'dense_only':
+                telemetry['activity_pass_dense_only'] = int(
+                    telemetry.get('activity_pass_dense_only') or 0,
+                ) + 1
+            if not passed:
                 telemetry['activity_rejected'] = int(telemetry.get('activity_rejected') or 0) + 1
                 continue
-            telemetry['activity_pass_lexical'] = int(telemetry.get('activity_pass_lexical') or 0) + 1
+            if pass_mode == 'lexical':
+                telemetry['activity_pass_lexical'] = int(
+                    telemetry.get('activity_pass_lexical') or 0,
+                ) + 1
 
         quality_raw = quality_by_place.get(pid)
         try:
