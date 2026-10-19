@@ -17,6 +17,7 @@ def _build_celery() -> Celery:
         "cofind",
         broker=redis_url,
         backend=redis_url,
+        include=["tasks"],
     )
 
     conf = {

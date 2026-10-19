@@ -4,7 +4,7 @@ import { useAuth } from '../context/authContext';
 import ReviewCard from './ReviewCard';
 import ReviewForm from './ReviewForm';
 import { parseReviewIdFromHash, scrollToReviewById } from '../utils/scrollToReview';
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+import { API_BASE } from '../config/apiBase.js';
 const REVIEW_KEYWORD_STOPWORDS = new Set([
   'yang', 'dan', 'atau', 'untuk', 'dengan', 'juga', 'karena', 'dari', 'pada',
   'saya', 'kami', 'kita', 'anda', 'nya', 'ini', 'itu', 'ada', 'aja', 'banget',
@@ -37,16 +37,6 @@ const ReviewList = ({ placeId, shopName, newReview, onReviewSubmitted }) => {
   const fetchCountRef = useRef(0);
   const currentPlaceIdRef = useRef(null);
   
-  // Debug auth state changes
-  useEffect(() => {
-    console.log('[ReviewList] Auth state changed:', { 
-      authInitialized, 
-      isAuthenticated, 
-      userId: user?.id,
-      placeId 
-    });
-  }, [authInitialized, isAuthenticated, user?.id, placeId]);
-  
   // Fetch reviews - local SQLite backend only
   const fetchReviews = useCallback(async (showLoading = false) => {
     if (!placeId) {
@@ -70,8 +60,6 @@ const ReviewList = ({ placeId, shopName, newReview, onReviewSubmitted }) => {
     if (showLoading) {
       setLoading(true);
     }
-    
-    console.log(`[ReviewList] Fetching reviews for: ${placeId}`);
     
     try {
       const url = user?.id
@@ -97,14 +85,33 @@ const ReviewList = ({ placeId, shopName, newReview, onReviewSubmitted }) => {
 
       const data = await response.json();
       const reviewsData = Array.isArray(data.reviews) ? data.reviews : [];
-      const mappedReviews = reviewsData.map(r => ({
-        ...r,
-        profiles: r.username || r.full_name ? {
-          username: r.username,
-          full_name: r.full_name,
-        } : undefined,
-        source: 'local'
-      }));
+      const mappedReviews = reviewsData.map((r) => {
+        const googleLike =
+          r.review_source === 'google_places'
+          || (!r.user_id && r.author_display_name);
+        const label = googleLike
+          ? (r.author_display_name || r.username || r.full_name || '')
+          : (
+            r.full_name
+            || r.username
+            || r.author_display_name
+            || r.profiles?.full_name
+            || r.profiles?.username
+            || ''
+          );
+        return {
+          ...r,
+          username: r.username || r.author_display_name || r.full_name || label,
+          full_name: r.full_name || r.author_display_name || r.username || label,
+          author_display_name: r.author_display_name || r.full_name || r.username || label || null,
+          profiles: r.profiles?.full_name || r.profiles?.username
+            ? r.profiles
+            : label
+              ? { username: label, full_name: label, avatar_url: r.profiles?.avatar_url ?? null }
+              : r.profiles,
+          source: 'local',
+        };
+      });
 
       setReviews(mappedReviews);
       return { success: true, count: mappedReviews.length };

@@ -98,6 +98,13 @@ class ActivityMatcherTests(unittest.TestCase):
     def test_accepts_push_rank(self):
         self.assertTrue(text_has_activity_signal('sambil push rank wifi masih kuat', self.matcher))
 
+    def test_rejects_hidden_game_typo(self):
+        self.assertFalse(text_has_activity_signal('Lokasinya hidden game. Datanglah lebih awal', self.matcher))
+
+    def test_hidden_game_typo_not_lexical_game_match(self):
+        from hybrid_retrieval import lexical_review_score
+        self.assertEqual(lexical_review_score('Lokasinya hidden game, parkir sempit', ['game']), 0.0)
+
     def test_mixed_family_caveat_still_supports_main_game(self):
         text = (
             'Selalu ramai anak remaja nongkrong main game, anak kuliahan mengerjakan tugas, '

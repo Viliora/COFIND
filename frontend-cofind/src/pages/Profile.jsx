@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/authContext';
 import ReviewCard from '../components/ReviewCard';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+import { API_BASE } from '../config/apiBase.js';
 
 const Profile = () => {
   const { userId: urlUserId } = useParams();

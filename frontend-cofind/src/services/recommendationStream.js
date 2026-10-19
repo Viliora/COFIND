@@ -26,14 +26,18 @@ function parseSseChunk(rawEvent) {
     }
 }
 
-async function requestPlainJson({ apiBase, token, preferences, attributes, signal }) {
+async function requestPlainJson({ apiBase, token, preferences, attributes, queryText, signal }) {
     const res = await fetch(`${apiBase}/api/recommend-by-preferences`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ preferences, attributes: attributes || [] }),
+        body: JSON.stringify({
+            preferences,
+            attributes: attributes || [],
+            query_text: queryText || '',
+        }),
         signal,
     });
     let body = null;
@@ -55,11 +59,12 @@ export async function streamRecommendations({
     token,
     preferences,
     attributes = [],
+    queryText = '',
     onProgress,
     signal,
 }) {
     if (typeof window === 'undefined' || !window.ReadableStream || !window.TextDecoder) {
-        return requestPlainJson({ apiBase, token, preferences, attributes, signal });
+        return requestPlainJson({ apiBase, token, preferences, attributes, queryText, signal });
     }
 
     let res;
@@ -71,19 +76,19 @@ export async function streamRecommendations({
                 Accept: 'text/event-stream',
                 Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({ preferences, attributes }),
+            body: JSON.stringify({ preferences, attributes, query_text: queryText || '' }),
             signal,
         });
     } catch (err) {
         if (err?.name === 'AbortError') throw err;
-        return requestPlainJson({ apiBase, token, preferences, attributes, signal });
+        return requestPlainJson({ apiBase, token, preferences, attributes, queryText, signal });
     }
 
     const contentType = res.headers.get('content-type') || '';
     if (!res.body || !contentType.includes('text/event-stream')) {
         // Server lama tanpa endpoint stream (404) atau proxy yang mengubah respons.
         if (res.status === 404 || !res.body) {
-            return requestPlainJson({ apiBase, token, preferences, attributes, signal });
+            return requestPlainJson({ apiBase, token, preferences, attributes, queryText, signal });
         }
         let body = null;
         try {

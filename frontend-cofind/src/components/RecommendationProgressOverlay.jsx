@@ -1,5 +1,10 @@
 // src/components/RecommendationProgressOverlay.jsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+
+function formatElapsedSeconds(totalSec) {
+    const n = Math.max(0, Math.floor(Number(totalSec) || 0));
+    return n === 1 ? '1 detik' : `${n} detik`;
+}
 
 /** Tahap pipeline rekomendasi — teks ditulis untuk user, bukan istilah teknis. */
 const STAGE_SEQUENCE = [
@@ -66,7 +71,22 @@ function StageStatusIcon({ done, current }) {
     );
 }
 
-export default function RecommendationProgressOverlay({ open, progress }) {
+export default function RecommendationProgressOverlay({ open, progress, startedAtMs = null }) {
+    const [elapsedSec, setElapsedSec] = useState(0);
+
+    useEffect(() => {
+        if (!open || startedAtMs == null) {
+            setElapsedSec(0);
+            return undefined;
+        }
+        const tick = () => {
+            setElapsedSec(Math.max(0, Math.floor((Date.now() - startedAtMs) / 1000)));
+        };
+        tick();
+        const id = window.setInterval(tick, 1000);
+        return () => window.clearInterval(id);
+    }, [open, startedAtMs]);
+
     if (!open) return null;
 
     const activeStage = progress?.stage || 'start';
@@ -100,6 +120,14 @@ export default function RecommendationProgressOverlay({ open, progress }) {
                             ? 'Rekomendasi akan segera ditampilkan.'
                             : currentStep.hint}
                     </p>
+                    {startedAtMs != null ? (
+                        <p
+                            className="mt-3 inline-flex items-center rounded-full bg-indigo-100/90 px-3 py-1 text-xs font-medium tabular-nums text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-200"
+                            aria-live="off"
+                        >
+                            Waktu berjalan: {formatElapsedSeconds(elapsedSec)}
+                        </p>
+                    ) : null}
 
                     <ol className="mt-6 w-full space-y-3 rounded-2xl bg-indigo-50 px-4 py-4 text-left dark:bg-indigo-950/40">
                         {STAGE_SEQUENCE.map((item, index) => {

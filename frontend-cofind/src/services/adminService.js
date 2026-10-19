@@ -1,6 +1,6 @@
 import { authService } from './authService';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+import { API_BASE } from '../config/apiBase.js';
 
 function buildQuery(params = {}) {
   const query = new URLSearchParams();
@@ -107,6 +107,12 @@ export const adminService = {
     });
   },
 
+  refreshShopProsCons(placeId) {
+    return apiCall(`/api/admin/shops/${encodeURIComponent(placeId)}/pros-cons/refresh`, {
+      method: 'POST',
+    });
+  },
+
   getReviews(params = {}) {
     return apiCall(`/api/admin/reviews${buildQuery(params)}`);
   },
@@ -130,16 +136,5 @@ export const adminService = {
 
   getSettings() {
     return apiCall('/api/admin/settings');
-  },
-
-  getPreferenceSuggestions(params = {}) {
-    return apiCall(`/api/admin/preference-suggestions${buildQuery(params)}`);
-  },
-
-  updatePreferenceSuggestion(suggestionId, payload) {
-    return apiCall(`/api/admin/preference-suggestions/${suggestionId}`, {
-      method: 'PUT',
-      body: JSON.stringify(payload),
-    });
   },
 };

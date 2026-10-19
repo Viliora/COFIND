@@ -40,6 +40,24 @@ const HIGHLIGHT_ORDER = [
   'sports',
 ];
 
+const SERVICE_OPTION_LABELS = {
+  dine_in: 'Makan di tempat',
+  takeaway: 'Bawa pulang',
+  delivery: 'Antar',
+  curbside_pickup: 'Curbside pickup',
+  reservable: 'Reservasi',
+  outdoor_seating: 'Tempat duduk outdoor',
+};
+
+const SERVICE_OPTION_ORDER = [
+  'dine_in',
+  'takeaway',
+  'delivery',
+  'outdoor_seating',
+  'curbside_pickup',
+  'reservable',
+];
+
 function titleCaseWords(text) {
   return String(text || '')
     .split(' ')
@@ -68,7 +86,7 @@ function orderedTrueKeys(sourceObj, preferredOrder = []) {
   return keys.sort((a, b) => orderIndex(a) - orderIndex(b) || a.localeCompare(b));
 }
 
-const FacilitiesTab = ({ facilities }) => {
+const FacilitiesTab = ({ facilities, googleSnapshot }) => {
   const popularForItems = useMemo(() => {
     const keys = orderedTrueKeys(facilities?.popular_for, POPULAR_FOR_ORDER);
     return keys.map((key) => toReadableLabel(key, POPULAR_FOR_LABELS));
@@ -87,10 +105,21 @@ const FacilitiesTab = ({ facilities }) => {
       .map((item) => toReadableLabel(item));
   }, [facilities?.atmosphere]);
 
+  const serviceOptionItems = useMemo(() => {
+    const keys = orderedTrueKeys(facilities?.service_options, SERVICE_OPTION_ORDER);
+    return keys.map((key) => toReadableLabel(key, SERVICE_OPTION_LABELS));
+  }, [facilities?.service_options]);
+
+  const aggregates = googleSnapshot?.aggregates || {};
+  const priceLabel = googleSnapshot?.price_level_label
+    || (googleSnapshot?.price_level != null ? `Level ${googleSnapshot.price_level}` : null);
+
   const hasAnyData = (
     popularForItems.length > 0
     || highlightItems.length > 0
     || atmosphereItems.length > 0
+    || serviceOptionItems.length > 0
+    || aggregates.rating != null
   );
 
   const tabConfigs = useMemo(() => ([
@@ -121,6 +150,19 @@ const FacilitiesTab = ({ facilities }) => {
       ),
     },
     {
+      key: 'service_options',
+      label: 'Layanan',
+      items: serviceOptionItems,
+      emptyText: 'Belum ada data layanan.',
+      pillClassName: 'border border-sky-200/90 bg-white text-sky-900 dark:border-sky-800/60 dark:bg-zinc-800 dark:text-sky-100',
+      iconContainerClassName: 'bg-gradient-to-br from-sky-500 to-cyan-500 text-white',
+      icon: (
+        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+    },
+    {
       key: 'atmosphere',
       label: 'Suasana',
       items: atmosphereItems,
@@ -134,7 +176,7 @@ const FacilitiesTab = ({ facilities }) => {
         </svg>
       ),
     },
-  ]), [popularForItems, highlightItems, atmosphereItems]);
+  ]), [popularForItems, highlightItems, atmosphereItems, serviceOptionItems]);
 
   const availableTabs = useMemo(
     () => tabConfigs.filter((tab) => tab.items.length > 0),
@@ -150,7 +192,7 @@ const FacilitiesTab = ({ facilities }) => {
     return availableTabs[0] || tabConfigs[0];
   }, [availableTabs, selectedTab, tabConfigs]);
 
-  if (!facilities) {
+  if (!facilities && !googleSnapshot) {
     return (
       <div className="text-center py-10 px-4 text-gray-500 dark:text-gray-400">
         <svg className="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -178,6 +220,25 @@ const FacilitiesTab = ({ facilities }) => {
         aria-hidden
       />
       <div className="relative p-4 sm:p-6">
+        {(aggregates.rating != null || aggregates.user_ratings_total != null || priceLabel) && (
+          <div className="mb-4 flex flex-wrap gap-2 text-xs sm:text-sm text-gray-700 dark:text-gray-300">
+            {aggregates.rating != null && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/90 dark:bg-zinc-800 px-3 py-1 border border-amber-200 dark:border-amber-900/50">
+                ⭐ Google {Number(aggregates.rating).toFixed(1)}
+              </span>
+            )}
+            {aggregates.user_ratings_total != null && (
+              <span className="inline-flex items-center rounded-full bg-white/90 dark:bg-zinc-800 px-3 py-1 border border-gray-200 dark:border-zinc-700">
+                {Number(aggregates.user_ratings_total).toLocaleString('id-ID')} ulasan Maps
+              </span>
+            )}
+            {priceLabel && (
+              <span className="inline-flex items-center rounded-full bg-white/90 dark:bg-zinc-800 px-3 py-1 border border-emerald-200 dark:border-emerald-900/50">
+                💰 {priceLabel}
+              </span>
+            )}
+          </div>
+        )}
         <div className="mb-4 flex flex-wrap gap-2">
           {tabConfigs.map((tab) => {
             const isActive = activeTab?.key === tab.key;

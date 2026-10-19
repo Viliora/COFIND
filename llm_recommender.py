@@ -329,25 +329,16 @@ def build_user_taste_profile(
             favorite_names.append(name)
 
     rating_counts: Dict[str, int] = {}
-    best_for_counts: Dict[str, int] = {}
     slider_sums: Dict[str, float] = {}
     slider_n: Dict[str, int] = {}
     vote_shop_lines = []
     for row in vote_rows or []:
-        rating, best_for_raw, pelayanan, kebersihan, kenyamanan, harga, shop_name = (
+        rating, _best_for_raw, pelayanan, kebersihan, kenyamanan, harga, shop_name = (
             list(row) + [None] * 7
         )[:7]
         rating_key = str(rating or '').strip().lower()
         if rating_key in _RATING_PROMPT_LABELS:
             rating_counts[rating_key] = rating_counts.get(rating_key, 0) + 1
-        tags = [
-            tag.strip().lower()
-            for tag in str(best_for_raw or '').split(',')
-            if tag.strip()
-        ]
-        for tag in tags:
-            if tag in _BEST_FOR_PROMPT_LABELS:
-                best_for_counts[tag] = best_for_counts.get(tag, 0) + 1
         for field, val in (
             ('pelayanan', pelayanan),
             ('kebersihan', kebersihan),
@@ -365,9 +356,6 @@ def build_user_taste_profile(
             bits = []
             if rating_key in _RATING_PROMPT_LABELS:
                 bits.append(_RATING_PROMPT_LABELS[rating_key])
-            tagged = [_BEST_FOR_PROMPT_LABELS[t] for t in tags if t in _BEST_FOR_PROMPT_LABELS][:2]
-            if tagged:
-                bits.append('untuk ' + ', '.join(tagged))
             if bits:
                 vote_shop_lines.append(f'{shop_label}: {", ".join(bits)}')
 
@@ -376,11 +364,6 @@ def build_user_taste_profile(
         for key, count in sorted(rating_counts.items(), key=lambda item: (-item[1], item[0]))
         if count
     ]
-    vote_best_for_bits = [
-        f'{_BEST_FOR_PROMPT_LABELS[tag]} ({count})'
-        for tag, count in sorted(best_for_counts.items(), key=lambda item: (-item[1], item[0]))
-        if count
-    ][:4]
     vote_slider_bits = [
         f'{field} {slider_sums[field] / slider_n[field]:.1f}/5'
         for field in ('pelayanan', 'kebersihan', 'kenyamanan', 'harga')
@@ -391,11 +374,11 @@ def build_user_taste_profile(
     profile['review_lines'] = review_lines
     profile['favorite_names'] = favorite_names
     profile['vote_rating_bits'] = vote_rating_bits
-    profile['vote_best_for_bits'] = vote_best_for_bits
+    profile['vote_best_for_bits'] = []
     profile['vote_slider_bits'] = vote_slider_bits
     profile['vote_shop_lines'] = vote_shop_lines
     profile['has_history'] = bool(
-        review_lines or favorite_names or vote_rating_bits or vote_best_for_bits or vote_slider_bits
+        review_lines or favorite_names or vote_rating_bits or vote_slider_bits
     )
     return profile
 
@@ -509,24 +492,6 @@ _RATING_PROMPT_LABELS = {
     'dislike': 'kurang suka',
     'hate': 'tidak suka',
 }
-_BEST_FOR_PROMPT_LABELS = {
-    'belajar': 'belajar',
-    'kerja': 'kerja',
-    'nge_game': 'bermain game',
-    'meeting': 'meeting',
-    'family_time': 'keluarga',
-    'instagrammable': 'instagrammable',
-}
-_PILL_TO_BEST_FOR = {
-    'belajar': 'belajar',
-    'kerja': 'kerja',
-    'bermain game': 'nge_game',
-    'meeting_sosialisasi': 'meeting',
-    'keluarga': 'family_time',
-    'instagrammable': 'instagrammable',
-}
-
-
 def _community_signal_lines(evidence: Dict[str, object], pills: Optional[Sequence[str]] = None) -> List[str]:
     """Baris fakta pengunjung untuk blok kandidat; kosong bila toko belum punya data."""
     data = (evidence or {}).get('community_signals') or {}
@@ -555,23 +520,6 @@ def _community_signal_lines(evidence: Dict[str, object], pills: Optional[Sequenc
                 pass
     if slider_bits:
         lines.append(f'    - pengalaman: {", ".join(slider_bits)}')
-
-    best_for_counts = vote.get('best_for_counts') or {}
-    preferred_tags = [_PILL_TO_BEST_FOR[p] for p in (pills or []) if p in _PILL_TO_BEST_FOR]
-    ranked_tags = sorted(
-        ((tag, int(count or 0)) for tag, count in best_for_counts.items() if int(count or 0) > 0),
-        key=lambda item: (-item[1], item[0]),
-    )
-    if preferred_tags:
-        ranked_tags = [item for item in ranked_tags if item[0] in preferred_tags] + [
-            item for item in ranked_tags if item[0] not in preferred_tags
-        ]
-    if ranked_tags:
-        best_bits = [
-            f'{_BEST_FOR_PROMPT_LABELS.get(tag, tag)} ({count})'
-            for tag, count in ranked_tags[:3]
-        ]
-        lines.append(f'    - sering dipilih untuk: {", ".join(best_bits)}')
 
     pro_texts = [
         str(item.get('text') or '').strip()
@@ -951,6 +899,7 @@ def llm_rerank_candidates(
             # llm_backend memotong nilai ini ke HF_LLM_MAX_CHAT_TOKENS_CAP.
             max_tokens=min(1000, 140 + 70 * len(pool)),
             temperature=0.1,
+            usage_stage='rerank',
         )
     except Exception as err:
         return {

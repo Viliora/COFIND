@@ -5,9 +5,9 @@ Vote:
 - helpful     → "Rekomendasi membantu"
 - not_helpful → "Tidak relevan / tidak membantu"
 
-Data dipakai untuk evaluasi sistem dan personalisasi ringan:
-shop yang user tandai not_helpful untuk set preferensi yang sama
-di-downrank / dikecualikan pada request rekomendasi berikutnya.
+Data dipakai untuk evaluasi sistem dan state UI (thumbs di modal).
+Vote not_helpful tidak lagi mengecualikan toko dari pipeline rekomendasi;
+jika LLM rerank tetap memilih toko tersebut, hasil tetap ditampilkan.
 """
 
 from __future__ import annotations

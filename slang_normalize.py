@@ -44,6 +44,9 @@ DOMAIN_CANONICAL_REPLACEMENTS: Dict[str, str] = {
     'mabar': 'main bareng',
     'ngegame': 'main game',
     'ngopi': 'minum kopi',
+    # Salah ketik "hidden gem" — jangan sampai cocok dengan intent bermain game.
+    'hidden game': 'hidden gem',
+    'hidden games': 'hidden gem',
 }
 
 

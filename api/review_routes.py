@@ -229,12 +229,14 @@ def api_get_shop_reviews(place_id):
         if result['success']:
             # Also get average rating
             rating_result = get_average_rating(place_id)
-            return jsonify({
+            resp = jsonify({
                 'status': 'success',
                 'reviews': result['reviews'],
                 'average_rating': rating_result.get('average_rating', 0),
                 'review_count': rating_result.get('review_count', 0)
-            }), 200
+            })
+            resp.headers['Cache-Control'] = 'no-store'
+            return resp, 200
         else:
             # Return empty array instead of error if no reviews found
             return jsonify({

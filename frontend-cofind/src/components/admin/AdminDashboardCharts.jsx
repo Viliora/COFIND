@@ -169,14 +169,6 @@ export default function AdminDashboardCharts({ charts }) {
     { key: 'not_helpful', label: 'Tidak membantu', value: feedback.not_helpful || 0, color: '#b91c1c' },
   ]), [feedback.helpful, feedback.not_helpful]);
 
-  const suggestion = charts?.preference_suggestions || {};
-  const suggestionSegments = useMemo(() => ([
-    { key: 'pending', label: 'Pending', value: suggestion.pending || 0, color: '#d97706' },
-    { key: 'reviewed', label: 'Direview', value: suggestion.reviewed || 0, color: '#2563eb' },
-    { key: 'accepted', label: 'Diterima', value: suggestion.accepted || 0, color: '#15803d' },
-    { key: 'rejected', label: 'Ditolak', value: suggestion.rejected || 0, color: '#78716c' },
-  ]), [suggestion.pending, suggestion.reviewed, suggestion.accepted, suggestion.rejected]);
-
   const contributors = (charts?.top_contributors || []).map((row) => ({
     label: `@${row.username}`,
     value: row.review_count || 0,
@@ -199,10 +191,17 @@ export default function AdminDashboardCharts({ charts }) {
     }));
 
   const trend = charts?.reviews_trend || [];
+  const pipeline = charts?.pipeline_telemetry || {};
+  const pipelineTrend = (pipeline.daily_runs || []).map((row) => {
+    const date = String(row.date || '');
+    const parts = date.split('-');
+    const label = parts.length === 3 ? `${parts[2]}/${parts[1]}` : date;
+    return { date, label, count: row.count || 0 };
+  });
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         <ChartCard
           title="Feedback rekomendasi LLM"
           description="Apakah user merasa rekomendasi berbasis preferensi membantu."
@@ -218,18 +217,46 @@ export default function AdminDashboardCharts({ charts }) {
             {feedback.total || 0} feedback dari {feedback.unique_users || 0} user.
           </p>
         </ChartCard>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <ChartCard
+          title="Request rekomendasi (14 hari)"
+          description="Jumlah pipeline rekomendasi sukses yang tercatat (telemetri server)."
+          empty={(pipeline.runs_total || 0) === 0}
+          emptyMessage="Belum ada run pipeline tercatat. Data muncul setelah user login meminta rekomendasi."
+        >
+          <TrendBars points={pipelineTrend.length ? pipelineTrend : [{ date: '-', label: '-', count: 0 }]} />
+          <p className="mt-4 text-xs text-stone-500">
+            Total {pipeline.runs_total || 0} run · rerank LLM {pipeline.rerank_llm_rate != null ? `${pipeline.rerank_llm_rate}%` : '—'} ·
+            sentimen klausa {pipeline.clause_applied_rate != null ? `${pipeline.clause_applied_rate}%` : '—'}
+          </p>
+        </ChartCard>
 
         <ChartCard
-          title="Saran preferensi pill"
-          description="Status usulan preferensi baru dari user ke admin."
-          empty={(suggestion.total || 0) === 0}
-          emptyMessage="Belum ada saran preferensi."
+          title="Metrik pipeline rata-rata"
+          description="Latensi dan token LLM per request (agregat 14 hari)."
+          empty={(pipeline.runs_total || 0) === 0}
+          emptyMessage="Belum ada metrik pipeline."
         >
-          <DonutChart
-            segments={suggestionSegments.filter((s) => s.value > 0).length ? suggestionSegments : suggestionSegments}
-            centerValue={suggestion.pending || 0}
-            centerLabel="menunggu tinjauan"
-          />
+          <ul className="space-y-2 text-sm text-stone-700">
+            <li className="flex justify-between gap-3">
+              <span>Latensi total</span>
+              <span className="font-medium tabular-nums">{pipeline.avg_total_ms != null ? `${pipeline.avg_total_ms} ms` : '—'}</span>
+            </li>
+            <li className="flex justify-between gap-3">
+              <span>Fase 2b sentimen klausa</span>
+              <span className="font-medium tabular-nums">{pipeline.avg_clause_sentiment_ms != null ? `${pipeline.avg_clause_sentiment_ms} ms` : '—'}</span>
+            </li>
+            <li className="flex justify-between gap-3">
+              <span>Token LLM / request</span>
+              <span className="font-medium tabular-nums">{pipeline.avg_llm_tokens != null ? Math.round(pipeline.avg_llm_tokens) : '—'}</span>
+            </li>
+            <li className="flex justify-between gap-3">
+              <span>Metadata prior (rata-rata toko/run)</span>
+              <span className="font-medium tabular-nums">{pipeline.avg_metadata_prior_applied != null ? pipeline.avg_metadata_prior_applied : '—'}</span>
+            </li>
+          </ul>
         </ChartCard>
       </div>
 

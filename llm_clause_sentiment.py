@@ -16,11 +16,13 @@ Efisiensi: klausa dikelompokkan per batch dalam satu panggilan LLM, dan hasilnya
 disimpan di vector_cache sehingga klausa yang sama tidak dinilai dua kali.
 
 Env:
-  COFIND_LLM_CLAUSE_SENTIMENT           aktifkan tahap ini (default: false)
+  COFIND_LLM_CLAUSE_SENTIMENT           aktifkan tahap ini (default: true)
   COFIND_CLAUSE_SENTIMENT_BATCH         klausa per panggilan LLM (default: 16)
   COFIND_CLAUSE_SENTIMENT_MAX           batas klausa per request rekomendasi (default: 96)
   COFIND_CLAUSE_SENTIMENT_POOL          jumlah kandidat toko yang diverifikasi (default: 6)
   COFIND_CLAUSE_SENTIMENT_CONCURRENCY   batch yang dikirim paralel (default: 3)
+  COFIND_CLAUSE_SENTIMENT_DEDUP         dedup klausa mirip via embedding (default: true)
+  COFIND_CLAUSE_SENTIMENT_DEDUP_MIN     ambang cosine dedup 0..1 (default: 0.92)
 """
 
 from __future__ import annotations
@@ -66,7 +68,22 @@ def _env_int(name: str, default: int, *, min_value: int, max_value: int) -> int:
 
 
 def clause_sentiment_enabled() -> bool:
-    return _env_flag('COFIND_LLM_CLAUSE_SENTIMENT', False)
+    return _env_flag('COFIND_LLM_CLAUSE_SENTIMENT', True)
+
+
+def clause_dedup_enabled() -> bool:
+    return _env_flag('COFIND_CLAUSE_SENTIMENT_DEDUP', True)
+
+
+def clause_dedup_min_similarity() -> float:
+    raw = (os.getenv('COFIND_CLAUSE_SENTIMENT_DEDUP_MIN') or '').strip()
+    if not raw:
+        return 0.92
+    try:
+        value = float(raw)
+    except ValueError:
+        return 0.92
+    return max(0.75, min(0.99, value))
 
 
 def batch_size() -> int:
@@ -92,7 +109,56 @@ def sentiment_config() -> Dict[str, object]:
         'max_clauses': max_clauses_per_request(),
         'candidate_pool': candidate_pool(),
         'concurrency': batch_concurrency(),
+        'dedup_enabled': clause_dedup_enabled(),
+        'dedup_min_similarity': clause_dedup_min_similarity(),
     }
+
+
+def _dedup_clauses_by_embedding(clauses: Sequence[str]) -> Tuple[List[str], Dict[str, str]]:
+    """
+    Gabung klausa hampir identik makna (cosine embedding) sebelum panggilan LLM.
+    Return (daftar canonical unik untuk LLM, peta alias -> canonical).
+    """
+    items = [str(c).strip() for c in (clauses or []) if str(c).strip()]
+    identity = {c: c for c in items}
+    if not clause_dedup_enabled() or len(items) < 2:
+        return list(dict.fromkeys(items)), identity
+
+    try:
+        from semantic_match import embed_texts
+        import numpy as np
+    except Exception:
+        return list(dict.fromkeys(items)), identity
+
+    vectors = embed_texts(items)
+    if not vectors:
+        return list(dict.fromkeys(items)), identity
+
+    threshold = clause_dedup_min_similarity()
+    canonical: List[str] = []
+    reps: List[Tuple[str, object]] = []
+    alias_map: Dict[str, str] = {}
+
+    for clause in items:
+        vec = vectors.get(clause)
+        if vec is None:
+            if clause not in canonical:
+                canonical.append(clause)
+            alias_map[clause] = clause
+            continue
+        merged = False
+        for rep_clause, rep_vec in reps:
+            sim = float(np.dot(np.asarray(vec, dtype=np.float32), np.asarray(rep_vec, dtype=np.float32)))
+            if sim >= threshold:
+                alias_map[clause] = rep_clause
+                merged = True
+                break
+        if not merged:
+            reps.append((clause, vec))
+            canonical.append(clause)
+            alias_map[clause] = clause
+
+    return canonical, alias_map
 
 
 def quote_key(text: object) -> str:
@@ -207,9 +273,12 @@ def _classify_clauses(
     if not pending:
         return verdicts, telemetry
 
+    llm_targets, alias_map = _dedup_clauses_by_embedding(pending)
+    telemetry['dedup_aliases'] = max(0, len(pending) - len(llm_targets))
+
     started = time.perf_counter()
     size = batch_size()
-    batches = [pending[offset:offset + size] for offset in range(0, len(pending), size)]
+    batches = [llm_targets[offset:offset + size] for offset in range(0, len(llm_targets), size)]
     to_store: Dict[str, dict] = {}
 
     def run_batch(batch: List[str]):
@@ -222,6 +291,7 @@ def _classify_clauses(
                 ],
                 max_tokens=min(900, 80 + 30 * len(batch)),
                 temperature=0.0,
+                usage_stage='clause_sentiment',
             )
             return batch, raw, None
         except Exception as err:
@@ -229,10 +299,16 @@ def _classify_clauses(
 
     workers = min(batch_concurrency(), len(batches))
     if workers > 1:
+        import contextvars
         from concurrent.futures import ThreadPoolExecutor
 
         with ThreadPoolExecutor(max_workers=workers) as pool:
-            results = list(pool.map(run_batch, batches))
+            results = list(
+                pool.map(
+                    lambda batch: contextvars.copy_context().run(run_batch, batch),
+                    batches,
+                )
+            )
     else:
         results = [run_batch(batch) for batch in batches]
 
@@ -272,8 +348,32 @@ def _classify_clauses(
 
     if to_store:
         _cache.set_many(to_store)
+
+    for alias, canonical in alias_map.items():
+        if alias == canonical or alias in verdicts:
+            continue
+        canon_verdict = verdicts.get(canonical)
+        if isinstance(canon_verdict, dict):
+            verdicts[alias] = dict(canon_verdict)
+
     telemetry['latency_ms'] = round((time.perf_counter() - started) * 1000, 1)
     return verdicts, telemetry
+
+
+def classify_clauses_batch(
+    clauses: Sequence[str],
+    *,
+    preference_line: str,
+    chat_fn: Callable[..., str],
+    parse_json_fn: Optional[Callable] = None,
+) -> Tuple[Dict[str, dict], Dict[str, object]]:
+    """API publik untuk warm cache offline (sama dengan _classify_clauses)."""
+    return _classify_clauses(
+        clauses,
+        preference_line=preference_line,
+        chat_fn=chat_fn,
+        parse_json_fn=parse_json_fn,
+    )
 
 
 def classify_quotes(

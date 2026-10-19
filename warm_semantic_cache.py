@@ -14,6 +14,7 @@ Pemakaian:
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 import time
 
 from dotenv import load_dotenv
@@ -65,7 +66,17 @@ def main() -> int:
     parser.add_argument('--limit', type=int, default=None, help='batas jumlah review')
     parser.add_argument('--batch', type=int, default=256, help='klausa per batch encode')
     parser.add_argument('--stats', action='store_true', help='hanya cetak statistik cache')
+    parser.add_argument('--pgvector', action='store_true', help='backfill review_embeddings (pgvector) via scripts/backfill_review_embeddings.py')
     args = parser.parse_args()
+
+    if args.pgvector:
+        import os
+        import subprocess
+        import sys
+        os.environ['COFIND_EMBEDDING_STORE'] = 'pgvector'
+        root = Path(__file__).resolve().parent
+        script = root / 'scripts' / 'backfill_review_embeddings.py'
+        return subprocess.call([sys.executable, str(script)])
 
     print(f"[WARM] Konfigurasi gerbang makna: {gate_config()}")
     if args.stats:

@@ -17,6 +17,12 @@ export default defineConfig({
       // Let Vite auto-detect the port
     },
     port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:5000',
+        changeOrigin: true,
+      },
+    },
     watch: {
       usePolling: false,
       interval: 100,

@@ -2,19 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/authContext';
 import { authService } from '../services/authService';
-import { BEST_FOR_META, RATING_META } from '../constants/shopVoteMeta';
-import { SLIDER_META } from './ShopVoteModal';
-import { SLIDER_LABELS_MAP } from './ShopOverallExperience';
+import { RATING_META } from '../constants/shopVoteMeta';
 
-const OVERALL_SLIDER_FIELDS = ['pelayanan', 'kebersihan', 'kenyamanan', 'harga'];
-
-/** Override keterangan label khusus review card agar lebih jelas (misal untuk pelayanan). */
-const REVIEW_CARD_SLIDER_LABELS_MAP = {
-  ...SLIDER_LABELS_MAP,
-  pelayanan: ['Terrible Service', 'Bad Service', 'Nice Service', 'Great Service', 'Special Service'],
-};
-
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+import { API_BASE } from '../config/apiBase.js';
 const MAX_PHOTOS = 1;
 const MAX_REVIEW_IMAGE_BYTES = 2 * 1024 * 1024;
 
@@ -34,6 +24,19 @@ const RATING_BADGE_CLASSES = {
   dislike: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300',
   hate: 'bg-slate-100 text-slate-600 dark:bg-slate-800/40 dark:text-slate-300',
 };
+
+function numericRatingToVoteKey(rating) {
+  const n = Number(rating);
+  if (!Number.isFinite(n) || n < 1) return null;
+  if (n >= 5) return 'love';
+  if (n >= 4) return 'like';
+  if (n >= 3) return 'ok';
+  if (n >= 2) return 'dislike';
+  return 'hate';
+}
+
+const REVIEWER_NAME_CLASS =
+  'font-bold text-gray-900 dark:text-white truncate block transition-colors';
 
 const ReviewCard = ({ review, placeId, onDelete, onUpdate, onLike, highlightKeyword = '' }) => {
   const { user } = useAuth();
@@ -94,21 +97,13 @@ const ReviewCard = ({ review, placeId, onDelete, onUpdate, onLike, highlightKeyw
   const isOwner = user?.id === review.user_id;
   const timeAgo = getTimeAgo(review.created_at, review.relative_time);
 
-  const ratingMeta = reviewerVote?.rating
-    ? RATING_META.find((r) => r.key === reviewerVote.rating) || null
+  const ratingVoteKey =
+    reviewerVote?.rating
+    || review.rating_vote_key
+    || numericRatingToVoteKey(review.rating);
+  const ratingMeta = ratingVoteKey
+    ? RATING_META.find((r) => r.key === ratingVoteKey) || null
     : null;
-
-  const sliderMetas = OVERALL_SLIDER_FIELDS.map((field) => {
-    const value = reviewerVote?.[field];
-    if (value === null || value === undefined) return null;
-    const sliderInfo = SLIDER_META.find((s) => s.key === field);
-    const label = REVIEW_CARD_SLIDER_LABELS_MAP[field]?.[Math.max(1, Math.min(5, Number(value) || 0)) - 1];
-    return sliderInfo && label ? { ...sliderInfo, valueLabel: label } : null;
-  }).filter(Boolean);
-
-  const bestForTags = (reviewerVote?.best_for || [])
-    .map((key) => BEST_FOR_META.find((meta) => meta.key === key))
-    .filter(Boolean);
 
   // Handle edit click - isi form dari review
   const handleEditClick = () => {
@@ -334,7 +329,28 @@ const ReviewCard = ({ review, placeId, onDelete, onUpdate, onLike, highlightKeyw
     }
   };
 
-  const displayName = review.profiles?.full_name || review.profiles?.username || review.full_name || review.username || review.author_name || 'Anonim';
+  const isGoogleReview =
+    review.review_source === 'google_places'
+    || (!review.user_id && (review.author_display_name || review.author_name));
+  const displayName = isGoogleReview
+    ? (
+      review.author_display_name
+      || review.author_name
+      || review.username
+      || review.full_name
+      || review.profiles?.full_name
+      || review.profiles?.username
+      || 'Anonim'
+    )
+    : (
+      review.profiles?.full_name
+      || review.profiles?.username
+      || review.full_name
+      || review.username
+      || review.author_display_name
+      || review.author_name
+      || 'Anonim'
+    );
   const totalUlasan = review.user_total_reviews != null ? review.user_total_reviews : 0;
   const displayReviewPhotos = sliceReviewPhotos(review.photos);
 
@@ -518,21 +534,18 @@ const ReviewCard = ({ review, placeId, onDelete, onUpdate, onLike, highlightKeyw
           {review.user_id ? (
             <Link
               to={`/profile/${review.user_id}`}
-              className="font-bold text-gray-900 dark:text-white truncate block cursor-pointer hover:underline hover:text-amber-600 dark:hover:text-amber-500 transition-colors"
+              className={`${REVIEWER_NAME_CLASS} cursor-pointer hover:underline hover:text-amber-600 dark:hover:text-amber-500`}
             >
               {displayName}
             </Link>
           ) : (
-            <h4 className="font-bold text-gray-900 dark:text-white truncate">
-              {displayName}
-            </h4>
+            <span className={REVIEWER_NAME_CLASS}>{displayName}</span>
           )}
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
             {totalUlasan > 0 ? `${totalUlasan} ulasan` : 'Pengguna'}
           </p>
         </div>
 
-        {/* Kebab menu (titik tiga) */}
         <div className="relative flex-shrink-0">
           <button
             type="button"
@@ -583,7 +596,7 @@ const ReviewCard = ({ review, placeId, onDelete, onUpdate, onLike, highlightKeyw
         </div>
       </div>
 
-      {/* Kapan diupload + badge BARU (kiri) + label rating, overall experience, best-for (kanan) */}
+      {/* Kapan diupload + badge rating */}
       <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs text-gray-500 dark:text-gray-400">{timeAgo}</span>
@@ -599,32 +612,12 @@ const ReviewCard = ({ review, placeId, onDelete, onUpdate, onLike, highlightKeyw
               className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
                 RATING_BADGE_CLASSES[ratingMeta.key]
               }`}
-              title="Rating yang diberikan pengguna ini untuk coffee shop ini"
+              title="Rating ulasan"
             >
               <span>{ratingMeta.emoji}</span>
               <span>{ratingMeta.label}</span>
             </span>
           ) : null}
-          {sliderMetas.map((slider) => (
-            <span
-              key={slider.key}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 dark:bg-zinc-700 dark:text-gray-300"
-              title={slider.label}
-            >
-              <span>{slider.emoji}</span>
-              <span>{slider.valueLabel}</span>
-            </span>
-          ))}
-          {bestForTags.map((tag) => (
-            <span
-              key={tag.key}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 dark:bg-zinc-700 dark:text-gray-300"
-              title="Best when you want to"
-            >
-              <span>{tag.emoji}</span>
-              <span>{tag.label}</span>
-            </span>
-          ))}
         </div>
       </div>
 
@@ -754,7 +747,7 @@ const ReviewCard = ({ review, placeId, onDelete, onUpdate, onLike, highlightKeyw
           )}
       </>
 
-      {/* Like button - tetap tampil di review sendiri, count tetap terlihat, tapi tetap nonaktif */}
+      {/* Like button - hanya ulasan Cofind */}
       {!isEditing && (
         <div className="pt-3 flex items-center">
           <button
