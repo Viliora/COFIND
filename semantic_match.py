@@ -228,6 +228,10 @@ def model_available() -> bool:
 # Pemecahan klausa
 # --------------------------------------------------------------------------
 
+def clean_clause_for_embedding(value: str) -> str:
+    return _clean_clause(value)
+
+
 def _clean_clause(value: str) -> str:
     cleaned = re.sub(r'\s+', ' ', str(value or '')).strip(' \t-–—•·"\',:;.')
     if len(cleaned) > _MAX_CLAUSE_CHARS:
@@ -405,6 +409,95 @@ def similarity_matrix(clause_matrix, reference_matrix):
         except Exception as err:
             logger.debug(f"model.similarity gagal, pakai dot product numpy: {str(err)[:120]}")
     return np.asarray(clause_matrix, dtype=np.float32) @ np.asarray(reference_matrix, dtype=np.float32).T
+
+
+def _embed_query_vector(query_text: str):
+    import numpy as np
+
+    vectors = embed_texts([query_text])
+    key = _clean_clause(query_text)
+    vec = vectors.get(key)
+    if vec is None:
+        return None, key
+    return np.asarray(vec, dtype=np.float32), key
+
+
+def embed_query_vector(query_text: str):
+    """Vektor query untuk ANN pgvector (normalized MiniLM)."""
+    return _embed_query_vector(query_text)
+
+
+def semantic_embedding_cache_stats() -> Dict[str, object]:
+    return _cache.stats()
+
+
+def score_reviews_by_id(query_text: str, items):
+    from review_embedding_store import (
+        canonical_embedding_text,
+        fetch_embeddings,
+        model_name as stored_model_name,
+        source_text_hash,
+        upsert_review_embedding,
+        use_pgvector_store,
+    )
+
+    telemetry = {
+        "documents": len(items or []),
+        "encoded": 0,
+        "skipped": None,
+        "store": "pgvector" if use_pgvector_store() else "cache",
+    }
+    if not query_text or not items:
+        telemetry["skipped"] = "no_input"
+        return [0.0] * len(items or []), telemetry
+    if not model_available():
+        telemetry["skipped"] = "model_unavailable"
+        return [0.0] * len(items), telemetry
+
+    prepared = []
+    for rid, raw in items:
+        prepared.append((rid, raw or "", canonical_embedding_text(raw or "")))
+
+    if not use_pgvector_store():
+        return score_documents(query_text, [c for _, _, c in prepared])
+
+    import numpy as np
+
+    q, _ = _embed_query_vector(query_text)
+    if q is None:
+        telemetry["skipped"] = "query_encode_failed"
+        return [0.0] * len(items), telemetry
+
+    ids = [int(r) for r, _, c in prepared if r is not None and c]
+    fetched = fetch_embeddings(ids)
+    expected_model = stored_model_name()
+    scores = []
+    encoded = 0
+    for rid, raw, canon in prepared:
+        if not canon:
+            scores.append(0.0)
+            continue
+        vec = None
+        if rid is not None:
+            th = source_text_hash(canon)
+            hit = fetched.get(int(rid))
+            if hit and hit[1] == th and hit[2] == expected_model:
+                vec = hit[0]
+        if vec is None:
+            one = embed_texts([canon])
+            vec = one.get(canon)
+            if vec is not None and rid is not None:
+                upsert_review_embedding(int(rid), raw)
+                hit = fetch_embeddings([int(rid)]).get(int(rid))
+                if hit:
+                    vec = hit[0]
+        if vec is None:
+            scores.append(0.0)
+            continue
+        encoded += 1
+        scores.append(float(np.dot(q, np.asarray(vec, dtype=np.float32))))
+    telemetry["encoded"] = encoded
+    return scores, telemetry
 
 
 def score_documents(query_text: str, documents: Sequence[str]) -> Tuple[List[float], Dict[str, object]]:

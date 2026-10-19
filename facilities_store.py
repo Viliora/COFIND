@@ -1,26 +1,37 @@
-"""Akses data fasilitas coffee shop (facilities.json) dan format teksnya.
-
-Sumber data sama dengan yang dipakai frontend (FacilitiesTab), sehingga deskripsi
-fasilitas pada pipeline rekomendasi konsisten dengan yang dilihat user.
-"""
+"""Akses data fasilitas coffee shop dari database (coffee_shops.facilities)."""
 
 from __future__ import annotations
 
 import json
-import os
 from datetime import datetime
 from typing import Any, Dict
 
+from db_backend import get_connection, use_postgres
 from logging_config import get_logger
 
 logger = get_logger('facilities')
 
-_REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
-FACILITIES_PATH = os.path.join(_REPO_ROOT, 'frontend-cofind', 'src', 'data', 'facilities.json')
+_REPO_ROOT = __import__('os').path.dirname(__import__('os').path.abspath(__file__))
+# Opsional: impor one-off lewat google_places_sync (file tidak wajib ada).
+FACILITIES_PATH = __import__('os').path.join(_REPO_ROOT, 'data', 'facilities.json')
+
+
+def _parse_json(value: Any) -> dict:
+    if value is None:
+        return {}
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+            return parsed if isinstance(parsed, dict) else {}
+        except json.JSONDecodeError:
+            return {}
+    return {}
 
 
 def _flatten_facility_entries(payload: Any) -> Dict[str, dict]:
-    """Kumpulkan semua entry facilities meski JSON sempat tertutup/tersarang salah."""
+    """Kumpulkan entry dari JSON file (impor one-off)."""
     collected: Dict[str, dict] = {}
 
     def _accept(place_id: str, name: str, facilities: dict) -> None:
@@ -54,22 +65,82 @@ def _flatten_facility_entries(payload: Any) -> Dict[str, dict]:
 
 
 def load_facilities_index() -> Dict[str, dict]:
-    if not os.path.exists(FACILITIES_PATH):
-        logger.warning(f"facilities.json tidak ditemukan: {FACILITIES_PATH}")
+    if not use_postgres():
+        logger.warning('load_facilities_index membutuhkan Postgres/Supabase')
         return {}
     try:
-        with open(FACILITIES_PATH, 'r', encoding='utf-8') as handle:
-            payload = json.load(handle)
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT place_id, name, facilities
+            FROM coffee_shops
+            WHERE facilities IS NOT NULL
+              AND facilities::text NOT IN ('{}', 'null')
+            """
+        )
+        rows = cur.fetchall()
+        conn.close()
     except Exception as err:
-        logger.warning(f"Gagal memuat facilities.json: {err}")
+        logger.warning(f"Gagal memuat facilities dari DB: {err}")
         return {}
-    return _flatten_facility_entries(payload)
+
+    index: Dict[str, dict] = {}
+    for row in rows:
+        if isinstance(row, dict):
+            pid = row.get('place_id')
+            name = row.get('name') or ''
+            facilities = _parse_json(row.get('facilities'))
+        else:
+            pid, name, facilities_raw = row[0], row[1], row[2]
+            facilities = _parse_json(facilities_raw)
+        if not pid:
+            continue
+        index[str(pid)] = {
+            'place_id': str(pid),
+            'name': name or '',
+            'facilities': facilities,
+        }
+    return index
+
+
+def save_facilities_entry(place_id: str, entry: dict) -> None:
+    pid = (place_id or '').strip()
+    if not pid:
+        raise ValueError('place_id required')
+    facilities = entry.get('facilities')
+    if not isinstance(facilities, dict):
+        raise ValueError('facilities harus object')
+
+    meta = facilities.setdefault('meta', {})
+    if not isinstance(meta, dict):
+        facilities['meta'] = {}
+        meta = facilities['meta']
+    meta['last_updated'] = datetime.utcnow().strftime('%Y-%m-%d')
+    meta.setdefault('source', 'admin_editor')
+
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        UPDATE coffee_shops
+        SET facilities = ?::jsonb,
+            updated_at = ?
+        WHERE place_id = ?
+        """,
+        (
+            json.dumps(facilities, ensure_ascii=False),
+            datetime.utcnow().isoformat(),
+            pid,
+        ),
+    )
+    conn.commit()
+    conn.close()
 
 
 def save_facilities_index(facilities_index: Dict[str, dict]) -> None:
-    with open(FACILITIES_PATH, 'w', encoding='utf-8', newline='\n') as handle:
-        json.dump({'facilities_by_place_id': facilities_index}, handle, ensure_ascii=False, indent=2)
-        handle.write('\n')
+    for place_id, entry in (facilities_index or {}).items():
+        save_facilities_entry(place_id, entry)
 
 
 def default_facilities_entry(place_id: str, shop_name: str = '') -> dict:
@@ -111,7 +182,7 @@ def count_enabled_facilities(facilities_obj) -> int:
 
 def format_facilities_to_text(shop_facilities) -> str:
     """Ubah data facilities JSON menjadi teks deskriptif terstruktur."""
-    facilities = (shop_facilities or {}).get('facilities', {})
+    facilities = (shop_facilities or {}).get('facilities', shop_facilities or {})
     if not facilities:
         return ''
 
@@ -135,5 +206,10 @@ def format_facilities_to_text(shop_facilities) -> str:
     active_amenities = [k.replace('_', ' ') for k, v in amenities.items() if v]
     if active_amenities:
         parts.append(f"Fasilitas tersedia: {', '.join(active_amenities)}.")
+
+    service = facilities.get('service_options', {})
+    active_service = [k.replace('_', ' ') for k, v in service.items() if v]
+    if active_service:
+        parts.append(f"Opsi layanan: {', '.join(active_service)}.")
 
     return ' '.join(parts)

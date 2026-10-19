@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useAuth } from '../context/authContext';
 import { Link } from 'react-router-dom';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+import { API_BASE } from '../config/apiBase.js';
 const MAX_PHOTOS = 1;
 /** Batas ukuran file gambar per foto (2 MiB, selaras dengan backend). */
 const MAX_REVIEW_IMAGE_BYTES = 2 * 1024 * 1024;

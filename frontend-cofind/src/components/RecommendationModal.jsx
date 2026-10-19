@@ -7,7 +7,7 @@ import RecommendationMap from './RecommendationMap';
 import RecommendationReviewSourcePills from './RecommendationReviewSourcePills';
 import { distanceKmFromUser, formatDistanceKm, parseShopLatLng } from '../utils/geo';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+import { API_BASE } from '../config/apiBase.js';
 
 const DOWNVOTE_REASON_CHIPS = [
     'Tidak sesuai konteks',
@@ -28,13 +28,25 @@ function pillLabelsFromValues(values) {
     return (Array.isArray(values) ? values : []).map((v) => map[v] || v).filter(Boolean);
 }
 
-function formatPreferenceContextLine(activityValues, attributeValues = []) {
+function formatPreferenceContextLine(
+    activityValues,
+    attributeValues = [],
+    searchKeyword = '',
+) {
     const activityLabels = pillLabelsFromValues(activityValues);
     const attributeLabels = pillLabelsFromValues(attributeValues);
-    if (!activityLabels.length && !attributeLabels.length) return '';
-    if (!attributeLabels.length) return activityLabels.join(', ');
-    if (!activityLabels.length) return attributeLabels.join(', ');
-    return `${activityLabels.join(', ')} (${attributeLabels.join(', ')})`;
+    const kw = String(searchKeyword || '').trim();
+    const kwPart = kw ? `Kata kunci: "${kw}"` : '';
+    if (!activityLabels.length && !attributeLabels.length) return kwPart;
+    if (!attributeLabels.length) {
+        return kwPart ? `${activityLabels.join(', ')} · ${kwPart}` : activityLabels.join(', ');
+    }
+    if (!activityLabels.length) {
+        const attr = attributeLabels.join(', ');
+        return kwPart ? `${attr} · ${kwPart}` : attr;
+    }
+    const pillPart = `${activityLabels.join(', ')} (${attributeLabels.join(', ')})`;
+    return kwPart ? `${pillPart} · ${kwPart}` : pillPart;
 }
 
 function formatQuoteReason(value) {
@@ -609,6 +621,12 @@ function RecommendationFeedbackControls({
     );
 }
 
+function formatTotalDurationLabel(totalSec) {
+    const n = Math.max(0, Math.floor(Number(totalSec) || 0));
+    if (!Number.isFinite(n)) return null;
+    return n === 1 ? '1 detik' : `${n} detik`;
+}
+
 const RecommendationModal = ({
     isOpen,
     onClose,
@@ -616,7 +634,9 @@ const RecommendationModal = ({
     shopsByKey = {},
     confirmedPills = [],
     confirmedAttributes = [],
+    confirmedSearchKeyword = '',
     userLocation = null,
+    totalDurationSeconds = null,
 }) => {
     const [feedbackByPlaceId, setFeedbackByPlaceId] = useState({});
 
@@ -730,6 +750,7 @@ const RecommendationModal = ({
     const confirmedContextLine = formatPreferenceContextLine(
         confirmedPills,
         confirmedAttributes,
+        confirmedSearchKeyword,
     );
 
     return (
@@ -760,6 +781,16 @@ const RecommendationModal = ({
                                 <span className="font-medium text-gray-800 dark:text-gray-100">
                                     {confirmedContextLine}
                                 </span>
+                            </p>
+                        ) : null}
+                        {totalDurationSeconds != null ? (
+                            <p className="mt-1.5 text-xs text-indigo-700/90 dark:text-indigo-300/90 tabular-nums">
+                                Selesai dalam{' '}
+                                <span className="font-semibold">
+                                    {formatTotalDurationLabel(totalDurationSeconds)}
+                                </span>
+                                {' '}
+                                sejak proses rekomendasi dimulai.
                             </p>
                         ) : null}
                     </div>

@@ -10,12 +10,11 @@ import ShopVotesSummary from '../components/ShopVotesSummary';
 import ShopVoteModal from '../components/ShopVoteModal';
 import ShopOverallExperience from '../components/ShopOverallExperience';
 import ShopProsCons from '../components/ShopProsCons';
-import facilitiesData from '../data/facilities.json';
 import { addToRecentlyViewed } from '../utils/recentlyViewed';
 import { getCoffeeShopImage, ensureCoffeeShopImageMap } from '../utils/coffeeShopImages';
 
 // API Configuration (samakan sumber data dengan homepage)
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+import { API_BASE } from '../config/apiBase.js';
 // Using Supabase only - photos stored in Supabase Storage
 const MIN_REVIEWS = 15; // Maksimal jumlah reviews yang ditampilkan
 
@@ -130,6 +129,8 @@ function ShopDetail() {
               business_status: detail.business_status || null,
               map_embed_url: detail.map_embed_url || null,
               opening_hours_display: detail.opening_hours_display ?? '',
+              facilities: detail.facilities || null,
+              google_places_snapshot: detail.google_places_snapshot || null,
             };
 
             setShop(normalized);
@@ -623,14 +624,13 @@ function ShopDetail() {
             myVote={myVote}
             onSelectRating={(key) => handleQuickVote('rating', key)}
             onSelectPresence={(key) => handleQuickVote('presence', key)}
-            onToggleBestFor={(key) => handleQuickVote('best_for', key)}
             isSubmitting={isSubmittingVote}
           />
         </div>
       )}
 
       {/* Ringkasan facilities (popular_for, highlights, atmosphere, amenities) */}
-      {shop?.place_id && facilitiesData?.facilities_by_place_id?.[shop.place_id] && (
+      {shop?.place_id && (shop.facilities || shop.google_places_snapshot) && (
         <div className="mt-6 sm:mt-8">
           <div className="mb-4">
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -641,8 +641,14 @@ function ShopDetail() {
               </span>
               Fasilitas & Suasana
             </h2>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Data Google Places &amp; fasilitas tersimpan di database Cofind.
+            </p>
           </div>
-          <FacilitiesTab facilities={facilitiesData.facilities_by_place_id[shop.place_id].facilities} />
+          <FacilitiesTab
+            facilities={shop.facilities}
+            googleSnapshot={shop.google_places_snapshot}
+          />
         </div>
       )}
 

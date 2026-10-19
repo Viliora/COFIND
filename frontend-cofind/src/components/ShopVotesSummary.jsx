@@ -110,20 +110,18 @@ export function BestForBar({ counts, selectedKeys = [], onToggle, isSubmitting }
  * Klik langsung pada salah satu opsi (emoji/bar) akan segera mengirim vote
  * untuk opsi tersebut, tanpa membuka ShopVoteModal. ShopVoteModal hanya
  * diakses lewat tombol "My Votes" / "Edit My Vote" di halaman ShopDetail
- * (untuk mengatur best_for & slider). Emoji pada setiap opsi ditampilkan
+ * (untuk mengatur slider dan opsi lanjutan). Emoji pada setiap opsi ditampilkan
  * hitam-putih/grey, kecuali opsi yang telah dipilih user (myVote) yang
  * ditampilkan berwarna.
  */
-const ShopVotesSummary = ({ summary, myVote, onSelectRating, onSelectPresence, onToggleBestFor, isSubmitting }) => {
+const ShopVotesSummary = ({ summary, myVote, onSelectRating, onSelectPresence, isSubmitting }) => {
   const presenceCounts = summary?.presence_counts || {};
   const ratingCounts = summary?.rating_counts || {};
-  const bestForCounts = summary?.best_for_counts || {};
 
   const maxPresence = Math.max(1, ...PRESENCE_META.map((p) => presenceCounts[p.key] || 0));
   const maxRating = Math.max(1, ...RATING_META.map((r) => ratingCounts[r.key] || 0));
 
   return (
-    <div className="space-y-4">
     <div className="flex flex-col sm:flex-row gap-4">
       <VoteBarGroup
         title="Rating"
@@ -143,14 +141,6 @@ const ShopVotesSummary = ({ summary, myVote, onSelectRating, onSelectPresence, o
         maxCount={maxPresence}
         selectedKey={myVote?.presence}
         onSelect={onSelectPresence}
-        isSubmitting={isSubmitting}
-      />
-    </div>
-
-      <BestForBar
-        counts={bestForCounts}
-        selectedKeys={myVote?.best_for || []}
-        onToggle={onToggleBestFor}
         isSubmitting={isSubmitting}
       />
     </div>

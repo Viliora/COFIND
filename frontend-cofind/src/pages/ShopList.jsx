@@ -17,12 +17,17 @@ import {
 import { preloadFeaturedImages } from '../utils/imagePreloader';
 import { ensureCoffeeShopImageMap } from '../utils/coffeeShopImages';
 import { getRecentlyViewedWithDetails } from '../utils/recentlyViewed';
+import {
+  applyLastRecommendationSession,
+  loadLastRecommendationSession,
+  saveLastRecommendationSession,
+} from '../utils/lastRecommendationSession';
 import heroBgImage from '../assets/1R modern cafe 1.5.jpg';
 import { useAuth } from '../context/authContext';
 import { authService } from '../services/authService';
 import LatestReviewsAside from '../components/LatestReviewsAside';
 // API Configuration
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+import { API_BASE } from '../config/apiBase.js';
 
 /** Sama seperti CoffeeShopCard: rating & total ulasan dari data Google Maps */
 function getGoogleRating(shop) {
@@ -102,16 +107,18 @@ export default function ShopList() {
   const [llmRecommendations, setLlmRecommendations] = useState([]);
   const [pillRecommendLoading, setPillRecommendLoading] = useState(false);
   const [pillRecommendProgress, setPillRecommendProgress] = useState(null);
+  /** Timestamp ms saat overlay SSE dibuka (awal stream rekomendasi). */
+  const [recommendationRunStartedAt, setRecommendationRunStartedAt] = useState(null);
+  /** Total detik run terakhir yang sukses — ditampilkan di RecommendationModal. */
+  const [recommendationTotalSeconds, setRecommendationTotalSeconds] = useState(null);
   const [pillRecommendError, setPillRecommendError] = useState('');
   const [recommendationNotification, setRecommendationNotification] = useState(null);
   const [showRecommendationModal, setShowRecommendationModal] = useState(false);
   const [showPillLoginModal, setShowPillLoginModal] = useState(false);
-  const [showPreferenceSuggestModal, setShowPreferenceSuggestModal] = useState(false);
-  const [suggestLabel, setSuggestLabel] = useState('');
-  const [suggestDescription, setSuggestDescription] = useState('');
-  const [suggestSubmitting, setSuggestSubmitting] = useState(false);
-  const [suggestError, setSuggestError] = useState('');
-  const [suggestSuccess, setSuggestSuccess] = useState('');
+  /** 'pill' | 'free_text' — teks modal login */
+  const [pillLoginModalContext, setPillLoginModalContext] = useState('pill');
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [confirmedSearchKeyword, setConfirmedSearchKeyword] = useState('');
   const hasLoadedRef = useRef(false);
 
   // Lokasi saat ini & radius (peta di atas All Coffee Shops + modal rekomendasi)
@@ -159,6 +166,20 @@ export default function ShopList() {
   useEffect(() => {
     if (user) setShowPillLoginModal(false);
   }, [user]);
+
+  // Pulihkan rekomendasi AI terakhir (localStorage) saat user login / kembali ke beranda.
+  useEffect(() => {
+    if (authLoading || !user?.id) return;
+    const session = loadLastRecommendationSession(user.id);
+    if (!session) return;
+    applyLastRecommendationSession(session, {
+      setLlmRecommendations,
+      setConfirmedPills,
+      setConfirmedAttributes,
+      setConfirmedSearchKeyword,
+      setRecommendationTotalSeconds,
+    });
+  }, [authLoading, user?.id]);
 
   useEffect(() => {
     if (!showPillLoginModal) return undefined;
@@ -417,20 +438,20 @@ export default function ShopList() {
     getCurrentLocationAsync().catch(() => {});
   };
 
-  const pillLabelByValue = useMemo(
-    () => Object.fromEntries(CONTEXT_PILL_OPTIONS.map((p) => [p.value, p.label])),
-    [],
-  );
-
   // Satu konteks aktivitas per waktu (pill tunggal)
   const handlePillClick = (pillValue) => {
     if (authLoading) return;
     if (!user) {
+      setPillLoginModalContext('pill');
       setShowPillLoginModal(true);
       return;
     }
     if (pillRecommendLoading) return;
     setPillRecommendError('');
+    // Pill dan free text saling eksklusif: pilih pill menghapus free text aktif.
+    if (searchKeyword.trim()) {
+      setSearchKeyword('');
+    }
     setSelectedPills((prev) => {
       if (prev.includes(pillValue)) {
         // Atribut lapis 2 hanya relevan selama ada konteks aktivitas terpilih.
@@ -441,81 +462,94 @@ export default function ShopList() {
     });
   };
 
-  const openPreferenceSuggestModal = () => {
-    if (authLoading) return;
-    if (!user) {
-      setShowPillLoginModal(true);
-      return;
-    }
-    setSuggestError('');
-    setSuggestSuccess('');
-    setShowPreferenceSuggestModal(true);
+  const MAX_SEARCH_KEYWORD_CHARS = 50;
+
+  // Pill dan free text saling eksklusif: isi salah satu saja per request.
+  const openLoginModalForFreeText = () => {
+    if (authLoading || user) return;
+    setPillLoginModalContext('free_text');
+    setShowPillLoginModal(true);
   };
 
-  const closePreferenceSuggestModal = () => {
-    if (suggestSubmitting) return;
-    setShowPreferenceSuggestModal(false);
-    setSuggestError('');
-    setSuggestSuccess('');
-  };
-
-  const handleSubmitPreferenceSuggestion = async (event) => {
-    event.preventDefault();
-    const label = suggestLabel.trim();
-    if (!label) {
-      setSuggestError('Isi nama preferensi yang ingin Anda sarankan.');
-      return;
-    }
-    const token = authService.getToken();
-    if (!token) {
-      setShowPreferenceSuggestModal(false);
-      setShowPillLoginModal(true);
-      return;
-    }
-
-    setSuggestSubmitting(true);
-    setSuggestError('');
-    setSuggestSuccess('');
-    try {
-      const res = await fetch(`${API_BASE}/api/preference-suggestions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          label,
-          description: suggestDescription.trim() || undefined,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data?.message || 'Gagal mengirim saran preferensi.');
-      }
-      setSuggestSuccess(data?.message || 'Saran berhasil dikirim ke admin.');
-      setSuggestLabel('');
-      setSuggestDescription('');
-    } catch (err) {
-      setSuggestError(err?.message || 'Gagal mengirim saran preferensi.');
-    } finally {
-      setSuggestSubmitting(false);
+  const handleSearchKeywordChange = (value) => {
+    if (!user) return;
+    const next = String(value || '').slice(0, MAX_SEARCH_KEYWORD_CHARS);
+    setSearchKeyword(next);
+    if (next.trim() && (selectedPills.length > 0 || selectedAttributes.length > 0)) {
+      setSelectedPills([]);
+      setSelectedAttributes([]);
     }
   };
 
   const hasConfirmedRecommendation = useMemo(
-    () => confirmedPills.length > 0,
-    [confirmedPills],
+    () => confirmedPills.length > 0 || confirmedSearchKeyword.trim().length > 0,
+    [confirmedPills, confirmedSearchKeyword],
+  );
+
+  const hasViewableLastRecommendation = useMemo(
+    () => Array.isArray(llmRecommendations) && llmRecommendations.length > 0,
+    [llmRecommendations],
   );
 
   const hasPendingPillChanges = useMemo(() => {
     const selectedKey = [...selectedPills, ...selectedAttributes].sort().join('|');
     const confirmedKey = [...confirmedPills, ...confirmedAttributes].sort().join('|');
-    return selectedKey !== confirmedKey;
-  }, [selectedPills, selectedAttributes, confirmedPills, confirmedAttributes]);
+    return (
+      selectedKey !== confirmedKey
+      || searchKeyword.trim() !== confirmedSearchKeyword.trim()
+    );
+  }, [selectedPills, selectedAttributes, confirmedPills, confirmedAttributes, searchKeyword, confirmedSearchKeyword]);
 
-  const requestPillRecommendations = async (pillValues, attributeValues = []) => {
+  /** Banner + tombol utama untuk membuka modal rekomendasi tersimpan. */
+  const showLastRecommendationBanner = useMemo(
+    () => isPillPreferenceAvailable && hasViewableLastRecommendation,
+    [isPillPreferenceAvailable, hasViewableLastRecommendation],
+  );
+
+  /**
+   * Baris status hijau di bawah OK — hanya jika tidak ada banner (hindari duplikasi)
+   * dan analisis masih sesuai konteks yang dikonfirmasi (bukan draft pill baru).
+   */
+  const showLastAnalysisStatusLine = useMemo(
+    () =>
+      hasViewableLastRecommendation
+      && !pillRecommendLoading
+      && !showRecommendationModal
+      && !hasPendingPillChanges
+      && !showLastRecommendationBanner,
+    [
+      hasViewableLastRecommendation,
+      pillRecommendLoading,
+      showRecommendationModal,
+      hasPendingPillChanges,
+      showLastRecommendationBanner,
+    ],
+  );
+
+  const showRecommendationStatusSection = useMemo(
+    () =>
+      hasConfirmedRecommendation
+      || hasViewableLastRecommendation
+      || (!!pillRecommendError && !pillRecommendLoading),
+    [
+      hasConfirmedRecommendation,
+      hasViewableLastRecommendation,
+      pillRecommendError,
+      pillRecommendLoading,
+    ],
+  );
+
+  const openSavedRecommendationModal = () => {
+    if (!hasViewableLastRecommendation) return;
+    setShowRecommendationModal(true);
+  };
+
+  const requestPillRecommendations = async (pillValues, attributeValues = [], queryText = '') => {
     if (!isPillPreferenceAvailable) return;
-    if (!Array.isArray(pillValues) || pillValues.length === 0) return;
+    const trimmedQueryText = String(queryText || '').trim();
+    const hasPills = Array.isArray(pillValues) && pillValues.length > 0;
+    const hasQueryText = trimmedQueryText.length > 0;
+    if (!hasPills && !hasQueryText) return;
     const token = authService.getToken();
     if (!token) {
       setPillRecommendError('Silakan login untuk mendapatkan rekomendasi konteks.');
@@ -525,8 +559,12 @@ export default function ShopList() {
       });
       return;
     }
-    setConfirmedPills([...pillValues]);
-    setConfirmedAttributes([...attributeValues]);
+    setConfirmedPills(hasPills ? [...pillValues] : []);
+    setConfirmedAttributes(hasPills ? [...attributeValues] : []);
+    setConfirmedSearchKeyword(hasQueryText ? trimmedQueryText : '');
+    const runStartedAt = Date.now();
+    setRecommendationRunStartedAt(runStartedAt);
+    setRecommendationTotalSeconds(null);
     setPillRecommendLoading(true);
     setPillRecommendProgress(null);
     setPillRecommendError('');
@@ -536,8 +574,9 @@ export default function ShopList() {
       const { statusCode, body: data } = await streamRecommendations({
         apiBase: API_BASE,
         token,
-        preferences: pillValues,
-        attributes: attributeValues,
+        preferences: hasPills ? pillValues : [],
+        attributes: hasPills ? attributeValues : [],
+        queryText: hasQueryText ? trimmedQueryText : '',
         onProgress: setPillRecommendProgress,
       });
 
@@ -558,7 +597,20 @@ export default function ShopList() {
             type: 'error',
             message: emptyMessage,
           });
+        } else if (user?.id) {
+          const totalSec = Math.max(0, Math.round((Date.now() - runStartedAt) / 1000));
+          saveLastRecommendationSession({
+            userId: user.id,
+            recommendations: data.recommendations,
+            confirmedPills: hasPills ? [...pillValues] : [],
+            confirmedAttributes: hasPills ? [...attributeValues] : [],
+            confirmedSearchKeyword: hasQueryText ? trimmedQueryText : '',
+            totalDurationSeconds: totalSec,
+          });
         }
+        setRecommendationTotalSeconds(
+          Math.max(0, Math.round((Date.now() - runStartedAt) / 1000)),
+        );
         setShowRecommendationModal(true);
       } else {
         setPillRecommendError(data?.message || 'Rekomendasi AI belum bisa ditampilkan.');
@@ -583,6 +635,7 @@ export default function ShopList() {
     } finally {
       setPillRecommendLoading(false);
       setPillRecommendProgress(null);
+      setRecommendationRunStartedAt(null);
     }
   };
 
@@ -602,14 +655,16 @@ export default function ShopList() {
     setLocationError(null);
   };
 
+  const hasRecommendableInput = selectedPills.length > 0 || searchKeyword.trim().length > 0;
+
   const handleConfirmPills = () => {
-    if (!isPillPreferenceAvailable || selectedPills.length === 0) return;
+    if (!isPillPreferenceAvailable || !hasRecommendableInput) return;
     setLocationError(null);
     setShowLocationChoiceModal(true);
   };
 
   const handleRecommendWithLocation = async () => {
-    if (!isPillPreferenceAvailable || selectedPills.length === 0) return;
+    if (!isPillPreferenceAvailable || !hasRecommendableInput) return;
     setLocationChoiceSubmitting(true);
     setLocationError(null);
     try {
@@ -617,7 +672,7 @@ export default function ShopList() {
         await getCurrentLocationAsync();
       }
       setShowLocationChoiceModal(false);
-      await requestPillRecommendations(selectedPills, selectedAttributes);
+      await requestPillRecommendations(selectedPills, selectedAttributes, searchKeyword);
     } catch (err) {
       setLocationError(err?.message || 'Tidak dapat mengambil lokasi.');
     } finally {
@@ -626,11 +681,11 @@ export default function ShopList() {
   };
 
   const handleRecommendWithoutLocation = async () => {
-    if (!isPillPreferenceAvailable || selectedPills.length === 0) return;
+    if (!isPillPreferenceAvailable || !hasRecommendableInput) return;
     setLocationChoiceSubmitting(true);
     setShowLocationChoiceModal(false);
     try {
-      await requestPillRecommendations(selectedPills, selectedAttributes);
+      await requestPillRecommendations(selectedPills, selectedAttributes, searchKeyword);
     } finally {
       setLocationChoiceSubmitting(false);
     }
@@ -797,22 +852,58 @@ export default function ShopList() {
           </div>
         )}
 
-        {/* Konteks aktivitas (pill) — khusus pengguna login */}
+        {/* Konteks aktivitas (pill) + kata kunci — rekomendasi butuh login */}
         {!error && !isLoading && coffeeShops.length > 0 && (
           <div className="mb-6 sm:mb-8">
             <div className="mb-3">
               <h3 className="text-sm sm:text-base font-semibold text-gray-700 dark:text-gray-300 mb-2">
                 Sesuaikan preferensi anda:
               </h3>
+              {showLastRecommendationBanner && (
+                <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-indigo-200/80 bg-gradient-to-r from-indigo-50 to-violet-50 px-4 py-3 dark:border-indigo-800/50 dark:from-indigo-950/40 dark:to-violet-950/30">
+                  <p className="text-xs sm:text-sm text-indigo-950 dark:text-indigo-100">
+                    {hasPendingPillChanges ? (
+                      <>
+                        Konteks di bawah berbeda dari analisis terakhir — hasil{' '}
+                        {llmRecommendations.length} rekomendasi sebelumnya masih bisa dibuka
+                        tanpa analisis ulang.
+                      </>
+                    ) : (
+                      <>
+                        Analisis terakhir: {llmRecommendations.length} rekomendasi dengan bukti
+                        ulasan relevan untuk konteks yang Anda konfirmasi.
+                      </>
+                    )}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={openSavedRecommendationModal}
+                    disabled={pillRecommendLoading}
+                    className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-indigo-600 px-4 py-2 text-xs sm:text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60 transition-colors"
+                    title="Buka modal rekomendasi yang pernah Anda buat"
+                  >
+                    <span aria-hidden>✨</span>
+                    Lihat rekomendasi terakhir
+                  </button>
+                </div>
+              )}
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                Pilih satu pill yang sesuai dengan prefrensi Coffee Shop yang ingin anda kunjungi
+                Pilih satu pill atau isi kata kunci.
+                {!user && !authLoading ? (
+                  <span className="block mt-1 text-indigo-600 dark:text-indigo-300">
+                    Login diperlukan untuk menjalankan analisis rekomendasi.
+                  </span>
+                ) : (
+                  ' Pilih pill yang sesuai dengan preferensi coffee shop yang ingin anda kunjungi.'
+                )}
               </p>
             </div>
             <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
               {recommendationFields.map((field) => {
                 const isSelected = selectedPills.includes(field.value);
                 const theme = CONTEXT_PILL_THEMES[field.value] || CONTEXT_PILL_THEME_DEFAULT;
-                const pillDisabled = authLoading || pillRecommendLoading;
+                const isFreeTextActive = searchKeyword.trim().length > 0;
+                const pillDisabled = authLoading || pillRecommendLoading || isFreeTextActive;
                 return (
                   <button
                     key={field.value}
@@ -863,22 +954,62 @@ export default function ShopList() {
             )}
 
             <div className="mt-3">
-              <button
-                type="button"
-                onClick={openPreferenceSuggestModal}
-                disabled={authLoading || pillRecommendLoading}
-                className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-300 dark:hover:text-indigo-200 underline-offset-2 hover:underline disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline"
-                title={
-                  !user && !authLoading
-                    ? 'Login untuk mengirim saran preferensi'
-                    : 'Sarankan preferensi baru ke admin'
-                }
+              <label
+                htmlFor="free-text-keyword-input"
+                className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
               >
-                Tidak ada yang cocok? Sarankan fasilitas tambahan atau preferensi baru.
-              </button>
+                Tidak ada pill yang cocok? Isi kata kunci:
+              </label>
+              <div className="flex items-center gap-2 max-w-sm">
+                <input
+                  id="free-text-keyword-input"
+                  type="text"
+                  value={searchKeyword}
+                  readOnly={!user}
+                  onChange={(e) => handleSearchKeywordChange(e.target.value)}
+                  onFocus={(e) => {
+                    if (!user && !authLoading) {
+                      e.target.blur();
+                      openLoginModalForFreeText();
+                    }
+                  }}
+                  onClick={() => {
+                    if (!user && !authLoading) {
+                      openLoginModalForFreeText();
+                    }
+                  }}
+                  disabled={
+                    authLoading
+                    || pillRecommendLoading
+                    || (Boolean(user) && selectedPills.length > 0)
+                  }
+                  maxLength={MAX_SEARCH_KEYWORD_CHARS}
+                  placeholder={
+                    !user && !authLoading
+                      ? 'Login untuk mencari dengan kata kunci…'
+                      : 'mis. wfc dengan ruangan nyaman'
+                  }
+                  title={
+                    !user && !authLoading
+                      ? 'Login untuk menggunakan pencarian kata kunci'
+                      : undefined
+                  }
+                  className={`w-full rounded-full border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 ${!user && !authLoading ? 'cursor-pointer' : ''}`}
+                />
+                <span className="shrink-0 text-xs text-gray-400 tabular-nums">
+                  {searchKeyword.length}/{MAX_SEARCH_KEYWORD_CHARS}
+                </span>
+              </div>
+              <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                {!user && !authLoading
+                  ? 'Ketuk kolom di atas untuk masuk — setelah login Anda bisa mengetik kata kunci (maks. 50 karakter).'
+                  : searchKeyword.trim()
+                    ? 'Mode kata kunci aktif — pill preferensi dinonaktifkan. Hapus teks untuk kembali pilih pill.'
+                    : 'Maksimalkan output dengan fokus penggunaan kata kunci/keywords, misal: wfc, ruangan nyaman, ada musholla".'}
+              </p>
             </div>
 
-            {isPillPreferenceAvailable && selectedPills.length > 0 && (
+            {isPillPreferenceAvailable && hasRecommendableInput && (
               <div className="mt-3 flex flex-wrap items-center gap-3">
                 <button
                   type="button"
@@ -898,54 +1029,28 @@ export default function ShopList() {
               </div>
             )}
 
-            {hasConfirmedRecommendation && (
+            {showRecommendationStatusSection && (
               <div className="mt-3 space-y-2">
-                {/* <p className="text-sm text-gray-600 dark:text-gray-300">
-                  {confirmedPills.length > 0 && (
-                    <>
-                      Konteks:{' '}
-                      <span className="font-medium text-gray-800 dark:text-gray-100">
-                        {confirmedPills.map((v) => pillLabelByValue[v] || v).join(', ')}
-                      </span>
-                      {confirmedAttributes.length > 0 && (
-                        <>
-                          {' · Detail: '}
-                          <span className="font-medium text-gray-800 dark:text-gray-100">
-                            {confirmedAttributes
-                              .map((v) => FACILITY_ATTRIBUTE_LABELS[v] || v)
-                              .join(', ')}
-                          </span>
-                        </>
-                      )}
-                    </>
-                  )}
-                </p> */}
-                {hasPendingPillChanges && !pillRecommendLoading && (
-                  <p className="text-sm text-amber-700 dark:text-amber-300">
-                    Konteks pill berubah. Tekan OK lagi untuk memperbarui rekomendasi.
-                  </p>
-                )}
                 {!!pillRecommendError && !pillRecommendLoading && (
                   <p className="text-sm text-red-600 dark:text-red-300">
                     {pillRecommendError}
                   </p>
                 )}
-                {!pillRecommendLoading && hasConfirmedRecommendation && (
-                  <div className="flex flex-wrap items-center gap-3">
-                    <p className={`text-sm ${llmRecommendations.length > 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-600 dark:text-gray-300'}`}>
-                      {llmRecommendations.length > 0
-                        ? `Menampilkan ${llmRecommendations.length} rekomendasi (hingga 3) yang punya bukti ulasan relevan untuk konteks yang dipilih.`
-                        : 'Buka overlay untuk melihat status rekomendasi terakhir Anda.'}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setShowRecommendationModal(true)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs sm:text-sm font-semibold bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow-sm hover:from-indigo-600 hover:to-violet-600 transition-colors"
-                      title="Lihat hasil rekomendasi AI pada overlay"
-                    >
-                      ✨ Lihat hasil AI
-                    </button>
-                  </div>
+                {!pillRecommendLoading
+                  && !showRecommendationModal
+                  && showLastAnalysisStatusLine && (
+                  <p className="text-sm text-emerald-700 dark:text-emerald-300">
+                    {`Analisis terakhir: ${llmRecommendations.length} rekomendasi dengan bukti ulasan relevan.`}
+                  </p>
+                )}
+                {!pillRecommendLoading
+                  && !showRecommendationModal
+                  && hasConfirmedRecommendation
+                  && !hasViewableLastRecommendation
+                  && !pillRecommendError && (
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                    Belum ada hasil rekomendasi untuk konteks ini. Tekan OK untuk memulai analisis.
+                  </p>
                 )}
               </div>
             )}
@@ -1212,8 +1317,17 @@ export default function ShopList() {
               Login diperlukan
             </h3>
             <p className="mt-3 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
-              Login untuk menggunakan fitur analisis LLM — dapatkan rekomendasi coffee shop berdasarkan konteks
-              aktivitas dan ulasan pengunjung.
+              {pillLoginModalContext === 'free_text' ? (
+                <>
+                  Masuk ke akun Cofind untuk menggunakan pencarian kata kunci dan mendapatkan rekomendasi
+                  coffee shop dari analisis ulasan (BM25 + semantic search).
+                </>
+              ) : (
+                <>
+                  Login untuk menggunakan fitur analisis LLM — dapatkan rekomendasi coffee shop berdasarkan
+                  konteks aktivitas dan ulasan pengunjung.
+                </>
+              )}
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-end gap-2">
               <button
@@ -1326,110 +1440,10 @@ export default function ShopList() {
         </div>
       )}
 
-      {showPreferenceSuggestModal && (
-        <div
-          className="fixed inset-0 z-[105] flex items-center justify-center p-4 sm:p-6"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="preference-suggest-modal-title"
-        >
-          <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            aria-hidden="true"
-            onClick={closePreferenceSuggestModal}
-          />
-          <div className="relative z-10 w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-gray-700 dark:bg-gray-900">
-            <h3
-              id="preference-suggest-modal-title"
-              className="text-lg font-bold text-gray-900 dark:text-white"
-            >
-              Sarankan preferensi baru
-            </h3>
-            <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
-              Tidak menemukan pill yang sesuai? Kirim saran ke admin agar preferensi tersebut dapat ditambahkan.
-            </p>
-
-            {suggestSuccess ? (
-              <div className="mt-5 space-y-4">
-                <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-200">
-                  {suggestSuccess}
-                </div>
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    onClick={closePreferenceSuggestModal}
-                    className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"
-                  >
-                    Tutup
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmitPreferenceSuggestion} className="mt-5 space-y-4">
-                <div>
-                  <label
-                    htmlFor="suggest-preference-label"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
-                  >
-                    Nama preferensi <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="suggest-preference-label"
-                    type="text"
-                    value={suggestLabel}
-                    onChange={(e) => setSuggestLabel(e.target.value)}
-                    maxLength={80}
-                    disabled={suggestSubmitting}
-                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="suggest-preference-description"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
-                  >
-                    Deskripsi singkat
-                  </label>
-                  <textarea
-                    id="suggest-preference-description"
-                    value={suggestDescription}
-                    onChange={(e) => setSuggestDescription(e.target.value)}
-                    maxLength={500}
-                    rows={3}
-                    placeholder="Jelaskan preferensi yang ingin anda tambahkan..."
-                    disabled={suggestSubmitting}
-                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-                  />
-                </div>
-                {!!suggestError && (
-                  <p className="text-sm text-red-600 dark:text-red-300">{suggestError}</p>
-                )}
-                <div className="flex flex-wrap items-center justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={closePreferenceSuggestModal}
-                    disabled={suggestSubmitting}
-                    className="rounded-full px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-60 dark:text-gray-200 dark:hover:bg-gray-800"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={suggestSubmitting}
-                    className="inline-flex rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
-                  >
-                    {suggestSubmitting ? 'Mengirim...' : 'Kirim saran'}
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
-
       <RecommendationProgressOverlay
         open={pillRecommendLoading}
         progress={pillRecommendProgress}
+        startedAtMs={recommendationRunStartedAt}
       />
 
       <RecommendationModal
@@ -1439,7 +1453,9 @@ export default function ShopList() {
         shopsByKey={shopsByKey}
         confirmedPills={confirmedPills}
         confirmedAttributes={confirmedAttributes}
+        confirmedSearchKeyword={confirmedSearchKeyword}
         userLocation={userLocation}
+        totalDurationSeconds={recommendationTotalSeconds}
       />
     </div>
   );

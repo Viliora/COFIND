@@ -8,6 +8,10 @@ import re
 from datetime import datetime
 from auth_utils import get_db_connection
 from db_backend import dict_from_row
+from review_embedding_store import (
+    delete_review_embedding,
+    schedule_review_embedding_after_write,
+)
 
 # Batas ukuran decoded image per foto (selaras dengan frontend review).
 MAX_REVIEW_PHOTO_BYTES = 2 * 1024 * 1024
@@ -72,8 +76,11 @@ def create_review(user_id, place_id, rating, text='', photos=None):
             return {'success': False, 'error': photo_err}
 
         cursor.execute('''
-            INSERT INTO reviews (user_id, shop_id, place_id, rating, review_text, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO reviews (
+                user_id, shop_id, place_id, rating, review_text,
+                created_at, updated_at, review_source
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             user_id,
             shop_id,
@@ -82,6 +89,7 @@ def create_review(user_id, place_id, rating, text='', photos=None):
             text or '',
             datetime.utcnow().isoformat(),
             datetime.utcnow().isoformat(),
+            'cofind',
         ))
         review_id = cursor.lastrowid
         
@@ -104,6 +112,8 @@ def create_review(user_id, place_id, rating, text='', photos=None):
             (review_id,)
         ).fetchall()
         conn.close()
+
+        schedule_review_embedding_after_write(review_id, text or '')
 
         return {
             'success': True,
@@ -156,6 +166,183 @@ def get_review(review_id):
     except Exception as e:
         return {'success': False, 'error': str(e)}
 
+REVIEW_SOURCE_COFIND = 'cofind'
+REVIEW_SOURCE_GOOGLE_PLACES = 'google_places'
+# Semua sumber ini ikut pipeline rekomendasi (keyword, semantic, LLM, pros/cons).
+PIPELINE_REVIEW_SOURCES = (REVIEW_SOURCE_COFIND, REVIEW_SOURCE_GOOGLE_PLACES)
+
+_REVIEW_SELECT_SQL = '''
+    SELECT r.id, r.user_id, r.shop_id, r.place_id, r.rating, r.review_text,
+           r.created_at, r.updated_at, r.review_source, r.author_display_name,
+           r.relative_time,
+           COALESCE(u.username, r.author_display_name) AS display_name
+    FROM reviews r
+    LEFT JOIN users u ON r.user_id = u.id
+'''
+
+
+def _pipeline_review_source_sql(alias: str = 'r') -> str:
+    """Predicate SQL: ulasan yang boleh masuk corpus pipeline rekomendasi."""
+    allowed = "', '".join(PIPELINE_REVIEW_SOURCES)
+    return (
+        f"COALESCE({alias}.review_source, '{REVIEW_SOURCE_COFIND}') "
+        f"IN ('{allowed}')"
+    )
+
+
+def _cofind_community_review_source_sql(alias: str = 'r') -> str:
+    """Predicate SQL: hanya ulasan komunitas Cofind (stat user, edit/hapus, aside)."""
+    return f"COALESCE({alias}.review_source, '{REVIEW_SOURCE_COFIND}') = '{REVIEW_SOURCE_COFIND}'"
+
+
+def _numeric_rating_to_vote_key(rating):
+    """Map rating bintang 1–5 ke kunci badge yang sama dengan vote shop (love/like/…)."""
+    try:
+        n = int(rating)
+    except (TypeError, ValueError):
+        return None
+    if n >= 5:
+        return 'love'
+    if n >= 4:
+        return 'like'
+    if n >= 3:
+        return 'ok'
+    if n >= 2:
+        return 'dislike'
+    if n >= 1:
+        return 'hate'
+    return None
+
+
+def _author_display_review_counts(cursor, author_names):
+    names = [str(n).strip() for n in (author_names or []) if str(n).strip()]
+    if not names:
+        return {}
+    placeholders = ','.join('?' * len(names))
+    rows = cursor.execute(
+        f'''
+        SELECT author_display_name, COUNT(*)
+        FROM reviews
+        WHERE review_source = 'google_places'
+          AND author_display_name IN ({placeholders})
+        GROUP BY author_display_name
+        ''',
+        names,
+    ).fetchall()
+    return {row[0]: int(row[1]) for row in rows}
+
+
+def _review_row_to_api_dict(
+    review,
+    *,
+    display_name=None,
+    photos=None,
+    user_total_reviews=0,
+    like_count=0,
+    user_has_liked=False,
+):
+    row = review if isinstance(review, dict) else {}
+    if not row and review is not None and not isinstance(review, dict):
+        review_id, uid, shop_id, place_id, rating, text, created_at, updated_at, review_source, author_name, relative_time, name = (
+            list(review) + [None] * 12
+        )[:12]
+        row = {
+            'id': review_id,
+            'user_id': uid,
+            'shop_id': shop_id,
+            'place_id': place_id,
+            'rating': rating,
+            'review_text': text,
+            'created_at': created_at,
+            'updated_at': updated_at,
+            'review_source': review_source or 'cofind',
+            'author_display_name': author_name,
+            'relative_time': relative_time,
+            'display_name': name,
+        }
+
+    review_id = row.get('id')
+    uid = row.get('user_id')
+    shop_id = row.get('shop_id')
+    place_id = row.get('place_id')
+    rating = row.get('rating')
+    text = row.get('review_text') or row.get('text')
+    created_at = row.get('created_at')
+    updated_at = row.get('updated_at')
+    review_source = row.get('review_source') or 'cofind'
+    relative_time = row.get('relative_time')
+    author_display = str(row.get('author_display_name') or '').strip()
+    name = str(
+        display_name
+        or row.get('display_name')
+        or row.get('username')
+        or row.get('full_name')
+        or author_display
+        or ''
+    ).strip()
+    if not name and review_source == 'google_places':
+        name = author_display
+    name = name or 'Anonim'
+    rating_vote_key = _numeric_rating_to_vote_key(rating)
+    return {
+        'id': review_id,
+        'user_id': uid,
+        'shop_id': shop_id,
+        'place_id': place_id,
+        'rating': rating,
+        'text': text or '',
+        'created_at': created_at,
+        'updated_at': updated_at,
+        'review_source': review_source,
+        'author_display_name': author_display or None,
+        'relative_time': relative_time,
+        'username': name,
+        'full_name': name,
+        'profiles': {
+            'full_name': name,
+            'username': name,
+            'avatar_url': None,
+        },
+        'rating_vote_key': rating_vote_key,
+        'photos': photos if photos is not None else [],
+        'user_total_reviews': user_total_reviews,
+        'like_count': like_count,
+        'user_has_liked': user_has_liked,
+    }
+
+
+def _row_dict_from_columns(columns, row):
+    cols = columns or []
+    if isinstance(row, dict):
+        return row
+    return {cols[i]: row[i] for i in range(min(len(cols), len(row)))}
+
+
+def normalize_reviews_for_api(reviews):
+    """Pastikan field tampilan (nama penulis) konsisten untuk frontend ReviewCard."""
+    normalized = []
+    for raw in reviews or []:
+        item = dict(raw) if isinstance(raw, dict) else {}
+        source = str(item.get('review_source') or '').strip() or 'cofind'
+        author = str(item.get('author_display_name') or '').strip()
+        uid = item.get('user_id')
+
+        if source == 'google_places' or (uid is None and author):
+            source = 'google_places'
+            name = author or str(item.get('username') or item.get('full_name') or '').strip() or 'Anonim'
+            item['review_source'] = source
+            item['author_display_name'] = author or name
+            item['username'] = name
+            item['full_name'] = name
+            item['profiles'] = {
+                'full_name': name,
+                'username': name,
+                'avatar_url': (item.get('profiles') or {}).get('avatar_url'),
+            }
+        normalized.append(item)
+    return normalized
+
+
 def get_reviews_for_shop(place_id, limit=50, current_user_id=None):
     """Get reviews for a coffee shop. Optionally include like_count and user_has_liked when current_user_id is set.
     limit=None: ambil semua baris (tanpa LIMIT), untuk pipeline rekomendasi / analisis LLM menyeluruh."""
@@ -163,25 +350,25 @@ def get_reviews_for_shop(place_id, limit=50, current_user_id=None):
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        base_sql = '''
-            SELECT r.id, r.user_id, r.shop_id, r.place_id, r.rating, r.review_text,
-                   r.created_at, r.updated_at, u.username
-            FROM reviews r
-            LEFT JOIN users u ON r.user_id = u.id
+        base_sql = _REVIEW_SELECT_SQL + '''
             WHERE r.place_id = ?
             ORDER BY r.created_at DESC
         '''
-        if limit is None:
-            reviews = cursor.execute(base_sql, (place_id,)).fetchall()
-        else:
-            reviews = cursor.execute(base_sql + ' LIMIT ?', (place_id, limit)).fetchall()
-        
+        reviews = cursor.execute(base_sql, (place_id,)).fetchall()
+        review_columns = [d[0] for d in (cursor.description or [])]
+        if limit is not None:
+            reviews = reviews[: int(limit)]
+
         user_ids = list({r[1] for r in reviews if r[1]})
         user_total_reviews = {}
         if user_ids:
             placeholders = ','.join('?' * len(user_ids))
             counts = cursor.execute(
-                f'SELECT user_id, COUNT(*) FROM reviews WHERE user_id IN ({placeholders}) GROUP BY user_id',
+                f'''
+                SELECT user_id, COUNT(*) FROM reviews
+                WHERE user_id IN ({placeholders}) AND COALESCE(review_source, 'cofind') = 'cofind'
+                GROUP BY user_id
+                ''',
                 user_ids
             ).fetchall()
             user_total_reviews = {row[0]: row[1] for row in counts}
@@ -203,31 +390,34 @@ def get_reviews_for_shop(place_id, limit=50, current_user_id=None):
                 user_liked = {row[0]: True for row in liked_rows}
         review_list = []
         for review in reviews:
+            row_dict = _row_dict_from_columns(review_columns, review)
             review_id = review[0]
             uid = review[1]
             photos = cursor.execute(
                 'SELECT id, caption, image_data FROM review_photos WHERE review_id = ? ORDER BY id',
                 (review_id,)
             ).fetchall()
-            review_list.append({
-                'id': review_id,
-                'user_id': uid,
-                'shop_id': review[2],
-                'place_id': review[3],
-                'rating': review[4],
-                'text': review[5],
-                'created_at': review[6],
-                'updated_at': review[7],
-                'username': review[8],
-                'full_name': review[8],
-                'photos': [{'id': p[0], 'caption': p[1], 'image_data': p[2]} for p in photos],
-                'user_total_reviews': user_total_reviews.get(uid, 0),
-                'like_count': like_counts.get(review_id, 0),
-                'user_has_liked': user_liked.get(review_id, False)
-            })
+            review_list.append(_review_row_to_api_dict(
+                row_dict,
+                photos=[{'id': p[0], 'caption': p[1], 'image_data': p[2]} for p in photos],
+                user_total_reviews=user_total_reviews.get(uid, 0) if uid else 0,
+                like_count=like_counts.get(review_id, 0),
+                user_has_liked=user_liked.get(review_id, False),
+            ))
+        google_authors = [
+            item.get('author_display_name')
+            for item in review_list
+            if item.get('review_source') == 'google_places' and item.get('author_display_name')
+        ]
+        author_counts = _author_display_review_counts(cursor, google_authors)
+        for item in review_list:
+            if item.get('review_source') == 'google_places' and item.get('author_display_name'):
+                item['user_total_reviews'] = author_counts.get(
+                    item['author_display_name'], item.get('user_total_reviews') or 0
+                )
         conn.close()
-        
-        return {'success': True, 'reviews': review_list}
+
+        return {'success': True, 'reviews': normalize_reviews_for_api(review_list)}
     except Exception as e:
         return {'success': False, 'error': str(e)}
 
@@ -235,6 +425,7 @@ def get_reviews_for_shop(place_id, limit=50, current_user_id=None):
 def get_reviews_for_recommendation_batch(place_ids):
     """
     Ambil review lean untuk pipeline rekomendasi (tanpa foto/like).
+    Termasuk ulasan Cofind dan Google Places (sama seperti corpus sebelum merge ke satu tabel).
     Return: {'success': True, 'by_place': {place_id: [review_dict, ...]}}
     """
     place_ids = [str(pid).strip() for pid in (place_ids or []) if str(pid).strip()]
@@ -244,17 +435,17 @@ def get_reviews_for_recommendation_batch(place_ids):
         conn = get_db_connection()
         cursor = conn.cursor()
         placeholders = ','.join('?' * len(place_ids))
+        source_filter = _pipeline_review_source_sql('r')
         rows = cursor.execute(
             f'''
-            SELECT r.id, r.user_id, r.shop_id, r.place_id, r.rating, r.review_text,
-                   r.created_at, r.updated_at, u.username
-            FROM reviews r
-            LEFT JOIN users u ON r.user_id = u.id
+            {_REVIEW_SELECT_SQL}
             WHERE r.place_id IN ({placeholders})
+              AND {source_filter}
             ORDER BY r.created_at DESC
             ''',
             place_ids,
         ).fetchall()
+        review_columns = [d[0] for d in (cursor.description or [])]
         conn.close()
 
         by_place = {pid: [] for pid in place_ids}
@@ -262,21 +453,8 @@ def get_reviews_for_recommendation_batch(place_ids):
             pid = review[3]
             if pid not in by_place:
                 by_place[pid] = []
-            by_place[pid].append({
-                'id': review[0],
-                'user_id': review[1],
-                'shop_id': review[2],
-                'place_id': pid,
-                'rating': review[4],
-                'text': review[5],
-                'created_at': review[6],
-                'updated_at': review[7],
-                'username': review[8],
-                'full_name': review[8],
-                'photos': [],
-                'like_count': 0,
-                'user_has_liked': False,
-            })
+            row_dict = _row_dict_from_columns(review_columns, review)
+            by_place[pid].append(_review_row_to_api_dict(row_dict))
         return {'success': True, 'by_place': by_place}
     except Exception as e:
         return {'success': False, 'error': str(e), 'by_place': {}}
@@ -293,8 +471,9 @@ def get_latest_reviews(limit=10):
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
+        cofind_only = _cofind_community_review_source_sql('r')
         rows = cursor.execute(
-            '''
+            f'''
             SELECT r.id, r.place_id, r.created_at,
                    u.username,
                    c.name AS shop_name,
@@ -302,6 +481,7 @@ def get_latest_reviews(limit=10):
             FROM reviews r
             LEFT JOIN users u ON u.id = r.user_id
             LEFT JOIN coffee_shops c ON c.place_id = r.place_id
+            WHERE {cofind_only}
             ORDER BY r.created_at DESC
             LIMIT ?
             ''',
@@ -332,7 +512,10 @@ def get_user_review_stats(user_id):
         conn = get_db_connection()
         cursor = conn.cursor()
         row = cursor.execute(
-            'SELECT COUNT(*), AVG(rating) FROM reviews WHERE user_id = ?',
+            '''
+            SELECT COUNT(*), AVG(rating) FROM reviews
+            WHERE user_id = ? AND COALESCE(review_source, 'cofind') = 'cofind'
+            ''',
             (user_id,)
         ).fetchone()
         conn.close()
@@ -355,7 +538,7 @@ def get_user_reviews(user_id, limit=50):
                    r.created_at, r.updated_at, c.name AS shop_name
             FROM reviews r
             LEFT JOIN coffee_shops c ON r.place_id = c.place_id
-            WHERE r.user_id = ?
+            WHERE r.user_id = ? AND COALESCE(r.review_source, 'cofind') = 'cofind'
             ORDER BY r.created_at DESC
             LIMIT ?
         ''', (user_id, limit)).fetchall()
@@ -393,12 +576,15 @@ def update_review(review_id, user_id, rating=None, text=None, photos=None):
         conn = get_db_connection()
         cursor = conn.cursor()
         review = cursor.execute(
-            'SELECT id, user_id, shop_id, place_id, rating, review_text FROM reviews WHERE id = ?',
+            'SELECT id, user_id, shop_id, place_id, rating, review_text, review_source FROM reviews WHERE id = ?',
             (review_id,)
         ).fetchone()
         if not review:
             conn.close()
             return {'success': False, 'error': 'Review not found'}
+        if (review[6] if len(review) > 6 else 'cofind') != 'cofind' or review[1] is None:
+            conn.close()
+            return {'success': False, 'error': 'Review cannot be edited'}
         if review[1] != user_id:
             conn.close()
             return {'success': False, 'error': 'Unauthorized'}
@@ -435,6 +621,8 @@ def update_review(review_id, user_id, rating=None, text=None, photos=None):
         conn.commit()
         conn.close()
 
+        schedule_review_embedding_after_write(review_id, new_text or '')
+
         result = get_review(review_id)
         return result
     except Exception as e:
@@ -448,16 +636,19 @@ def delete_review(review_id, user_id):
         
         # Check review exists and user owns it
         review = cursor.execute(
-            'SELECT * FROM reviews WHERE id = ?',
+            'SELECT id, user_id, review_source FROM reviews WHERE id = ?',
             (review_id,)
         ).fetchone()
         
         if not review:
             return {'success': False, 'error': 'Review not found'}
         
+        if (review[2] if len(review) > 2 else 'cofind') != 'cofind' or review[1] is None:
+            return {'success': False, 'error': 'Review cannot be deleted'}
         if review[1] != user_id:
             return {'success': False, 'error': 'Unauthorized'}
         
+        delete_review_embedding(review_id)
         # Delete review
         cursor.execute('DELETE FROM reviews WHERE id = ?', (review_id,))
         conn.commit()
@@ -468,14 +659,14 @@ def delete_review(review_id, user_id):
         return {'success': False, 'error': str(e)}
 
 def get_average_rating(place_id):
-    """Get average rating for a coffee shop"""
+    """Agregat rating untuk halaman shop (Cofind + Google Places, selaras dengan pipeline)."""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
+        source_filter = _pipeline_review_source_sql('reviews')
         result = cursor.execute(
-            'SELECT AVG(rating), COUNT(*) FROM reviews WHERE place_id = ?',
-            (place_id,)
+            f'SELECT AVG(rating), COUNT(*) FROM reviews WHERE place_id = ? AND {source_filter}',
+            (place_id,),
         ).fetchone()
         
         conn.close()

@@ -5,7 +5,7 @@ import CoffeeShopCard, { SHOP_CATALOG_GRID_CLASS } from '../components/CoffeeSho
 import { ensureCoffeeShopImageMap } from '../utils/coffeeShopImages';
 import { PageWithLatestReviews } from '../components/LatestReviewsAside';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+import { API_BASE } from '../config/apiBase.js';
 
 const WantToVisit = () => {
   const { isAuthenticated, user } = useAuth();

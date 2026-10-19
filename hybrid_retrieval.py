@@ -1,8 +1,9 @@
 """
 Fase 2 — Hybrid Retrieval untuk rekomendasi Cofind.
 
-Pencarian kandidat: BM25 (sparse, kata persis) + embedding (dense, makna),
-lalu sedikit bobot kualitas toko (rating / Overall Experience).
+Pencarian kandidat: BM25 (sparse) + embedding/ANN (dense) → Reciprocal Rank
+Fusion (RRF), lalu sedikit bobot kualitas toko. Jalur pill menambahkan
+gerbang aktivitas dan metadata gate setelah RRF.
 
 PILL_MAPPING dipakai sebagai TEKS QUERY, bukan gerbang lolos/gugur:
   - BM25: label pill + review_keywords (nama fasilitas, istilah spesifik)
@@ -20,7 +21,9 @@ Env:
   COFIND_METADATA_PRIOR_WEIGHT     default 0.08
   COFIND_METADATA_PENALTY_WEIGHT   default 0.18
   COFIND_RETRIEVAL_TOP_K           default 7
-  COFIND_DENSE_MAX_REVIEWS         ulasan per toko untuk max-pool dense (default: 20)
+  COFIND_DENSE_MAX_REVIEWS         ulasan per toko untuk max-pool dense fallback (default: 20)
+  COFIND_DENSE_USE_ANN             ANN pgvector scoped place_id (default: on if pgvector)
+  COFIND_ANN_TOP_K                 review rows fetched by ANN (default: 300)
   COFIND_PROMPT_REVIEW_SCAN        ulasan yang di-scan saat pilih kutipan LLM (default: 60)
   COFIND_ACTIVITY_DENSE_MIN        ambang cosine cadangan gerbang aktivitas
                                    (default: 0.55). Toko lolos jika ada kata/frasa
@@ -42,7 +45,7 @@ from bm25_utils import (
 )
 from logging_config import get_logger
 from metadata_prior import evaluate_metadata_gate, fuse_metadata_score, metadata_gate_enabled
-from semantic_match import score_documents
+from semantic_match import score_documents, score_reviews_by_id
 from slang_normalize import normalize_text_with_slang, tokenize_normalized
 
 logger = get_logger('recommend')
@@ -161,6 +164,8 @@ _GAME_WORD_RE = re.compile(
     r'^(?:nge)?game(?:nya|an)?$|^gaming$|^gamers?$',
     re.IGNORECASE,
 )
+# "hidden game" = salah ketik "hidden gem", bukan aktivitas bermain game.
+_HIDDEN_GEM_TYPO_RE = re.compile(r'\bhidden\s+games?\b')
 
 
 def _env_int(name: str, default: int, *, min_value: int, max_value: int) -> int:
@@ -217,6 +222,28 @@ def activity_dense_min() -> float:
     return _env_float('COFIND_ACTIVITY_DENSE_MIN', 0.55, min_value=0.2, max_value=0.9)
 
 
+def _env_flag(name: str, default: bool) -> bool:
+    raw = (os.getenv(name) or '').strip().lower()
+    if not raw:
+        return default
+    return raw in ('1', 'true', 'yes', 'on')
+
+
+def dense_use_ann_enabled() -> bool:
+    from review_embedding_store import use_pgvector_store
+
+    raw = (os.getenv('COFIND_DENSE_USE_ANN') or '').strip().lower()
+    if raw in ('1', 'true', 'yes', 'on'):
+        return True
+    if raw in ('0', 'false', 'no', 'off'):
+        return False
+    return use_pgvector_store()
+
+
+def ann_top_k() -> int:
+    return _env_int('COFIND_ANN_TOP_K', 300, min_value=10, max_value=5000)
+
+
 def min_fit_score() -> float:
     return _env_float('COFIND_LLM_MIN_FIT', 5.0, min_value=0.0, max_value=10.0)
 
@@ -253,6 +280,13 @@ def _gated_minmax(raw_by_place: Dict[str, float]) -> Dict[str, float]:
         else:
             out[pid] = mapped
     return out
+
+
+def review_row_id(review: object):
+    if isinstance(review, dict):
+        rid = review.get("id")
+        return int(rid) if rid is not None else None
+    return None
 
 
 def review_text(review: object) -> str:
@@ -324,6 +358,7 @@ def lexical_review_score(text: str, query_tokens: Sequence[str]) -> float:
 def _normalize_activity_text(text: str) -> str:
     """Lowercase + hyphen jadi spasi, tanpa kamus slang (mabar tidak boleh jadi 'main bareng')."""
     raw = str(text or '').lower().replace('-', ' ').replace('_', ' ')
+    raw = _HIDDEN_GEM_TYPO_RE.sub('hidden gem', raw)
     return re.sub(r'\s+', ' ', raw).strip()
 
 
@@ -580,13 +615,14 @@ def rank_reviews_for_query(
             pool.append(row)
             seen_ids.add(id(row))
     texts = [drop_rejection_sentences(review_text(row)) for row in pool]
-    full_cosines, telemetry = score_documents(query_text, texts)
+    review_items = [(review_row_id(row), review_text(row)) for row in pool]
+    full_cosines, telemetry = score_reviews_by_id(query_text, review_items)
     if telemetry.get('skipped'):
         logger.debug(f"rank_reviews_for_query dense dilewati: {telemetry.get('skipped')}")
         full_cosines = [0.0] * len(pool)
     act_cosines = full_cosines
     if activity_query_text and activity_query_text != query_text:
-        act_cosines, act_tel = score_documents(activity_query_text, texts)
+        act_cosines, act_tel = score_reviews_by_id(activity_query_text, review_items)
         if act_tel.get('skipped'):
             act_cosines = full_cosines
 
@@ -678,7 +714,7 @@ def build_dense_query_text(
     return 'Cari coffee shop yang cocok untuk ' + ' '.join(chunks)
 
 
-def score_shops_dense(
+def _score_shops_dense_maxpool(
     profiles: Sequence[dict],
     query_text: str,
     *,
@@ -694,6 +730,7 @@ def score_shops_dense(
     cap = dense_max_reviews()
     owners: List[str] = []
     documents: List[str] = []
+    owner_review_ids: List[Optional[int]] = []
     reviews_per_shop: Dict[str, int] = {}
     primary = list(primary_tokens) if primary_tokens is not None else list(query_tokens or [])
 
@@ -712,18 +749,21 @@ def score_shops_dense(
             reviews_per_shop[pid] = 0
             continue
         kept_docs = []
+        kept_ids: List[Optional[int]] = []
         for row in selected:
             kept = drop_rejection_sentences(review_text(row))
             if len(kept) < _MIN_REVIEW_CHARS:
                 continue
             kept_docs.append(kept)
+            kept_ids.append(review_row_id(row))
         if not kept_docs:
             reviews_per_shop[pid] = 0
             continue
         reviews_per_shop[pid] = len(kept_docs)
-        for kept in kept_docs:
+        for kept, rid in zip(kept_docs, kept_ids):
             owners.append(pid)
             documents.append(kept)
+            owner_review_ids.append(rid)
 
     telemetry: Dict[str, object] = {
         'shops': len(reviews_per_shop),
@@ -735,7 +775,10 @@ def score_shops_dense(
         telemetry['skipped'] = 'no_reviews'
         return {pid: 0.0 for pid in reviews_per_shop}, telemetry
 
-    raw_list, doc_telemetry = score_documents(query_text, documents)
+    review_items = [
+        (owner_review_ids[i], documents[i]) for i in range(len(documents))
+    ]
+    raw_list, doc_telemetry = score_reviews_by_id(query_text, review_items)
     telemetry.update(doc_telemetry)
 
     best: Dict[str, float] = {pid: 0.0 for pid in reviews_per_shop}
@@ -744,6 +787,79 @@ def score_shops_dense(
         if score > best.get(pid, 0.0):
             best[pid] = score
     return best, telemetry
+
+
+def _score_shops_dense_ann(
+    profiles: Sequence[dict],
+    query_text: str,
+) -> Tuple[Dict[str, float], Dict[str, object]]:
+    from review_embedding_store import ann_search_reviews
+    from semantic_match import embed_query_vector
+
+    place_ids: List[str] = []
+    for profile in profiles or []:
+        pid = str(profile.get('place_id') or '').strip()
+        if pid:
+            place_ids.append(pid)
+    best: Dict[str, float] = {pid: 0.0 for pid in place_ids}
+    telemetry: Dict[str, object] = {
+        'pool': 'ann',
+        'store': 'pgvector',
+        'shops': len(best),
+        'ann_top_k': ann_top_k(),
+        'reviews_embedded': 0,
+        'ann_reviews': 0,
+    }
+    if not place_ids or not (query_text or '').strip():
+        telemetry['skipped'] = 'no_input'
+        return best, telemetry
+    q, _ = embed_query_vector(query_text)
+    if q is None:
+        telemetry['skipped'] = 'query_encode_failed'
+        return best, telemetry
+    rows, ann_tel = ann_search_reviews(q, place_ids, limit=ann_top_k())
+    telemetry['ann_ms'] = ann_tel.get('ann_ms')
+    if ann_tel.get('error'):
+        telemetry['ann_error'] = ann_tel.get('error')
+    for row in rows:
+        pid = str(row.get('place_id') or '')
+        sim = float(row.get('similarity') or 0.0)
+        if pid and sim > best.get(pid, 0.0):
+            best[pid] = sim
+    n_rows = int(ann_tel.get('rows_returned') or len(rows))
+    telemetry['reviews_embedded'] = n_rows
+    telemetry['ann_reviews'] = n_rows
+    return best, telemetry
+
+
+def score_shops_dense(
+    profiles: Sequence[dict],
+    query_text: str,
+    *,
+    query_tokens: Optional[Sequence[str]] = None,
+    primary_tokens: Optional[Sequence[str]] = None,
+    activity_matcher: Optional[dict] = None,
+) -> Tuple[Dict[str, float], Dict[str, object]]:
+    """Dense per toko: ANN pgvector (scoped) bila aktif, else max-pool legacy."""
+    if dense_use_ann_enabled():
+        ann_best, ann_telemetry = _score_shops_dense_ann(profiles, query_text)
+        ann_error = ann_telemetry.get('ann_error')
+        ann_reviews = int(ann_telemetry.get('ann_reviews') or 0)
+        if not ann_error and ann_reviews > 0:
+            return ann_best, ann_telemetry
+        ann_telemetry['fallback'] = 'maxpool'
+        logger.debug(
+            "ANN dense fallback ke max-pool: error=%s ann_reviews=%s",
+            ann_error,
+            ann_reviews,
+        )
+    return _score_shops_dense_maxpool(
+        profiles,
+        query_text,
+        query_tokens=query_tokens,
+        primary_tokens=primary_tokens,
+        activity_matcher=activity_matcher,
+    )
 
 
 def activity_signal_tokens(
@@ -889,6 +1005,257 @@ def _activity_attribute_weights(has_attribute: bool, has_quality: bool) -> Dict[
     return {key: value / total for key, value in parts.items()}
 
 
+def rrf_k_constant() -> int:
+    return _env_int('COFIND_RRF_K', 60, min_value=1, max_value=1000)
+
+
+def rrf_pool_size() -> int:
+    return _env_int('COFIND_RRF_POOL_SIZE', 50, min_value=5, max_value=500)
+
+
+def reciprocal_rank_fusion(
+    ranked_lists: Sequence[Sequence[str]],
+    *,
+    k: Optional[int] = None,
+) -> Dict[str, float]:
+    """
+    RRF: RRFscore(d) = sum_r 1/(k + rank_r(d)).
+    `ranked_lists` = daftar peringkat terpisah (mis. BM25 sparse vs dense/ANN).
+    """
+    k_value = k if k is not None else rrf_k_constant()
+    scores: Dict[str, float] = {}
+    for ranked in ranked_lists or []:
+        for rank, doc_id in enumerate(ranked or [], start=1):
+            key = str(doc_id or '').strip()
+            if not key:
+                continue
+            scores[key] = scores.get(key, 0.0) + 1.0 / (k_value + rank)
+    return dict(sorted(scores.items(), key=lambda kv: -kv[1]))
+
+
+def _rrf_ranked_place_ids(
+    raw_scores: Dict[str, float],
+    profiles_by_pid: Dict[str, dict],
+    pool_size: int,
+) -> List[str]:
+    ranked = sorted(
+        (pid for pid in profiles_by_pid if float(raw_scores.get(pid) or 0.0) > 1e-9),
+        key=lambda pid: -float(raw_scores.get(pid) or 0.0),
+    )
+    return ranked[:pool_size]
+
+
+def _hybrid_retrieve_rrf_core(
+    profiles: Sequence[dict],
+    *,
+    bm25_tokens: Sequence[str],
+    dense_query_text: str,
+    quality_by_place: Optional[Dict[str, Optional[float]]] = None,
+    top_k: Optional[int] = None,
+    dense_query_tokens: Optional[Sequence[str]] = None,
+    dense_primary_tokens: Optional[Sequence[str]] = None,
+    activity_matcher: Optional[dict] = None,
+    query_tokens_out: Sequence[str],
+    query_text_out: str,
+    activity_tokens_out: Sequence[str],
+    attribute_tokens_out: Sequence[str],
+    activity_query_text_out: str,
+    activity_matcher_out: dict,
+    telemetry: Dict[str, object],
+    pills: Optional[Sequence[str]] = None,
+    pill_labels: Optional[Dict[str, str]] = None,
+    pill_mapping: Optional[Dict[str, dict]] = None,
+    attribute_pills: Optional[Sequence[str]] = None,
+    activity_pills: Optional[Sequence[str]] = None,
+    activity_tokens_for_gate: Optional[Sequence[str]] = None,
+    activity_phrase_list: Optional[Sequence[str]] = None,
+    apply_activity_gate: bool = False,
+) -> Dict[str, object]:
+    """
+    Hybrid retrieval standar: BM25 + dense/ANN → dua daftar peringkat → RRF.
+    Opsional: gerbang aktivitas (pill) dan metadata gate setelah RRF.
+    """
+    limit = top_k if top_k is not None else retrieval_top_k()
+    quality_by_place = quality_by_place or {}
+    clean_tokens = [str(t).strip() for t in (bm25_tokens or []) if str(t or '').strip()]
+    dense_text = str(dense_query_text or '').strip()
+    pool_size = rrf_pool_size()
+    telemetry.setdefault('mode', 'hybrid_rrf')
+    telemetry.setdefault('rrf_k', rrf_k_constant())
+    telemetry.setdefault('rrf_pool_size', pool_size)
+
+    bm25_raw: Dict[str, float] = {}
+    try:
+        place_ids, bm25_model, _corpus = build_bm25_index(
+            profiles, tokenize_fn=tokenize_for_match,
+        )
+        telemetry['bm25_shops'] = len(place_ids)
+        if clean_tokens:
+            bm25_raw = score_shops_bm25(place_ids, bm25_model, clean_tokens)
+    except Exception as err:
+        logger.warning(f"BM25 retrieval gagal: {err}")
+        telemetry['bm25_error'] = str(err)[:200]
+
+    dense_q_tokens = list(dense_query_tokens or clean_tokens)
+    dense_primary = list(dense_primary_tokens or dense_q_tokens)
+    dense_raw, dense_telemetry = score_shops_dense(
+        profiles,
+        dense_text,
+        query_tokens=dense_q_tokens,
+        primary_tokens=dense_primary,
+        activity_matcher=activity_matcher if apply_activity_gate else None,
+    )
+    telemetry['dense'] = dense_telemetry
+
+    profiles_by_pid: Dict[str, dict] = {}
+    for profile in profiles or []:
+        pid = str(profile.get('place_id') or '').strip()
+        if pid:
+            profiles_by_pid[pid] = profile
+
+    act_tokens_gate = list(activity_tokens_for_gate or [])
+    act_phrases = list(activity_phrase_list or [])
+    act_matcher = activity_matcher if apply_activity_gate else None
+
+    bm25_rank_list = _rrf_ranked_place_ids(bm25_raw, profiles_by_pid, pool_size)
+    dense_rank_list = _rrf_ranked_place_ids(dense_raw, profiles_by_pid, pool_size)
+    telemetry['bm25_matched'] = len(bm25_rank_list)
+    telemetry['dense_matched'] = len(dense_rank_list)
+
+    rank_lists: List[Sequence[str]] = [bm25_rank_list, dense_rank_list]
+    if apply_activity_gate and activity_pills and act_matcher:
+        lex_scores: Dict[str, float] = {}
+        for pid, profile in profiles_by_pid.items():
+            reviews = profile.get('reviews') or []
+            if not shop_has_activity_signal(
+                reviews, act_tokens_gate, act_phrases, activity_matcher=act_matcher,
+            ):
+                continue
+            lex_scores[pid] = shop_activity_lexical_max(
+                reviews, act_tokens_gate, activity_matcher=act_matcher,
+            )
+        lex_rank_list = sorted(lex_scores, key=lambda p: -lex_scores[p])[:pool_size]
+        telemetry['activity_lex_matched'] = len(lex_rank_list)
+        if lex_rank_list:
+            rank_lists.append(lex_rank_list)
+
+    rrf_scores = reciprocal_rank_fusion(rank_lists)
+    telemetry['rrf_candidates'] = len(rrf_scores)
+
+    empty_gate = {
+        'enabled': False,
+        'claimed_pills': [],
+        'claimed_fields': [],
+        'matched_attribute_pills': [],
+        'matched_attribute_labels': [],
+        'prior': 0.0,
+        'contradicted_pills': [],
+        'contradiction': 0.0,
+        'quotes': [],
+    }
+
+    pill_list = list(pills or [])
+    attr_list = list(attribute_pills or [])
+    use_metadata = metadata_gate_enabled() and pill_list and pill_labels and pill_mapping
+
+    # RRF mentah ~1/(k+rank) ≈ 0.016–0.033; tanpa normalisasi, quality (0..1) di
+    # blend 0.9/0.1 justru mendominasi dan relevansi intent hampir tidak berpengaruh.
+    max_rrf = max(rrf_scores.values(), default=0.0)
+
+    scored = []
+    for pid, rrf_score in rrf_scores.items():
+        profile = profiles_by_pid.get(pid)
+        if not profile:
+            continue
+        reviews = profile.get('reviews') or []
+        rrf_norm = (rrf_score / max_rrf) if max_rrf > 0 else 0.0
+
+        if apply_activity_gate and activity_pills:
+            if not shop_has_activity_signal(
+                reviews, act_tokens_gate, act_phrases, activity_matcher=act_matcher,
+            ):
+                telemetry['activity_rejected'] = int(telemetry.get('activity_rejected') or 0) + 1
+                continue
+            telemetry['activity_pass_lexical'] = int(telemetry.get('activity_pass_lexical') or 0) + 1
+
+        quality_raw = quality_by_place.get(pid)
+        try:
+            quality_s = None if quality_raw is None else float(quality_raw)
+        except (TypeError, ValueError):
+            quality_s = None
+        total = rrf_norm if quality_s is None else (0.9 * rrf_norm + 0.1 * quality_s)
+
+        gate = dict(empty_gate)
+        if use_metadata:
+            gate = evaluate_metadata_gate(
+                profile,
+                pill_list,
+                pill_mapping=pill_mapping,
+                pill_labels=pill_labels,
+                attribute_pills=attr_list,
+            )
+            fusion = fuse_metadata_score(total, gate, review_signal=rrf_norm)
+            total = fusion['fused_score']
+            if fusion['prior_boost'] > 0:
+                telemetry['metadata_prior_applied'] = int(telemetry.get('metadata_prior_applied') or 0) + 1
+            if fusion['penalty'] > 0:
+                telemetry['metadata_penalized'] = int(telemetry.get('metadata_penalized') or 0) + 1
+        else:
+            fusion = {'prior_boost': 0.0, 'penalty': 0.0}
+
+        scored.append({
+            'place_id': pid,
+            'name': profile.get('name') or '',
+            'score': round(total, 6),
+            'profile': profile,
+            'metadata_gate': gate,
+            'score_detail': {
+                'bm25_raw': round(float(bm25_raw.get(pid) or 0.0), 4),
+                'bm25_score': round(float(bm25_raw.get(pid) or 0.0), 4),
+                'dense_raw': round(float(dense_raw.get(pid) or 0.0), 4),
+                'dense_score': round(float(dense_raw.get(pid) or 0.0), 4),
+                'rrf_score': round(rrf_score, 6),
+                'rrf_norm': round(rrf_norm, 4),
+                'activity_combo': round(rrf_norm, 4),
+                'attribute_bm25': 0.0,
+                'quality_score': None if quality_s is None else round(quality_s, 4),
+                'retrieval_score': round(total, 4),
+                'total_score': round(total, 4),
+                'metadata_prior': gate.get('prior'),
+                'metadata_prior_boost': fusion.get('prior_boost', 0.0),
+                'metadata_contradiction': gate.get('contradiction'),
+                'metadata_penalty': fusion.get('penalty', 0.0),
+                'metadata_claimed_pills': list(gate.get('claimed_pills') or []),
+                'metadata_matched_attribute_pills': list(gate.get('matched_attribute_pills') or []),
+                'metadata_matched_attribute_labels': list(gate.get('matched_attribute_labels') or []),
+                'metadata_contradicted_pills': list(gate.get('contradicted_pills') or []),
+                'covered_pills': [],
+                'uncovered_pills': list(pill_list),
+                'activity_pills': list(activity_pills or []),
+                'attribute_pills': list(attr_list),
+            },
+        })
+
+    scored.sort(key=lambda item: (
+        -item['score'],
+        -float((item.get('score_detail') or {}).get('rrf_score') or 0.0),
+    ))
+    telemetry['kept_with_signal'] = len(scored)
+    if apply_activity_gate:
+        telemetry['activity_gated'] = len(scored)
+
+    return {
+        'candidates': scored[:limit],
+        'query_tokens': list(query_tokens_out),
+        'query_text': query_text_out,
+        'activity_tokens': list(activity_tokens_out),
+        'attribute_tokens': list(attribute_tokens_out),
+        'activity_query_text': activity_query_text_out,
+        'activity_matcher': activity_matcher_out,
+        'telemetry': telemetry,
+    }
+
+
 def retrieve_top_k(
     profiles: Sequence[dict],
     pills: Sequence[str],
@@ -901,11 +1268,8 @@ def retrieve_top_k(
     attribute_pills: Optional[Sequence[str]] = None,
 ) -> Dict[str, object]:
     """
-    Hybrid search dengan gerbang aktivitas.
-
-    Toko masuk top-k jika matcher menemukan bukti aktivitas di ulasan
-    (belajar, WFC, nge-game, meeting, keluarga, instagrammable). Fasilitas
-    tambahan hanya penguat ranking, bukan syarat tampil.
+    Hybrid retrieval pill: BM25 + dense/ANN → RRF, lalu gerbang aktivitas
+    (jika ada pill aktivitas) dan metadata gate fasilitas.
 
     Return: candidates, query tokens/teks, token aktivitas, telemetry.
     """
@@ -965,179 +1329,95 @@ def retrieve_top_k(
     telemetry['activity_tokens'] = len(activity_tokens)
     telemetry['dense_query'] = activity_query_text
 
-    activity_bm25_raw: Dict[str, float] = {}
-    attribute_bm25_raw: Dict[str, float] = {}
-    try:
-        place_ids, bm25_model, _corpus = build_bm25_index(
-            profiles, tokenize_fn=tokenize_for_match,
-        )
-        telemetry['bm25_shops'] = len(place_ids)
-        if activity_tokens:
-            activity_bm25_raw = score_shops_bm25(place_ids, bm25_model, activity_tokens)
-        if attribute_tokens:
-            attribute_bm25_raw = score_shops_bm25(place_ids, bm25_model, attribute_tokens)
-        if not activity_tokens and query_tokens:
-            activity_bm25_raw = score_shops_bm25(place_ids, bm25_model, query_tokens)
-    except Exception as err:
-        logger.warning(f"BM25 retrieval gagal: {err}")
-        telemetry['bm25_error'] = str(err)[:200]
-
-    dense_raw, dense_telemetry = score_shops_dense(
+    # BM25 untuk RRF: utamakan token aktivitas agar frasa khas (mabar, ML) masuk
+    # daftar peringkat sparse; query_tokens penuh tetap dipakai untuk dense.
+    bm25_tokens = activity_tokens if activity_list else (query_tokens or activity_tokens)
+    return _hybrid_retrieve_rrf_core(
         profiles,
-        activity_query_text,
-        query_tokens=query_tokens,
-        primary_tokens=activity_tokens or query_tokens,
+        bm25_tokens=bm25_tokens,
+        dense_query_text=activity_query_text,
+        quality_by_place=quality_by_place,
+        top_k=limit,
+        dense_query_tokens=query_tokens,
+        dense_primary_tokens=activity_tokens or query_tokens,
         activity_matcher=activity_matcher if activity_list else None,
+        query_tokens_out=query_tokens,
+        query_text_out=query_text,
+        activity_tokens_out=activity_tokens,
+        attribute_tokens_out=attribute_tokens,
+        activity_query_text_out=activity_query_text,
+        activity_matcher_out=activity_matcher,
+        telemetry=telemetry,
+        pills=list(pills or []),
+        pill_labels=pill_labels,
+        pill_mapping=pill_mapping,
+        attribute_pills=attribute_list,
+        activity_pills=activity_list,
+        activity_tokens_for_gate=activity_tokens,
+        activity_phrase_list=activity_phrase_list,
+        apply_activity_gate=bool(activity_list),
     )
-    telemetry['dense'] = dense_telemetry
 
-    # Gerbang dulu, MinMax hanya di antara toko yang lolos supaya wifi-only
-    # tidak menaikkan skala dan menyusup ke ranking.
-    gated_rows = []
-    for profile in profiles or []:
-        pid = str(profile.get('place_id') or '').strip()
-        if not pid:
-            continue
-        reviews = profile.get('reviews') or []
-        act_lex = shop_activity_lexical_max(
-            reviews, activity_tokens, activity_matcher=activity_matcher if activity_list else None,
-        )
-        act_hits = sum(
-            1 for row in reviews
-            if extract_activity_support_text(
-                review_text(row), activity_matcher, activity_tokens,
-            )
-        ) if activity_list else 0
-        act_bm25 = float(activity_bm25_raw.get(pid) or 0.0)
-        act_dense = float(dense_raw.get(pid) or 0.0)
-        if activity_list:
-            # Bukti aktivitas: frasa/kata khas di ulasan mana pun.
-            # "nge-charge" tidak dihitung; "main ML" / "mabar" dihitung.
-            lex_ok = shop_has_activity_signal(
-                reviews, activity_tokens, activity_phrase_list,
-                activity_matcher=activity_matcher,
-            )
-            if not lex_ok:
-                telemetry['activity_rejected'] = int(telemetry['activity_rejected']) + 1
-                continue
-            telemetry['activity_pass_lexical'] = int(telemetry['activity_pass_lexical']) + 1
-        else:
-            if act_bm25 + act_dense <= 1e-9:
-                continue
-        quality_raw = quality_by_place.get(pid)
-        try:
-            quality_s = None if quality_raw is None else float(quality_raw)
-        except (TypeError, ValueError):
-            quality_s = None
-        gated_rows.append({
-            'place_id': pid,
-            'name': profile.get('name') or '',
-            'profile': profile,
-            'act_lex': act_lex + 0.15 * min(act_hits, 3) / 3.0,
-            'act_bm25_raw': act_bm25,
-            'act_dense_raw': act_dense,
-            'attr_bm25_raw': float(attribute_bm25_raw.get(pid) or 0.0),
-            'quality_s': quality_s,
-            'act_hits': act_hits,
-        })
 
-    telemetry['activity_gated'] = len(gated_rows)
-    act_bm25_norm = _gated_minmax(
-        {row['place_id']: row['act_bm25_raw'] for row in gated_rows}
-    ) if gated_rows else {}
-    act_dense_norm = _gated_minmax(
-        {row['place_id']: row['act_dense_raw'] for row in gated_rows}
-    ) if gated_rows else {}
-    act_lex_norm = _gated_minmax(
-        {row['place_id']: row['act_lex'] for row in gated_rows}
-    ) if gated_rows else {}
-    attr_bm25_norm = _gated_minmax(
-        {row['place_id']: row['attr_bm25_raw'] for row in gated_rows}
-    ) if gated_rows else {}
+# --------------------------------------------------------------------------
+# Retrieval free text (keyword hasil ekstraksi LLM) — RRF, tanpa pill
+# --------------------------------------------------------------------------
+#
+# Dipakai saat user mengisi kotak kata kunci bebas (bukan memilih pill).
+# Tidak ada gerbang aktivitas / metadata-prior berbasis pill di sini —
+# BM25 dan dense search dijalankan independen atas seluruh korpus review,
+# masing-masing menghasilkan daftar peringkat (top-N place_id), lalu
+# digabung dengan Reciprocal Rank Fusion (RRF) jadi satu ranking akhir.
+#
+# Kontrak return SENGAJA identik dengan retrieve_top_k() (key: candidates,
+# query_tokens, query_text, activity_tokens, attribute_tokens,
+# activity_query_text, activity_matcher, telemetry) supaya pemanggil
+# (app.py) bisa memperlakukan hasil jalur ini sama seperti jalur pill —
+# evidence building, LLM rerank, grounding, dan summary tidak perlu cabang
+# kode baru.
 
-    has_attr = any(row['attr_bm25_raw'] > 0 for row in gated_rows)
-    scored = []
-    for row in gated_rows:
-        pid = row['place_id']
-        act_combo = (
-            0.40 * float(act_bm25_norm.get(pid) or 0.0)
-            + 0.35 * float(act_dense_norm.get(pid) or 0.0)
-            + 0.25 * float(act_lex_norm.get(pid) or 0.0)
-        )
-        attr_s = float(attr_bm25_norm.get(pid) or 0.0)
-        quality_s = row['quality_s']
-        weights = _activity_attribute_weights(has_attr, quality_s is not None)
-        total = act_combo * weights['activity'] + attr_s * weights['attribute']
-        if quality_s is not None:
-            total += quality_s * weights['quality']
-        gate = evaluate_metadata_gate(
-            row['profile'],
-            pills,
-            pill_mapping=pill_mapping,
-            pill_labels=pill_labels,
-            attribute_pills=attribute_list,
-        ) if metadata_gate_enabled() else {
-            'enabled': False,
-            'claimed_pills': [],
-            'claimed_fields': [],
-            'matched_attribute_pills': [],
-            'matched_attribute_labels': [],
-            'prior': 0.0,
-            'contradicted_pills': [],
-            'contradiction': 0.0,
-            'quotes': [],
-        }
-        fusion = fuse_metadata_score(total, gate, review_signal=act_combo)
-        if fusion['prior_boost'] > 0:
-            telemetry['metadata_prior_applied'] = int(telemetry['metadata_prior_applied']) + 1
-        if fusion['penalty'] > 0:
-            telemetry['metadata_penalized'] = int(telemetry['metadata_penalized']) + 1
-        scored.append({
-            'place_id': pid,
-            'name': row['name'],
-            'score': fusion['fused_score'],
-            'profile': row['profile'],
-            'metadata_gate': gate,
-            'score_detail': {
-                'bm25_raw': round(row['act_bm25_raw'], 4),
-                'bm25_score': round(float(act_bm25_norm.get(pid) or 0.0), 4),
-                'dense_raw': round(row['act_dense_raw'], 4),
-                'dense_score': round(float(act_dense_norm.get(pid) or 0.0), 4),
-                'activity_lex': round(row['act_lex'], 4),
-                'activity_combo': round(act_combo, 4),
-                'activity_hits': int(row.get('act_hits') or 0),
-                'attribute_bm25': round(row['attr_bm25_raw'], 4),
-                'quality_score': None if quality_s is None else round(quality_s, 4),
-                'score_weights': weights,
-                'retrieval_score': round(total, 4),
-                'metadata_prior': gate.get('prior'),
-                'metadata_prior_boost': fusion['prior_boost'],
-                'metadata_contradiction': gate.get('contradiction'),
-                'metadata_penalty': fusion['penalty'],
-                'metadata_claimed_pills': list(gate.get('claimed_pills') or []),
-                'metadata_matched_attribute_pills': list(gate.get('matched_attribute_pills') or []),
-                'metadata_matched_attribute_labels': list(gate.get('matched_attribute_labels') or []),
-                'metadata_contradicted_pills': list(gate.get('contradicted_pills') or []),
-                'total_score': fusion['fused_score'],
-                'covered_pills': [],
-                'uncovered_pills': list(pills or []),
-            },
-        })
 
-    scored.sort(key=lambda item: (
-        -item['score'],
-        -float((item.get('score_detail') or {}).get('attribute_bm25') or 0.0),
-        -float((item.get('score_detail') or {}).get('activity_combo') or 0.0),
-    ))
-    telemetry['kept_with_signal'] = len(scored)
-    telemetry['weights'] = _activity_attribute_weights(has_attr, True)
-    return {
-        'candidates': scored[:limit],
-        'query_tokens': query_tokens,
-        'query_text': query_text,
-        'activity_tokens': activity_tokens,
-        'attribute_tokens': attribute_tokens,
-        'activity_query_text': activity_query_text,
-        'activity_matcher': activity_matcher,
-        'telemetry': telemetry,
+def retrieve_top_k_by_text(
+    profiles: Sequence[dict],
+    *,
+    query_tokens: Sequence[str],
+    dense_query_text: str,
+    quality_by_place: Optional[Dict[str, Optional[float]]] = None,
+    top_k: Optional[int] = None,
+) -> Dict[str, object]:
+    """
+    Free text (setelah intent LLM): BM25 + dense/ANN → RRF.
+    Tanpa gerbang aktivitas/metadata pill — rerank LLM yang memfilter bukti.
+    """
+    limit = top_k if top_k is not None else retrieval_top_k()
+    quality_by_place = quality_by_place or {}
+    clean_tokens = [str(t).strip() for t in (query_tokens or []) if str(t or '').strip()]
+    dense_text = str(dense_query_text or '').strip()
+    empty_matcher = empty_activity_matcher()
+
+    telemetry: Dict[str, object] = {
+        'mode': 'free_text_rrf',
+        'profiles': len(profiles or []),
+        'top_k': limit,
+        'bm25_shops': 0,
+        'dense': {},
     }
+
+    return _hybrid_retrieve_rrf_core(
+        profiles,
+        bm25_tokens=clean_tokens,
+        dense_query_text=dense_text,
+        quality_by_place=quality_by_place,
+        top_k=limit,
+        dense_query_tokens=clean_tokens,
+        dense_primary_tokens=clean_tokens,
+        activity_matcher=None,
+        query_tokens_out=clean_tokens,
+        query_text_out=dense_text,
+        activity_tokens_out=clean_tokens,
+        attribute_tokens_out=[],
+        activity_query_text_out=dense_text,
+        activity_matcher_out=empty_matcher,
+        telemetry=telemetry,
+        apply_activity_gate=False,
+    )

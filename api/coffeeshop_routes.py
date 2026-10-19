@@ -6,6 +6,7 @@ import time
 
 from flask import Blueprint, jsonify, request
 
+from coffee_shop_serialize import enrich_coffee_shop_row
 from db_backend import dict_from_row, get_connection
 from llm_backend import LLM_BACKEND, llm_is_available
 from logging_config import get_logger
@@ -37,14 +38,13 @@ def get_coffeeshops():
         cursor = conn.cursor()
         
         cursor.execute("""
-            SELECT c.*, COALESCE(o.hours_display, '') AS opening_hours_display
-            FROM coffee_shops c
-            LEFT JOIN opening_hours o ON c.place_id = o.place_id
-            ORDER BY c.rating DESC
+            SELECT *
+            FROM coffee_shops
+            ORDER BY rating DESC
         """)
         rows = cursor.fetchall()
         
-        shops = [dict_from_row(cursor, row) for row in rows]
+        shops = [enrich_coffee_shop_row(dict_from_row(cursor, row)) for row in rows]
         conn.close()
         
         return jsonify({
@@ -67,10 +67,9 @@ def get_coffeeshop(shop_id):
         cursor = conn.cursor()
         
         cursor.execute("""
-            SELECT c.*, COALESCE(o.hours_display, '') AS opening_hours_display
-            FROM coffee_shops c
-            LEFT JOIN opening_hours o ON c.place_id = o.place_id
-            WHERE c.id = ?
+            SELECT *
+            FROM coffee_shops
+            WHERE id = ?
         """, (shop_id,))
         row = cursor.fetchone()
         if not row:
@@ -79,7 +78,7 @@ def get_coffeeshop(shop_id):
                 'status': 'error',
                 'message': f'Coffee shop {shop_id} not found'
             }), 404
-        data = dict_from_row(cursor, row)
+        data = enrich_coffee_shop_row(dict_from_row(cursor, row))
         conn.close()
         return jsonify({
             'status': 'success',
@@ -100,10 +99,9 @@ def get_coffeeshop_by_place_id(place_id):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT c.*, COALESCE(o.hours_display, '') AS opening_hours_display
-            FROM coffee_shops c
-            LEFT JOIN opening_hours o ON c.place_id = o.place_id
-            WHERE c.place_id = ?
+            SELECT *
+            FROM coffee_shops
+            WHERE place_id = ?
         """, (place_id,))
         row = cursor.fetchone()
         if not row:
@@ -113,7 +111,7 @@ def get_coffeeshop_by_place_id(place_id):
                 'message': f'Coffee shop {place_id} not found'
             }), 404
 
-        data = dict_from_row(cursor, row)
+        data = enrich_coffee_shop_row(dict_from_row(cursor, row))
         conn.close()
         return jsonify({
             'status': 'success',
@@ -149,7 +147,7 @@ def search_coffeeshops():
         ''', (search_term, search_term))
         
         rows = cursor.fetchall()
-        shops = [dict_from_row(cursor, row) for row in rows]
+        shops = [enrich_coffee_shop_row(dict_from_row(cursor, row)) for row in rows]
         conn.close()
         
         return jsonify({

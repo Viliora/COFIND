@@ -34,6 +34,19 @@ def use_postgres() -> bool:
     return bool(DATABASE_URL)
 
 
+def sql_user_flag_true(column: str) -> str:
+    """Filter users where boolean/int flag is true (Postgres boolean vs SQLite 0/1)."""
+    if use_postgres():
+        return f"COALESCE({column}, false) = true"
+    return f"COALESCE({column}, 0) = 1"
+
+
+def sql_user_flag_false(column: str) -> str:
+    if use_postgres():
+        return f"COALESCE({column}, false) = false"
+    return f"COALESCE({column}, 0) = 0"
+
+
 def _adapt_sql_postgres(sql: str) -> str:
     s = sql.replace("?", "%s")
     s = s.replace("datetime('now')", "NOW()")
@@ -42,24 +55,6 @@ def _adapt_sql_postgres(sql: str) -> str:
     s = s.replace(', "")', ", ''")
     s = s.replace(', ""))', ", ''))")
     s = s.replace('LOWER(COALESCE(rr.status, "pending"))', "LOWER(COALESCE(rr.status, 'pending'))")
-
-    if "INSERT OR REPLACE INTO opening_hours" in sql:
-        if "COALESCE((SELECT created_at" in sql:
-            return (
-                "INSERT INTO opening_hours (place_id, hours_display, created_at, updated_at) "
-                "VALUES (%s, %s, COALESCE((SELECT created_at FROM opening_hours WHERE place_id = %s), %s), %s) "
-                "ON CONFLICT (place_id) DO UPDATE SET "
-                "hours_display = EXCLUDED.hours_display, "
-                "created_at = opening_hours.created_at, "
-                "updated_at = EXCLUDED.updated_at"
-            )
-        return (
-            "INSERT INTO opening_hours (place_id, hours_display, created_at, updated_at) "
-            "VALUES (%s, %s, %s, %s) "
-            "ON CONFLICT (place_id) DO UPDATE SET "
-            "hours_display = EXCLUDED.hours_display, "
-            "updated_at = EXCLUDED.updated_at"
-        )
 
     return s
 

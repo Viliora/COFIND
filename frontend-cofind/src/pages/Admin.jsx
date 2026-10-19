@@ -16,7 +16,6 @@ const NAV_ITEMS = [
   { id: 'facilities', label: 'Coffee Shop', description: 'Kelola coffee shop, fasilitas, dan koordinat lokasi.' },
   { id: 'reviews', label: 'Reviews', description: 'Moderasi ulasan dan pantau engagement.' },
   { id: 'reports', label: 'Reports', description: 'Moderasi laporan review dari user.' },
-  { id: 'suggestions', label: 'Saran Preferensi', description: 'Tinjau saran pill preferensi baru dari user.' },
   { id: 'settings', label: 'Settings', description: 'Informasi sistem admin dan konfigurasi LLM.' },
 ];
 
@@ -260,6 +259,8 @@ export default function Admin() {
   const [shops, setShops] = useState([]);
   const [shopsPagination, setShopsPagination] = useState(null);
   const [shopsSearch, setShopsSearch] = useState('');
+  const [shopsProsConsMissingOnly, setShopsProsConsMissingOnly] = useState(false);
+  const [prosConsRefreshingId, setProsConsRefreshingId] = useState(null);
   const [shopsLoading, setShopsLoading] = useState(false);
   const [shopsError, setShopsError] = useState('');
 
@@ -277,13 +278,6 @@ export default function Admin() {
   const [reviewReportsStatusFilter, setReviewReportsStatusFilter] = useState('');
   const [reviewReportsLoading, setReviewReportsLoading] = useState(false);
   const [reviewReportsError, setReviewReportsError] = useState('');
-
-  const [preferenceSuggestions, setPreferenceSuggestions] = useState([]);
-  const [preferenceSuggestionsPagination, setPreferenceSuggestionsPagination] = useState(null);
-  const [preferenceSuggestionsSearch, setPreferenceSuggestionsSearch] = useState('');
-  const [preferenceSuggestionsStatusFilter, setPreferenceSuggestionsStatusFilter] = useState('');
-  const [preferenceSuggestionsLoading, setPreferenceSuggestionsLoading] = useState(false);
-  const [preferenceSuggestionsError, setPreferenceSuggestionsError] = useState('');
 
   const [settings, setSettings] = useState(null);
   const [settingsLoading, setSettingsLoading] = useState(false);
@@ -316,19 +310,6 @@ export default function Admin() {
     reported_by_username: '',
     review_text: '',
     shop_name: '',
-    created_at: '',
-  });
-
-  const [suggestionModalOpen, setSuggestionModalOpen] = useState(false);
-  const [suggestionSubmitting, setSuggestionSubmitting] = useState(false);
-  const [suggestionForm, setSuggestionForm] = useState({
-    id: null,
-    label: '',
-    description: '',
-    status: 'pending',
-    admin_notes: '',
-    username: '',
-    email: '',
     created_at: '',
   });
 
@@ -408,11 +389,15 @@ export default function Admin() {
     }
   }, []);
 
-  const loadShops = useCallback(async (page = 1, search = '') => {
+  const loadShops = useCallback(async (page = 1, search = '', missingProsConsOnly = false) => {
     setShopsLoading(true);
     setShopsError('');
     try {
-      const result = await adminService.getShops({ page, per_page: 8, search });
+      const params = { page, per_page: 8, search };
+      if (missingProsConsOnly) {
+        params.pros_cons = 'missing';
+      }
+      const result = await adminService.getShops(params);
       setShops(result.items || []);
       setShopsPagination(result.pagination || null);
     } catch (error) {
@@ -462,20 +447,6 @@ export default function Admin() {
     }
   }, []);
 
-  const loadPreferenceSuggestions = useCallback(async (page = 1, search = '', status = '') => {
-    setPreferenceSuggestionsLoading(true);
-    setPreferenceSuggestionsError('');
-    try {
-      const result = await adminService.getPreferenceSuggestions({ page, per_page: 8, search, status });
-      setPreferenceSuggestions(result.items || []);
-      setPreferenceSuggestionsPagination(result.pagination || null);
-    } catch (error) {
-      setPreferenceSuggestionsError(error.message);
-    } finally {
-      setPreferenceSuggestionsLoading(false);
-    }
-  }, []);
-
   const loadSettings = useCallback(async () => {
     setSettingsLoading(true);
     try {
@@ -499,8 +470,8 @@ export default function Admin() {
 
   useEffect(() => {
     if (!isAdmin || activeSection !== 'facilities') return;
-    loadShops(1, shopsSearch);
-  }, [isAdmin, activeSection, shopsSearch, loadShops]);
+    loadShops(1, shopsSearch, shopsProsConsMissingOnly);
+  }, [isAdmin, activeSection, shopsSearch, shopsProsConsMissingOnly, loadShops]);
 
   useEffect(() => {
     if (!isAdmin || activeSection !== 'reviews') return;
@@ -512,11 +483,6 @@ export default function Admin() {
     if (!isAdmin || activeSection !== 'reports') return;
     loadReviewReports(1, reviewReportsSearch, reviewReportsStatusFilter);
   }, [isAdmin, activeSection, reviewReportsSearch, reviewReportsStatusFilter, loadReviewReports]);
-
-  useEffect(() => {
-    if (!isAdmin || activeSection !== 'suggestions') return;
-    loadPreferenceSuggestions(1, preferenceSuggestionsSearch, preferenceSuggestionsStatusFilter);
-  }, [isAdmin, activeSection, preferenceSuggestionsSearch, preferenceSuggestionsStatusFilter, loadPreferenceSuggestions]);
 
   const openUserCreateModal = () => {
     setUserModalMode('create');
@@ -698,6 +664,28 @@ export default function Admin() {
     }
   };
 
+  const handleRefreshShopProsCons = async (row) => {
+    if (!row?.place_id) return;
+    setProsConsRefreshingId(row.place_id);
+    try {
+      const data = await adminService.refreshShopProsCons(row.place_id);
+      if (data?.status === 'skipped') {
+        showFeedback('error', data.message || 'Generate pros/cons dilewati.');
+      } else {
+        showFeedback('success', data.message || 'Pros & cons diperbarui.');
+      }
+      await loadShops(
+        shopsPagination?.page || 1,
+        shopsSearch,
+        shopsProsConsMissingOnly,
+      );
+    } catch (error) {
+      showFeedback('error', error.message);
+    } finally {
+      setProsConsRefreshingId(null);
+    }
+  };
+
   const handleSaveFacilityEditor = async (event) => {
     event.preventDefault();
     if (!facilityEditorShop?.place_id) return;
@@ -762,56 +750,6 @@ export default function Admin() {
       showFeedback('error', error.message);
     } finally {
       setReportSubmitting(false);
-    }
-  };
-
-  const openSuggestionModal = (suggestion) => {
-    setSuggestionForm({
-      id: suggestion.id,
-      label: suggestion.label || '',
-      description: suggestion.description || '',
-      status: suggestion.status || 'pending',
-      admin_notes: suggestion.admin_notes || '',
-      username: suggestion.username || '',
-      email: suggestion.email || '',
-      created_at: suggestion.created_at || '',
-    });
-    setSuggestionModalOpen(true);
-  };
-
-  const closeSuggestionModal = () => {
-    setSuggestionModalOpen(false);
-    setSuggestionForm({
-      id: null,
-      label: '',
-      description: '',
-      status: 'pending',
-      admin_notes: '',
-      username: '',
-      email: '',
-      created_at: '',
-    });
-  };
-
-  const handleSaveSuggestion = async (event) => {
-    event.preventDefault();
-    setSuggestionSubmitting(true);
-    try {
-      await adminService.updatePreferenceSuggestion(suggestionForm.id, {
-        status: suggestionForm.status,
-        admin_notes: suggestionForm.admin_notes,
-      });
-      showFeedback('success', 'Saran preferensi berhasil diperbarui.');
-      closeSuggestionModal();
-      await loadPreferenceSuggestions(
-        preferenceSuggestionsPagination?.page || 1,
-        preferenceSuggestionsSearch,
-        preferenceSuggestionsStatusFilter,
-      );
-    } catch (error) {
-      showFeedback('error', error.message);
-    } finally {
-      setSuggestionSubmitting(false);
     }
   };
 
@@ -915,7 +853,7 @@ export default function Admin() {
       render: (row) => (
         <div className="space-y-1">
           <p className="text-xs text-stone-500">
-            {row.has_facilities ? `${row.facility_count} indikator fasilitas` : 'Belum ada data facilities.json'}
+            {row.has_facilities ? `${row.facility_count} indikator fasilitas` : 'Belum ada data fasilitas di database'}
           </p>
           <p className="text-xs line-clamp-3">{row.facilities_text || '-'}</p>
         </div>
@@ -932,10 +870,44 @@ export default function Admin() {
       ),
     },
     {
+      key: 'pros_cons',
+      label: 'Pros & Cons',
+      render: (row) => (
+        <div className="text-xs space-y-1">
+          {row.pros_cons_has_data ? (
+            <>
+              <p>
+                {row.pros_cons_pro_count || 0} pro / {row.pros_cons_con_count || 0} con
+              </p>
+              <p className="text-stone-500">
+                {row.pros_cons_last_generated_at
+                  ? formatDate(row.pros_cons_last_generated_at)
+                  : '—'}
+              </p>
+            </>
+          ) : (
+            <p className="text-stone-500">Belum ada</p>
+          )}
+        </div>
+      ),
+    },
+    {
       key: 'actions',
       label: 'Aksi',
       render: (row) => (
         <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={prosConsRefreshingId === row.place_id}
+            onClick={() => handleRefreshShopProsCons(row)}
+            className="rounded-lg bg-violet-700 px-3 py-2 text-xs font-medium text-stone-50 hover:bg-violet-800 transition-all duration-300 ease-out cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {prosConsRefreshingId === row.place_id
+              ? 'Memproses…'
+              : row.pros_cons_has_data
+                ? 'Refresh'
+                : 'Generate'}
+          </button>
           <button
             type="button"
             onClick={() => openFacilityEditor(row)}
@@ -1063,59 +1035,6 @@ export default function Admin() {
     },
   ];
 
-  const preferenceSuggestionColumns = [
-    {
-      key: 'suggestion',
-      label: 'Saran',
-      render: (row) => (
-        <div className="space-y-1">
-          <p className="font-semibold text-stone-800">{row.label || 'Tanpa label'}</p>
-          <p className="text-xs text-stone-500">
-            dari @{row.username || 'user'}{row.email ? ` • ${row.email}` : ''}
-          </p>
-          <p className="text-xs line-clamp-3">{row.description || '(Tanpa deskripsi)'}</p>
-        </div>
-      ),
-    },
-    {
-      key: 'meta',
-      label: 'Dikirim',
-      render: (row) => (
-        <p className="text-xs text-stone-500">{formatDate(row.created_at)}</p>
-      ),
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      render: (row) => (
-        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
-          row.status === 'accepted'
-            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800/60'
-            : row.status === 'rejected'
-            ? 'bg-slate-100 dark:bg-slate-700/70 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600/70'
-            : row.status === 'reviewed'
-            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60'
-            : 'bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60'
-        }`}>
-          {row.status || 'pending'}
-        </span>
-      ),
-    },
-    {
-      key: 'actions',
-      label: 'Aksi',
-      render: (row) => (
-        <button
-          type="button"
-          onClick={() => openSuggestionModal(row)}
-          className="rounded-lg bg-amber-700 px-3 py-2 text-xs font-medium text-stone-50 hover:bg-amber-800 transition-all duration-300 ease-out cursor-pointer"
-        >
-          Tinjau
-        </button>
-      ),
-    },
-  ];
-
   if (!isAdmin) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#FAF9F6] via-stone-50 to-amber-50/30 flex items-center justify-center px-4">
@@ -1181,7 +1100,7 @@ export default function Admin() {
                   </div>
                 ) : null}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-4">
                   <AdminStatCard
                     label="Tingkat membantu LLM"
                     value={
@@ -1205,12 +1124,43 @@ export default function Admin() {
                   />
                   <AdminStatCard
                     label="Perlu tindak lanjut"
+                    value={dashboardLoading ? '...' : dashboard.stats?.pending_reports ?? 0}
+                    helper={`${dashboard.stats?.pending_reports ?? 0} laporan review`}
+                  />
+                  <AdminStatCard
+                    label="Coverage embedding"
                     value={
                       dashboardLoading
                         ? '...'
-                        : (dashboard.stats?.pending_reports ?? 0) + (dashboard.charts?.preference_suggestions?.pending ?? 0)
+                        : dashboard.charts?.embedding_stats?.coverage_percent != null
+                          ? `${dashboard.charts.embedding_stats.coverage_percent}%`
+                          : '—'
                     }
-                    helper={`${dashboard.stats?.pending_reports ?? 0} laporan · ${dashboard.charts?.preference_suggestions?.pending ?? 0} saran preferensi`}
+                    helper={
+                      dashboard.charts?.embedding_stats
+                        ? `${dashboard.charts.embedding_stats.embedded_count ?? 0} / ${dashboard.charts.embedding_stats.embeddable_count ?? 0} · ${dashboard.charts.embedding_stats.store_mode ?? 'cache'}`
+                        : 'pgvector review_embeddings'
+                    }
+                  />
+                  <AdminStatCard
+                    label="Run rekomendasi (14h)"
+                    value={dashboardLoading ? '...' : dashboard.charts?.pipeline_telemetry?.runs_total ?? 0}
+                    helper={`${dashboard.charts?.pipeline_telemetry?.runs_success ?? 0} sukses · hybrid ${dashboard.charts?.pipeline_telemetry?.avg_hybrid_retrieval_ms ?? '—'} ms · ANN ${dashboard.charts?.pipeline_telemetry?.ann_usage_rate ?? '—'}%`}
+                  />
+                  <AdminStatCard
+                    label="Token LLM / run"
+                    value={
+                      dashboardLoading
+                        ? '...'
+                        : dashboard.charts?.pipeline_telemetry?.avg_llm_tokens != null
+                          ? Math.round(dashboard.charts.pipeline_telemetry.avg_llm_tokens)
+                          : '—'
+                    }
+                    helper={
+                      dashboard.charts?.embedding_stats?.model_id
+                        ? `Model embed: ${dashboard.charts.embedding_stats.model_id}`
+                        : 'Rata-rata agregat (rerank + ringkasan + sentimen klausa).'
+                    }
                   />
                 </div>
 
@@ -1303,7 +1253,7 @@ export default function Admin() {
               <>
                 <SectionHeader
                   title="Coffee Shop"
-                  description="Kelola data coffee shop, lokasi, rating, dan edit penuh entry facilities.json per coffee shop."
+                  description="Kelola data coffee shop, lokasi, rating, dan edit fasilitas (JSON) per coffee shop di database."
                   actions={
                     <button
                       type="button"
@@ -1314,14 +1264,28 @@ export default function Admin() {
                     </button>
                   }
                 />
-                <Toolbar search={shopsSearch} onSearchChange={setShopsSearch} />
+                <Toolbar
+                  search={shopsSearch}
+                  onSearchChange={setShopsSearch}
+                  filters={(
+                    <label className="flex items-center gap-2 text-sm text-stone-600 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={shopsProsConsMissingOnly}
+                        onChange={(event) => setShopsProsConsMissingOnly(event.target.checked)}
+                        className="rounded border-stone-300 text-amber-700 focus:ring-amber-500"
+                      />
+                      Hanya belum punya pros/cons
+                    </label>
+                  )}
+                />
                 <AdminTable
                   columns={shopColumns}
                   rows={shops}
                   loading={shopsLoading}
                   error={shopsError}
                   pagination={shopsPagination}
-                  onPageChange={(p) => loadShops(p, shopsSearch)}
+                  onPageChange={(p) => loadShops(p, shopsSearch, shopsProsConsMissingOnly)}
                   emptyMessage="Belum ada coffee shop yang cocok."
                 />
               </>
@@ -1392,41 +1356,6 @@ export default function Admin() {
               </>
             ) : null}
 
-            {activeSection === 'suggestions' ? (
-              <>
-                <SectionHeader
-                  title="Saran Preferensi"
-                  description="Tinjau saran pill preferensi baru dari user."
-                />
-                <Toolbar
-                  search={preferenceSuggestionsSearch}
-                  onSearchChange={setPreferenceSuggestionsSearch}
-                  filters={
-                    <select
-                      value={preferenceSuggestionsStatusFilter}
-                      onChange={(event) => setPreferenceSuggestionsStatusFilter(event.target.value)}
-                      className="rounded-xl border border-stone-300/70 bg-stone-50 px-3 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                    >
-                      <option value="">Semua status</option>
-                      <option value="pending">pending</option>
-                      <option value="reviewed">reviewed</option>
-                      <option value="accepted">accepted</option>
-                      <option value="rejected">rejected</option>
-                    </select>
-                  }
-                />
-                <AdminTable
-                  columns={preferenceSuggestionColumns}
-                  rows={preferenceSuggestions}
-                  loading={preferenceSuggestionsLoading}
-                  error={preferenceSuggestionsError}
-                  pagination={preferenceSuggestionsPagination}
-                  onPageChange={(p) => loadPreferenceSuggestions(p, preferenceSuggestionsSearch, preferenceSuggestionsStatusFilter)}
-                  emptyMessage="Belum ada saran preferensi dari user."
-                />
-              </>
-            ) : null}
-
             {activeSection === 'settings' ? (
               <>
                 <SectionHeader title="Settings" description="Ringkasan konfigurasi admin dan LLM." />
@@ -1440,7 +1369,29 @@ export default function Admin() {
                         <p><span className="font-medium">LLM tersedia:</span> {settings?.llm_available ? 'Ya' : 'Tidak'}</p>
                         <p><span className="font-medium">Model LLM:</span> {settings?.llm_model || '-'}</p>
                         <p><span className="font-medium">Cache rerank:</span> {settings?.rerank_cache_expiry_days ?? '-'} hari</p>
-                        
+                        <p>
+                          <span className="font-medium">Sentimen klausa (Fase 2b):</span>{' '}
+                          {settings?.pipeline_config?.clause_sentiment?.enabled ? 'Aktif' : 'Nonaktif'}
+                        </p>
+                        <p>
+                          <span className="font-medium">Rerank LLM:</span>{' '}
+                          {settings?.pipeline_config?.rerank ? 'Aktif' : 'Nonaktif'}
+                        </p>
+                        <p>
+                          <span className="font-medium">Embedding store:</span>{' '}
+                          {settings?.pipeline_config?.embedding_store ?? '-'}
+                        </p>
+                        <p>
+                          <span className="font-medium">Dense ANN:</span>{' '}
+                          {settings?.pipeline_config?.dense_use_ann ? 'Aktif' : 'Nonaktif'}
+                          {settings?.pipeline_config?.ann_top_k != null
+                            ? ` (top-K ${settings.pipeline_config.ann_top_k})`
+                            : ''}
+                        </p>
+                        <p>
+                          <span className="font-medium">Embed async (Celery):</span>{' '}
+                          {settings?.pipeline_config?.embedding_async ? 'Aktif' : 'Nonaktif'}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -1778,7 +1729,7 @@ export default function Admin() {
         ) : (
           <form onSubmit={handleSaveFacilityEditor} className="space-y-4">
             <div className="rounded-xl bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 p-4 text-sm text-amber-800 dark:text-amber-300">
-              Editor ini bersifat penuh: Anda dapat mengubah seluruh struktur entry `facilities.json` untuk coffee shop ini. Pastikan JSON tetap valid.
+              Editor ini bersifat penuh: Anda dapat mengubah struktur fasilitas tersimpan di database untuk coffee shop ini. Pastikan JSON tetap valid.
             </div>
             <textarea
               value={facilityJsonText}
@@ -1858,82 +1809,6 @@ export default function Admin() {
         </form>
       </AdminModal>
 
-      <AdminModal
-        isOpen={suggestionModalOpen}
-        title="Tinjau Saran Preferensi"
-        onClose={closeSuggestionModal}
-        maxWidth="max-w-2xl"
-      >
-        <form onSubmit={handleSaveSuggestion} className="space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="rounded-xl border border-stone-200/60 p-4">
-              <p className="text-xs text-stone-500">Pengirim</p>
-              <p className="mt-1 font-medium text-stone-800">
-                @{suggestionForm.username || 'user'}
-              </p>
-              <p className="text-xs text-stone-500 mt-1">{suggestionForm.email || '-'}</p>
-            </div>
-            <div className="rounded-xl border border-stone-200/60 p-4">
-              <p className="text-xs text-stone-500">Tanggal saran</p>
-              <p className="mt-1 font-medium text-stone-800">{formatDate(suggestionForm.created_at)}</p>
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-stone-200/60 p-4">
-            <p className="text-xs text-stone-500">Label preferensi</p>
-            <p className="mt-1 font-medium text-stone-800">{suggestionForm.label || '-'}</p>
-          </div>
-
-          <div className="rounded-xl border border-stone-200/60 p-4">
-            <p className="text-xs text-stone-500">Deskripsi</p>
-            <p className="mt-1 text-sm text-stone-800 whitespace-pre-wrap">
-              {suggestionForm.description || '(Tidak ada deskripsi)'}
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1">Status</label>
-            <select
-              value={suggestionForm.status}
-              onChange={(event) => setSuggestionForm((prev) => ({ ...prev, status: event.target.value }))}
-              className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
-            >
-              <option value="pending">pending</option>
-              <option value="reviewed">reviewed</option>
-              <option value="accepted">accepted</option>
-              <option value="rejected">rejected</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1">Catatan admin</label>
-            <textarea
-              rows={3}
-              value={suggestionForm.admin_notes}
-              onChange={(event) => setSuggestionForm((prev) => ({ ...prev, admin_notes: event.target.value }))}
-              className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
-              placeholder="Contoh: Akan ditambahkan sebagai pill 'Pet-friendly'."
-            />
-          </div>
-
-          <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={closeSuggestionModal}
-              className="rounded-xl border border-stone-300/70 px-4 py-2 text-sm text-stone-700 hover:bg-stone-100 transition-all duration-300 ease-out cursor-pointer"
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              disabled={suggestionSubmitting}
-              className="rounded-xl bg-amber-700 px-4 py-2 text-sm font-medium text-stone-50 hover:bg-amber-800 disabled:opacity-60 transition-all duration-300 ease-out cursor-pointer"
-            >
-              {suggestionSubmitting ? 'Menyimpan...' : 'Simpan status'}
-            </button>
-          </div>
-        </form>
-      </AdminModal>
     </div>
   );
 }

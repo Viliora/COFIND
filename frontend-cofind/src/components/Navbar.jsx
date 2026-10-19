@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import cofindImg from '../assets/cofind.svg?url';
 import { useAuth } from '../context/authContext';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+import { API_BASE } from '../config/apiBase.js';
 
 const Navbar = () => {
   const { user, profile, isAuthenticated, isAdmin, signOut } = useAuth();

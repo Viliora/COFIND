@@ -10,24 +10,25 @@ from flask import Blueprint, jsonify, request
 
 from auth_guards import require_admin
 from auth_utils import hash_password, update_user_profile
-from db_backend import dict_from_row, get_connection
+from db_backend import dict_from_row, get_connection, sql_user_flag_false, sql_user_flag_true
 from db_helpers import paginate_query
 from facilities_store import (
     count_enabled_facilities,
     default_facilities_entry,
     format_facilities_to_text,
     load_facilities_index,
-    save_facilities_index,
+    save_facilities_entry,
 )
 from llm_backend import HF_MODEL, llm_is_available
 from logging_config import get_logger
-from preference_suggestion_utils import (
-    ensure_preference_suggestions_table,
-    list_preference_suggestions,
-    update_preference_suggestion,
-)
 from cache_paths import RERANK_CACHE_EXPIRY_DAYS
 from recommendation_feedback_utils import ensure_recommendation_feedback_table
+from pipeline_telemetry import fetch_pipeline_dashboard_stats, full_pipeline_config
+from redis_utils import ping_redis
+from review_embedding_store import fetch_embedding_coverage_stats
+from semantic_match import semantic_embedding_cache_stats
+from llm_clause_sentiment import cache_stats as clause_sentiment_cache_stats
+from pros_cons_utils import fetch_pros_cons_stats_batch, refresh_pros_cons
 
 bp = Blueprint('admin', __name__)
 LOG_API = get_logger('api')
@@ -154,7 +155,7 @@ def admin_dashboard():
         top_contributors = []
         try:
             contrib_rows = cursor.execute(
-                '''
+                f'''
                 SELECT u.id AS user_id,
                        u.username,
                        COUNT(r.id) AS review_count,
@@ -167,7 +168,7 @@ def admin_dashboard():
                     FROM review_photos
                     GROUP BY review_id
                 ) photo_counts ON photo_counts.review_id = r.id
-                WHERE COALESCE(u.is_admin, 0) = 0
+                WHERE {sql_user_flag_false('u.is_admin')}
                 GROUP BY u.id, u.username
                 ORDER BY review_count DESC, photo_count DESC
                 LIMIT 8
@@ -255,31 +256,6 @@ def admin_dashboard():
         except Exception as trend_err:
             LOG_ADMIN.warning(f"dashboard reviews_trend: {trend_err}")
 
-        # --- Saran preferensi pill ---
-        preference_suggestions = {
-            'pending': 0,
-            'reviewed': 0,
-            'accepted': 0,
-            'rejected': 0,
-            'total': 0,
-        }
-        try:
-            ensure_preference_suggestions_table()
-            sug_map = _fetch_count_map(
-                '''
-                SELECT COALESCE(status, 'pending') AS key, COUNT(*) AS cnt
-                FROM preference_suggestions
-                GROUP BY COALESCE(status, 'pending')
-                '''
-            )
-            for key in ('pending', 'reviewed', 'accepted', 'rejected'):
-                preference_suggestions[key] = sug_map.get(key, 0)
-            preference_suggestions['total'] = sum(
-                preference_suggestions[k] for k in ('pending', 'reviewed', 'accepted', 'rejected')
-            )
-        except Exception as sug_err:
-            LOG_ADMIN.warning(f"dashboard preference_suggestions: {sug_err}")
-
         # --- Ringkasan aktivitas (hanya review & laporan; user baru tidak ditonjolkan) ---
         activities = []
 
@@ -323,6 +299,18 @@ def admin_dashboard():
             reverse=True
         )[:6]
 
+        pipeline_telemetry = {}
+        try:
+            pipeline_telemetry = fetch_pipeline_dashboard_stats(days=14)
+        except Exception as pipe_err:
+            LOG_ADMIN.warning(f"dashboard pipeline_telemetry: {pipe_err}")
+
+        embedding_stats = {}
+        try:
+            embedding_stats = fetch_embedding_coverage_stats()
+        except Exception as emb_err:
+            LOG_ADMIN.warning(f"dashboard embedding_stats: {emb_err}")
+
         conn.close()
 
         return jsonify({
@@ -334,7 +322,8 @@ def admin_dashboard():
                 'top_contributors': top_contributors,
                 'most_reviewed_shops': most_reviewed_shops,
                 'reviews_trend': reviews_trend,
-                'preference_suggestions': preference_suggestions,
+                'pipeline_telemetry': pipeline_telemetry,
+                'embedding_stats': embedding_stats,
             },
             'recent_activity': activities,
             'admin': {
@@ -371,14 +360,14 @@ def admin_get_users():
             params.extend([like, like, like])
 
         if role_filter == 'admin':
-            where_clauses.append('u.is_admin = 1')
+            where_clauses.append(sql_user_flag_true('u.is_admin'))
         elif role_filter == 'user':
-            where_clauses.append('u.is_admin = 0')
+            where_clauses.append(sql_user_flag_false('u.is_admin'))
 
         if status_filter == 'active':
-            where_clauses.append('CAST(u.is_active AS INTEGER) = 1')
+            where_clauses.append(sql_user_flag_true('u.is_active'))
         elif status_filter == 'inactive':
-            where_clauses.append('CAST(u.is_active AS INTEGER) = 0')
+            where_clauses.append(sql_user_flag_false('u.is_active'))
 
         where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ''
 
@@ -611,17 +600,26 @@ def admin_get_shops():
         page = max(int(request.args.get('page', 1)), 1)
         per_page = min(max(int(request.args.get('per_page', 10)), 1), 100)
         search = (request.args.get('search') or '').strip().lower()
+        pros_cons_filter = (request.args.get('pros_cons') or '').strip().lower()
 
         conn = get_connection()
         cursor = conn.cursor()
         facilities_index = load_facilities_index()
 
-        where_sql = ''
+        where_parts = []
         params = []
         if search:
-            where_sql = 'WHERE LOWER(c.name) LIKE ? OR LOWER(c.address) LIKE ?'
+            where_parts.append('(LOWER(c.name) LIKE ? OR LOWER(c.address) LIKE ?)')
             like = f'%{search}%'
-            params = [like, like]
+            params.extend([like, like])
+        if pros_cons_filter == 'missing':
+            where_parts.append(
+                'EXISTS (SELECT 1 FROM reviews r WHERE r.place_id = c.place_id)'
+            )
+            where_parts.append(
+                'NOT EXISTS (SELECT 1 FROM shop_pros_cons p WHERE p.place_id = c.place_id)'
+            )
+        where_sql = f"WHERE {' AND '.join(where_parts)}" if where_parts else ''
 
         total = cursor.execute(
             f'''
@@ -635,9 +633,8 @@ def admin_get_shops():
         rows = paginate_query(
             cursor,
             f'''
-            SELECT c.*, COALESCE(o.hours_display, '') AS opening_hours_display
+            SELECT *
             FROM coffee_shops c
-            LEFT JOIN opening_hours o ON o.place_id = c.place_id
             {where_sql}
             ORDER BY c.name ASC
             ''',
@@ -646,12 +643,20 @@ def admin_get_shops():
             per_page
         )
 
-        items = []
+        place_ids = []
+        row_dicts = []
         for row in rows:
             rd = dict_from_row(cursor, row)
+            place_ids.append(rd['place_id'])
+            row_dicts.append(rd)
+        pros_cons_stats = fetch_pros_cons_stats_batch(cursor, place_ids)
+
+        items = []
+        for rd in row_dicts:
             facility_entry = facilities_index.get(rd['place_id'], {})
             facilities_text = format_facilities_to_text(facility_entry)
             facilities_obj = facility_entry.get('facilities', {})
+            pc = pros_cons_stats.get(rd['place_id'], {})
             items.append({
                 'id': rd['id'],
                 'place_id': rd['place_id'],
@@ -662,10 +667,14 @@ def admin_get_shops():
                 'latitude': rd['latitude'],
                 'longitude': rd['longitude'],
                 'map_embed_url': rd['map_embed_url'],
-                'opening_hours_display': rd['opening_hours_display'],
+                'opening_hours_display': rd.get('opening_hours_display') or '',
                 'has_facilities': bool(facility_entry),
                 'facilities_text': facilities_text,
                 'facility_count': count_enabled_facilities(facilities_obj),
+                'pros_cons_pro_count': pc.get('pros_cons_pro_count', 0),
+                'pros_cons_con_count': pc.get('pros_cons_con_count', 0),
+                'pros_cons_last_generated_at': pc.get('pros_cons_last_generated_at'),
+                'pros_cons_has_data': pc.get('pros_cons_has_data', False),
             })
 
         conn.close()
@@ -683,6 +692,61 @@ def admin_get_shops():
     except Exception as e:
         LOG_API.exception("admin_get_shops gagal")
         return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@bp.route('/api/admin/shops/<place_id>/pros-cons/refresh', methods=['POST'])
+def admin_refresh_shop_pros_cons(place_id):
+    _, error_response = require_admin()
+    if error_response:
+        return error_response
+
+    place_id = str(place_id or '').strip()
+    if not place_id:
+        return jsonify({'status': 'error', 'message': 'place_id wajib'}), 400
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        shop_row = cursor.execute(
+            'SELECT name FROM coffee_shops WHERE place_id = ?',
+            (place_id,),
+        ).fetchone()
+        conn.close()
+        if not shop_row:
+            return jsonify({'status': 'error', 'message': 'Coffee shop tidak ditemukan'}), 404
+
+        shop_name = shop_row[0]
+        result = refresh_pros_cons(place_id, shop_name, force=True)
+
+        if result.get('reason') == 'llm_unavailable':
+            return jsonify({
+                'status': 'error',
+                'message': result.get('message') or 'LLM tidak tersedia',
+                'result': result,
+            }), 503
+
+        if result.get('skipped'):
+            return jsonify({
+                'status': 'skipped',
+                'message': result.get('message') or 'Refresh dilewati',
+                'result': result,
+            }), 200
+
+        if result.get('ok'):
+            return jsonify({
+                'status': 'success',
+                'message': result.get('message') or 'Berhasil',
+                'result': result,
+            }), 200
+
+        return jsonify({
+            'status': 'error',
+            'message': result.get('message') or 'Gagal memperbarui pros & cons',
+            'result': result,
+        }), 500
+    except Exception as e:
+        LOG_API.exception("admin_refresh_shop_pros_cons gagal")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
 
 @bp.route('/api/admin/facilities/<place_id>', methods=['GET'])
 def admin_get_facility_entry(place_id):
@@ -734,10 +798,9 @@ def admin_update_facility_entry(place_id):
         facilities['meta']['last_updated'] = datetime.utcnow().strftime('%Y-%m-%d')
         facilities['meta'].setdefault('source', 'admin_editor')
 
-        facilities_index[place_id] = entry
-        save_facilities_index(facilities_index)
+        save_facilities_entry(place_id, entry)
 
-        return jsonify({'status': 'success', 'message': 'Facilities JSON berhasil diperbarui'}), 200
+        return jsonify({'status': 'success', 'message': 'Facilities berhasil diperbarui di database'}), 200
     except Exception as e:
         LOG_API.exception("admin_update_facility_entry gagal")
         return jsonify({'status': 'error', 'message': str(e)}), 500
@@ -769,11 +832,12 @@ def admin_create_shop():
             return jsonify({'status': 'error', 'message': 'place_id already exists'}), 400
 
         now = datetime.utcnow().isoformat()
+        opening_hours_display = (data.get('opening_hours_display') or '').strip()
         cursor.execute('''
             INSERT INTO coffee_shops (
                 place_id, name, address, rating, total_reviews, created_at, updated_at,
-                map_embed_url, latitude, longitude
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                map_embed_url, latitude, longitude, opening_hours_display
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             place_id,
             name,
@@ -785,14 +849,8 @@ def admin_create_shop():
             data.get('map_embed_url'),
             data.get('latitude'),
             data.get('longitude'),
+            opening_hours_display,
         ))
-
-        hours_display = (data.get('opening_hours_display') or '').strip()
-        if hours_display:
-            cursor.execute('''
-                INSERT OR REPLACE INTO opening_hours (place_id, hours_display, created_at, updated_at)
-                VALUES (?, ?, ?, ?)
-            ''', (place_id, hours_display, now, now))
 
         conn.commit()
         conn.close()
@@ -821,7 +879,7 @@ def admin_update_shop(place_id):
         cursor.execute('''
             UPDATE coffee_shops
             SET name = ?, address = ?, rating = ?, total_reviews = ?, map_embed_url = ?,
-                latitude = ?, longitude = ?, updated_at = ?
+                latitude = ?, longitude = ?, opening_hours_display = ?, updated_at = ?
             WHERE place_id = ?
         ''', (
             (data.get('name') or '').strip(),
@@ -831,19 +889,10 @@ def admin_update_shop(place_id):
             data.get('map_embed_url'),
             data.get('latitude'),
             data.get('longitude'),
+            (data.get('opening_hours_display') or '').strip(),
             datetime.utcnow().isoformat(),
             place_id,
         ))
-
-        hours_display = (data.get('opening_hours_display') or '').strip()
-        now = datetime.utcnow().isoformat()
-        if hours_display:
-            cursor.execute('''
-                INSERT OR REPLACE INTO opening_hours (place_id, hours_display, created_at, updated_at)
-                VALUES (?, ?, COALESCE((SELECT created_at FROM opening_hours WHERE place_id = ?), ?), ?)
-            ''', (place_id, hours_display, place_id, now, now))
-        else:
-            cursor.execute('DELETE FROM opening_hours WHERE place_id = ?', (place_id,))
 
         conn.commit()
         conn.close()
@@ -873,7 +922,6 @@ def admin_delete_shop(place_id):
 
         cursor.execute('DELETE FROM favorites WHERE place_id = ?', (place_id,))
         cursor.execute('DELETE FROM want_to_visit WHERE place_id = ?', (place_id,))
-        cursor.execute('DELETE FROM opening_hours WHERE place_id = ?', (place_id,))
         cursor.execute('DELETE FROM coffee_shops WHERE place_id = ?', (place_id,))
 
         conn.commit()
@@ -1113,6 +1161,45 @@ def admin_delete_review(review_id):
         LOG_API.exception("admin_delete_review gagal")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
+@bp.route('/api/admin/embedding-stats', methods=['GET'])
+def admin_get_embedding_stats():
+    _, error_response = require_admin()
+    if error_response:
+        return error_response
+    try:
+        return jsonify({
+            'status': 'success',
+            'embedding_stats': fetch_embedding_coverage_stats(),
+        }), 200
+    except Exception as e:
+        LOG_API.exception("admin_get_embedding_stats gagal")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@bp.route('/api/admin/cache-health', methods=['GET'])
+def admin_get_cache_health():
+    _, error_response = require_admin()
+    if error_response:
+        return error_response
+    try:
+        redis_ok = False
+        try:
+            redis_ok = ping_redis()
+        except Exception as redis_err:
+            LOG_ADMIN.warning(f"cache-health redis: {redis_err}")
+        return jsonify({
+            'status': 'success',
+            'cache_health': {
+                'redis_ok': redis_ok,
+                'semantic_embeddings': semantic_embedding_cache_stats(),
+                'clause_sentiment': clause_sentiment_cache_stats(),
+            },
+        }), 200
+    except Exception as e:
+        LOG_API.exception("admin_get_cache_health gagal")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
 @bp.route('/api/admin/settings', methods=['GET'])
 def admin_get_settings_summary():
     _, error_response = require_admin()
@@ -1127,70 +1214,10 @@ def admin_get_settings_summary():
                 'llm_model': HF_MODEL,
                 'api_base_note': 'Frontend memakai VITE_API_BASE untuk mengakses Flask API',
                 'rerank_cache_expiry_days': RERANK_CACHE_EXPIRY_DAYS,
+                'pipeline_config': full_pipeline_config(),
             }
         }), 200
     except Exception as e:
         LOG_API.exception("admin_get_settings_summary gagal")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
-
-@bp.route('/api/admin/preference-suggestions', methods=['GET'])
-def admin_list_preference_suggestions():
-    """Daftar saran preferensi pill untuk admin."""
-    _, error_response = require_admin()
-    if error_response:
-        return error_response
-
-    try:
-        page = max(int(request.args.get('page', 1)), 1)
-        per_page = min(max(int(request.args.get('per_page', 10)), 1), 100)
-        search = (request.args.get('search') or '').strip()
-        status_filter = (request.args.get('status') or '').strip()
-
-        result = list_preference_suggestions(
-            page=page,
-            per_page=per_page,
-            search=search,
-            status_filter=status_filter,
-        )
-        if not result.get('success'):
-            return jsonify({
-                'status': 'error',
-                'message': result.get('error') or 'Gagal mengambil saran preferensi',
-            }), 400
-        return jsonify({
-            'status': 'success',
-            'items': result.get('items') or [],
-            'pagination': result.get('pagination') or {},
-        }), 200
-    except Exception as e:
-        LOG_API.exception("admin_list_preference_suggestions gagal")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
-
-@bp.route('/api/admin/preference-suggestions/<int:suggestion_id>', methods=['PUT'])
-def admin_update_preference_suggestion(suggestion_id):
-    """Perbarui status/catatan saran preferensi (admin)."""
-    _, error_response = require_admin()
-    if error_response:
-        return error_response
-
-    try:
-        data = request.get_json(silent=True) or {}
-        result = update_preference_suggestion(
-            suggestion_id,
-            status=data.get('status') or 'pending',
-            admin_notes=data.get('admin_notes'),
-        )
-        if not result.get('success'):
-            status_code = 404 if 'tidak ditemukan' in (result.get('error') or '').lower() else 400
-            return jsonify({
-                'status': 'error',
-                'message': result.get('error') or 'Gagal memperbarui saran',
-            }), status_code
-        return jsonify({
-            'status': 'success',
-            'message': 'Saran preferensi berhasil diperbarui',
-        }), 200
-    except Exception as e:
-        LOG_API.exception("admin_update_preference_suggestion gagal")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 

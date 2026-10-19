@@ -42,18 +42,24 @@ def _normalize_text(text):
 
 
 def _get_review_stats(cursor, place_id):
-    """Ambil semua teks review (yang cukup panjang) + total review untuk satu coffee shop."""
+    """Ambil semua teks review (Cofind + Google) + total untuk pros/cons pipeline."""
+    from review_utils import _pipeline_review_source_sql
+
+    source_filter = _pipeline_review_source_sql('reviews')
     rows = cursor.execute(
-        '''
+        f'''
         SELECT review_text FROM reviews
-        WHERE place_id = ? AND review_text IS NOT NULL AND TRIM(review_text) != ''
+        WHERE place_id = ?
+          AND review_text IS NOT NULL AND TRIM(review_text) != ''
+          AND {source_filter}
         ORDER BY created_at DESC
         ''',
         (place_id,),
     ).fetchall()
     texts = [str(r[0]).strip() for r in rows if str(r[0] or '').strip()]
     total_count = cursor.execute(
-        'SELECT COUNT(*) FROM reviews WHERE place_id = ?', (place_id,),
+        f'SELECT COUNT(*) FROM reviews WHERE place_id = ? AND {source_filter}',
+        (place_id,),
     ).fetchone()[0]
     return texts, total_count
 
@@ -172,20 +178,136 @@ def _replace_points(cursor, place_id, point_type, new_texts):
         cursor.execute(f'DELETE FROM shop_pros_cons WHERE id IN ({placeholders})', stale_ids)
 
 
-def maybe_refresh_pros_cons(place_id, shop_name):
-    """Jalankan batch job ekstraksi AI HANYA jika kondisi trigger (waktu/kuota) terpenuhi."""
+def _empty_refresh_result():
+    return {
+        'ok': False,
+        'skipped': False,
+        'reason': None,
+        'pro_count': 0,
+        'con_count': 0,
+        'last_generated_at': None,
+        'message': '',
+    }
+
+
+def _count_points(cursor, place_id):
+    pro_count = cursor.execute(
+        "SELECT COUNT(*) FROM shop_pros_cons WHERE place_id = ? AND point_type = 'pro'",
+        (place_id,),
+    ).fetchone()[0]
+    con_count = cursor.execute(
+        "SELECT COUNT(*) FROM shop_pros_cons WHERE place_id = ? AND point_type = 'con'",
+        (place_id,),
+    ).fetchone()[0]
+    return int(pro_count or 0), int(con_count or 0)
+
+
+def fetch_pros_cons_stats_batch(cursor, place_ids):
+    """Stats pros/cons per place_id untuk daftar admin."""
+    ids = [str(pid).strip() for pid in (place_ids or []) if str(pid).strip()]
+    if not ids:
+        return {}
+    placeholders = ','.join('?' * len(ids))
+    stats = {
+        pid: {
+            'pros_cons_pro_count': 0,
+            'pros_cons_con_count': 0,
+            'pros_cons_last_generated_at': None,
+            'pros_cons_has_data': False,
+        }
+        for pid in ids
+    }
+    count_rows = cursor.execute(
+        f'''
+        SELECT place_id, point_type, COUNT(*) AS cnt
+        FROM shop_pros_cons
+        WHERE place_id IN ({placeholders})
+        GROUP BY place_id, point_type
+        ''',
+        ids,
+    ).fetchall()
+    for row in count_rows:
+        pid = str(row[0])
+        ptype = row[1]
+        cnt = int(row[2] or 0)
+        if pid not in stats:
+            continue
+        if ptype == 'pro':
+            stats[pid]['pros_cons_pro_count'] = cnt
+        elif ptype == 'con':
+            stats[pid]['pros_cons_con_count'] = cnt
+    meta_rows = cursor.execute(
+        f'''
+        SELECT place_id, last_generated_at
+        FROM shop_pros_cons_meta
+        WHERE place_id IN ({placeholders})
+        ''',
+        ids,
+    ).fetchall()
+    for row in meta_rows:
+        pid = str(row[0])
+        if pid in stats:
+            stats[pid]['pros_cons_last_generated_at'] = row[1]
+    for pid, entry in stats.items():
+        entry['pros_cons_has_data'] = (
+            entry['pros_cons_pro_count'] + entry['pros_cons_con_count'] > 0
+        )
+    return stats
+
+
+def refresh_pros_cons(place_id, shop_name, *, force=False):
+    """
+    Ekstraksi LLM pros/cons untuk satu toko.
+    force=False: hanya jika _should_refresh (lazy job).
+    force=True: abaikan jadwal (admin trigger).
+    """
+    result = _empty_refresh_result()
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
         review_texts, total_count = _get_review_stats(cursor, place_id)
         meta = _get_meta(cursor, place_id)
 
-        if not _should_refresh(meta, total_count):
-            return
+        if total_count <= 0:
+            result.update({
+                'skipped': True,
+                'reason': 'no_reviews',
+                'message': 'Toko belum punya ulasan Cofind untuk diekstrak.',
+            })
+            return result
+
+        if not force and not _should_refresh(meta, total_count):
+            pro_count, con_count = _count_points(cursor, place_id)
+            result.update({
+                'skipped': True,
+                'reason': 'not_due',
+                'pro_count': pro_count,
+                'con_count': con_count,
+                'last_generated_at': meta.get('last_generated_at') if meta else None,
+                'message': 'Belum waktunya refresh otomatis.',
+            })
+            return result
+
+        if not llm_is_available():
+            result.update({
+                'skipped': True,
+                'reason': 'llm_unavailable',
+                'message': 'LLM tidak tersedia (HF/Gemini).',
+            })
+            return result
 
         pros, cons = _generate_pros_cons_via_llm(shop_name or place_id, review_texts)
         if not pros and not cons:
-            return
+            pro_count, con_count = _count_points(cursor, place_id)
+            result.update({
+                'skipped': True,
+                'reason': 'empty_extraction',
+                'pro_count': pro_count,
+                'con_count': con_count,
+                'last_generated_at': meta.get('last_generated_at') if meta else None,
+                'message': 'LLM tidak mengembalikan poin pros/cons.',
+            })
+            return result
 
         _replace_points(cursor, place_id, 'pro', pros)
         _replace_points(cursor, place_id, 'con', cons)
@@ -202,11 +324,33 @@ def maybe_refresh_pros_cons(place_id, shop_name):
                 (place_id, now, total_count),
             )
         conn.commit()
+
+        pro_count, con_count = _count_points(cursor, place_id)
+        result.update({
+            'ok': True,
+            'skipped': False,
+            'reason': None,
+            'pro_count': pro_count,
+            'con_count': con_count,
+            'last_generated_at': now,
+            'message': 'Pros & cons berhasil diperbarui.',
+        })
+        return result
     except Exception as e:
         conn.rollback()
-        logger.warning(f"maybe_refresh_pros_cons gagal untuk {place_id}: {e}")
+        logger.warning(f"refresh_pros_cons gagal untuk {place_id}: {e}")
+        result.update({
+            'reason': 'error',
+            'message': str(e),
+        })
+        return result
     finally:
         conn.close()
+
+
+def maybe_refresh_pros_cons(place_id, shop_name):
+    """Jalankan batch job ekstraksi AI HANYA jika kondisi trigger (waktu/kuota) terpenuhi."""
+    refresh_pros_cons(place_id, shop_name, force=False)
 
 
 def get_pros_cons(place_id, user_id=None):
