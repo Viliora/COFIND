@@ -1181,6 +1181,9 @@ def _build_profiles_for_recommendation(place_ids, facilities_index=None, exclude
     Batch-load profil rekomendasi:
       1 query coffee_shops + 1 query reviews lean (tanpa foto/like).
     Return: (profiles, shops_without_reviews)
+
+    `excluded_place_ids` opsional (hook generik). Pipeline rekomendasi tidak
+    mengisi daftar ini dari vote not_helpful; toko tetap masuk korpus Fase 1.
     """
     excluded = set(excluded_place_ids or set())
     target_ids = [pid for pid in (place_ids or []) if pid and pid not in excluded]
@@ -5433,7 +5436,8 @@ def _recommendation_pipeline_events(prefs, _auth_user, query_text=''):
          (keywords + dense_query); output langsung ke hybrid retrieval yang
          sama (BM25 + dense/ANN → RRF). Tidak ada upgrade otomatis ke pill.
 
-      Fase 1 — Hard filter: wajib minimal 1 review Cofind.
+      Fase 1 — Hard filter: wajib minimal 1 ulasan pipeline (Cofind + Google Places,
+               get_reviews_for_recommendation_batch / REVIEW_BASED_MIN_REVIEWS=1).
       Fase 2 — Hybrid retrieval (semua jalur): BM25 + dense/ANN → RRF (k=COFIND_RRF_K).
                Jalur pill: gerbang aktivitas + metadata gate setelah RRF.
                Jalur free text: tanpa gerbang pill (rerank/summary yang menilai bukti).
@@ -5442,6 +5446,9 @@ def _recommendation_pipeline_events(prefs, _auth_user, query_text=''):
                 LLM label supporting/caveat; rule hanya fallback.
       Fase 3 — LLM rerank: pilih 0–3 toko yang kutipannya mendukung aktivitas,
                ekstrak kutipan pendukung (bukan jendela ±6 token).
+
+      Feedback thumbs (helpful / not_helpful) disimpan via API feedback ke DB untuk
+      analitik, evaluasi admin, dan UI modal — tidak mem-filter toko di Fase 1/2/3.
 
     Generator: yield ('progress', payload) di tiap batas tahap, lalu tepat satu
     ('result', (body_dict, status_code)) di akhir. Autentikasi dan parsing body
@@ -5561,9 +5568,12 @@ def _recommendation_pipeline_events(prefs, _auth_user, query_text=''):
         LOG_RECOMMEND.info(f"Pills: {valid_pills}")
         yield _recommendation_progress('start')
 
-        # Feedback not_helpful tetap disimpan untuk evaluasi/UI modal, tetapi tidak
-        # mengecualikan toko dari kandidat — bila LLM rerank memilih toko itu lagi,
-        # hasil tetap muncul di recommendation modal.
+        # Umpan balik not_helpful (thumbs-down) dicatat ke DB lewat
+        # /api/recommend-by-preferences/feedback (upsert_recommendation_feedback) untuk
+        # analitik, ringkasan admin, dan state UI modal — BUKAN filter hard retrieval.
+        # Toko yang pernah not_helpful tetap diload di Fase 1 (_build_profiles_for_recommendation
+        # tanpa excluded_place_ids dari feedback). Jika LLM rerank memilih toko itu lagi,
+        # rekomendasi tetap dikirim ke client.
 
         # Konteks personalisasi (review sendiri + favorit) untuk tahap keputusan LLM.
         taste_profile = build_user_taste_profile(_auth_user.get('id'))
@@ -5577,7 +5587,7 @@ def _recommendation_pipeline_events(prefs, _auth_user, query_text=''):
 
         MAX_REC = 3
 
-        # --- Fase 1: hard filter (pill valid, thumbs-down, min review) ---
+        # --- Fase 1: hard filter (min review pipeline; bukan exclude not_helpful) ---
         LOG_RECOMMEND.info("Fase 1: batch load profil + reviews...")
         profiles, shops_without_reviews = _build_profiles_for_recommendation(
             all_place_ids,
@@ -6111,7 +6121,8 @@ def api_recommend_by_preferences_stream():
 @app.route('/api/recommend-by-preferences/feedback', methods=['POST'])
 def api_recommend_feedback_upsert():
     """
-    Simpan thumbs up/down untuk satu item rekomendasi pill.
+    Simpan thumbs up/down untuk satu item rekomendasi pill (persist DB / telemetri evaluasi).
+    Vote not_helpful tidak mengecualikan toko dari request rekomendasi berikutnya.
     Body: {
       place_id, preferences: [...], vote: 'helpful'|'not_helpful',
       reason?, rank_position?, score?
