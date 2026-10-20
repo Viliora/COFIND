@@ -658,29 +658,78 @@ def delete_review(review_id, user_id):
     except Exception as e:
         return {'success': False, 'error': str(e)}
 
-def get_average_rating(place_id):
-    """Agregat rating untuk halaman shop (Cofind + Google Places, selaras dengan pipeline)."""
+def normalize_review_star_rating(value):
+    """Normalisasi kolom reviews.rating ke bintang bulat 1–5."""
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        return None
+    if numeric < 1 or numeric > 5:
+        return None
+    return max(1, min(5, int(round(numeric))))
+
+
+def _review_place_id_predicate(alias: str = 'reviews') -> str:
+    return f'({alias}.place_id = ? OR TRIM({alias}.place_id) = ?)'
+
+
+def get_review_star_counts(place_id):
+    """
+    Distribusi bintang 1–5 dari kolom reviews.rating (Cofind + Google Places pipeline).
+    """
+    trimmed = (place_id or '').strip()
+    if not trimmed:
+        return {'success': False, 'error': 'place_id required'}
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
         source_filter = _pipeline_review_source_sql('reviews')
-        result = cursor.execute(
-            f'SELECT AVG(rating), COUNT(*) FROM reviews WHERE place_id = ? AND {source_filter}',
-            (place_id,),
-        ).fetchone()
-        
+        rows = cursor.execute(
+            f'''
+            SELECT rating
+            FROM reviews
+            WHERE {_review_place_id_predicate('reviews')}
+              AND rating IS NOT NULL
+              AND {source_filter}
+            ''',
+            (trimmed, trimmed),
+        ).fetchall()
         conn.close()
-        
-        avg_rating = result[0] or 0
-        review_count = result[1] or 0
-        
+
+        star_counts = {str(star): 0 for star in range(1, 6)}
+        rating_sum = 0.0
+        for row in rows:
+            star = normalize_review_star_rating(row[0] if not isinstance(row, dict) else row.get('rating'))
+            if star is None:
+                continue
+            star_counts[str(star)] += 1
+            rating_sum += star
+
+        total = sum(star_counts.values())
+        average_rating = round(rating_sum / total, 2) if total else None
+
         return {
             'success': True,
-            'average_rating': round(avg_rating, 2),
-            'review_count': review_count
+            'star_counts': star_counts,
+            'review_star_total': total,
+            'average_rating': average_rating,
         }
     except Exception as e:
         return {'success': False, 'error': str(e)}
+
+
+def get_average_rating(place_id):
+    """Agregat rating untuk halaman shop (Cofind + Google Places, selaras dengan pipeline)."""
+    summary = get_review_star_counts(place_id)
+    if not summary.get('success'):
+        return summary
+    total = int(summary.get('review_star_total') or 0)
+    avg = summary.get('average_rating')
+    return {
+        'success': True,
+        'average_rating': float(avg) if avg is not None else 0,
+        'review_count': total,
+    }
 
 
 def toggle_review_like(user_id, review_id):

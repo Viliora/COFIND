@@ -263,6 +263,10 @@ def upsert_vote(user_id, place_id, presence=None, rating=None, best_for=None,
                 pass
 
 
+def _empty_review_star_counts():
+    return {str(star): 0 for star in range(1, 6)}
+
+
 def _empty_vote_accumulator():
     return {
         'presence_counts': {k: 0 for k in PRESENCE_OPTIONS},
@@ -271,6 +275,7 @@ def _empty_vote_accumulator():
         'slider_sums': {k: 0 for k in SLIDER_FIELDS},
         'slider_counts': {k: 0 for k in SLIDER_FIELDS},
         'slider_distributions': {k: {str(v): 0 for v in range(1, 6)} for k in SLIDER_FIELDS},
+        'review_star_counts': _empty_review_star_counts(),
         'total_votes': 0,
     }
 
@@ -301,6 +306,18 @@ def _accumulate_review_star(acc, star):
         acc['rating_counts'][label] += 1
 
 
+def _accumulate_review_star_raw(acc, star):
+    """Hitung bintang 1–5 mentah dari tabel reviews (untuk histogram UI)."""
+    from review_utils import normalize_review_star_rating
+
+    value = normalize_review_star_rating(star)
+    if value is None:
+        return
+    key = str(value)
+    if key in acc['review_star_counts']:
+        acc['review_star_counts'][key] += 1
+
+
 def _finalize_vote_summary(acc):
     slider_averages = {}
     for field in SLIDER_FIELDS:
@@ -308,6 +325,7 @@ def _finalize_vote_summary(acc):
             slider_averages[field] = round(acc['slider_sums'][field] / acc['slider_counts'][field], 1)
         else:
             slider_averages[field] = None
+    review_total = sum(acc['review_star_counts'].values())
     return {
         'success': True,
         'total_votes': acc['total_votes'],
@@ -316,6 +334,8 @@ def _finalize_vote_summary(acc):
         'best_for_counts': acc['best_for_counts'],
         'slider_averages': slider_averages,
         'slider_distributions': acc['slider_distributions'],
+        'review_star_counts': dict(acc['review_star_counts']),
+        'review_star_total': review_total,
     }
 
 
@@ -351,16 +371,22 @@ def get_vote_summary(place_id):
         for row in rows:
             _accumulate_vote_row(acc, dict_from_row(cursor, row))
 
+        from review_utils import _pipeline_review_source_sql
+
+        source_filter = _pipeline_review_source_sql('reviews')
         review_rows = cursor.execute(
-            '''
+            f'''
             SELECT rating
             FROM reviews
-            WHERE (place_id = ? OR TRIM(place_id) = ?) AND rating IS NOT NULL
+            WHERE (place_id = ? OR TRIM(place_id) = ?)
+              AND rating IS NOT NULL
+              AND {source_filter}
             ''',
             (trimmed_pid, trimmed_pid),
         ).fetchall()
         for review_row in review_rows:
             _accumulate_review_star(acc, review_row[0])
+            _accumulate_review_star_raw(acc, review_row[0])
 
         return _finalize_vote_summary(acc)
     except Exception as e:
@@ -406,11 +432,15 @@ def get_vote_summaries_batch(place_ids, include_review_stars=True):
                 acc_by_place[pid] = _empty_vote_accumulator()
             _accumulate_vote_row(acc_by_place[pid], rd)
         if include_review_stars:
+            from review_utils import _pipeline_review_source_sql
+
+            source_filter = _pipeline_review_source_sql('reviews')
             review_rows = cursor.execute(
                 f'''
                 SELECT place_id, rating
                 FROM reviews
                 WHERE place_id IN ({placeholders}) AND rating IS NOT NULL
+                  AND {source_filter}
                 ''',
                 unique_ids,
             ).fetchall()
@@ -419,6 +449,7 @@ def get_vote_summaries_batch(place_ids, include_review_stars=True):
                 if pid not in acc_by_place:
                     acc_by_place[pid] = _empty_vote_accumulator()
                 _accumulate_review_star(acc_by_place[pid], row[1])
+                _accumulate_review_star_raw(acc_by_place[pid], row[1])
         return {pid: _finalize_vote_summary(acc) for pid, acc in acc_by_place.items()}
     except Exception as e:
         logger.warning(f'get_vote_summaries_batch gagal: {e}')

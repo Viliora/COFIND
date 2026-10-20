@@ -1,5 +1,8 @@
 """
-Sinyal coverage pill di luar kutipan modal (keyword hits, metadata, jam buka).
+Sinyal coverage pill di luar kutipan modal.
+
+Coverage untuk ranking/rerank hanya memakai sinyal ulasan. Metadata dan jam buka
+tetap tersedia sebagai support output, tetapi tidak dihitung sebagai coverage.
 """
 
 from __future__ import annotations
@@ -86,13 +89,9 @@ def merge_pill_coverage(
     *,
     facility_attribute_pills: Iterable[str],
 ) -> Tuple[List[str], List[str]]:
-    """Gabung bukti kutipan dengan keyword hits, metadata, dan jam buka."""
+    """Gabung bukti kutipan dengan keyword hits ulasan saja."""
     extra = set()
     extra |= pills_with_review_keyword_hits(shop, pills)
-    extra |= pills_covered_by_metadata(
-        shop, pills, facility_attribute_pills=facility_attribute_pills,
-    )
-    extra |= pills_covered_by_opening_hours(shop, pills)
     covered_set = set(covered or []) | extra
     pills_list = list(pills or [])
     covered_out = [p for p in pills_list if p in covered_set]

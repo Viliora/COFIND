@@ -12,6 +12,7 @@ from review_utils import (
     create_review_report,
     delete_review,
     get_average_rating,
+    get_review_star_counts,
     get_latest_reviews,
     get_review,
     get_reviews_for_shop,
@@ -217,6 +218,24 @@ def api_report_review(review_id):
     except Exception as e:
         LOG_API.exception("api_report_review gagal")
         return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@bp.route('/api/coffeeshops/<place_id>/reviews/rating-summary', methods=['GET'])
+def api_get_shop_review_rating_summary(place_id):
+    """Distribusi bintang 1–5 dari kolom reviews.rating."""
+    try:
+        result = get_review_star_counts(place_id)
+        if not result.get('success'):
+            return jsonify({'status': 'error', 'message': result.get('error', 'Gagal memuat ringkasan rating')}), 400
+        return jsonify({
+            'status': 'success',
+            'star_counts': result.get('star_counts') or {},
+            'review_star_total': result.get('review_star_total') or 0,
+            'average_rating': result.get('average_rating'),
+        }), 200
+    except Exception as e:
+        LOG_API.exception("api_get_shop_review_rating_summary gagal")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
 
 @bp.route('/api/coffeeshops/<place_id>/reviews', methods=['GET'])
 def api_get_shop_reviews(place_id):

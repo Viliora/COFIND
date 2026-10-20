@@ -11,12 +11,27 @@ import ShopVoteModal from '../components/ShopVoteModal';
 import ShopOverallExperience from '../components/ShopOverallExperience';
 import ShopProsCons from '../components/ShopProsCons';
 import { addToRecentlyViewed } from '../utils/recentlyViewed';
-import { getCoffeeShopImage, ensureCoffeeShopImageMap } from '../utils/coffeeShopImages';
+import { getCoffeeShopImage } from '../utils/coffeeShopImages';
+import ShopPlacesMetaChips from '../components/ShopPlacesMetaChips';
+import ShopOpeningHoursBlock from '../components/ShopOpeningHoursBlock';
+import { parseJsonField, resolveShopPlacesMeta } from '../utils/googlePlacesDisplay';
 
 // API Configuration (samakan sumber data dengan homepage)
 import { API_BASE } from '../config/apiBase.js';
 // Using Supabase only - photos stored in Supabase Storage
 const MIN_REVIEWS = 15; // Maksimal jumlah reviews yang ditampilkan
+
+/** Map bintang 1–5 (reviews.rating) ke bucket tampilan love/like/… */
+function starCountsToRatingCounts(starCounts) {
+  const stars = starCounts || {};
+  return {
+    love: Number(stars['5']) || 0,
+    like: Number(stars['4']) || 0,
+    ok: Number(stars['3']) || 0,
+    dislike: Number(stars['2']) || 0,
+    hate: Number(stars['1']) || 0,
+  };
+}
 
 function ShopDetail() {
   const { id: routeParam } = useParams(); // place_id dari URL
@@ -36,13 +51,12 @@ function ShopDetail() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [pendingAction, setPendingAction] = useState(null); // 'favorite' or 'wantToVisit'
   const [newReview, setNewReview] = useState(null); // For triggering ReviewList update
-  const [mapError, setMapError] = useState(false); // Track map load errors
   const [voteSummary, setVoteSummary] = useState(null);
+  const [reviewRatingSummary, setReviewRatingSummary] = useState(null);
   const [myVote, setMyVote] = useState(null);
   const [isVoteModalOpen, setIsVoteModalOpen] = useState(false);
   const [isSubmittingVote, setIsSubmittingVote] = useState(false);
   const reviewFormRef = useRef(null); // Ref untuk scroll ke review form
-  const locationSectionRef = useRef(null); // Ref untuk scroll ke section lokasi
 
   const placeIdForApi = useMemo(() => {
     if (shop?.place_id != null && String(shop.place_id).trim() !== '') {
@@ -50,6 +64,13 @@ function ShopDetail() {
     }
     return placeIdFromRoute;
   }, [shop?.place_id, placeIdFromRoute]);
+
+  const reviewRatingVoteSummary = useMemo(
+    () => ({
+      rating_counts: starCountsToRatingCounts(reviewRatingSummary?.star_counts),
+    }),
+    [reviewRatingSummary],
+  );
 
   // Handle scroll to review form setelah login
   useEffect(() => {
@@ -116,21 +137,34 @@ function ShopDetail() {
 
           if (payload?.status === 'success' && payload?.data) {
             const detail = payload.data;
+            const googleSnapshot = parseJsonField(detail.google_places_snapshot);
+            const facilities = parseJsonField(detail.facilities);
+            const placesMeta = resolveShopPlacesMeta(
+              { ...detail, opening_hours: googleSnapshot?.opening_hours },
+              googleSnapshot,
+            );
             const normalized = {
               place_id: detail.place_id,
               name: detail.name,
               address: detail.address,
-              rating: detail.rating,
-              user_ratings_total: detail.user_ratings_total,
-              total_reviews: detail.total_reviews ?? detail.user_ratings_total,
-              price_level: detail.price_level || null,
+              rating: placesMeta.rating,
+              user_ratings_total: placesMeta.userRatingsTotal,
+              total_reviews: placesMeta.userRatingsTotal,
+              price_level_label: placesMeta.priceLevelLabel,
               location: detail.location || null,
               photos: [],
-              business_status: detail.business_status || null,
+              business_status_label: placesMeta.businessStatusLabel,
+              phone: detail.phone || googleSnapshot?.phone || null,
+              website: detail.website || googleSnapshot?.website || null,
+              google_maps_url: detail.google_maps_url || googleSnapshot?.google_maps_url || null,
               map_embed_url: detail.map_embed_url || null,
               opening_hours_display: detail.opening_hours_display ?? '',
-              facilities: detail.facilities || null,
-              google_places_snapshot: detail.google_places_snapshot || null,
+              opening_hours:
+                googleSnapshot?.opening_hours
+                ?? (placesMeta.openNow !== undefined ? { open_now: placesMeta.openNow } : null),
+              placesMeta,
+              facilities,
+              google_places_snapshot: googleSnapshot,
             };
 
             setShop(normalized);
@@ -206,6 +240,30 @@ function ShopDetail() {
     checkFavoriteStatus();
   }, [placeIdForApi, isAuthenticated, user?.id]);
 
+  const fetchReviewRatingSummary = async (pid) => {
+    if (!pid) return;
+    try {
+      const response = await fetch(
+        `${API_BASE}/api/coffeeshops/${encodeURIComponent(pid)}/reviews/rating-summary`,
+      );
+      if (!response.ok) {
+        setReviewRatingSummary(null);
+        return;
+      }
+      const payload = await response.json();
+      if (payload?.status === 'success') {
+        setReviewRatingSummary({
+          star_counts: payload.star_counts || {},
+          review_star_total: payload.review_star_total ?? 0,
+          average_rating: payload.average_rating ?? null,
+        });
+      }
+    } catch (err) {
+      console.error('[ShopDetail] Error fetching review rating summary:', err);
+      setReviewRatingSummary(null);
+    }
+  };
+
   // Fetch vote summary (agregat semua user) untuk coffee shop ini
   const fetchVoteSummary = async (pid) => {
     if (!pid) return;
@@ -244,9 +302,16 @@ function ShopDetail() {
   useEffect(() => {
     if (!placeIdForApi) return;
     fetchVoteSummary(placeIdForApi);
+    fetchReviewRatingSummary(placeIdForApi);
     fetchMyVote(placeIdForApi);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [placeIdForApi, isAuthenticated, user?.id]);
+
+  useEffect(() => {
+    if (!placeIdForApi || !newReview) return;
+    fetchReviewRatingSummary(placeIdForApi);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [newReview, placeIdForApi]);
 
   const openVoteModal = () => {
     if (!isAuthenticated || !user?.id) {
@@ -278,60 +343,6 @@ function ShopDetail() {
       await Promise.all([fetchVoteSummary(pid), fetchMyVote(pid)]);
     } catch (err) {
       console.error('[ShopDetail] Error submitting vote:', err);
-      setNotification({ type: 'error', message: 'Terjadi kesalahan saat menyimpan vote' });
-    } finally {
-      setIsSubmittingVote(false);
-    }
-  };
-
-  // Klik langsung pada opsi rating/status kunjungan di ShopVotesSummary:
-  // submit vote saat itu juga tanpa membuka ShopVoteModal. Klik ulang pada
-  // opsi yang sama akan membatalkan (unset) pilihan tersebut.
-  const handleQuickVote = async (field, key) => {
-    if (!isAuthenticated || !user?.id) {
-      setPendingAction('vote');
-      setShowLoginModal(true);
-      return;
-    }
-    const pid = placeIdForApi;
-    if (!pid || isSubmittingVote) return;
-
-    const currentBestFor = myVote?.best_for || [];
-    const nextValue =
-      field === 'best_for'
-        ? currentBestFor.includes(key)
-          ? currentBestFor.filter((k) => k !== key)
-          : [...currentBestFor, key]
-        : myVote?.[field] === key
-          ? null
-          : key;
-    const voteData = {
-      presence: myVote?.presence ?? null,
-      rating: myVote?.rating ?? null,
-      best_for: myVote?.best_for || [],
-      pelayanan: myVote?.pelayanan ?? null,
-      kebersihan: myVote?.kebersihan ?? null,
-      kenyamanan: myVote?.kenyamanan ?? null,
-      harga: myVote?.harga ?? null,
-      [field]: nextValue,
-    };
-
-    setIsSubmittingVote(true);
-    try {
-      const response = await fetch(`${API_BASE}/api/coffeeshops/${encodeURIComponent(pid)}/votes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: Number(user.id), ...voteData }),
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok || payload?.status !== 'success') {
-        setNotification({ type: 'error', message: payload?.message || 'Gagal menyimpan vote' });
-        return;
-      }
-      setNotification({ type: 'added', message: 'Vote berhasil disimpan!' });
-      await Promise.all([fetchVoteSummary(pid), fetchMyVote(pid)]);
-    } catch (err) {
-      console.error('[ShopDetail] Error submitting quick vote:', err);
       setNotification({ type: 'error', message: 'Terjadi kesalahan saat menyimpan vote' });
     } finally {
       setIsSubmittingVote(false);
@@ -447,17 +458,6 @@ function ShopDetail() {
     }
   };
 
-  const scrollToLocationSection = () => {
-    if (!locationSectionRef.current) return;
-    const navbarHeight = 70;
-    const elementPosition = locationSectionRef.current.getBoundingClientRect().top;
-    const offsetPosition = elementPosition + window.pageYOffset - navbarHeight;
-    window.scrollTo({
-      top: offsetPosition,
-      behavior: 'smooth',
-    });
-  };
-
   // Auto-hide notification setelah 3 detik
   useEffect(() => {
     if (notification) {
@@ -531,14 +531,7 @@ function ShopDetail() {
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3 break-words">
             {shop.name}
           </h1>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center bg-amber-50 dark:bg-amber-900/20 px-3 py-1.5 rounded-lg">
-              <span className="text-amber-500 text-lg">⭐</span>
-              <span className="ml-1.5 text-lg font-semibold text-gray-900 dark:text-white">
-                {shop.rating || 'N/A'}
-              </span>
-            </div>
-          </div>
+          <ShopPlacesMetaChips meta={shop.placesMeta} />
         </div>
 
         {/* Informasi Utama */}
@@ -554,16 +547,8 @@ function ShopDetail() {
             </p>
           </div>
 
-          {/* Jam Operasional */}
-          <div className="flex items-start gap-3 p-4 bg-amber-50/50 dark:bg-amber-900/10 rounded-lg border border-amber-100 dark:border-amber-900/30">
-            <span className="text-lg flex-shrink-0" aria-hidden>🕐</span>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Jam Operasional</p>
-              <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300 whitespace-pre-line">
-                {shop.opening_hours_display || 'Jam operasional belum diisi'}
-              </p>
-            </div>
-          </div>
+          {/* Jam Operasional — hari ini + jadwal lengkap (dropdown) */}
+          <ShopOpeningHoursBlock shop={shop} />
 
           {/* Kontak & Website */}
           <div className="flex flex-col sm:flex-row gap-3">
@@ -578,6 +563,17 @@ function ShopDetail() {
               </div>
             )}
             
+            {shop.google_maps_url && (
+              <a
+                href={shop.google_maps_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 px-6 py-4 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-600 text-gray-800 dark:text-gray-100 font-medium rounded-lg shadow-sm hover:shadow transition-all duration-200 flex-1"
+              >
+                <span>Kunjungi di Google Maps</span>
+              </a>
+            )}
+
             {shop.website && (
               <a 
                 href={shop.website} 
@@ -601,30 +597,13 @@ function ShopDetail() {
       {/* Votes Section */}
       {shop?.place_id && (
         <div className="mt-6 sm:mt-8">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-rose-400 to-pink-500 text-white shadow-md text-lg">
-                  🗳️
-                </span>
-                Votes Pengunjung
-              </h2>
-            </div>
-            <button
-              type="button"
-              onClick={openVoteModal}
-              className="flex-shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold shadow-sm transition-colors cursor-pointer"
-            >
-              <span>🗳️</span>
-              <span>{myVote ? 'Edit My Vote' : 'My Votes'}</span>
-            </button>
-          </div>
+          <h2 className="mb-4 text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+            Ratings
+          </h2>
           <ShopVotesSummary
-            summary={voteSummary}
-            myVote={myVote}
-            onSelectRating={(key) => handleQuickVote('rating', key)}
-            onSelectPresence={(key) => handleQuickVote('presence', key)}
-            isSubmitting={isSubmittingVote}
+            summary={reviewRatingVoteSummary}
+            readOnly
+            hidePresence
           />
         </div>
       )}
@@ -632,19 +611,9 @@ function ShopDetail() {
       {/* Ringkasan facilities (popular_for, highlights, atmosphere, amenities) */}
       {shop?.place_id && (shop.facilities || shop.google_places_snapshot) && (
         <div className="mt-6 sm:mt-8">
-          <div className="mb-4">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-md">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden>
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
-              </span>
-              Fasilitas & Suasana
-            </h2>
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              Data Google Places &amp; fasilitas tersimpan di database Cofind.
-            </p>
-          </div>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4">
+            Fasilitas
+          </h2>
           <FacilitiesTab
             facilities={shop.facilities}
             googleSnapshot={shop.google_places_snapshot}
@@ -677,77 +646,12 @@ function ShopDetail() {
         />
       )}
 
-      {/* Static Map */}
-      <div className="mt-6 sm:mt-8" ref={locationSectionRef}>
-        <div className="bg-white dark:bg-zinc-800 p-4 sm:p-6 rounded-xl shadow border border-gray-200 dark:border-zinc-700">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4">
-            📍 Lokasi
-          </h2>
-          
-          {/* Coba tampilkan embed maps, jika error tampilkan fallback */}
-          {shop.map_embed_url && !mapError ? (
-            <div className="rounded-lg overflow-hidden">
-              <iframe
-                src={shop.map_embed_url}
-                width="100%"
-                height="400"
-                style={{ border: 0, borderRadius: '0.5rem' }}
-                allowFullScreen=""
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                onError={() => {
-                  console.warn('[ShopDetail] Map embed failed, showing fallback');
-                  setMapError(true);
-                }}
-              ></iframe>
-            </div>
-          ) : shop.location ? (
-            <div className="rounded-lg overflow-hidden">
-              {(() => {
-                const lat = shop.location.lat;
-                const lng = shop.location.lng;
-                const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
-                
-                return (
-                  <div className="w-full h-64 sm:h-80 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-zinc-700 dark:to-zinc-800 rounded-lg flex items-center justify-center flex-col gap-3">
-                    <div className="text-center">
-                      <p className="text-4xl mb-3">📍</p>
-                      <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Koordinat Lokasi:</p>
-                      <p className="text-lg font-mono font-semibold text-gray-900 dark:text-white">
-                        {lat.toFixed(6)}, {lng.toFixed(6)}
-                      </p>
-                      <a
-                        href={googleMapsUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition shadow-md"
-                      >
-                        <svg className="w-4 h-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" stroke="currentColor" viewBox="0 0 24 24">
-                          <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                          <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                        </svg>
-                        Buka di Google Maps
-                      </a>
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          ) : (
-            <div className="w-full h-64 sm:h-80 bg-gray-100 dark:bg-zinc-700 rounded-lg flex items-center justify-center">
-              <p className="text-gray-500 dark:text-gray-400">Lokasi tidak tersedia</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-
       {/* Reviews Section */}
       <div className="mt-6 sm:mt-8 space-y-6" ref={reviewFormRef}>
         {shop?.place_id && (
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4">
-              Review Pengunjung
+              Reviews
             </h2>
             <ReviewList
               placeId={shop.place_id}
@@ -764,38 +668,6 @@ function ShopDetail() {
 
       {/* Floating Action Buttons - pojok kanan bawah (untuk semua user, termasuk guest) */}
       <div className="fixed bottom-8 right-8 flex flex-col gap-4 z-40">
-        {/* Go To Location Button */}
-        <button
-          onClick={scrollToLocationSection}
-          className="relative transition-all duration-200 hover:scale-110 focus:outline-none bg-transparent border-0 p-0 group"
-          aria-label="Menuju lokasi"
-        >
-          <span className="pointer-events-none absolute right-full mr-3 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-lg opacity-0 -translate-x-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0">
-            Menuju lokasi
-          </span>
-          <svg
-            width="48"
-            height="48"
-            viewBox="0 0 512 512"
-            xmlns="http://www.w3.org/2000/svg"
-            clipRule="evenodd"
-            fillRule="evenodd"
-          >
-            <circle
-              cx="256"
-              cy="256"
-              r="256"
-              fill="#10b981"
-              className="group-hover:fill-emerald-600 transition-colors duration-200"
-            />
-            <path
-              d="M256 120c-64.12 0-116 51.88-116 116 0 76.24 101.12 175.74 110.6 184.88a8 8 0 0010.8 0C270.88 411.74 372 312.24 372 236c0-64.12-51.88-116-116-116zm0 156a40 40 0 1140-40 40.05 40.05 0 01-40 40z"
-              fill="#ffffff"
-              className="group-hover:fill-emerald-100 transition-colors duration-200"
-            />
-          </svg>
-        </button>
-
         {/* Want to Visit Button */}
         <button
           onClick={toggleWantToVisit}

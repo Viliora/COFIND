@@ -103,6 +103,24 @@ function getMatchedFacilityBadges(rec, confirmedPills = []) {
         .filter(Boolean);
 }
 
+function getMetadataSupportItems(rec) {
+    const ev = rec?.supporting_evidence || {};
+    return (Array.isArray(ev.metadata_support) ? ev.metadata_support : [])
+        .map((item) => {
+            const items = Array.isArray(item?.items)
+                ? item.items.map((value) => String(value || '').trim()).filter(Boolean)
+                : [];
+            if (!items.length) return null;
+            return {
+                title: String(item?.title || 'Metadata pendukung').trim(),
+                note: String(item?.note || '').trim(),
+                items,
+            };
+        })
+        .filter(Boolean)
+        .slice(0, 4);
+}
+
 function quoteDedupeKey(quote) {
     return String(quote ?? '').trim().toLowerCase().slice(0, 160);
 }
@@ -637,6 +655,7 @@ const RecommendationModal = ({
     confirmedSearchKeyword = '',
     userLocation = null,
     totalDurationSeconds = null,
+    responseNotice = '',
 }) => {
     const [feedbackByPlaceId, setFeedbackByPlaceId] = useState({});
 
@@ -775,6 +794,11 @@ const RecommendationModal = ({
                         >
                             Rekomendasi Coffee Shop Untuk Anda
                         </h2>
+                        {responseNotice ? (
+                            <p className="mt-2 text-xs sm:text-sm text-amber-900 dark:text-amber-100 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 rounded-lg px-3 py-2">
+                                {responseNotice}
+                            </p>
+                        ) : null}
                         {confirmedContextLine ? (
                             <p className="mt-1 text-xs sm:text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
                                 Konteks:{' '}
@@ -858,6 +882,7 @@ const RecommendationModal = ({
                                         const summaryText = getModalSummaryText(rec);
                                         const existingFb = placeId ? feedbackByPlaceId[placeId] : null;
                                         const facilityBadges = getMatchedFacilityBadges(rec, confirmedPills);
+                                        const metadataSupportItems = getMetadataSupportItems(rec);
                                         const distanceKm = distanceKmFromUser(
                                             userLocation,
                                             shop || rec,
@@ -916,6 +941,38 @@ const RecommendationModal = ({
                                                                 />
                                                             </>
                                                         ) : null}
+                                                    </div>
+                                                ) : null}
+
+                                                {metadataSupportItems.length > 0 ? (
+                                                    <div className="mt-3 rounded-lg border border-sky-200 bg-sky-50/70 px-3 py-2 text-sm dark:border-sky-900/60 dark:bg-sky-950/30">
+                                                        <p className="text-xs font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">
+                                                            Info tambahan dari metadata
+                                                        </p>
+                                                        <div className="mt-2 space-y-2">
+                                                            {metadataSupportItems.map((item, metaIdx) => (
+                                                                <div key={`${placeId || shopName}-metadata-${metaIdx}`}>
+                                                                    <p className="text-xs font-medium text-gray-700 dark:text-gray-200">
+                                                                        {item.title}
+                                                                    </p>
+                                                                    <div className="mt-1 flex flex-wrap gap-1.5">
+                                                                        {item.items.map((value) => (
+                                                                            <span
+                                                                                key={`${placeId || shopName}-${item.title}-${value}`}
+                                                                                className="inline-flex rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-sky-800 ring-1 ring-sky-200 dark:bg-sky-950/60 dark:text-sky-100 dark:ring-sky-800/70"
+                                                                            >
+                                                                                {value}
+                                                                            </span>
+                                                                        ))}
+                                                                    </div>
+                                                                    {item.note ? (
+                                                                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                                            {item.note}
+                                                                        </p>
+                                                                    ) : null}
+                                                                </div>
+                                                            ))}
+                                                        </div>
                                                     </div>
                                                 ) : null}
 

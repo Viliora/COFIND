@@ -13,11 +13,13 @@ from auth_utils import hash_password, update_user_profile
 from db_backend import dict_from_row, get_connection, sql_user_flag_false, sql_user_flag_true
 from db_helpers import paginate_query
 from facilities_store import (
-    count_enabled_facilities,
     default_facilities_entry,
-    format_facilities_to_text,
-    load_facilities_index,
+    load_facility_entry,
     save_facilities_entry,
+)
+from api.admin_coffee_shop import (
+    normalize_shop_write_payload,
+    shop_row_to_admin_list_item,
 )
 from llm_backend import HF_MODEL, llm_is_available
 from logging_config import get_logger
@@ -70,9 +72,11 @@ def admin_dashboard():
         conn = get_connection()
         cursor = conn.cursor()
 
+        coffee_shop_count = cursor.execute('SELECT COUNT(*) FROM coffee_shops').fetchone()[0]
         stats = {
             'total_users': cursor.execute('SELECT COUNT(*) FROM users').fetchone()[0],
-            'total_facilities': cursor.execute('SELECT COUNT(*) FROM coffee_shops').fetchone()[0],
+            'total_coffee_shops': coffee_shop_count,
+            'total_facilities': coffee_shop_count,
             'total_reviews': cursor.execute('SELECT COUNT(*) FROM reviews').fetchone()[0],
             'total_review_reports': cursor.execute('SELECT COUNT(*) FROM review_reports').fetchone()[0],
             'pending_reports': cursor.execute(
@@ -604,7 +608,6 @@ def admin_get_shops():
 
         conn = get_connection()
         cursor = conn.cursor()
-        facilities_index = load_facilities_index()
 
         where_parts = []
         params = []
@@ -651,31 +654,10 @@ def admin_get_shops():
             row_dicts.append(rd)
         pros_cons_stats = fetch_pros_cons_stats_batch(cursor, place_ids)
 
-        items = []
-        for rd in row_dicts:
-            facility_entry = facilities_index.get(rd['place_id'], {})
-            facilities_text = format_facilities_to_text(facility_entry)
-            facilities_obj = facility_entry.get('facilities', {})
-            pc = pros_cons_stats.get(rd['place_id'], {})
-            items.append({
-                'id': rd['id'],
-                'place_id': rd['place_id'],
-                'name': rd['name'],
-                'address': rd['address'],
-                'rating': rd['rating'],
-                'total_reviews': rd['total_reviews'],
-                'latitude': rd['latitude'],
-                'longitude': rd['longitude'],
-                'map_embed_url': rd['map_embed_url'],
-                'opening_hours_display': rd.get('opening_hours_display') or '',
-                'has_facilities': bool(facility_entry),
-                'facilities_text': facilities_text,
-                'facility_count': count_enabled_facilities(facilities_obj),
-                'pros_cons_pro_count': pc.get('pros_cons_pro_count', 0),
-                'pros_cons_con_count': pc.get('pros_cons_con_count', 0),
-                'pros_cons_last_generated_at': pc.get('pros_cons_last_generated_at'),
-                'pros_cons_has_data': pc.get('pros_cons_has_data', False),
-            })
+        items = [
+            shop_row_to_admin_list_item(rd, pros_cons_stats.get(rd['place_id'], {}))
+            for rd in row_dicts
+        ]
 
         conn.close()
 
@@ -755,15 +737,13 @@ def admin_get_facility_entry(place_id):
         return error_response
 
     try:
-        facilities_index = load_facilities_index()
-
         conn = get_connection()
         cursor = conn.cursor()
         shop_row = cursor.execute('SELECT name FROM coffee_shops WHERE place_id = ?', (place_id,)).fetchone()
         conn.close()
 
         shop_name = shop_row[0] if shop_row else ''
-        entry = facilities_index.get(place_id) or default_facilities_entry(place_id, shop_name)
+        entry = load_facility_entry(place_id) or default_facilities_entry(place_id, shop_name)
         if shop_name and not entry.get('name'):
             entry['name'] = shop_name
 
@@ -783,8 +763,6 @@ def admin_update_facility_entry(place_id):
         entry = data.get('item')
         if not isinstance(entry, dict):
             return jsonify({'status': 'error', 'message': 'item harus berupa object JSON'}), 400
-
-        facilities_index = load_facilities_index()
 
         entry['place_id'] = place_id
         entry.setdefault('name', '')
@@ -832,24 +810,30 @@ def admin_create_shop():
             return jsonify({'status': 'error', 'message': 'place_id already exists'}), 400
 
         now = datetime.utcnow().isoformat()
-        opening_hours_display = (data.get('opening_hours_display') or '').strip()
+        fields = normalize_shop_write_payload({**data, 'name': name, 'address': address})
         cursor.execute('''
             INSERT INTO coffee_shops (
                 place_id, name, address, rating, total_reviews, created_at, updated_at,
-                map_embed_url, latitude, longitude, opening_hours_display
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                map_embed_url, latitude, longitude, opening_hours_display,
+                phone, website, google_maps_url, price_level, business_status
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             place_id,
-            name,
-            address,
-            data.get('rating', 0) or 0,
-            data.get('total_reviews', 0) or 0,
+            fields['name'],
+            fields['address'],
+            fields['rating'],
+            fields['total_reviews'],
             now,
             now,
-            data.get('map_embed_url'),
-            data.get('latitude'),
-            data.get('longitude'),
-            opening_hours_display,
+            fields['map_embed_url'],
+            fields['latitude'],
+            fields['longitude'],
+            fields['opening_hours_display'],
+            fields['phone'],
+            fields['website'],
+            fields['google_maps_url'],
+            fields['price_level'],
+            fields['business_status'],
         ))
 
         conn.commit()
@@ -876,20 +860,28 @@ def admin_update_shop(place_id):
             conn.close()
             return jsonify({'status': 'error', 'message': 'Coffee shop not found'}), 404
 
+        fields = normalize_shop_write_payload(data)
         cursor.execute('''
             UPDATE coffee_shops
             SET name = ?, address = ?, rating = ?, total_reviews = ?, map_embed_url = ?,
-                latitude = ?, longitude = ?, opening_hours_display = ?, updated_at = ?
+                latitude = ?, longitude = ?, opening_hours_display = ?,
+                phone = ?, website = ?, google_maps_url = ?,
+                price_level = ?, business_status = ?, updated_at = ?
             WHERE place_id = ?
         ''', (
-            (data.get('name') or '').strip(),
-            (data.get('address') or '').strip(),
-            data.get('rating', 0) or 0,
-            data.get('total_reviews', 0) or 0,
-            data.get('map_embed_url'),
-            data.get('latitude'),
-            data.get('longitude'),
-            (data.get('opening_hours_display') or '').strip(),
+            fields['name'],
+            fields['address'],
+            fields['rating'],
+            fields['total_reviews'],
+            fields['map_embed_url'],
+            fields['latitude'],
+            fields['longitude'],
+            fields['opening_hours_display'],
+            fields['phone'],
+            fields['website'],
+            fields['google_maps_url'],
+            fields['price_level'],
+            fields['business_status'],
             datetime.utcnow().isoformat(),
             place_id,
         ))

@@ -119,7 +119,9 @@ def extract_search_intent(
         f'{pill_catalog}\n\n'
         'Balas HANYA JSON (tanpa markdown) dengan struktur:\n'
         '{"matched_pill": null, "matched_attribute_pills": [], '
-        '"keywords": ["..."], "dense_query": "..."}\n\n'
+        '"keywords": ["..."], "dense_query": "...", '
+        '"query_class": "standard", "impossible_detail": null, '
+        '"alternative_keywords": []}\n\n'
         'Aturan ketat:\n'
         '- keywords (WAJIB): 1-8 token/frasa pencarian bersih dari niat user; buang kata filler '
         '("cari", "coffee shop", "tempat", "untuk"). Pertahankan istilah fasilitas/aktivitas user '
@@ -128,6 +130,18 @@ def extract_search_intent(
         '(parafrase niat user, bukan salin mentah jika terlalu panjang).\n'
         '- matched_pill / matched_attribute_pills: opsional; isi null/[] kecuali user jelas '
         'meminta satu pill persis dari daftar; jangan paksa mapping pill.\n'
+        '- query_class (WAJIB): salah satu dari '
+        '"standard" | "negative_sentiment" | "false_presupposition" | "off_domain".\n'
+        '  • negative_sentiment: niat valid tapi negatif/superlatif (mis. "paling jelek", '
+        '"terburuk") — tetap ekstrak keywords, jangan tolak.\n'
+        '  • false_presupposition: user mengasumsikan fitur/konsep yang tidak realistis '
+        'untuk coffee shop di dataset (mis. dinosaurus, kolam renang olimpik) — isi '
+        'impossible_detail singkat + alternative_keywords tematik terdekat (unik, estetik, '
+        'game, keluarga, dll.) tanpa mengarang fitur impossible.\n'
+        '  • off_domain: teks acak, spam, atau bukan pencarian coffee shop/wisata kafe — '
+        'keywords boleh [] dan dense_query kosong.\n'
+        '- impossible_detail: string singkat constraint yang tidak ada bukti, atau null.\n'
+        '- alternative_keywords: 1-6 token alternatif pencarian (hanya untuk false_presupposition).\n'
         '- Jangan mengarang id pill di luar daftar.'
     )
 
@@ -165,12 +179,22 @@ def extract_search_intent(
             keywords = _fallback_keywords(raw)
 
         dense_query = str(parsed.get('dense_query') or '').strip() or raw
+        query_class = str(parsed.get('query_class') or 'standard').strip().lower() or 'standard'
+        impossible_detail = parsed.get('impossible_detail')
+        if impossible_detail is not None:
+            impossible_detail = str(impossible_detail).strip() or None
+        alternative_keywords = [
+            str(k).strip() for k in (parsed.get('alternative_keywords') or []) if str(k or '').strip()
+        ]
 
         return {
             'matched_pill': matched_pill,
             'matched_attribute_pills': matched_attrs,
             'keywords': keywords,
             'dense_query': dense_query,
+            'query_class': query_class,
+            'impossible_detail': impossible_detail,
+            'alternative_keywords': alternative_keywords,
             'telemetry': {'backend': 'llm', 'input_chars': len(raw)},
         }
     except Exception as err:

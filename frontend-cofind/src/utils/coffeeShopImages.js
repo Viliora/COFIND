@@ -1,132 +1,85 @@
-// Utility untuk assign foto coffee shop dari asset lokal
+/**
+ * Foto coffee shop dari frontend-cofind/src/assets/*.webp
+ * Nama file = Google place_id (atau alias di PLACE_IMAGE_ALIAS).
+ */
 
-import photo1 from '../assets/ChIJ9RWUkaZZHS4RYeuZOYAMQ-4.webp';
-import photo2 from '../assets/ChIJDcJgropZHS4RKuh8s52jy9U.webp';
-import photo3 from '../assets/ChIJ6fOdOEBZHS4RcV3VfZzhYx0.webp';
-import photo4 from '../assets/ChIJBVWfsoFZHS4Rakb44yanMjs.webp';
-import photo5 from '../assets/ChIJhx6zl0BZHS4RGNla_oPoIJ0.webp';
-import photo6 from '../assets/ChIJyRLXBlJYHS4RWNj0yvAvSAQ.webp';
-import photo7 from '../assets/ChIJG-xwV2ZZHS4R0WyGi5bbvoM.webp';
-import photo8 from '../assets/ChIJPa6swGtZHS4RrbIlRvgBgok.webp';
-import photo9 from '../assets/ChIJC3_RpddZHS4RMiDp7-6TemY.webp';
-import photo10 from '../assets/ChIJE8-LfABZHS4R_MsSOwiHNL8.webp';
-import photo11 from '../assets/ChIJKX36yixZHS4ROQfX-hNWhj0.webp';
-import photo12 from '../assets/ChIJIRuUuwNZHS4RrhnXINPqQQ4.webp';
-import photo13 from '../assets/ChIJ4U6K9hdZHS4RKE7QPIKbn4Y.webp';
-import photo14 from '../assets/ChIJ71m2hZZZHS4RrOgKJYP_7zw.webp';
-import photo15 from '../assets/ChIJpVctpWBZHS4RdUbSlT-pSl8.webp';
+const webpModules = import.meta.glob('../assets/*.webp', {
+  eager: true,
+  import: 'default',
+});
 
-const coffeeShopImages = [
-  photo1,
-  photo2,
-  photo3,
-  photo4,
-  photo5,
-  photo6,
-  photo7,
-  photo8,
-  photo9,
-  photo10,
-  photo11,
-  photo12,
-  photo13,
-  photo14,
-  photo15,
-];
+/** @type {Record<string, string>} place_id → URL hasil bundler Vite */
+const imagesByPlaceId = Object.fromEntries(
+  Object.entries(webpModules).map(([path, url]) => {
+    const match = path.match(/\/([^/]+)\.webp$/);
+    return match ? [match[1], url] : null;
+  }).filter(Boolean),
+);
 
-const IMAGE_MAP_KEY = 'cofind_image_map_v1';
+const allImageUrls = Object.keys(imagesByPlaceId)
+  .sort()
+  .map((pid) => imagesByPlaceId[pid]);
 
-const loadImageMap = () => {
-  try {
-    const stored = localStorage.getItem(IMAGE_MAP_KEY);
-    return stored ? JSON.parse(stored) : {};
-  } catch (error) {
-    console.warn('[getCoffeeShopImage] Failed to load image map:', error);
-    return {};
-  }
+/**
+ * Toko aktif tanpa file .webp sendiri → foto cadangan (masing-masing unik).
+ * Perbarui saat menambah toko/foto baru.
+ */
+const PLACE_IMAGE_ALIAS = {
+  'ChIJBYqZVwBZHS4Rk3hdsQzoQSo': 'ChIJKX36yixZHS4ROQfX-hNWhj0',
+  'ChIJ2Xb_uKFZHS4R6PYxDLj5m_A': 'ChIJIRuUuwNZHS4RrhnXINPqQQ4',
+  'ChIJnZIEEABZHS4RBs_9Iy6wESM': 'ChIJE8-LfABZHS4R_MsSOwiHNL8',
+  'ChIJp8-aIJdZHS4RntlOSrphQj8': 'ChIJC3_RpddZHS4RMiDp7-6TemY',
+  'ChIJpXpEsPNZHS4Rciespc96M5o': 'ChIJpVctpWBZHS4RdUbSlT-pSl8',
+  'ChIJV7mtlzNZHS4R0rK_eHkd0LU': 'ChIJBVWfsoFZHS4Rakb44yanMjs',
+  'ChIJW0ypCwBZHS4RXZ7renLGdwo': 'ChIJ4U6K9hdZHS4RKE7QPIKbn4Y',
 };
 
-const saveImageMap = (map) => {
-  try {
-    localStorage.setItem(IMAGE_MAP_KEY, JSON.stringify(map));
-  } catch (error) {
-    console.warn('[getCoffeeShopImage] Failed to save image map:', error);
+function hashPlaceId(placeId) {
+  let h = 0;
+  const s = String(placeId);
+  for (let i = 0; i < s.length; i += 1) {
+    h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
   }
-};
+  return Math.abs(h);
+}
 
-const getNextAvailableIndex = (usedIndices) => {
-  for (let i = 0; i < coffeeShopImages.length; i += 1) {
-    if (!usedIndices.has(i)) {
-      return i;
-    }
+function resolveImageUrl(placeId) {
+  if (!placeId) return allImageUrls[0] || '';
+  const key = String(placeId).trim();
+  if (imagesByPlaceId[key]) return imagesByPlaceId[key];
+  const alias = PLACE_IMAGE_ALIAS[key];
+  if (alias && imagesByPlaceId[alias]) return imagesByPlaceId[alias];
+  if (allImageUrls.length === 0) return '';
+  return allImageUrls[hashPlaceId(key) % allImageUrls.length];
+}
+
+/**
+ * @param {string|number} identifier - place_id (disarankan) atau nama toko
+ * @returns {string} URL foto untuk OptimizedImage / img
+ */
+export function getCoffeeShopImage(identifier) {
+  if (identifier == null || (typeof identifier === 'string' && !identifier.trim())) {
+    return allImageUrls[0] || '';
   }
-  console.warn('[getCoffeeShopImage] Image pool exhausted, reusing indexes');
-  return usedIndices.size % coffeeShopImages.length;
-};
-
-export const ensureCoffeeShopImageMap = (shops = []) => {
-  if (shops.length > coffeeShopImages.length) {
-    console.warn('[getCoffeeShopImage] Jumlah coffee shop melebihi jumlah foto .webp');
+  if (typeof identifier === 'number') {
+    return allImageUrls[identifier % allImageUrls.length] || '';
   }
-  const map = loadImageMap();
-  const usedIndices = new Set(
-    Object.values(map).map((value) => Number(value)).filter((value) => Number.isInteger(value))
-  );
+  return resolveImageUrl(identifier);
+}
 
-  let changed = false;
-  shops.forEach((shop) => {
+/** Kompatibilitas: pemetaan stabil tanpa localStorage. */
+export function ensureCoffeeShopImageMap(shops = []) {
+  const map = {};
+  (shops || []).forEach((shop) => {
     const key = shop?.place_id || shop?.name;
     if (!key) return;
-    if (map[key] === undefined) {
-      const nextIndex = getNextAvailableIndex(usedIndices);
-      map[key] = nextIndex;
-      usedIndices.add(nextIndex);
-      changed = true;
-    }
+    map[key] = getCoffeeShopImage(key);
   });
-
-  if (changed) {
-    saveImageMap(map);
-  }
-
   return map;
-};
+}
 
-/**
- * Mendapatkan foto coffee shop fallback dari local assets
- * Digunakan sebagai fallback jika photo_url dari Supabase tidak tersedia
- * @param {string|number} identifier - place_id atau nama coffee shop
- * @returns {string} URL foto coffee shop dari local assets
- */
-export const getCoffeeShopImage = (identifier) => {
-  // Handle missing identifier - return first image as default
-  if (!identifier || (typeof identifier === 'string' && identifier.trim() === '')) {
-    console.warn('[getCoffeeShopImage] Missing or empty identifier, using default image');
-    return coffeeShopImages[0]; // Default to first image
-  }
-
-  let imageIndex = 0;
-
-  if (typeof identifier === 'string') {
-    const map = ensureCoffeeShopImageMap([{ place_id: identifier }]);
-    imageIndex = Number(map[identifier]);
-    if (!Number.isInteger(imageIndex) || imageIndex < 0) {
-      imageIndex = 0;
-    }
-  } else {
-    // Jika identifier adalah number, gunakan langsung sebagai index
-    imageIndex = (identifier || 0) % coffeeShopImages.length;
-  }
-
-  return coffeeShopImages[imageIndex];
-};
-
-/**
- * Mendapatkan semua foto coffee shop untuk swiper
- * @returns {Array<string>} Array URL foto coffee shop
- */
-export const getAllCoffeeShopImages = () => {
-  return [...coffeeShopImages];
-};
+export function getAllCoffeeShopImages() {
+  return [...allImageUrls];
+}
 
 export default getCoffeeShopImage;

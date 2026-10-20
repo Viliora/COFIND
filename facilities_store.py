@@ -16,6 +16,11 @@ _REPO_ROOT = __import__('os').path.dirname(__import__('os').path.abspath(__file_
 FACILITIES_PATH = __import__('os').path.join(_REPO_ROOT, 'data', 'facilities.json')
 
 
+def parse_json_field(value: Any) -> dict:
+    """Parse kolom JSON/JSONB (dict atau string) menjadi dict."""
+    return _parse_json(value)
+
+
 def _parse_json(value: Any) -> dict:
     if value is None:
         return {}
@@ -102,6 +107,52 @@ def load_facilities_index() -> Dict[str, dict]:
             'facilities': facilities,
         }
     return index
+
+
+def load_facility_entry(place_id: str) -> dict | None:
+    """Satu entry fasilitas dari coffee_shops.facilities (tanpa indeks penuh)."""
+    pid = (place_id or '').strip()
+    if not pid or not use_postgres():
+        return None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT place_id, name, facilities
+            FROM coffee_shops
+            WHERE place_id = ?
+            """,
+            (pid,),
+        )
+        row = cur.fetchone()
+        conn.close()
+    except Exception as err:
+        logger.warning(f"Gagal memuat facility entry {pid}: {err}")
+        return None
+    if not row:
+        return None
+    if isinstance(row, dict):
+        name = row.get('name') or ''
+        facilities = parse_json_field(row.get('facilities'))
+        pid_out = str(row.get('place_id') or pid)
+    else:
+        pid_out, name, raw = row[0], row[1], row[2]
+        facilities = parse_json_field(raw)
+        pid_out = str(pid_out or pid)
+    if not facilities:
+        return None
+    return {
+        'place_id': pid_out,
+        'name': name or '',
+        'facilities': facilities,
+    }
+
+
+def facilities_has_data(facilities_obj: dict | None) -> bool:
+    if not isinstance(facilities_obj, dict) or not facilities_obj:
+        return False
+    return count_enabled_facilities(facilities_obj) > 0
 
 
 def save_facilities_entry(place_id: str, entry: dict) -> None:

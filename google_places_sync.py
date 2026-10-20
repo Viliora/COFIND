@@ -25,6 +25,7 @@ from fetch_google_places_reviews import (
 
 LEGACY_METADATA_FIELDS = (
     "place_id,name,formatted_address,url,rating,user_ratings_total,price_level,"
+    "formatted_phone_number,website,types,geometry,opening_hours,"
     "curbside_pickup,delivery,dine_in,takeout,reservable,"
     "serves_breakfast,serves_brunch,serves_lunch,serves_dinner,"
     "serves_beer,serves_wine,serves_vegetarian_food,"
@@ -39,6 +40,23 @@ PRICE_LEVEL_LABELS = {
     4: "Sangat mahal",
 }
 
+BUSINESS_STATUS_LABELS = {
+    "OPERATIONAL": "Beroperasi",
+    "CLOSED_TEMPORARILY": "Tutup sementara",
+    "CLOSED_PERMANENTLY": "Tutup permanen",
+}
+
+_TYPE_LABELS_ID = {
+    "cafe": "Kafe",
+    "coffee_shop": "Coffee shop",
+    "bakery": "Bakery",
+    "restaurant": "Restoran",
+    "food": "Makanan",
+    "store": "Toko",
+    "point_of_interest": "Tempat menarik",
+    "establishment": "Usaha",
+}
+
 
 def ensure_coffee_shop_google_columns(conn) -> None:
     cur = conn.cursor()
@@ -46,6 +64,11 @@ def ensure_coffee_shop_google_columns(conn) -> None:
         "ALTER TABLE coffee_shops ADD COLUMN IF NOT EXISTS facilities JSONB DEFAULT '{}'::jsonb",
         "ALTER TABLE coffee_shops ADD COLUMN IF NOT EXISTS google_places_snapshot JSONB DEFAULT '{}'::jsonb",
         "ALTER TABLE coffee_shops ADD COLUMN IF NOT EXISTS price_level INTEGER",
+        "ALTER TABLE coffee_shops ADD COLUMN IF NOT EXISTS phone TEXT",
+        "ALTER TABLE coffee_shops ADD COLUMN IF NOT EXISTS website TEXT",
+        "ALTER TABLE coffee_shops ADD COLUMN IF NOT EXISTS business_status TEXT",
+        "ALTER TABLE coffee_shops ADD COLUMN IF NOT EXISTS google_maps_url TEXT",
+        "ALTER TABLE coffee_shops ADD COLUMN IF NOT EXISTS google_places_fetched_at TIMESTAMPTZ",
     ]
     for sql in stmts:
         try:
@@ -129,10 +152,50 @@ def legacy_result_to_facilities(result: dict[str, Any], existing: dict | None = 
     meta["last_updated"] = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
     editorial = (result.get("editorial_summary") or {}).get("overview")
-    if editorial and not out.get("atmosphere"):
-        pass  # keep existing atmosphere from import
+    if editorial:
+        atmosphere = out.get("atmosphere")
+        if not isinstance(atmosphere, list):
+            atmosphere = []
+            out["atmosphere"] = atmosphere
+        snippet = str(editorial).strip()
+        if snippet and snippet not in atmosphere:
+            atmosphere.append(snippet[:200])
 
     return out
+
+
+def _format_types_for_display(types: Any) -> list[str]:
+    raw = types if isinstance(types, list) else []
+    skip = frozenset({"establishment", "point_of_interest", "food", "store"})
+    out: list[str] = []
+    for t in raw:
+        key = str(t or "").strip().lower()
+        if not key or key in skip:
+            continue
+        label = _TYPE_LABELS_ID.get(key) or key.replace("_", " ").title()
+        if label not in out:
+            out.append(label)
+    return out[:6]
+
+
+def opening_hours_display_from_google(result: dict[str, Any]) -> str | None:
+    oh = result.get("opening_hours") or {}
+    lines = oh.get("weekday_text")
+    if not isinstance(lines, list) or not lines:
+        return None
+    cleaned = [str(line).strip() for line in lines if str(line).strip()]
+    return "\n".join(cleaned) if cleaned else None
+
+
+def _lat_lng_from_geometry(result: dict[str, Any]) -> tuple[float | None, float | None]:
+    geom = result.get("geometry") or {}
+    loc = geom.get("location") or {}
+    try:
+        lat = float(loc.get("lat")) if loc.get("lat") is not None else None
+        lng = float(loc.get("lng")) if loc.get("lng") is not None else None
+        return lat, lng
+    except (TypeError, ValueError):
+        return None, None
 
 
 def business_attributes_from_result(result: dict[str, Any]) -> dict[str, Any]:
@@ -180,8 +243,13 @@ def build_snapshot(result: dict[str, Any]) -> dict[str, Any]:
         pl_int = int(pl) if pl is not None else None
     except (TypeError, ValueError):
         pl_int = None
+    oh = result.get("opening_hours") or {}
+    status = result.get("business_status")
+    editorial = (result.get("editorial_summary") or {}).get("overview")
+    types_display = _format_types_for_display(result.get("types"))
     return {
         "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "api_field_mask": LEGACY_METADATA_FIELDS,
         "aggregates": {
             "rating": result.get("rating"),
             "user_ratings_total": result.get("user_ratings_total"),
@@ -192,7 +260,17 @@ def build_snapshot(result: dict[str, Any]) -> dict[str, Any]:
         "reviews": normalize_reviews_legacy(result),
         "formatted_address": result.get("formatted_address"),
         "google_maps_url": result.get("url"),
-        "business_status": result.get("business_status"),
+        "business_status": status,
+        "business_status_label": BUSINESS_STATUS_LABELS.get(str(status or ""), status),
+        "phone": result.get("formatted_phone_number"),
+        "website": result.get("website"),
+        "types": result.get("types") or [],
+        "types_display": types_display,
+        "editorial_summary": editorial,
+        "opening_hours": {
+            "open_now": oh.get("open_now"),
+            "weekday_text": oh.get("weekday_text") or [],
+        },
     }
 
 
@@ -238,20 +316,53 @@ def upsert_shop_google_metadata(
 ) -> None:
     cur = conn.cursor()
     cur.execute(
-        "SELECT facilities FROM coffee_shops WHERE place_id = ?",
+        """
+        SELECT facilities, address, opening_hours_display, latitude, longitude
+        FROM coffee_shops WHERE place_id = ?
+        """,
         (place_id,),
     )
     row = cur.fetchone()
     existing_fac = {}
+    existing_address = ""
+    existing_hours = ""
+    existing_lat = None
+    existing_lng = None
     if row:
-        existing_fac = _parse_json_col(row[0] if not isinstance(row, dict) else row.get("facilities"))
+        if isinstance(row, dict):
+            existing_fac = _parse_json_col(row.get("facilities"))
+            existing_address = str(row.get("address") or "").strip()
+            existing_hours = str(row.get("opening_hours_display") or "").strip()
+            existing_lat = row.get("latitude")
+            existing_lng = row.get("longitude")
+        else:
+            existing_fac = _parse_json_col(row[0])
+            existing_address = str(row[1] or "").strip()
+            existing_hours = str(row[2] or "").strip()
+            existing_lat = row[3]
+            existing_lng = row[4]
 
     facilities = legacy_result_to_facilities(result, existing=existing_fac)
     snapshot = build_snapshot(result)
     rating = result.get("rating")
     total = result.get("user_ratings_total")
     price_level = snapshot.get("price_level")
+    fetched_at = snapshot.get("fetched_at")
     now = datetime.now(timezone.utc).isoformat()
+
+    phone = (result.get("formatted_phone_number") or "").strip() or None
+    website = (result.get("website") or "").strip() or None
+    google_maps_url = (result.get("url") or "").strip() or None
+    business_status = (result.get("business_status") or "").strip() or None
+    formatted_address = (result.get("formatted_address") or "").strip()
+    new_address = formatted_address or existing_address
+    hours_from_google = opening_hours_display_from_google(result)
+    new_hours = hours_from_google or existing_hours or ""
+    lat, lng = _lat_lng_from_geometry(result)
+    if lat is None:
+        lat = existing_lat
+    if lng is None:
+        lng = existing_lng
 
     cur.execute(
         """
@@ -259,8 +370,17 @@ def upsert_shop_google_metadata(
         SET rating = ?,
             total_reviews = ?,
             price_level = ?,
+            phone = ?,
+            website = ?,
+            business_status = ?,
+            google_maps_url = ?,
+            address = ?,
+            opening_hours_display = ?,
+            latitude = ?,
+            longitude = ?,
             facilities = ?::jsonb,
             google_places_snapshot = ?::jsonb,
+            google_places_fetched_at = ?,
             updated_at = ?
         WHERE place_id = ?
         """,
@@ -268,8 +388,17 @@ def upsert_shop_google_metadata(
             float(rating) if rating is not None else 0,
             int(total) if total is not None else 0,
             price_level,
+            phone,
+            website,
+            business_status,
+            google_maps_url,
+            new_address,
+            new_hours,
+            lat,
+            lng,
             json.dumps(facilities, ensure_ascii=False),
             json.dumps(snapshot, ensure_ascii=False),
+            fetched_at,
             now,
             place_id,
         ),

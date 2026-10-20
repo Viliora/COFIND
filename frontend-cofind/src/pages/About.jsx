@@ -125,7 +125,7 @@ export default function About() {
         >
           <p>
             Terima kasih telah menggunakan Cofind — selamat menjelajahi coffee shop
-            favorit Anda.
+            Pontianak.
           </p>
         </footer>
       </div>

@@ -1,8 +1,13 @@
 // src/components/CoffeeShopCard.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import OptimizedImage from './OptimizedImage';
 import { getCoffeeShopImage } from '../utils/coffeeShopImages';
+import {
+  openingHoursForTodayFromShop,
+  parseJsonField,
+  priceLevelLabel,
+} from '../utils/googlePlacesDisplay';
 
 /** Grid katalog di samping Latest Reviews: 3 kolom agar kartu tidak terpotong aside */
 export const SHOP_CATALOG_GRID_CLASS =
@@ -14,18 +19,16 @@ export const SHOP_CAROUSEL_ITEM_CLASS =
 
 const CoffeeShopCard = ({ shop, variant = 'default' }) => {
     const [isModalOpen] = useState(false);
-    const [photoUrl, setPhotoUrl] = useState(null);
-    const [showRatingInfoBubble, setShowRatingInfoBubble] = useState(false);
     const isMini = variant === 'mini';
-
-    useEffect(() => {
-      if (!shop.place_id) return;
-      setPhotoUrl(getCoffeeShopImage(shop.place_id || shop.name));
-    }, [shop.photo_url, shop.place_id, shop.name]);
-
-    const handleImageError = () => {
-      setPhotoUrl(getCoffeeShopImage(shop.place_id || shop.name));
-    };
+    const photoUrl = useMemo(
+      () => getCoffeeShopImage(shop.place_id || shop.name),
+      [shop.place_id, shop.name],
+    );
+    const priceLabel = priceLevelLabel(
+      shop.price_level ?? parseJsonField(shop.google_places_snapshot)?.price_level,
+    );
+    const hoursToday = openingHoursForTodayFromShop(shop);
+    const openNow = parseJsonField(shop.google_places_snapshot)?.opening_hours?.open_now;
 
     // Fungsi untuk mendapatkan warna placeholder berdasarkan nama shop
     const getPlaceholderColor = (shopName) => {
@@ -44,19 +47,6 @@ const CoffeeShopCard = ({ shop, variant = 'default' }) => {
         ];
         return colors[seed % colors.length];
     };
-
-    const formatStatus = (status) => {
-        if (!status) return null;
-        const statusMap = {
-            'OPERATIONAL': { text: 'Open', class: 'bg-green-100 text-green-700' },
-            'CLOSED_TEMPORARILY': { text: 'Temporarily Closed', class: 'bg-yellow-100 text-yellow-700' },
-            'CLOSED_PERMANENTLY': { text: 'Permanently Closed', class: 'bg-red-100 text-red-700' },
-            'CLOSED': { text: 'Closed', class: 'bg-red-100 text-red-700' }
-        };
-        return statusMap[status] || { text: status, class: 'bg-gray-100 text-gray-700' };
-    };
-
-    const statusInfo = formatStatus(shop.business_status);
 
     // Rating untuk tampilan bintang (1-5), total reviews dari API (total_reviews atau user_ratings_total)
     const rating = shop.rating != null ? Number(shop.rating) : 0;
@@ -114,7 +104,6 @@ const CoffeeShopCard = ({ shop, variant = 'default' }) => {
                         alt={shop.name}
                         className="w-full h-full object-cover object-center transform group-hover:scale-105 transition duration-300"
                         fallbackColor={getPlaceholderColor(shop.name)}
-                        onError={handleImageError}
                     />
                 </div>
             
@@ -123,7 +112,7 @@ const CoffeeShopCard = ({ shop, variant = 'default' }) => {
                         {shop.name}
                     </h2>
 
-                {/* Rating seperti di foto: bintang + angka + total reviews + ikon (i) */}
+                {/* Rating: bintang + angka + total reviews */}
                 <div className={`relative flex items-center gap-2 flex-wrap ${isMini ? 'mb-1.5' : 'mb-2'}`}>
                     <div className="flex items-center gap-1.5">
                         <span className={`flex leading-none ${isMini ? 'text-base' : 'text-lg'}`} aria-label={`Rating ${rating} dari 5`}>
@@ -135,56 +124,31 @@ const CoffeeShopCard = ({ shop, variant = 'default' }) => {
                                 {totalReviews > 0 && (
                                     <span className="text-sm text-gray-500 dark:text-gray-400">({totalReviews} reviews)</span>
                                 )}
-                                {!isMini && (
-                                    <button
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            setShowRatingInfoBubble(!showRatingInfoBubble);
-                                        }}
-                                        className="w-5 h-5 rounded-full border border-gray-400 dark:border-gray-500 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
-                                        title="Informasi rating dan ulasan"
-                                        aria-label="Informasi rating dan ulasan"
-                                    >
-                                        <span className="text-xs font-bold leading-none">i</span>
-                                    </button>
-                                )}
                             </>
                         )}
                     </div>
-                    {!isMini && statusInfo && (
-                        <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${statusInfo.class}`}>
-                            {statusInfo.text}
-                        </span>
-                    )}
-                    {/* Bubble info: rating & reviews berdasarkan Google Maps */}
-                    {!isMini && showRatingInfoBubble && (
-                        <div
-                            className="absolute left-0 top-full mt-1 w-64 p-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-50 text-sm text-gray-700 dark:text-gray-300"
-                            role="tooltip"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                            }}
-                        >
-                            <p>Rating dan total ulasan berdasarkan data dari Google Maps.</p>
-                            <button
-                                type="button"
-                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowRatingInfoBubble(false); }}
-                                className="mt-2 text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
-                            >
-                                Tutup
-                            </button>
-                        </div>
-                    )}
                 </div>
 
-                {!isMini && shop.opening_hours_display != null && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 flex items-center gap-1.5 line-clamp-2">
-                        <span aria-hidden>🕐</span>
-                        {shop.opening_hours_display || 'Jam operasional belum diisi'}
-                    </p>
+                {!isMini && (hoursToday || shop.opening_hours_display != null) && (
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mb-2 flex items-center gap-2 flex-wrap">
+                        <span className="inline-flex items-center gap-1.5 min-w-0">
+                            <span aria-hidden>🕐</span>
+                            <span className="truncate">
+                                {hoursToday || 'Jam operasional belum diisi'}
+                            </span>
+                        </span>
+                        {openNow !== undefined && (
+                            <span
+                                className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${
+                                    openNow
+                                        ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
+                                        : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                                }`}
+                            >
+                                {openNow ? 'Open' : 'Closed'}
+                            </span>
+                        )}
+                    </div>
                 )}
 
                 {!isMini && shop.vicinity && (
@@ -193,12 +157,12 @@ const CoffeeShopCard = ({ shop, variant = 'default' }) => {
                     </p>
                 )}
                 
-                {!isMini && shop.opening_hours?.open_now !== undefined && (
-                    <p className={`text-sm font-medium ${shop.opening_hours.open_now ? 'text-green-600' : 'text-red-600'}`}>
-                        {shop.opening_hours.open_now ? '🕒 Currently Open' : '🕒 Currently Closed'}
+                {!isMini && priceLabel && (
+                    <p className="text-sm text-emerald-700 dark:text-emerald-300 mb-1">
+                        💰 {priceLabel}
                     </p>
                 )}
-                
+
                 {!isMini && (
                 <div className="mt-4 flex justify-between items-center">
                     <div className="flex items-center gap-3">

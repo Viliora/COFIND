@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-16T12:21:04.220519+00:00",
+  "generated_at": "2026-10-20T09:54:04.454522+00:00",
   "api_mode": "legacy",
   "api_key_env": "GOOGLE_PLACES_API_KEY",
   "reviews_sort": "most_relevant",
@@ -162,12 +162,68 @@
       "match_note": null,
       "matched_display_name": "Aming Coffee",
       "matched_formatted_address": "Jl. H. Abbas 1 No.157, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78122, Indonesia",
-      "google_rating": null,
-      "google_user_rating_count": null,
+      "google_rating": 4.5,
+      "google_user_rating_count": 4044,
       "google_maps_uri": "https://maps.google.com/?cid=308549285718579288",
       "reviews_sort": "most_relevant",
-      "reviews_count_returned": 0,
-      "reviews": [],
+      "reviews_count_returned": 5,
+      "reviews": [
+        {
+          "rating": 5,
+          "text": "Pisang srikaya sama roti bakar srikayanya enak. Kopi juga ok lah. Kopi hitam nya strong banget! Bikin melek pol 😆",
+          "language_code": null,
+          "publish_time": 1775117343,
+          "relative_time": "6 bulan lalu",
+          "author_display_name": "Liannemenethil",
+          "author_uri": "https://www.google.com/maps/contrib/116632658246844766452/reviews",
+          "google_maps_uri": null,
+          "review_resource_name": null
+        },
+        {
+          "rating": 3,
+          "text": "Terakhir ke sini 2024 pas ada kerjaan di Pontianak, nginep di Sentosa inn persis depan Aming kopi for several months. Dan Almost everyday minum kopi Aming, khususnya Kopi susu gula aren, karena mmg secinta itu sama rasa aren nya yg khas, yg ga aku temuin di tempat lain. Aftertaste nya gurih banget aku ga tau dr mana rasa itu. Bisa jadi dari susu yg di campur santan, dan pasti aku wadahin ke Tumblr biar rasanya konsisten,ga ke ganggu sama es batu yg mencair. Karena hampir tiap hari minum itu kopi aku jadi tau perbedaan rasa kopi Aming haji Abbas dan Kopi Aming tempat lain. Karena rasanya sebeda itu mmg. Pas di Jawa sempet kangen bgt sama itu kopi dan untung ada creamy aren latte nya Kopken yg rasanya mendekati sama kopsu aren nya Aming. Finally Tepat bbrp hari sblm Lebaran 2026 kebetulan ada kerjaan di Pontianak dan wajib bgt ke Aming, akhirnya pesen kopsu gula aren yg amat aku rindukan itu, TAPI seruput demi seruput kenapa aku ga nemuin rasa yg dulu aku ingat, gurih nya, unik nya. Ga ada. Aku pikir mungkin mood aku yg ga match. Terus aku datang lagi kemarin tanggal 24 untuk memastikan lagi apa lidah ku yg konsisten, dan ternyata bener lidahku ga bohong, Mmg gurih dan unik nya rasa dari kopi itu hilang. Rasnya persis sama kaya kopi Aming yg frenchise. Agak kecewa sih, karena rasa nya yg dulu cuma bisa aku kenang, kayaknya kopken bakal jadi mood booster untuk kedepannya. Aku ga tau ada komposisi bahan baku apa yg berubah smpe rasa unik nya bisa hilang. Kalo owner nya baca mungkin bisa jelasin dikit ke aku, tanpa mengurangi rasa hormat 🙏🏻 over All vibes nya bikin happy kalo ke sini.",
+          "language_code": null,
+          "publish_time": 1774457094,
+          "relative_time": "6 bulan lalu",
+          "author_display_name": "Febriano Nugraha (Dio)",
+          "author_uri": "https://www.google.com/maps/contrib/111110324670925952307/reviews",
+          "google_maps_uri": null,
+          "review_resource_name": null
+        },
+        {
+          "rating": 5,
+          "text": "Kopi khas, rasa strong... Dengan berbagai side dishes enak",
+          "language_code": null,
+          "publish_time": 1781400596,
+          "relative_time": "4 bulan lalu",
+          "author_display_name": "King H",
+          "author_uri": "https://www.google.com/maps/contrib/115845802413519553024/reviews",
+          "google_maps_uri": null,
+          "review_resource_name": null
+        },
+        {
+          "rating": 5,
+          "text": "Akhirnya nyobain kopi Aming langsung di Pontianak nya. Kopi nya enak style Chinese kopitiam gitu lah bukan modern kopi aren ya. Tapi sayang nya penyajian pake gelas plastik ya mungkin buat kepraktisan dan efisiensi tapi jadi menghilangkan feel kopitiam nya. Tempatnya tempat nongkrong anak2 muda pada mabar. Walau tanpa AC cukup nyaman. Hanya di JKT aja kudu pake AC. Di Pontianak ternyata ga terlalu panas mungkin kepadatan nya tidak sepadat JKT. Harganya juga terjangkau es kopi susu plus pisang goreng srikaya 22rb saja.",
+          "language_code": null,
+          "publish_time": 1738849476,
+          "relative_time": "setahun yang lalu",
+          "author_display_name": "rxlky",
+          "author_uri": "https://www.google.com/maps/contrib/110451105540456564910/reviews",
+          "google_maps_uri": null,
+          "review_resource_name": null
+        },
+        {
+          "rating": 5,
+          "text": "Minuman dan makanannya enak. Suasananya oke.",
+          "language_code": null,
+          "publish_time": 1782132792,
+          "relative_time": "3 bulan lalu",
+          "author_display_name": "wina",
+          "author_uri": "https://www.google.com/maps/contrib/113620952691818713301/reviews",
+          "google_maps_uri": null,
+          "review_resource_name": null
+        }
+      ],
       "error": null
     },
     {
@@ -982,12 +1038,68 @@
       "match_note": null,
       "matched_display_name": "Upz Coffee",
       "matched_formatted_address": "Jl. Komp. Perdana Square, Parit Tokaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78124, Indonesia",
-      "google_rating": null,
-      "google_user_rating_count": null,
+      "google_rating": 4.2,
+      "google_user_rating_count": 342,
       "google_maps_uri": "https://maps.google.com/?cid=17337725759366756072",
       "reviews_sort": "most_relevant",
-      "reviews_count_returned": 0,
-      "reviews": [],
+      "reviews_count_returned": 5,
+      "reviews": [
+        {
+          "rating": 3,
+          "text": "Sudah sering kesini karena tempatnya nyaman untuk bekerja/nugas, namun yang sy perhatikan dari dulu adalah rasa makanan dan minumannya kurang dengan harga segitu. Minuman selalu kemanisan apalagi varian coffee nya. Untuk pastry, sy memesan croissant, namun yang disajikan malah kayak sad food, pastrynya sangat kering seperti sudah lama, rasanya sangat tidak enak sehingga saya cuma memakan satu suap saja. Tolong untuk diperbaiki lagi, karena ini masalahnya sudah dari awal awal buka hingga sekarang saya perhatikan tidak ada perubahan terhadap rasa makanan dan minumnya. Saya hanya kesini untuk tempatnya saja bukan karena makanan dan minumannya.",
+          "language_code": null,
+          "publish_time": 1784381628,
+          "relative_time": "3 bulan lalu",
+          "author_display_name": "Nurhana Tri Setyaningrum",
+          "author_uri": "https://www.google.com/maps/contrib/107912297091310891593/reviews",
+          "google_maps_uri": null,
+          "review_resource_name": null
+        },
+        {
+          "rating": 5,
+          "text": "Tempat ini Underrated! Cocok untuk orang-orang yang pengen produktif kerjain skripsi atau kerjaan. Sofanya nyaman, tempatnya luas, bersih, dingin, dan yang terpenting ga berisik! Rekomen bgt cobain study spacenya, bener-bener tentrammm!",
+          "language_code": null,
+          "publish_time": 1782536392,
+          "relative_time": "3 bulan lalu",
+          "author_display_name": "Funny Angelin",
+          "author_uri": "https://www.google.com/maps/contrib/100362228464193397523/reviews",
+          "google_maps_uri": null,
+          "review_resource_name": null
+        },
+        {
+          "rating": 5,
+          "text": "Upz Coffee merupakan study cafe yang menyediakan makanan dan minuman yang beragam.\nDi sini, tersedia area outdoor dan indoor (lt 1 dan lt 2), ada juga Snapobox sebagai tempat photobox di sini.\nMeskipun sebagian menu di sini mulai dari rentang 25K ke atas, tetapi suasana dan layanan yang diberikan, cocok untuk WFC, meeting, maupun me time (dengan ada ruangan private study room). Selamat mencoba ya! 🤩",
+          "language_code": null,
+          "publish_time": 1779628583,
+          "relative_time": "4 bulan lalu",
+          "author_display_name": "Kelly Valerie",
+          "author_uri": "https://www.google.com/maps/contrib/109612847080565418301/reviews",
+          "google_maps_uri": null,
+          "review_resource_name": null
+        },
+        {
+          "rating": 5,
+          "text": "Tempat sangat luas.\nPrice mid-high.\nAda mesin self-order di dpn.\nRasa makanan dan minuman enak.\nAda vip room dgn m.o 400k, tp mungkin sudah berubah ya.\nKebersihan wc perlu dijaga ya krn agak bau.",
+          "language_code": null,
+          "publish_time": 1767082153,
+          "relative_time": "9 bulan lalu",
+          "author_display_name": "Razelle Claren",
+          "author_uri": "https://www.google.com/maps/contrib/101406194005987540725/reviews",
+          "google_maps_uri": null,
+          "review_resource_name": null
+        },
+        {
+          "rating": 5,
+          "text": "SANGAT BAIK, RAPI, ADEM, SOFANYA WANGI BOS, COCOK BUAT YANG MAU KERJA DAN BELAJAR, KARENA SITUASI KONDUSIF, ADA RUANGAN KHUSUS BELAJAR MIN 50RB KALO NGAK SALAH, SEDIKIT MASUKAN HEHE KADANG KALAU AGAK RAMAI WIFINYA AGAK DROP HEHE, OVR GAS KAN AJA, KOPINYA ENAK",
+          "language_code": null,
+          "publish_time": 1776270519,
+          "relative_time": "6 bulan lalu",
+          "author_display_name": "Juan Sianturi",
+          "author_uri": "https://www.google.com/maps/contrib/114493400235271566106/reviews",
+          "google_maps_uri": null,
+          "review_resource_name": null
+        }
+      ],
       "error": null
     }
   ]

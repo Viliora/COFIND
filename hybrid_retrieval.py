@@ -44,7 +44,7 @@ from bm25_utils import (
     score_shops_bm25,
 )
 from logging_config import get_logger
-from metadata_prior import evaluate_metadata_gate, fuse_metadata_score, metadata_gate_enabled
+from metadata_prior import evaluate_metadata_gate, metadata_gate_enabled
 from semantic_match import score_documents, score_reviews_by_id
 from slang_normalize import normalize_text_with_slang, tokenize_normalized
 
@@ -1241,14 +1241,7 @@ def _hybrid_retrieve_rrf_core(
                 pill_labels=pill_labels,
                 attribute_pills=attr_list,
             )
-            fusion = fuse_metadata_score(total, gate, review_signal=rrf_norm)
-            total = fusion['fused_score']
-            if fusion['prior_boost'] > 0:
-                telemetry['metadata_prior_applied'] = int(telemetry.get('metadata_prior_applied') or 0) + 1
-            if fusion['penalty'] > 0:
-                telemetry['metadata_penalized'] = int(telemetry.get('metadata_penalized') or 0) + 1
-        else:
-            fusion = {'prior_boost': 0.0, 'penalty': 0.0}
+        fusion = {'prior_boost': 0.0, 'penalty': 0.0}
 
         scored.append({
             'place_id': pid,
@@ -1468,3 +1461,81 @@ def retrieve_top_k_by_text(
         telemetry=telemetry,
         apply_activity_gate=False,
     )
+
+
+def retrieve_top_k_by_negative_sentiment(
+    profiles: Sequence[dict],
+    *,
+    quality_by_place: Optional[Dict[str, Optional[float]]] = None,
+    top_k: Optional[int] = None,
+) -> Dict[str, object]:
+    """
+    Free text bernada negatif/superlatif: ranking by rating terendah + keluhan di review.
+    Kontrak return sama dengan retrieve_top_k_by_text().
+    """
+    from free_text_query_handling import sort_profiles_for_negative_query
+
+    limit = top_k if top_k is not None else retrieval_top_k()
+    quality_by_place = quality_by_place or {}
+    empty_matcher = empty_activity_matcher()
+    ordered = sort_profiles_for_negative_query(profiles)
+
+    scored = []
+    for rank, profile in enumerate(ordered[:limit]):
+        pid = str(profile.get('place_id') or '')
+        if not pid:
+            continue
+        avg = profile.get('avg_user_rating')
+        try:
+            rating = float(avg) if avg is not None else 3.5
+        except (TypeError, ValueError):
+            rating = 3.5
+        # Skor lebih tinggi = lebih rendah rating (prioritas tampil)
+        inv_rating = max(0.0, min(1.0, (5.0 - rating) / 2.0))
+        quality_raw = quality_by_place.get(pid)
+        try:
+            quality_s = None if quality_raw is None else float(quality_raw)
+        except (TypeError, ValueError):
+            quality_s = None
+        total = inv_rating if quality_s is None else (0.85 * inv_rating + 0.15 * (1.0 - quality_s))
+        scored.append({
+            'place_id': pid,
+            'name': profile.get('name') or '',
+            'score': round(total, 6),
+            'profile': profile,
+            'metadata_gate': {
+                'enabled': False,
+                'claimed_pills': [],
+                'claimed_fields': [],
+                'matched_attribute_pills': [],
+                'matched_attribute_labels': [],
+                'prior': 0.0,
+                'contradicted_pills': [],
+                'contradiction': 0.0,
+                'quotes': [],
+            },
+            'score_detail': {
+                'mode': 'negative_sentiment',
+                'avg_user_rating': avg,
+                'rank': rank + 1,
+            },
+        })
+
+    query_label = 'rating dan keluhan terendah menurut ulasan'
+    telemetry: Dict[str, object] = {
+        'mode': 'free_text_negative_rank',
+        'profiles': len(profiles or []),
+        'top_k': limit,
+        'kept_with_signal': len(scored),
+    }
+
+    return {
+        'candidates': scored,
+        'query_tokens': ['rating', 'keluhan'],
+        'query_text': query_label,
+        'activity_tokens': [],
+        'attribute_tokens': [],
+        'activity_query_text': query_label,
+        'activity_matcher': empty_matcher,
+        'telemetry': telemetry,
+    }

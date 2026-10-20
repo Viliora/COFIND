@@ -116,7 +116,6 @@ const ShopVoteModal = ({ isOpen, onClose, shopName, summary, myVote, onSubmit, i
         <div className="overflow-y-auto px-5 sm:px-6 py-5 space-y-6">
           <section className="flex flex-col gap-4">
             <VoteBarGroup
-              title="Rating"
               titleEmoji="❤️"
               items={RATING_META}
               counts={ratingCounts}
