@@ -170,6 +170,14 @@ const Navbar = () => {
     return location.pathname.startsWith(path);
   };
 
+  const handleLogoClick = (e) => {
+    setMobileMenuOpen(false);
+    if (location.pathname === '/') {
+      e.preventDefault();
+      window.location.reload();
+    }
+  };
+
   // Apply theme changes and save preference
   useEffect(() => {
     const root = document.documentElement;
@@ -210,7 +218,7 @@ const Navbar = () => {
             <Link 
               to="/" 
               className="flex items-center gap-2 group"
-              onClick={() => setMobileMenuOpen(false)}
+              onClick={handleLogoClick}
             >
               <img 
                 src={cofindImg} 

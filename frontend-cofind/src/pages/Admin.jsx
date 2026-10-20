@@ -9,6 +9,18 @@ import AdminTable from '../components/admin/AdminTable';
 import AdminModal from '../components/admin/AdminModal';
 import CoordinatePickerMap from '../components/admin/CoordinatePickerMap';
 import AdminDashboardCharts from '../components/admin/AdminDashboardCharts';
+import {
+  BUSINESS_STATUS_OPTIONS,
+  DEFAULT_SHOP_FORM,
+  OPENING_TIME_OPTIONS,
+  PRICE_LEVEL_OPTIONS,
+  WEEKDAYS,
+  formatBusinessStatusLabel,
+  formatOpeningHoursDisplay,
+  formatPriceLevelLabel,
+  shopFormFromRecord,
+  shopPayloadFromForm,
+} from '../utils/adminCoffeeShop';
 
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', description: 'Grafik kualitas LLM, kontribusi user, dan tren konten.' },
@@ -31,135 +43,6 @@ const DEFAULT_USER_FORM = {
   is_admin: false,
   is_active: true,
 };
-
-const DEFAULT_SHOP_FORM = {
-  place_id: '',
-  name: '',
-  address: '',
-  rating: '',
-  total_reviews: '',
-  latitude: '',
-  longitude: '',
-  map_embed_url: '',
-  opening_hours_display: '',
-  opening_day_from: 'Senin',
-  opening_day_to: 'Minggu',
-  opening_time_from: '08.00',
-  opening_time_to: '22.00',
-  opening_hours_24h: false,
-};
-
-const OPENING_HOURS_24H_LABEL = '24 jam';
-
-const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
-
-const OPENING_TIME_OPTIONS = (() => {
-  const options = [];
-  for (let hour = 0; hour < 24; hour += 1) {
-    for (const minute of [0, 30]) {
-      options.push(`${String(hour).padStart(2, '0')}.${String(minute).padStart(2, '0')}`);
-    }
-  }
-  return options;
-})();
-
-function normalizeOpeningTime(value) {
-  const match = String(value || '').trim().match(/^(\d{1,2})[.:](\d{2})$/);
-  if (!match) return '';
-  const hour = Number(match[1]);
-  const minute = Number(match[2]);
-  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return '';
-  return `${String(hour).padStart(2, '0')}.${String(minute).padStart(2, '0')}`;
-}
-
-function isOpeningHours24hDisplay(display) {
-  return /24\s*jam/i.test(String(display || '').trim());
-}
-
-function parseOpeningHoursDisplay(display) {
-  const defaults = {
-    opening_day_from: 'Senin',
-    opening_day_to: 'Minggu',
-    opening_time_from: '08.00',
-    opening_time_to: '22.00',
-    opening_hours_24h: false,
-  };
-  const text = String(display || '').trim();
-  if (!text) return defaults;
-
-  if (isOpeningHours24hDisplay(text)) {
-    const dayMatch = text.match(/^(.+?)-(.+?),/);
-    const dayFrom = dayMatch?.[1]?.trim() || 'Senin';
-    const dayTo = dayMatch?.[2]?.trim() || 'Minggu';
-    return {
-      opening_day_from: WEEKDAYS.includes(dayFrom) ? dayFrom : 'Senin',
-      opening_day_to: WEEKDAYS.includes(dayTo) ? dayTo : 'Minggu',
-      opening_time_from: '00.00',
-      opening_time_to: '23.30',
-      opening_hours_24h: true,
-    };
-  }
-
-  const match = text.match(/^(.+?)-(.+?),\s*(.+?)-(.+)$/);
-  if (!match) return defaults;
-
-  const dayFrom = match[1].trim();
-  const dayTo = match[2].trim();
-  const timeFrom = normalizeOpeningTime(match[3]);
-  const timeTo = normalizeOpeningTime(match[4]);
-
-  return {
-    opening_day_from: WEEKDAYS.includes(dayFrom) ? dayFrom : defaults.opening_day_from,
-    opening_day_to: WEEKDAYS.includes(dayTo) ? dayTo : defaults.opening_day_to,
-    opening_time_from: OPENING_TIME_OPTIONS.includes(timeFrom) ? timeFrom : defaults.opening_time_from,
-    opening_time_to: OPENING_TIME_OPTIONS.includes(timeTo) ? timeTo : defaults.opening_time_to,
-    opening_hours_24h: false,
-  };
-}
-
-function formatOpeningHoursDisplay(form) {
-  const dayFrom = form.opening_day_from || 'Senin';
-  const dayTo = form.opening_day_to || 'Minggu';
-  if (form.opening_hours_24h) {
-    return `${dayFrom}-${dayTo}, ${OPENING_HOURS_24H_LABEL}`;
-  }
-  const timeFrom = form.opening_time_from || '08.00';
-  const timeTo = form.opening_time_to || '22.00';
-  return `${dayFrom}-${dayTo}, ${timeFrom}-${timeTo}`;
-}
-
-function shopFormFromRecord(shop) {
-  const hours = parseOpeningHoursDisplay(shop.opening_hours_display);
-  return {
-    place_id: shop.place_id || '',
-    name: shop.name || '',
-    address: shop.address || '',
-    rating: shop.rating ?? '',
-    total_reviews: shop.total_reviews ?? '',
-    latitude: shop.latitude ?? '',
-    longitude: shop.longitude ?? '',
-    map_embed_url: shop.map_embed_url || '',
-    opening_hours_display: shop.opening_hours_display || '',
-    ...hours,
-  };
-}
-
-function shopPayloadFromForm(form, mode) {
-  const payload = {
-    name: form.name,
-    address: form.address,
-    rating: form.rating === '' ? 0 : Number(form.rating),
-    total_reviews: form.total_reviews === '' ? 0 : Number(form.total_reviews),
-    latitude: form.latitude === '' ? null : Number(form.latitude),
-    longitude: form.longitude === '' ? null : Number(form.longitude),
-    map_embed_url: form.map_embed_url,
-    opening_hours_display: formatOpeningHoursDisplay(form),
-  };
-  if (mode === 'edit') {
-    payload.place_id = form.place_id;
-  }
-  return payload;
-}
 
 function formatDate(value) {
   if (!value) return '-';
@@ -860,12 +743,31 @@ export default function Admin() {
       ),
     },
     {
+      key: 'google_meta',
+      label: 'Google / kontak',
+      render: (row) => (
+        <div className="text-xs space-y-1 text-stone-600">
+          <p>{formatBusinessStatusLabel(row.business_status)}</p>
+          <p className="text-stone-500">{formatPriceLevelLabel(row.price_level)}</p>
+          {row.phone ? <p>{row.phone}</p> : null}
+          {row.has_google_snapshot ? (
+            <p className="text-emerald-700 dark:text-emerald-400">
+              Snapshot Google
+              {row.google_places_fetched_at ? ` · ${formatDate(row.google_places_fetched_at)}` : ''}
+            </p>
+          ) : (
+            <p className="text-stone-400">Belum ada snapshot Google</p>
+          )}
+        </div>
+      ),
+    },
+    {
       key: 'rating',
       label: 'Rating',
       render: (row) => (
         <div className="text-xs">
           <p>{row.rating || 0} / 5</p>
-          <p className="text-stone-500">{row.total_reviews || 0} review</p>
+          <p className="text-stone-500">{row.total_reviews || 0} ulasan Google</p>
         </div>
       ),
     },
@@ -1253,7 +1155,7 @@ export default function Admin() {
               <>
                 <SectionHeader
                   title="Coffee Shop"
-                  description="Kelola data coffee shop, lokasi, rating, dan edit fasilitas (JSON) per coffee shop di database."
+                  description="Kelola coffee shop di Postgres: lokasi, metadata Google, kontak, fasilitas (JSONB), dan pros/cons."
                   actions={
                     <button
                       type="button"
@@ -1611,6 +1513,57 @@ export default function Admin() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1">Telepon</label>
+              <input
+                type="text"
+                value={shopForm.phone}
+                onChange={(event) => setShopForm((prev) => ({ ...prev, phone: event.target.value }))}
+                className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1">Website</label>
+              <input
+                type="url"
+                value={shopForm.website}
+                onChange={(event) => setShopForm((prev) => ({ ...prev, website: event.target.value }))}
+                className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-stone-700 mb-1">Google Maps URL</label>
+              <input
+                type="url"
+                value={shopForm.google_maps_url}
+                onChange={(event) => setShopForm((prev) => ({ ...prev, google_maps_url: event.target.value }))}
+                className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1">Level harga (Google)</label>
+              <select
+                value={shopForm.price_level}
+                onChange={(event) => setShopForm((prev) => ({ ...prev, price_level: event.target.value }))}
+                className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              >
+                {PRICE_LEVEL_OPTIONS.map((opt) => (
+                  <option key={opt.value || 'empty'} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1">Status usaha</label>
+              <select
+                value={shopForm.business_status}
+                onChange={(event) => setShopForm((prev) => ({ ...prev, business_status: event.target.value }))}
+                className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              >
+                {BUSINESS_STATUS_OPTIONS.map((opt) => (
+                  <option key={opt.value || 'empty'} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
               <label className="block text-sm font-medium text-stone-700 mb-1">Map embed URL</label>
               <input
                 type="text"
@@ -1729,7 +1682,9 @@ export default function Admin() {
         ) : (
           <form onSubmit={handleSaveFacilityEditor} className="space-y-4">
             <div className="rounded-xl bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 p-4 text-sm text-amber-800 dark:text-amber-300">
-              Editor ini bersifat penuh: Anda dapat mengubah struktur fasilitas tersimpan di database untuk coffee shop ini. Pastikan JSON tetap valid.
+              Editor ini mengubah kolom <strong>facilities</strong> (JSONB) di tabel <strong>coffee_shops</strong>.
+              Snapshot Google (<strong>google_places_snapshot</strong>) hanya diperbarui lewat sync Google Places, bukan di sini.
+              Pastikan JSON tetap valid.
             </div>
             <textarea
               value={facilityJsonText}

@@ -119,6 +119,8 @@ export default function ShopList() {
   const [pillLoginModalContext, setPillLoginModalContext] = useState('pill');
   const [searchKeyword, setSearchKeyword] = useState('');
   const [confirmedSearchKeyword, setConfirmedSearchKeyword] = useState('');
+  /** Pesan framing dari backend (negatif / abstention parsial), ditampilkan di modal. */
+  const [recommendationResponseNotice, setRecommendationResponseNotice] = useState('');
   const hasLoadedRef = useRef(false);
 
   // Lokasi saat ini & radius (peta di atas All Coffee Shops + modal rekomendasi)
@@ -589,7 +591,13 @@ export default function ShopList() {
 
       if (data.status === 'success' && Array.isArray(data.recommendations)) {
         setLlmRecommendations(data.recommendations);
+        setRecommendationResponseNotice(
+          data.recommendations.length > 0 && data?.message
+            ? String(data.message)
+            : '',
+        );
         if (data.recommendations.length === 0) {
+          setRecommendationResponseNotice('');
           const emptyMessage = data?.message
             || 'Maaf, saat ini belum ada coffee shop yang cocok dengan konteks ini. Coba konteks lain.';
           setPillRecommendError(emptyMessage);
@@ -1456,6 +1464,7 @@ export default function ShopList() {
         confirmedSearchKeyword={confirmedSearchKeyword}
         userLocation={userLocation}
         totalDurationSeconds={recommendationTotalSeconds}
+        responseNotice={recommendationResponseNotice}
       />
     </div>
   );

@@ -56,6 +56,7 @@ from slang_normalize import normalize_text_with_slang, tokenize_normalized
 from hybrid_retrieval import (
     retrieve_top_k,
     retrieve_top_k_by_text,
+    retrieve_top_k_by_negative_sentiment,
     retrieval_top_k,
     rank_reviews_for_query,
     build_sparse_query_tokens,
@@ -72,6 +73,12 @@ from hybrid_retrieval import (
 from free_text_intent import (
     MAX_FREE_TEXT_CHARS as FREE_TEXT_MAX_CHARS,
     extract_search_intent,
+)
+from free_text_query_handling import (
+    QUERY_CLASS_FALSE_PRESUP,
+    QUERY_CLASS_NEGATIVE,
+    apply_false_presupposition_retrieval,
+    merge_query_classification,
 )
 from recommendation_coverage import (
     merge_pill_coverage,
@@ -1068,8 +1075,63 @@ def _truncate_evidence_text(text, limit=180):
     return cleaned[: max(0, limit - 3)].rstrip() + '...'
 
 
+def _build_metadata_support_items(evidence, *, facilities_tab_intent=None, facilities_intent_aligned=None):
+    """Info metadata yang cocok intent user; hanya untuk tampilan, bukan skoring."""
+    ev = evidence or {}
+    out = []
+    seen = set()
 
+    def push(kind, title, items, note):
+        clean_items = [str(x).strip() for x in (items or []) if str(x or '').strip()]
+        if not clean_items:
+            return
+        key = (kind, tuple(clean_items[:6]))
+        if key in seen:
+            return
+        seen.add(key)
+        out.append({
+            'type': kind,
+            'title': title,
+            'items': clean_items[:6],
+            'note': note,
+            'source': 'metadata',
+        })
 
+    gate = ev.get('metadata_gate') or {}
+    matched_labels = [
+        str(x).strip()
+        for x in (gate.get('matched_attribute_labels') or ev.get('matched_facility_labels') or [])
+        if str(x or '').strip()
+    ]
+    if matched_labels:
+        push(
+            'profile_facility',
+            'Profil fasilitas',
+            matched_labels,
+            'Klaim profil tempat yang cocok dengan fasilitas tambahan pilihan Anda.',
+        )
+
+    tab = facilities_tab_intent if facilities_tab_intent is not None else ev.get('facilities_tab_intent')
+    aligned = (
+        bool(facilities_intent_aligned)
+        if facilities_intent_aligned is not None
+        else bool(ev.get('facilities_intent_aligned'))
+    )
+    if aligned and isinstance(tab, dict):
+        for key, title in (
+            ('popular_for', 'Populer untuk'),
+            ('highlights', 'Keunggulan'),
+            ('atmosphere', 'Suasana'),
+        ):
+            values = tab.get(key) or []
+            push(
+                f'facility_tab_{key}',
+                title,
+                values,
+                'Metadata fasilitas yang cocok dengan intent pencarian Anda.',
+            )
+
+    return out[:4]
 
 
 def _build_empty_supporting_evidence():
@@ -1082,6 +1144,7 @@ def _build_empty_supporting_evidence():
         'metadata_gate': {},
         'matched_facility_pills': [],
         'matched_facility_labels': [],
+        'metadata_support': [],
         'metadata_contradiction_quotes': [],
         'review_quotes': [],
         'positive_review_quotes': [],
@@ -1919,6 +1982,7 @@ def _attach_metadata_gate_to_evidence(
     ev['matched_facility_pills'] = matched_pills
     ev['matched_facility_labels'] = matched_labels
     ev['metadata_contradiction_quotes'] = quotes
+    ev['metadata_support'] = _build_metadata_support_items(ev)
     if contradicted:
         labels = [PILL_LABELS.get(p, p) for p in contradicted]
         ev['facilities_evidence_summary'] = (
@@ -3675,7 +3739,13 @@ def _build_summary_output_entry(shop, summary, pills, search_keywords):
     }
 
 
-def _generate_llm_review_summary(top_shops, pills, search_keywords=None, user_intent_line=None):
+def _generate_llm_review_summary(
+    top_shops,
+    pills,
+    search_keywords=None,
+    user_intent_line=None,
+    summary_framing=None,
+):
     """
     NLP summary per shop, **selalu** dibangkitkan ulang setiap request.
 
@@ -3694,7 +3764,11 @@ def _generate_llm_review_summary(top_shops, pills, search_keywords=None, user_in
 
     LOG_RECOMMEND.info(f"Summary: generate={len(top_shops)} (tanpa cache)")
     generated_summary_map, summary_stats = _llm_summaries_for_shops(
-        top_shops, pills, search_keywords, user_intent_line=user_intent_line,
+        top_shops,
+        pills,
+        search_keywords,
+        user_intent_line=user_intent_line,
+        summary_framing=summary_framing,
     )
 
     # Rakit output sesuai urutan asli; skip shop tanpa bukti kutipan.
@@ -4198,6 +4272,7 @@ def _single_shop_summary_prompt(
     *,
     quality_boost=False,
     prefer_gemini=False,
+    summary_framing=None,
 ):
     """Prompt ringkas: satu toko, paragraf objektif dari kutipan relevan."""
     shop_name = shop.get('name') or 'Coffee shop ini'
@@ -4226,11 +4301,15 @@ def _single_shop_summary_prompt(
             f'jadi enak buat yang bawa laptop. Sayangnya belum ada yang nyebut soal musholla '
             f'di ulasan, jadi belum pasti ada atau tidak."}}'
         )
+    framing_block = ''
+    if summary_framing:
+        framing_block = f'Catatan framing (WAJIB diikuti):\n{summary_framing}\n\n'
     return (
         f"Tulis 1 paragraf singkat ({COFIND_SUMMARY_MIN_SENTENCES}-4 kalimat, mengalir natural) "
         f"tentang {shop_name} berdasarkan ulasan pelanggan — gaya rekomendasi dari teman, "
         "bukan laporan formal.\n\n"
         f"Kebutuhan user: {intent_line}.\n\n"
+        f"{framing_block}"
         "Cek blok \"Cakupan kebutuhan user vs ulasan\" di data: sebutkan secara natural (bukan "
         "copy-paste label TERBUKTI/BELUM terbukti) apakah kebutuhan itu kelihatan ada buktinya "
         "di ulasan toko ini atau belum — selipkan jadi 1 klausa/kalimat singkat dalam paragraf, "
@@ -4403,6 +4482,7 @@ def _summary_user_prompt_for_shop(
     *,
     prefer_gemini,
     reject_reason=None,
+    summary_framing=None,
 ):
     """User prompt Step 5; untuk Gemini sudah strict sejak panggilan pertama."""
     prompt = _single_shop_summary_prompt(
@@ -4412,6 +4492,7 @@ def _summary_user_prompt_for_shop(
         intent_line,
         quality_boost=prefer_gemini,
         prefer_gemini=prefer_gemini,
+        summary_framing=summary_framing,
     )
     if prefer_gemini:
         prompt += (
@@ -4434,6 +4515,7 @@ def _llm_summary_for_one_shop(
     intent_line,
     all_shops,
     summary_route_mode=None,
+    summary_framing=None,
 ):
     """Satu panggilan LLM untuk satu toko. Kembalikan teks summary atau None."""
     prefer_gemini = _summary_use_gemini(summary_route_mode)
@@ -4444,6 +4526,7 @@ def _llm_summary_for_one_shop(
         search_keywords,
         intent_line,
         prefer_gemini=prefer_gemini,
+        summary_framing=summary_framing,
     )
     LOG_RECOMMEND.info(
         f"Summary: kirim {shop.get('name')} "
@@ -4508,6 +4591,7 @@ def _llm_summary_for_one_shop(
                 intent_line,
                 prefer_gemini=True,
                 reject_reason=reason,
+                summary_framing=summary_framing,
             )
             retry_kw = _summary_llm_call_kwargs(
                 strict_json=True,
@@ -4546,7 +4630,13 @@ def _llm_summary_for_one_shop(
         return None
 
 
-def _llm_summaries_for_shops(top_shops, pills, search_keywords=None, user_intent_line=None):
+def _llm_summaries_for_shops(
+    top_shops,
+    pills,
+    search_keywords=None,
+    user_intent_line=None,
+    summary_framing=None,
+):
     """
     Ringkasan per toko: SATU panggilan LLM per toko, dijalankan paralel.
 
@@ -4608,6 +4698,7 @@ def _llm_summaries_for_shops(top_shops, pills, search_keywords=None, user_intent
                 intent_line,
                 top_shops,
                 summary_route_mode,
+                summary_framing,
             ): shop
             for shop in top_shops
         }
@@ -5492,6 +5583,9 @@ def _recommendation_pipeline_events(prefs, _auth_user, query_text=''):
         free_text_dense_query = ''
         free_text_telemetry = {}
         user_intent_line = ''
+        free_text_query_handling = {}
+        free_text_response_message = None
+        free_text_summary_framing = None
 
         if has_pills_input:
             valid_pills = [p for p in prefs if p in PILL_MAPPING]
@@ -5518,11 +5612,32 @@ def _recommendation_pipeline_events(prefs, _auth_user, query_text=''):
             free_text_telemetry['intent_hint_attributes'] = (
                 intent_result.get('matched_attribute_pills') or []
             )
+            free_text_query_handling = merge_query_classification(
+                query_text,
+                llm_query_class=intent_result.get('query_class'),
+                impossible_detail=intent_result.get('impossible_detail'),
+                alternative_keywords=intent_result.get('alternative_keywords'),
+            )
+            free_text_telemetry['query_class'] = free_text_query_handling.get('query_class')
+            free_text_response_message = free_text_query_handling.get('response_message')
+            free_text_summary_framing = free_text_query_handling.get('summary_framing')
             LOG_RECOMMEND.info(
                 f"Free text intent: query={query_text!r} backend={free_text_telemetry.get('backend')} "
                 f"hint_pill={intent_result.get('matched_pill')} "
-                f"keywords={intent_result.get('keywords')}"
+                f"keywords={intent_result.get('keywords')} "
+                f"query_class={free_text_telemetry.get('query_class')}"
             )
+
+            if free_text_query_handling.get('early_exit'):
+                yield ('result', ({
+                    'status': 'success',
+                    'message': free_text_response_message,
+                    'recommendations': [],
+                    'query_handling': {
+                        'class': free_text_query_handling.get('query_class'),
+                    },
+                }, 200))
+                return
 
             valid_pills = []
             user_intent_line = query_text
@@ -5530,6 +5645,23 @@ def _recommendation_pipeline_events(prefs, _auth_user, query_text=''):
                 str(k).strip() for k in (intent_result.get('keywords') or []) if str(k or '').strip()
             ]
             free_text_dense_query = str(intent_result.get('dense_query') or '').strip() or query_text
+
+            if free_text_query_handling.get('query_class') == QUERY_CLASS_FALSE_PRESUP:
+                adjusted = apply_false_presupposition_retrieval(
+                    raw_query=query_text,
+                    keywords=free_text_keywords,
+                    dense_query=free_text_dense_query,
+                    alternative_keywords=free_text_query_handling.get('alternative_keywords') or [],
+                )
+                free_text_keywords = adjusted['keywords']
+                free_text_dense_query = adjusted['dense_query']
+
+            if (
+                free_text_query_handling.get('query_class') == QUERY_CLASS_NEGATIVE
+                and not free_text_keywords
+            ):
+                free_text_keywords = ['rating', 'keluhan']
+                free_text_dense_query = 'coffee shop dengan rating rendah dan keluhan di ulasan'
 
             if not free_text_keywords:
                 yield ('result', ({
@@ -5617,6 +5749,15 @@ def _recommendation_pipeline_events(prefs, _auth_user, query_text=''):
                 activity_pills=activity_pills,
                 attribute_pills=attribute_pills,
             )
+        elif (
+            has_query_text
+            and free_text_query_handling.get('query_class') == QUERY_CLASS_NEGATIVE
+        ):
+            retrieval = retrieve_top_k_by_negative_sentiment(
+                profiles,
+                quality_by_place=quality_by_place,
+                top_k=retrieval_top_k(),
+            )
         else:
             retrieval = retrieve_top_k_by_text(
                 profiles,
@@ -5667,6 +5808,17 @@ def _recommendation_pipeline_events(prefs, _auth_user, query_text=''):
                     retrieval_ev.get('positive_review_quotes'),
                     review_ev.get('positive_review_quotes'),
                 )
+            attached_evidence = _attach_metadata_gate_to_evidence(
+                retrieval_ev,
+                score_detail=score_detail,
+                metadata_gate=item.get('metadata_gate'),
+                reviews=(profile.get('reviews') or []),
+            )
+            attached_evidence['metadata_support'] = _build_metadata_support_items(
+                attached_evidence,
+                facilities_tab_intent=review_ev.get('facilities_tab_intent') or {},
+                facilities_intent_aligned=review_ev.get('facilities_intent_aligned'),
+            )
             shop = {
                 'place_id': item.get('place_id'),
                 'name': item.get('name') or profile.get('name') or '',
@@ -5674,12 +5826,7 @@ def _recommendation_pipeline_events(prefs, _auth_user, query_text=''):
                 'profile': profile,
                 'score_detail': score_detail,
                 'evidence': _enrich_evidence_with_profile_context(
-                    _attach_metadata_gate_to_evidence(
-                        retrieval_ev,
-                        score_detail=score_detail,
-                        metadata_gate=item.get('metadata_gate'),
-                        reviews=(profile.get('reviews') or []),
-                    ),
+                    attached_evidence,
                     profile,
                 ),
             }
@@ -5729,6 +5876,8 @@ def _recommendation_pipeline_events(prefs, _auth_user, query_text=''):
         rerank_telemetry = {}
         ranked_candidates = scored_candidates
         keyword_line = query_text or ', '.join(query_tokens[:20])
+        if free_text_summary_framing:
+            keyword_line = f'{keyword_line}\n\n[Framing respons]\n{free_text_summary_framing}'
         if scored_candidates and _llm_ready_for_recommend_run() and llm_rerank_enabled():
             rerank_pool = scored_candidates[:llm_rerank_pool()]
             rerank_user_id = _auth_user.get('id')
@@ -5882,6 +6031,7 @@ def _recommendation_pipeline_events(prefs, _auth_user, query_text=''):
             valid_pills,
             search_keywords=query_tokens,
             user_intent_line=user_intent_line or None,
+            summary_framing=free_text_summary_framing,
         )
         stage_ms['llm_summary_ms'] = round((time.perf_counter() - stage_t0) * 1000, 1)
         stage_ms['summary_llm_count'] = summary_stats.get('summary_llm_count')
@@ -5940,7 +6090,7 @@ def _recommendation_pipeline_events(prefs, _auth_user, query_text=''):
             f"(run_id={pipeline_run_id}, llm_tokens={token_usage.get('total_tokens')})")
 
         yield _recommendation_progress('done', delivered=len(recommendations))
-        yield ('result', ({
+        result_body = {
             'status': 'success',
             'preferences': valid_pills,
             'preference_activities': [p for p in valid_pills if p not in FACILITY_ATTRIBUTE_PILLS],
@@ -5966,7 +6116,15 @@ def _recommendation_pipeline_events(prefs, _auth_user, query_text=''):
                 ),
             },
             'recommendations': recommendations,
-        }, 200))
+        }
+        if free_text_response_message:
+            result_body['message'] = free_text_response_message
+        if free_text_query_handling.get('query_class'):
+            result_body['query_handling'] = {
+                'class': free_text_query_handling.get('query_class'),
+                'impossible_detail': free_text_query_handling.get('impossible_detail'),
+            }
+        yield ('result', (result_body, 200))
 
     except Exception as e:
         LOG_RECOMMEND.exception("Pipeline rekomendasi gagal")

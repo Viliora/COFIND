@@ -1,4 +1,4 @@
-"""Unit test coverage pill: metadata, jam buka, keyword hits."""
+"""Unit test coverage pill: metadata helper, jam buka helper, keyword hits."""
 
 import unittest
 
@@ -51,7 +51,7 @@ class RecommendationCoverageTests(unittest.TestCase):
         self.assertIn('banyak_colokan_terminal', got)
         self.assertNotIn('wifi_kencang', got)
 
-    def test_merge_removes_false_uncovered(self):
+    def test_merge_uses_review_keyword_hits_only(self):
         shop = {
             'profile': {'opening_hours_display': '24 jam'},
             'score_detail': {
@@ -75,10 +75,10 @@ class RecommendationCoverageTests(unittest.TestCase):
             facility_attribute_pills={'wifi_kencang', 'banyak_colokan_terminal', 'buka_sampai_malam_24_hours'},
         )
         self.assertIn('belajar', covered)
-        self.assertIn('wifi_kencang', covered)
         self.assertIn('banyak_colokan_terminal', covered)
-        self.assertIn('buka_sampai_malam_24_hours', covered)
-        self.assertEqual(uncovered, [])
+        self.assertNotIn('wifi_kencang', covered)
+        self.assertNotIn('buka_sampai_malam_24_hours', covered)
+        self.assertEqual(uncovered, ['wifi_kencang', 'buka_sampai_malam_24_hours'])
 
 
 if __name__ == '__main__':
