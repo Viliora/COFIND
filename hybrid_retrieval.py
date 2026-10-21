@@ -1121,12 +1121,26 @@ def _hybrid_retrieve_rrf_core(
 
     bm25_raw: Dict[str, float] = {}
     try:
-        place_ids, bm25_model, _corpus = build_bm25_index(
-            profiles, tokenize_fn=tokenize_for_match,
-        )
-        telemetry['bm25_shops'] = len(place_ids)
-        if clean_tokens:
-            bm25_raw = score_shops_bm25(place_ids, bm25_model, clean_tokens)
+        from postgres_fts import postgres_fts_enabled, score_shops_fts
+
+        if postgres_fts_enabled():
+            place_ids = [
+                str(p.get('place_id') or '').strip()
+                for p in (profiles or [])
+                if str(p.get('place_id') or '').strip()
+            ]
+            telemetry['bm25_shops'] = len(place_ids)
+            telemetry['bm25_backend'] = 'postgres'
+            if clean_tokens:
+                bm25_raw = score_shops_fts(place_ids, clean_tokens)
+        else:
+            place_ids, bm25_model, _corpus = build_bm25_index(
+                profiles, tokenize_fn=tokenize_for_match,
+            )
+            telemetry['bm25_shops'] = len(place_ids)
+            telemetry['bm25_backend'] = 'memory'
+            if clean_tokens:
+                bm25_raw = score_shops_bm25(place_ids, bm25_model, clean_tokens)
     except Exception as err:
         logger.warning(f"BM25 retrieval gagal: {err}")
         telemetry['bm25_error'] = str(err)[:200]

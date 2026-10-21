@@ -6,6 +6,7 @@ import { ensureCoffeeShopImageMap } from '../utils/coffeeShopImages';
 import { PageWithLatestReviews } from '../components/LatestReviewsAside';
 
 import { API_BASE } from '../config/apiBase.js';
+import { authService } from '../services/authService';
 
 const Favorite = () => {
   const { isAuthenticated, user } = useAuth();
@@ -19,6 +20,7 @@ const Favorite = () => {
       if (isAuthenticated && user?.id) {
         const response = await fetch(`${API_BASE}/api/users/${user.id}/favorites`, {
           method: 'GET',
+          headers: authService.getAuthHeaders(),
         });
         if (!response.ok) {
           throw new Error(`API error: ${response.status}`);

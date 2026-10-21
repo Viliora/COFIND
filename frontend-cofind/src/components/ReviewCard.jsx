@@ -79,7 +79,9 @@ const ReviewCard = ({ review, placeId, onDelete, onUpdate, onLike, highlightKeyw
       return;
     }
     let cancelled = false;
-    fetch(`${API_BASE}/api/coffeeshops/${encodeURIComponent(placeId)}/votes/me?user_id=${review.user_id}`)
+    fetch(
+      `${API_BASE}/api/coffeeshops/${encodeURIComponent(placeId)}/users/${review.user_id}/vote`,
+    )
       .then((res) => res.json())
       .then((data) => {
         if (!cancelled && data?.status === 'success') {
@@ -229,7 +231,7 @@ const ReviewCard = ({ review, placeId, onDelete, onUpdate, onLike, highlightKeyw
       
       const response = await fetch(`${API_BASE}/api/reviews/${review.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authService.getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           user_id: user.id,
           text: editText.trim(),
@@ -298,7 +300,7 @@ const ReviewCard = ({ review, placeId, onDelete, onUpdate, onLike, highlightKeyw
       
       const response = await fetch(`${API_BASE}/api/reviews/${review.id}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authService.getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ user_id: user.id })
       });
 
@@ -378,7 +380,7 @@ const ReviewCard = ({ review, placeId, onDelete, onUpdate, onLike, highlightKeyw
     try {
       const response = await fetch(`${API_BASE}/api/reviews/${review.id}/like`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authService.getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ user_id: user.id })
       });
       const data = await response.json();

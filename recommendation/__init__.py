@@ -1,0 +1,1 @@
+from recommendation.pipeline import recommendation_pipeline_events

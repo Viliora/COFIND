@@ -241,6 +241,16 @@ class AuthService {
     return this.token || localStorage.getItem('auth_token');
   }
 
+  /** Header fetch dengan Bearer token (untuk endpoint yang wajib sesi). */
+  getAuthHeaders(extraHeaders = {}) {
+    const headers = { ...extraHeaders };
+    const token = this.getToken();
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+    return headers;
+  }
+
   clearToken() {
     this.token = null;
     localStorage.removeItem('auth_token');

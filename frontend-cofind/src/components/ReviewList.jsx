@@ -5,6 +5,7 @@ import ReviewCard from './ReviewCard';
 import ReviewForm from './ReviewForm';
 import { parseReviewIdFromHash, scrollToReviewById } from '../utils/scrollToReview';
 import { API_BASE } from '../config/apiBase.js';
+import { authService } from '../services/authService';
 const REVIEW_KEYWORD_STOPWORDS = new Set([
   'yang', 'dan', 'atau', 'untuk', 'dengan', 'juga', 'karena', 'dari', 'pada',
   'saya', 'kami', 'kita', 'anda', 'nya', 'ini', 'itu', 'ada', 'aja', 'banget',
@@ -67,7 +68,7 @@ const ReviewList = ({ placeId, shopName, newReview, onReviewSubmitted }) => {
         : `${API_BASE}/api/coffeeshops/${placeId}/reviews?limit=50`;
       const response = await fetch(url, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authService.getAuthHeaders({ 'Content-Type': 'application/json' }),
         signal: abortControllerRef.current.signal,
       });
 

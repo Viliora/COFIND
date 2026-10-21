@@ -21,6 +21,35 @@ logger = get_logger("semantic")
 PGVECTOR_DIM = int(os.getenv("COFIND_PGVECTOR_DIM", "384"))
 
 
+def ensure_review_embedding_vector_dim() -> bool:
+    """Selaraskan dimensi kolom vector dengan COFIND_PGVECTOR_DIM (idempotent, best-effort)."""
+    if not use_pgvector_store():
+        return False
+    from db_backend import get_connection
+
+    dim = PGVECTOR_DIM
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
+        cur.execute(
+            "ALTER TABLE review_embeddings ALTER COLUMN embedding TYPE vector(%s)",
+            (dim,),
+        )
+        conn.commit()
+        return True
+    except Exception as err:
+        conn.rollback()
+        logger.warning(
+            "ensure_review_embedding_vector_dim(%s) gagal (backfill ulang mungkin diperlukan): %s",
+            dim,
+            err,
+        )
+        return False
+    finally:
+        conn.close()
+
+
 def embedding_store_mode() -> str:
     return (os.getenv("COFIND_EMBEDDING_STORE") or "cache").strip().lower()
 

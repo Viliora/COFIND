@@ -209,6 +209,18 @@ def load_model():
             if device:
                 kwargs['device'] = device
             _model = SentenceTransformer(model_name(), **kwargs)
+            expected_dim = int(os.getenv('COFIND_PGVECTOR_DIM', '384') or '384')
+            try:
+                actual_dim = int(_model.get_sentence_embedding_dimension())
+                if actual_dim != expected_dim:
+                    raise ValueError(
+                        f'COFIND_PGVECTOR_DIM={expected_dim} tetapi model={actual_dim}'
+                    )
+            except ValueError as dim_err:
+                _model_error = str(dim_err)[:200]
+                _model = None
+                logger.warning(_model_error)
+                return _model
             logger.info(
                 f"Model siap: {model_name()} "
                 f"({round((time.perf_counter() - started) * 1000)}ms)"

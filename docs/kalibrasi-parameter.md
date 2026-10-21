@@ -105,6 +105,20 @@ Tidak mengubah urutan hybrid langsung: `COFIND_DEV_LLM_STRICT`, `COFIND_SUMMARY_
 
 ---
 
+## H. Triase klausa, FTS, dan migrasi embedding
+
+| Parameter | Default | Efek |
+|-----------|---------|------|
+| `COFIND_CLAUSE_TRIAGE` | true | Bi-encoder triase sebelum LLM clause sentiment |
+| `COFIND_CROSS_ENCODER` | false | Cross-encoder pada pita ambigu (`cross_encoder.py`) |
+| `COFIND_TAU_LOW` / `COFIND_TAU_HIGH` | 0.35 / 0.72 | Ambang accept/reject vs needs_llm (`semantic_triage.py`) |
+| `COFIND_BM25_BACKEND` | memory | `postgres` memakai `coffee_shops.review_tsv` |
+| `COFIND_EMBEDDING_MODEL` + `COFIND_PGVECTOR_DIM` | MiniLM / 384 | Set `BAAI/bge-m3` + 1024 lalu backfill + `tests/smoke/smoke_threshold.py` |
+
+Baseline golden: `python scripts/eval/run_golden_baseline.py` → `data/eval/baseline.json`.
+
+---
+
 ## Asumsi & item tidak terverifikasi
 
 1. **Nilai env di production/staging** — tidak ada bukti di repo selain `.env.example`.

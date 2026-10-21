@@ -1,0 +1,316 @@
+{
+  "recorded_at": "2026-10-21T10:15:30.424768+00:00",
+  "git_commit": "035395990b9b995f12b7fba0c1481945b839b454",
+  "mode": {
+    "llm_rerank": true,
+    "bm25_backend": "memory",
+    "embedding_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+    "retrieval_top_k": 7,
+    "COFIND_LLM_RERANK": null,
+    "COFIND_CROSS_ENCODER": null,
+    "COFIND_BM25_BACKEND": null
+  },
+  "golden_query_count": 18,
+  "queries": [
+    {
+      "id": "gq-pill-kerja-wfc-01",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "kerja",
+          "wifi_kencang"
+        ]
+      },
+      "expect_activity_gate": true,
+      "expect_metadata_gate": true,
+      "tags": [
+        "wfc",
+        "fasilitas"
+      ]
+    },
+    {
+      "id": "gq-pill-kerja-colokan-02",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "kerja",
+          "banyak_colokan_terminal"
+        ]
+      },
+      "expect_activity_gate": true,
+      "expect_metadata_gate": true,
+      "tags": [
+        "wfc",
+        "colokan"
+      ]
+    },
+    {
+      "id": "gq-pill-belajar-03",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "belajar"
+        ]
+      },
+      "expect_activity_gate": true,
+      "expect_metadata_gate": false,
+      "tags": [
+        "belajar"
+      ]
+    },
+    {
+      "id": "gq-pill-game-04",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "bermain game"
+        ]
+      },
+      "expect_activity_gate": true,
+      "expect_metadata_gate": false,
+      "tags": [
+        "game",
+        "mabar"
+      ]
+    },
+    {
+      "id": "gq-pill-keluarga-05",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "keluarga"
+        ]
+      },
+      "expect_activity_gate": true,
+      "expect_metadata_gate": false,
+      "tags": [
+        "keluarga"
+      ]
+    },
+    {
+      "id": "gq-pill-meeting-06",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "meeting_sosialisasi"
+        ]
+      },
+      "expect_activity_gate": true,
+      "expect_metadata_gate": false,
+      "tags": [
+        "meeting"
+      ]
+    },
+    {
+      "id": "gq-pill-ig-07",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "instagrammable"
+        ]
+      },
+      "expect_activity_gate": true,
+      "expect_metadata_gate": false,
+      "tags": [
+        "aesthetic",
+        "instagrammable"
+      ]
+    },
+    {
+      "id": "gq-pill-parkir-08",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "parkir_luas"
+        ]
+      },
+      "expect_activity_gate": false,
+      "expect_metadata_gate": true,
+      "tags": [
+        "fasilitas",
+        "parkir"
+      ]
+    },
+    {
+      "id": "gq-pill-musholla-09",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "musholla"
+        ]
+      },
+      "expect_activity_gate": false,
+      "expect_metadata_gate": true,
+      "tags": [
+        "fasilitas",
+        "religi"
+      ]
+    },
+    {
+      "id": "gq-pill-24jam-10",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "buka_sampai_malam_24_hours"
+        ]
+      },
+      "expect_activity_gate": false,
+      "expect_metadata_gate": true,
+      "tags": [
+        "jam",
+        "24jam"
+      ]
+    },
+    {
+      "id": "gq-pill-multi-11",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "kerja",
+          "parkir_luas",
+          "wifi_kencang"
+        ]
+      },
+      "expect_activity_gate": true,
+      "expect_metadata_gate": true,
+      "tags": [
+        "wfc",
+        "multi",
+        "fasilitas"
+      ]
+    },
+    {
+      "id": "gq-ft-wfc-12",
+      "route": "free_text",
+      "input": {
+        "query_text": "cafe buat WFC",
+        "keywords_mock": [
+          "cafe",
+          "wfc"
+        ],
+        "dense_query_mock": "coffee shop work from cafe wifi laptop"
+      },
+      "expect_activity_gate": "n/a",
+      "expect_metadata_gate": false,
+      "tags": [
+        "wfc",
+        "free_text",
+        "typo"
+      ]
+    },
+    {
+      "id": "gq-ft-murah-musholla-13",
+      "route": "free_text",
+      "input": {
+        "query_text": "kopi murah ada musholla",
+        "keywords_mock": [
+          "kopi",
+          "murah",
+          "musholla"
+        ],
+        "dense_query_mock": "coffee shop murah dengan musholla"
+      },
+      "expect_activity_gate": "n/a",
+      "expect_metadata_gate": false,
+      "tags": [
+        "murah",
+        "musholla",
+        "free_text"
+      ]
+    },
+    {
+      "id": "gq-ft-hidden-gem-14",
+      "route": "free_text",
+      "input": {
+        "query_text": "tempat ngopi hidden gem",
+        "keywords_mock": [
+          "hidden",
+          "gem",
+          "ngopi"
+        ],
+        "dense_query_mock": "coffee shop hidden gem tempat ngopi"
+      },
+      "expect_activity_gate": "n/a",
+      "expect_metadata_gate": false,
+      "tags": [
+        "hidden_gem",
+        "free_text"
+      ]
+    },
+    {
+      "id": "gq-ft-game-15",
+      "route": "free_text",
+      "input": {
+        "query_text": "tempat mabar ML",
+        "keywords_mock": [
+          "mabar",
+          "ml"
+        ],
+        "dense_query_mock": "tempat mabar mobile legends game"
+      },
+      "expect_activity_gate": "n/a",
+      "expect_metadata_gate": false,
+      "tags": [
+        "game",
+        "free_text"
+      ]
+    },
+    {
+      "id": "gq-ft-tenang-16",
+      "route": "free_text",
+      "input": {
+        "query_text": "tenang buat ngoding",
+        "keywords_mock": [
+          "tenang",
+          "ngoding"
+        ],
+        "dense_query_mock": "coffee shop tenang untuk ngoding kerja laptop"
+      },
+      "expect_activity_gate": "n/a",
+      "expect_metadata_gate": false,
+      "tags": [
+        "kerja",
+        "free_text"
+      ]
+    },
+    {
+      "id": "gq-ft-wifi-17",
+      "route": "free_text",
+      "input": {
+        "query_text": "wifi kencang colokan",
+        "keywords_mock": [
+          "wifi",
+          "kencang",
+          "colokan"
+        ],
+        "dense_query_mock": "wifi kencang banyak colokan coffee shop"
+      },
+      "expect_activity_gate": "n/a",
+      "expect_metadata_gate": false,
+      "tags": [
+        "wifi",
+        "colokan",
+        "free_text"
+      ]
+    },
+    {
+      "id": "gq-ft-umum-18",
+      "route": "free_text",
+      "input": {
+        "query_text": "kopi enak",
+        "keywords_mock": [
+          "kopi",
+          "enak"
+        ],
+        "dense_query_mock": "coffee shop kopi enak"
+      },
+      "expect_activity_gate": "n/a",
+      "expect_metadata_gate": false,
+      "tags": [
+        "umum",
+        "free_text"
+      ]
+    }
+  ],
+  "metrics_note": "Baseline struktural: konfigurasi + daftar golden. Precision@k / citation precision butuh hit DB penuh (ragas_eval / E2E)."
+}
