@@ -219,28 +219,16 @@ def admin_dashboard():
         # --- Tren review 14 hari terakhir ---
         reviews_trend = []
         try:
-            from db_backend import use_postgres
-            if use_postgres():
-                trend_rows = cursor.execute(
-                    '''
-                    SELECT TO_CHAR(DATE(created_at), 'YYYY-MM-DD') AS day_key,
-                           COUNT(*) AS cnt
-                    FROM reviews
-                    WHERE created_at >= (CURRENT_DATE - INTERVAL '13 days')
-                    GROUP BY DATE(created_at)
-                    ORDER BY DATE(created_at)
-                    '''
-                ).fetchall()
-            else:
-                trend_rows = cursor.execute(
-                    '''
-                    SELECT date(created_at) AS day_key, COUNT(*) AS cnt
-                    FROM reviews
-                    WHERE date(created_at) >= date('now', '-13 days')
-                    GROUP BY date(created_at)
-                    ORDER BY date(created_at)
-                    '''
-                ).fetchall()
+            trend_rows = cursor.execute(
+                '''
+                SELECT TO_CHAR(DATE(created_at), 'YYYY-MM-DD') AS day_key,
+                       COUNT(*) AS cnt
+                FROM reviews
+                WHERE created_at >= (CURRENT_DATE - INTERVAL '13 days')
+                GROUP BY DATE(created_at)
+                ORDER BY DATE(created_at)
+                '''
+            ).fetchall()
             trend_map = {}
             for row in trend_rows or []:
                 rd = dict_from_row(cursor, row) or {}
@@ -359,7 +347,7 @@ def admin_get_users():
         params = []
 
         if search:
-            where_clauses.append('(LOWER(u.username) LIKE ? OR LOWER(u.email) LIKE ? OR LOWER(COALESCE(p.full_name, "")) LIKE ?)')
+            where_clauses.append('(LOWER(u.username) LIKE ? OR LOWER(u.email) LIKE ? OR LOWER(COALESCE(p.full_name, '')) LIKE ?)')
             like = f'%{search}%'
             params.extend([like, like, like])
 
@@ -942,9 +930,9 @@ def admin_get_reviews():
         params = []
         if search:
             where_clauses.append('('
-                'LOWER(COALESCE(r.review_text, "")) LIKE ? '
-                'OR LOWER(COALESCE(u.username, "")) LIKE ? '
-                'OR LOWER(COALESCE(c.name, "")) LIKE ?'
+                'LOWER(COALESCE(r.review_text, '')) LIKE ? '
+                'OR LOWER(COALESCE(u.username, '')) LIKE ? '
+                'OR LOWER(COALESCE(c.name, '')) LIKE ?'
             ')')
             like = f'%{search}%'
             params.extend([like, like, like])
@@ -1035,10 +1023,10 @@ def admin_get_review_reports():
 
         if search:
             where_clauses.append('('
-                                 'LOWER(COALESCE(rr.report_reason, "")) LIKE ? OR '
-                                 'LOWER(COALESCE(rr.report_text, "")) LIKE ? OR '
-                                 'LOWER(COALESCE(u.username, "")) LIKE ? OR '
-                                 'LOWER(COALESCE(c.name, "")) LIKE ?'
+                                 'LOWER(COALESCE(rr.report_reason, '')) LIKE ? OR '
+                                 'LOWER(COALESCE(rr.report_text, '')) LIKE ? OR '
+                                 'LOWER(COALESCE(u.username, '')) LIKE ? OR '
+                                 'LOWER(COALESCE(c.name, '')) LIKE ?'
                                  ')')
             like = f'%{search}%'
             params.extend([like, like, like, like])

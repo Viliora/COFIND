@@ -1,5 +1,5 @@
 /**
- * Frontend Auth Service - Interfaces with local SQLite backend
+ * Frontend Auth Service — Flask API (Postgres/Supabase DATABASE_URL)
  * Replaces Supabase auth completely
  */
 

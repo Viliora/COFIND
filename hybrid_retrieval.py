@@ -13,10 +13,8 @@ Metadata fasilitas (hanya pill lapis 2 yang user pilih) jadi prior lemah
 (COFIND_METADATA_PRIOR_WEIGHT); kontradiksi ulasan memotong skor
 (COFIND_METADATA_PENALTY_WEIGHT).
 
-Env:
-  COFIND_HYBRID_BM25_WEIGHT        default 0.45
-  COFIND_HYBRID_DENSE_WEIGHT       default 0.45
-  COFIND_HYBRID_QUALITY_WEIGHT     default 0.10
+Env (RRF aktif):
+  COFIND_RRF_K / COFIND_RRF_POOL_SIZE — konstanta RRF dan lebar pool per daftar
   COFIND_METADATA_GATE             default true
   COFIND_METADATA_PRIOR_WEIGHT     default 0.08
   COFIND_METADATA_PENALTY_WEIGHT   default 0.18
@@ -188,18 +186,6 @@ def _env_float(name: str, default: float, *, min_value: float, max_value: float)
     except ValueError:
         return default
     return max(min_value, min(max_value, value))
-
-
-def bm25_weight() -> float:
-    return _env_float('COFIND_HYBRID_BM25_WEIGHT', 0.45, min_value=0.0, max_value=1.0)
-
-
-def dense_weight() -> float:
-    return _env_float('COFIND_HYBRID_DENSE_WEIGHT', 0.45, min_value=0.0, max_value=1.0)
-
-
-def quality_weight() -> float:
-    return _env_float('COFIND_HYBRID_QUALITY_WEIGHT', 0.10, min_value=0.0, max_value=1.0)
 
 
 def retrieval_top_k() -> int:
@@ -1009,30 +995,22 @@ def compute_pill_coverage(
     return covered, uncovered
 
 
-def _blend_weights(has_bm25: bool, has_dense: bool, has_quality: bool) -> Dict[str, float]:
-    """Normalisasi bobot ke komponen yang benar-benar ada."""
-    parts = {
-        'bm25': bm25_weight() if has_bm25 else 0.0,
-        'dense': dense_weight() if has_dense else 0.0,
-        'quality': quality_weight() if has_quality else 0.0,
-    }
-    total = sum(parts.values())
-    if total <= 0:
-        return {'bm25': 0.0, 'dense': 0.0, 'quality': 0.0}
-    return {key: value / total for key, value in parts.items()}
-
-
-def _activity_attribute_weights(has_attribute: bool, has_quality: bool) -> Dict[str, float]:
-    """Aktivitas ~80%, fasilitas tambahan ~14%, kualitas ~6% (dinormalisasi)."""
-    parts = {
-        'activity': 0.80,
-        'attribute': 0.14 if has_attribute else 0.0,
-        'quality': 0.06 if has_quality else 0.0,
-    }
-    total = sum(parts.values())
-    if total <= 0:
-        return {'activity': 1.0, 'attribute': 0.0, 'quality': 0.0}
-    return {key: value / total for key, value in parts.items()}
+def blend_rrf_norm_with_quality(
+    rrf_score: float,
+    max_rrf: float,
+    quality_raw=None,
+) -> tuple:
+    """
+    Normalisasi skor RRF mentah lalu blend 0.9/0.1 dengan skor kualitas toko.
+    Dipakai _hybrid_retrieve_rrf_core dan tests/test_hybrid_retrieval_safety.py.
+    """
+    rrf_norm = (rrf_score / max_rrf) if max_rrf > 0 else 0.0
+    try:
+        quality_s = None if quality_raw is None else float(quality_raw)
+    except (TypeError, ValueError):
+        quality_s = None
+    total = rrf_norm if quality_s is None else (0.9 * rrf_norm + 0.1 * quality_s)
+    return rrf_norm, total, quality_s
 
 
 def rrf_k_constant() -> int:
@@ -1217,7 +1195,11 @@ def _hybrid_retrieve_rrf_core(
         if not profile:
             continue
         reviews = profile.get('reviews') or []
-        rrf_norm = (rrf_score / max_rrf) if max_rrf > 0 else 0.0
+        rrf_norm, total, quality_s = blend_rrf_norm_with_quality(
+            rrf_score,
+            max_rrf,
+            quality_by_place.get(pid),
+        )
 
         if apply_activity_gate and activity_pills:
             passed, pass_mode = shop_passes_activity_gate(
@@ -1238,13 +1220,6 @@ def _hybrid_retrieve_rrf_core(
                 telemetry['activity_pass_lexical'] = int(
                     telemetry.get('activity_pass_lexical') or 0,
                 ) + 1
-
-        quality_raw = quality_by_place.get(pid)
-        try:
-            quality_s = None if quality_raw is None else float(quality_raw)
-        except (TypeError, ValueError):
-            quality_s = None
-        total = rrf_norm if quality_s is None else (0.9 * rrf_norm + 0.1 * quality_s)
 
         gate = dict(empty_gate)
         if use_metadata:

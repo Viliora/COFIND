@@ -486,14 +486,23 @@ def add_cors_headers_to_response(response):
 from recommendation.pipeline import recommendation_pipeline_events
 from recommendation.evidence import _quote_is_caveat
 from recommendation.helpers import (
+    _attribute_quotes_from_reviews,
+    _build_retrieval_evidence,
     _candidate_quotes_for_sentiment,
+    _coerce_step5_summary_text,
+    _extract_summary_field_loose,
+    _invalid_llm_summary_reason,
     _llm_chat_for_pipeline,
+    _matched_facility_from_gate,
+    _merge_quote_rows,
     _parse_llm_json_with_repair,
+    _plain_summary_from_llm_raw,
     _preference_keywords_for_evidence,
     _reset_clause_verdicts,
     _seed_search_keywords,
     _semantic_reference_terms,
     _set_clause_verdicts,
+    _summary_sentence_count,
     rerank_cache_enabled,
 )
 from pill_config import PILL_MAPPING, PILL_LABELS, FACILITY_ATTRIBUTE_PILLS

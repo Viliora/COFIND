@@ -35,16 +35,12 @@ def use_postgres() -> bool:
 
 
 def sql_user_flag_true(column: str) -> str:
-    """Filter users where boolean/int flag is true (Postgres boolean vs SQLite 0/1)."""
-    if use_postgres():
-        return f"COALESCE({column}, false) = true"
-    return f"COALESCE({column}, 0) = 1"
+    """Filter users where boolean flag is true (Postgres)."""
+    return f"COALESCE({column}, false) = true"
 
 
 def sql_user_flag_false(column: str) -> str:
-    if use_postgres():
-        return f"COALESCE({column}, false) = false"
-    return f"COALESCE({column}, 0) = 0"
+    return f"COALESCE({column}, false) = false"
 
 
 def _adapt_sql_postgres(sql: str) -> str:

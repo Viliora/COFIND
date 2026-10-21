@@ -67,11 +67,6 @@ def _build_facilities_evidence_summary(display_tab, intent_aligned):
     if intent_aligned:
         text += " Ini selaras dengan preferensi yang Anda masukkan."
     return text
-def _truncate_evidence_text(text, limit=180):
-    cleaned = _normalize_whitespace(text)
-    if len(cleaned) <= limit:
-        return cleaned
-    return cleaned[: max(0, limit - 3)].rstrip() + '...'
 def _build_metadata_support_items(evidence, *, facilities_tab_intent=None, facilities_intent_aligned=None):
     """Info metadata yang cocok intent user; hanya untuk tampilan, bukan skoring."""
     ev = evidence or {}
@@ -129,32 +124,6 @@ def _build_metadata_support_items(evidence, *, facilities_tab_intent=None, facil
             )
 
     return out[:4]
-def _build_empty_supporting_evidence():
-    return {
-        'facilities': [],
-        'facilities_tab': {'popular_for': [], 'highlights': [], 'atmosphere': []},
-        'facilities_tab_intent': {'popular_for': [], 'highlights': [], 'atmosphere': []},
-        'facilities_intent_aligned': False,
-        'facilities_evidence_summary': '',
-        'metadata_gate': {},
-        'matched_facility_pills': [],
-        'matched_facility_labels': [],
-        'metadata_support': [],
-        'metadata_contradiction_quotes': [],
-        'review_quotes': [],
-        'positive_review_quotes': [],
-        'negative_review_quotes': [],
-        'search_keywords': [],
-        'search_keyword_matches': [],
-        'pill_stats': [],
-        'category_ratings': {'makanan': None, 'layanan': None, 'suasana': None},
-        'avg_user_rating': None,
-        'review_count': 0,
-        'is_low_confidence': False,
-        'modal_display_quotes': [],
-        'modal_caveat_quotes': [],
-        'modal_quote_summary': '',
-    }
 def _quote_ui_extras(src):
     """Field opsional yang diwariskan ke JSON kutipan untuk UI."""
     if not isinstance(src, dict):

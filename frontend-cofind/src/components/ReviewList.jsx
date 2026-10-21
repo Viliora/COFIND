@@ -38,7 +38,7 @@ const ReviewList = ({ placeId, shopName, newReview, onReviewSubmitted }) => {
   const fetchCountRef = useRef(0);
   const currentPlaceIdRef = useRef(null);
   
-  // Fetch reviews - local SQLite backend only
+  // Fetch reviews — Flask API (Postgres via backend)
   const fetchReviews = useCallback(async (showLoading = false) => {
     if (!placeId) {
       setLoading(false);

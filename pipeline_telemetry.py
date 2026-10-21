@@ -182,54 +182,29 @@ def ensure_pipeline_runs_table() -> bool:
     conn = None
     try:
         from auth_utils import get_db_connection
-        from db_backend import use_postgres
-
         conn = get_db_connection()
         cursor = conn.cursor()
-        if use_postgres():
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS recommendation_pipeline_runs (
-                    id SERIAL PRIMARY KEY,
-                    run_id TEXT NOT NULL UNIQUE,
-                    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
-                    preferences_key TEXT,
-                    status TEXT NOT NULL DEFAULT 'success',
-                    delivered_count INTEGER NOT NULL DEFAULT 0,
-                    total_ms REAL,
-                    clause_sentiment_ms REAL,
-                    rerank_backend TEXT,
-                    clause_sentiment_mode TEXT,
-                    metadata_prior_applied INTEGER DEFAULT 0,
-                    metadata_penalized INTEGER DEFAULT 0,
-                    llm_prompt_tokens INTEGER DEFAULT 0,
-                    llm_completion_tokens INTEGER DEFAULT 0,
-                    llm_total_tokens INTEGER DEFAULT 0,
-                    snapshot_json TEXT,
-                    created_at TIMESTAMPTZ DEFAULT NOW()
-                )
-            """)
-        else:
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS recommendation_pipeline_runs (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    run_id TEXT NOT NULL UNIQUE,
-                    user_id INTEGER,
-                    preferences_key TEXT,
-                    status TEXT NOT NULL DEFAULT 'success',
-                    delivered_count INTEGER NOT NULL DEFAULT 0,
-                    total_ms REAL,
-                    clause_sentiment_ms REAL,
-                    rerank_backend TEXT,
-                    clause_sentiment_mode TEXT,
-                    metadata_prior_applied INTEGER DEFAULT 0,
-                    metadata_penalized INTEGER DEFAULT 0,
-                    llm_prompt_tokens INTEGER DEFAULT 0,
-                    llm_completion_tokens INTEGER DEFAULT 0,
-                    llm_total_tokens INTEGER DEFAULT 0,
-                    snapshot_json TEXT,
-                    created_at TEXT DEFAULT (datetime('now'))
-                )
-            """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS recommendation_pipeline_runs (
+                id SERIAL PRIMARY KEY,
+                run_id TEXT NOT NULL UNIQUE,
+                user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                preferences_key TEXT,
+                status TEXT NOT NULL DEFAULT 'success',
+                delivered_count INTEGER NOT NULL DEFAULT 0,
+                total_ms REAL,
+                clause_sentiment_ms REAL,
+                rerank_backend TEXT,
+                clause_sentiment_mode TEXT,
+                metadata_prior_applied INTEGER DEFAULT 0,
+                metadata_penalized INTEGER DEFAULT 0,
+                llm_prompt_tokens INTEGER DEFAULT 0,
+                llm_completion_tokens INTEGER DEFAULT 0,
+                llm_total_tokens INTEGER DEFAULT 0,
+                snapshot_json TEXT,
+                created_at TIMESTAMPTZ DEFAULT NOW()
+            )
+        """)
         conn.commit()
         _TABLE_READY = True
         return True

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FACILITY_ATTRIBUTE_GROUPS } from '../constants/reviewPills';
 
-/** Harus sama dengan _MAX_ATTRIBUTE_PILLS di app.py */
+/** Harus sama dengan _MAX_ATTRIBUTE_PILLS di recommendation/request_prefs.py */
 export const MAX_FACILITY_ATTRIBUTES = 3;
 
 export default function FacilityAttributePicker({

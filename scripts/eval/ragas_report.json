@@ -1,0 +1,17 @@
+{
+  "dataset": "C:\\Users\\User\\cofind\\scripts\\eval\\sample_ragas_dataset.json",
+  "case_count": 2,
+  "ragas": null,
+  "simple_coverage": [
+    {
+      "id": "pill-kerja-wifi-01",
+      "has_gold_place": false,
+      "reference_snippets": 2
+    },
+    {
+      "id": "pill-belajar-02",
+      "has_gold_place": false,
+      "reference_snippets": 2
+    }
+  ]
+}

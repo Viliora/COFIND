@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "pill-kerja-wifi-01",
+      "question": "Coffee shop cocok kerja dengan wifi kencang",
+      "gold_place_id": null,
+      "reference_contexts": [
+        "wifi kencang dan stabil untuk WFH",
+        "koneksi internet ngebut di lantai dua"
+      ],
+      "ground_truth": "Toko dengan ulasan positif tentang wifi/koneksi untuk kerja."
+    },
+    {
+      "id": "pill-belajar-02",
+      "question": "Tempat belajar tenang",
+      "gold_place_id": null,
+      "reference_contexts": [
+        "suasana tenang cocok untuk belajar",
+        "bisa fokus nugas di sini"
+      ],
+      "ground_truth": "Rekomendasi dengan bukti ulasan belajar/fokus."
+    }
+  ]
+}

@@ -81,8 +81,10 @@ backup_task.xml
 !requirements.txt
 !requirements-*.txt
 
-# Scripts, tests, migrasi one-shot
-scripts/
+# Scripts, tests, migrasi one-shot (kecuali scripts/eval untuk golden snapshot CI)
+scripts/*
+!scripts/eval/
+!scripts/eval/**
 tests/
 pytest.ini
 .pytest_cache/

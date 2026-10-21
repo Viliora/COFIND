@@ -21,6 +21,7 @@ from hybrid_retrieval import (  # noqa: E402
     _hybrid_retrieve_rrf_core,
     _rrf_ranked_place_ids,
     activity_signal_tokens,
+    blend_rrf_norm_with_quality,
     compile_activity_matcher,
     empty_activity_matcher,
     reciprocal_rank_fusion,
@@ -80,14 +81,6 @@ def make_profile(place_id: str, name: str, review_texts: list[str]) -> dict:
         "name": name,
         "reviews": [{"text": t, "rating": 5} for t in review_texts],
     }
-
-
-def blend_total_score(rrf_score: float, max_rrf: float, quality=None) -> float:
-    """Mirror hybrid_retrieval.py:1163-1186."""
-    rrf_norm = (rrf_score / max_rrf) if max_rrf > 0 else 0.0
-    if quality is None:
-        return rrf_norm
-    return 0.9 * rrf_norm + 0.1 * float(quality)
 
 
 def _patch_bm25_dense(bm25_scores: dict, dense_scores: dict):
@@ -155,15 +148,25 @@ class TestRrfNormAndQualityBlend(unittest.TestCase):
     def test_rrf_norm_divides_by_max(self):
         scores = {"a": 0.02, "b": 0.04}
         max_rrf = max(scores.values())
-        self.assertAlmostEqual(blend_total_score(0.02, max_rrf), 0.5)
-        self.assertAlmostEqual(blend_total_score(0.04, max_rrf), 1.0)
+        rrf_norm_a, total_a, _ = blend_rrf_norm_with_quality(0.02, max_rrf)
+        rrf_norm_b, total_b, _ = blend_rrf_norm_with_quality(0.04, max_rrf)
+        self.assertAlmostEqual(total_a, rrf_norm_a)
+        self.assertAlmostEqual(rrf_norm_a, 0.5)
+        self.assertAlmostEqual(total_b, rrf_norm_b)
+        self.assertAlmostEqual(rrf_norm_b, 1.0)
 
     def test_zero_max_rrf_yields_zero_norm(self):
-        self.assertAlmostEqual(blend_total_score(0.0, 0.0), 0.0)
+        rrf_norm, total, _ = blend_rrf_norm_with_quality(0.0, 0.0)
+        self.assertAlmostEqual(rrf_norm, 0.0)
+        self.assertAlmostEqual(total, 0.0)
 
     def test_quality_none_uses_rrf_norm_only(self):
-        self.assertAlmostEqual(blend_total_score(0.03, 0.06, quality=None), 0.5)
-        self.assertAlmostEqual(blend_total_score(0.03, 0.06, quality=0.8), 0.9 * 0.5 + 0.1 * 0.8)
+        rrf_norm, total, quality_s = blend_rrf_norm_with_quality(0.03, 0.06, None)
+        self.assertIsNone(quality_s)
+        self.assertAlmostEqual(total, rrf_norm)
+        self.assertAlmostEqual(total, 0.5)
+        _, total_q, _ = blend_rrf_norm_with_quality(0.03, 0.06, 0.8)
+        self.assertAlmostEqual(total_q, 0.9 * 0.5 + 0.1 * 0.8)
 
 
 class TestHybridRetrieveRrfCoreMocked(unittest.TestCase):
