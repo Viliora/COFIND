@@ -438,6 +438,7 @@ def _create_chat_completion(
     temperature: float,
     top_p: float,
     usage_stage: Optional[str] = None,
+    response_format: Optional[Dict[str, object]] = None,
 ):
     client = hf_client if provider == "hf" else gemini_client
     if client is None:
@@ -453,6 +454,8 @@ def _create_chat_completion(
         "temperature": temperature,
         "top_p": top_p,
     }
+    if response_format is not None:
+        call_kwargs["response_format"] = response_format
     if (
         provider == "gemini"
         and GEMINI_REASONING_EFFORT
@@ -484,6 +487,7 @@ def _chat_with_fallback(
     top_p: float,
     usage_stage: Optional[str],
     prefer_provider: Optional[Literal["hf", "gemini"]] = None,
+    response_format: Optional[Dict[str, object]] = None,
 ) -> Tuple[str, Optional[Dict[str, int]], str, str]:
     """
     Return (content, usage, provider_used, model_id_used).
@@ -510,6 +514,7 @@ def _chat_with_fallback(
                 temperature=temperature,
                 top_p=top_p,
                 usage_stage=usage_stage,
+                response_format=response_format,
             )
             usage = usage_from_chat_response(resp)
             if usage is not None:
@@ -524,6 +529,8 @@ def _chat_with_fallback(
             return content, usage, "hf", model_id
         except Exception as err:
             last_err = err
+            if response_format is not None:
+                raise
             if _should_try_gemini_after_hf_error(err):
                 if route is None:
                     logger.warning(
@@ -550,6 +557,7 @@ def _chat_with_fallback(
                 temperature=temperature,
                 top_p=top_p,
                 usage_stage=usage_stage,
+                response_format=response_format,
             )
             usage = usage_from_chat_response(resp)
             stage = usage_stage or 'llm_chat'
@@ -622,6 +630,7 @@ def llm_chat_completions_create(
     repetition_penalty: float = _DEFAULT_REPETITION_PENALTY,
     usage_stage: Optional[str] = None,
     prefer_provider: Optional[Literal["hf", "gemini"]] = None,
+    response_format: Optional[Dict[str, object]] = None,
 ) -> str:
     content, _usage = llm_chat_completions_create_with_usage(
         model=model,
@@ -633,6 +642,7 @@ def llm_chat_completions_create(
         repetition_penalty=repetition_penalty,
         usage_stage=usage_stage,
         prefer_provider=prefer_provider,
+        response_format=response_format,
     )
     return content
 
@@ -648,6 +658,7 @@ def llm_chat_completions_create_with_usage(
     repetition_penalty: float = _DEFAULT_REPETITION_PENALTY,
     usage_stage: Optional[str] = None,
     prefer_provider: Optional[Literal["hf", "gemini"]] = None,
+    response_format: Optional[Dict[str, object]] = None,
 ) -> Tuple[str, Optional[Dict[str, int]]]:
     max_tokens = _clamp_int(max_tokens, min_value=16, max_value=max(32, _MAX_CHAT_TOKENS_CAP))
     _ = _clamp_int(min_tokens, min_value=0, max_value=max_tokens)
@@ -662,6 +673,7 @@ def llm_chat_completions_create_with_usage(
         top_p=top_p,
         usage_stage=usage_stage,
         prefer_provider=prefer_provider,
+        response_format=response_format,
     )
     if provider == "gemini" and usage_stage:
         logger.debug(f"LLM via Gemini fallback stage={usage_stage} model={model_used}")

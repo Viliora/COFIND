@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 import { API_BASE } from '../config/apiBase.js';
+import { authService } from '../services/authService';
 
 function VoteButtons({ item, disabled, onVote }) {
   return (
@@ -58,7 +59,8 @@ export default function ShopProsCons({ placeId, user, isAuthenticated, onRequire
       const params = new URLSearchParams();
       if (user?.id) params.set('user_id', user.id);
       const response = await fetch(
-        `${API_BASE}/api/coffeeshops/${encodeURIComponent(placeId)}/pros-cons?${params.toString()}`
+        `${API_BASE}/api/coffeeshops/${encodeURIComponent(placeId)}/pros-cons?${params.toString()}`,
+        { headers: authService.getAuthHeaders() },
       );
       if (response.ok) {
         const payload = await response.json();
@@ -89,7 +91,7 @@ export default function ShopProsCons({ placeId, user, isAuthenticated, onRequire
         `${API_BASE}/api/coffeeshops/${encodeURIComponent(placeId)}/pros-cons/${pointId}/vote`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authService.getAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({ user_id: Number(user.id), vote_type: voteType }),
         }
       );

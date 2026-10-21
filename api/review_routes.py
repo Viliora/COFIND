@@ -4,8 +4,12 @@ from __future__ import annotations
 
 from flask import Blueprint, jsonify, request
 
-from auth_guards import extract_bearer_token
-from auth_utils import get_user_by_id, verify_token
+from auth_guards import (
+    forbid_user_id_spoofing,
+    get_optional_authenticated_user,
+    require_authenticated_user,
+)
+from auth_utils import get_user_by_id
 from logging_config import get_logger
 from review_utils import (
     create_review,
@@ -38,22 +42,34 @@ def api_latest_reviews():
 def api_create_review():
     """Create a new review (rating tempat + text + photos)."""
     try:
-        data = request.get_json()
-        user_id = data.get('user_id')
+        auth_user, auth_error = require_authenticated_user()
+        if auth_error:
+            return auth_error
+
+        data = request.get_json(silent=True) or {}
+        spoof_error = forbid_user_id_spoofing(auth_user, data.get('user_id'))
+        if spoof_error:
+            return spoof_error
+
         place_id = data.get('place_id')
         rating = data.get('rating')
         text = data.get('text', '')
         photos = data.get('photos') or []
         
-        if not user_id or not place_id or rating is None:
+        if not place_id or rating is None:
             return jsonify({'status': 'error', 'message': 'Missing required fields'}), 400
         
         result = create_review(
-            user_id, place_id, rating, text,
+            auth_user['id'], place_id, rating, text,
             photos=photos,
         )
         
         if result['success']:
+            try:
+                from shop_search_store import refresh_shop_search_document
+                refresh_shop_search_document(place_id)
+            except Exception:
+                pass
             return jsonify({
                 'status': 'success',
                 'review': result['review']
@@ -91,24 +107,33 @@ def api_get_review(review_id):
 def api_update_review(review_id):
     """Update a review"""
     try:
-        data = request.get_json()
-        user_id = data.get('user_id')
-        
-        if not user_id:
-            return jsonify({'status': 'error', 'message': 'user_id required'}), 400
+        auth_user, auth_error = require_authenticated_user()
+        if auth_error:
+            return auth_error
+
+        data = request.get_json(silent=True) or {}
+        spoof_error = forbid_user_id_spoofing(auth_user, data.get('user_id'))
+        if spoof_error:
+            return spoof_error
         
         result = update_review(
             review_id,
-            user_id,
+            auth_user['id'],
             rating=data.get('rating'),
             text=data.get('text'),
             photos=data.get('photos'),
         )
         
         if result['success']:
+            review = result.get('review') or {}
+            try:
+                from shop_search_store import refresh_shop_search_document
+                refresh_shop_search_document(review.get('place_id'))
+            except Exception:
+                pass
             return jsonify({
                 'status': 'success',
-                'review': result['review']
+                'review': review,
             }), 200
         else:
             return jsonify({
@@ -123,13 +148,16 @@ def api_update_review(review_id):
 def api_delete_review(review_id):
     """Delete a review"""
     try:
-        data = request.get_json()
-        user_id = data.get('user_id')
+        auth_user, auth_error = require_authenticated_user()
+        if auth_error:
+            return auth_error
+
+        data = request.get_json(silent=True) or {}
+        spoof_error = forbid_user_id_spoofing(auth_user, data.get('user_id'))
+        if spoof_error:
+            return spoof_error
         
-        if not user_id:
-            return jsonify({'status': 'error', 'message': 'user_id required'}), 400
-        
-        result = delete_review(review_id, user_id)
+        result = delete_review(review_id, auth_user['id'])
         
         if result['success']:
             return jsonify({
@@ -147,13 +175,18 @@ def api_delete_review(review_id):
 
 @bp.route('/api/reviews/<int:review_id>/like', methods=['POST'])
 def api_toggle_review_like(review_id):
-    """Toggle like on a review. Body: { user_id }."""
+    """Toggle like on a review."""
     try:
-        data = request.get_json() or {}
-        user_id = data.get('user_id')
-        if not user_id:
-            return jsonify({'status': 'error', 'message': 'user_id required'}), 400
-        result = toggle_review_like(user_id, review_id)
+        auth_user, auth_error = require_authenticated_user()
+        if auth_error:
+            return auth_error
+
+        data = request.get_json(silent=True) or {}
+        spoof_error = forbid_user_id_spoofing(auth_user, data.get('user_id'))
+        if spoof_error:
+            return spoof_error
+
+        result = toggle_review_like(auth_user['id'], review_id)
         if result['success']:
             return jsonify({
                 'status': 'success',
@@ -168,26 +201,9 @@ def api_toggle_review_like(review_id):
 @bp.route('/api/reviews/<int:review_id>/report', methods=['POST'])
 def api_report_review(review_id):
     """Laporkan review. Body opsional: { report_reason, report_text }. Wajib login."""
-    token = extract_bearer_token()
-    if not token:
-        return jsonify({
-            'status': 'error',
-            'message': 'Login diperlukan untuk melaporkan ulasan.',
-        }), 401
-
-    auth_result = verify_token(token)
-    if not auth_result.get('valid'):
-        return jsonify({
-            'status': 'error',
-            'message': 'Sesi tidak valid atau kadaluarsa. Silakan login lagi.',
-        }), 401
-
-    auth_user = auth_result.get('user') or {}
-    if not auth_user.get('id'):
-        return jsonify({
-            'status': 'error',
-            'message': 'Sesi tidak valid. Silakan login lagi.',
-        }), 401
+    auth_user, auth_error = require_authenticated_user()
+    if auth_error:
+        return auth_error
 
     try:
         data = request.get_json() or {}
@@ -239,10 +255,15 @@ def api_get_shop_review_rating_summary(place_id):
 
 @bp.route('/api/coffeeshops/<place_id>/reviews', methods=['GET'])
 def api_get_shop_reviews(place_id):
-    """Get all reviews for a coffee shop. Optional query: user_id to include user_has_liked."""
+    """Get all reviews for a coffee shop. user_has_liked dari sesi login (Bearer), bukan query user_id."""
     try:
         limit = request.args.get('limit', 50, type=int)
-        current_user_id = request.args.get('user_id', type=int)
+        auth_user = get_optional_authenticated_user()
+        if auth_user:
+            spoof_error = forbid_user_id_spoofing(auth_user, request.args.get('user_id'))
+            if spoof_error:
+                return spoof_error
+        current_user_id = auth_user['id'] if auth_user else None
         result = get_reviews_for_shop(place_id, limit, current_user_id=current_user_id)
         
         if result['success']:

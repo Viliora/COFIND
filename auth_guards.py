@@ -56,3 +56,39 @@ def require_authenticated_user():
         }), 401)
 
     return user, None
+
+
+def get_optional_authenticated_user():
+    """Pengguna login jika token valid; None jika tidak ada / tidak valid."""
+    token = extract_bearer_token()
+    if not token:
+        return None
+
+    auth_result = verify_token(token)
+    if not auth_result.get('valid'):
+        return None
+
+    user = auth_result.get('user')
+    if not user or not user.get('id'):
+        return None
+
+    return user
+
+
+def forbid_user_id_spoofing(auth_user, claimed_user_id):
+    """Tolak jika body/query user_id tidak cocok dengan sesi (opsional, untuk transisi API)."""
+    if claimed_user_id is None or claimed_user_id == '':
+        return None
+    try:
+        claimed = int(claimed_user_id)
+    except (TypeError, ValueError):
+        return (jsonify({
+            'status': 'error',
+            'message': 'user_id tidak valid.',
+        }), 400)
+    if claimed != int(auth_user['id']):
+        return (jsonify({
+            'status': 'error',
+            'message': 'user_id tidak sesuai dengan sesi login.',
+        }), 403)
+    return None

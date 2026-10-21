@@ -7,3 +7,5 @@ vulture>=2.11
 pre-commit>=3.8
 jsonschema>=4.20
 locust>=2.24
+ragas>=0.2
+datasets>=2.14

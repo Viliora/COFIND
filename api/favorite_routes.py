@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from flask import Blueprint, jsonify, request
 
+from auth_guards import forbid_user_id_spoofing, require_authenticated_user
 from favorites_utils import (
     add_favorite,
     get_favorite_count,
@@ -20,11 +21,19 @@ LOG_API = get_logger('api')
 def api_add_favorite():
     """Add a coffee shop to favorites"""
     try:
+        auth_user, auth_error = require_authenticated_user()
+        if auth_error:
+            return auth_error
+
         data = request.get_json(silent=True) or {}
-        user_id = data.get('user_id')
+        spoof_error = forbid_user_id_spoofing(auth_user, data.get('user_id'))
+        if spoof_error:
+            return spoof_error
+
+        user_id = auth_user['id']
         place_id = (data.get('place_id') or '').strip() if data.get('place_id') is not None else ''
 
-        if user_id is None or user_id == '' or not place_id:
+        if not place_id:
             return jsonify({'status': 'error', 'message': 'Missing required fields'}), 400
 
         result = add_favorite(user_id, place_id)
@@ -48,13 +57,16 @@ def api_add_favorite():
 def api_remove_favorite(place_id):
     """Remove a coffee shop from favorites"""
     try:
-        data = request.get_json()
-        user_id = data.get('user_id')
-        
-        if not user_id:
-            return jsonify({'status': 'error', 'message': 'user_id required'}), 400
-        
-        result = remove_favorite(user_id, place_id)
+        auth_user, auth_error = require_authenticated_user()
+        if auth_error:
+            return auth_error
+
+        data = request.get_json(silent=True) or {}
+        spoof_error = forbid_user_id_spoofing(auth_user, data.get('user_id'))
+        if spoof_error:
+            return spoof_error
+
+        result = remove_favorite(auth_user['id'], place_id)
         
         if result['success']:
             return jsonify({
@@ -74,6 +86,15 @@ def api_remove_favorite(place_id):
 def api_get_user_favorites(user_id):
     """Get all favorites for a user"""
     try:
+        auth_user, auth_error = require_authenticated_user()
+        if auth_error:
+            return auth_error
+        if int(auth_user['id']) != int(user_id):
+            return jsonify({
+                'status': 'error',
+                'message': 'Akses ditolak.',
+            }), 403
+
         limit = request.args.get('limit', 100, type=int)
         result = get_user_favorites(user_id, limit)
         
@@ -95,12 +116,15 @@ def api_get_user_favorites(user_id):
 def api_check_favorite(place_id):
     """Check if a coffee shop is in user's favorites"""
     try:
-        user_id = request.args.get('user_id', type=int)
-        
-        if not user_id:
-            return jsonify({'status': 'error', 'message': 'user_id required'}), 400
-        
-        result = is_favorite(user_id, place_id)
+        auth_user, auth_error = require_authenticated_user()
+        if auth_error:
+            return auth_error
+
+        spoof_error = forbid_user_id_spoofing(auth_user, request.args.get('user_id'))
+        if spoof_error:
+            return spoof_error
+
+        result = is_favorite(auth_user['id'], place_id)
         
         if result['success']:
             return jsonify({
@@ -135,4 +159,3 @@ def api_get_favorite_count(place_id):
     except Exception as e:
         LOG_API.exception("api_get_favorite_count gagal")
         return jsonify({'status': 'error', 'message': str(e)}), 500
-

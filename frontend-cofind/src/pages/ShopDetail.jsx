@@ -18,6 +18,7 @@ import { parseJsonField, resolveShopPlacesMeta } from '../utils/googlePlacesDisp
 
 // API Configuration (samakan sumber data dengan homepage)
 import { API_BASE } from '../config/apiBase.js';
+import { authService } from '../services/authService';
 // Using Supabase only - photos stored in Supabase Storage
 const MIN_REVIEWS = 15; // Maksimal jumlah reviews yang ditampilkan
 
@@ -200,6 +201,7 @@ function ShopDetail() {
         try {
           const response = await fetch(
             `${API_BASE}/api/coffeeshops/${encodeURIComponent(pid)}/favorite-status?user_id=${uid}`,
+            { headers: authService.getAuthHeaders() },
           );
           if (response.ok) {
             const payload = await response.json();
@@ -215,6 +217,7 @@ function ShopDetail() {
         try {
           const response = await fetch(
             `${API_BASE}/api/coffeeshops/${encodeURIComponent(pid)}/want-to-visit-status?user_id=${uid}`,
+            { headers: authService.getAuthHeaders() },
           );
           if (response.ok) {
             const payload = await response.json();
@@ -289,6 +292,7 @@ function ShopDetail() {
     try {
       const response = await fetch(
         `${API_BASE}/api/coffeeshops/${encodeURIComponent(pid)}/votes/me?user_id=${Number(user.id)}`,
+        { headers: authService.getAuthHeaders() },
       );
       if (response.ok) {
         const payload = await response.json();
@@ -330,7 +334,7 @@ function ShopDetail() {
     try {
       const response = await fetch(`${API_BASE}/api/coffeeshops/${encodeURIComponent(pid)}/votes`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authService.getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ user_id: Number(user.id), ...voteData }),
       });
       const payload = await response.json().catch(() => ({}));
@@ -368,7 +372,7 @@ function ShopDetail() {
       if (isFavorite) {
         const response = await fetch(`${API_BASE}/api/favorites/${encodeURIComponent(pid)}`, {
           method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authService.getAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({ user_id: uid }),
         });
         const payload = await response.json().catch(() => ({}));
@@ -383,7 +387,7 @@ function ShopDetail() {
       } else {
         const response = await fetch(`${API_BASE}/api/favorites`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authService.getAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({ user_id: uid, place_id: pid }),
         });
         const payload = await response.json().catch(() => ({}));
@@ -423,7 +427,7 @@ function ShopDetail() {
       if (isWantToVisit) {
         const response = await fetch(`${API_BASE}/api/want-to-visit/${encodeURIComponent(pid)}`, {
           method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authService.getAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({ user_id: uid }),
         });
         const payload = await response.json().catch(() => ({}));
@@ -438,7 +442,7 @@ function ShopDetail() {
       } else {
         const response = await fetch(`${API_BASE}/api/want-to-visit`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authService.getAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({ user_id: uid, place_id: pid }),
         });
         const payload = await response.json().catch(() => ({}));

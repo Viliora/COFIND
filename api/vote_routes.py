@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from flask import Blueprint, jsonify, request
 
+from auth_guards import forbid_user_id_spoofing, get_optional_authenticated_user, require_authenticated_user
 from db_backend import get_connection
 from logging_config import get_logger
 from pros_cons_utils import get_pros_cons, maybe_refresh_pros_cons, toggle_pros_cons_vote
@@ -28,26 +29,46 @@ def api_get_vote_summary(place_id):
 def api_get_my_vote(place_id):
     """Current user's vote for a coffee shop."""
     try:
-        user_id = request.args.get('user_id', type=int)
-        if not user_id:
-            return jsonify({'status': 'error', 'message': 'user_id required'}), 400
-        vote = get_user_vote(user_id, place_id)
+        auth_user, auth_error = require_authenticated_user()
+        if auth_error:
+            return auth_error
+
+        spoof_error = forbid_user_id_spoofing(auth_user, request.args.get('user_id'))
+        if spoof_error:
+            return spoof_error
+
+        vote = get_user_vote(auth_user['id'], place_id)
         return jsonify({'status': 'success', 'vote': vote}), 200
     except Exception as e:
         LOG_API.exception("api_get_my_vote gagal")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@bp.route('/api/coffeeshops/<place_id>/users/<int:user_id>/vote', methods=['GET'])
+def api_get_user_vote_for_shop(place_id, user_id):
+    """Vote publik (read-only) satu user untuk satu toko — untuk tampilan ulasan, bukan aksi."""
+    try:
+        vote = get_user_vote(user_id, place_id)
+        return jsonify({'status': 'success', 'vote': vote}), 200
+    except Exception as e:
+        LOG_API.exception("api_get_user_vote_for_shop gagal")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @bp.route('/api/coffeeshops/<place_id>/votes', methods=['POST'])
 def api_upsert_vote(place_id):
     """Create or update the current user's vote for a coffee shop."""
     try:
+        auth_user, auth_error = require_authenticated_user()
+        if auth_error:
+            return auth_error
+
         data = request.get_json(silent=True) or {}
-        user_id = data.get('user_id')
-        if not user_id:
-            return jsonify({'status': 'error', 'message': 'user_id required'}), 400
+        spoof_error = forbid_user_id_spoofing(auth_user, data.get('user_id'))
+        if spoof_error:
+            return spoof_error
 
         result = upsert_vote(
-            user_id,
+            auth_user['id'],
             place_id,
             presence=data.get('presence'),
             rating=data.get('rating'),
@@ -73,7 +94,11 @@ def api_get_pros_cons(place_id):
     Selain itu, hanya membaca hasil yang sudah tersimpan di database.
     """
     try:
-        user_id = request.args.get('user_id', type=int)
+        auth_user = get_optional_authenticated_user()
+        spoof_error = forbid_user_id_spoofing(auth_user, request.args.get('user_id')) if auth_user else None
+        if spoof_error:
+            return spoof_error
+        user_id = auth_user['id'] if auth_user else None
 
         conn = get_connection()
         cursor = conn.cursor()
@@ -98,17 +123,22 @@ def api_get_pros_cons(place_id):
 
 @bp.route('/api/coffeeshops/<place_id>/pros-cons/<int:point_id>/vote', methods=['POST'])
 def api_vote_pros_cons(place_id, point_id):
-    """Upvote/downvote satu poin pro/con. Body: { user_id, vote_type: 'up'|'down' }."""
+    """Upvote/downvote satu poin pro/con. Body: { vote_type: 'up'|'down' }."""
     try:
+        auth_user, auth_error = require_authenticated_user()
+        if auth_error:
+            return auth_error
+
         data = request.get_json(silent=True) or {}
-        user_id = data.get('user_id')
+        spoof_error = forbid_user_id_spoofing(auth_user, data.get('user_id'))
+        if spoof_error:
+            return spoof_error
+
         vote_type = data.get('vote_type')
-        if not user_id:
-            return jsonify({'status': 'error', 'message': 'user_id required'}), 400
         if vote_type not in ('up', 'down'):
             return jsonify({'status': 'error', 'message': "vote_type harus 'up' atau 'down'"}), 400
 
-        result = toggle_pros_cons_vote(user_id, point_id, vote_type)
+        result = toggle_pros_cons_vote(auth_user['id'], point_id, vote_type)
         if result['success']:
             return jsonify({
                 'status': 'success',
@@ -120,4 +150,3 @@ def api_vote_pros_cons(place_id, point_id):
     except Exception as e:
         LOG_API.exception("api_vote_pros_cons gagal")
         return jsonify({'status': 'error', 'message': str(e)}), 500
-

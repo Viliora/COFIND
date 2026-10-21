@@ -102,6 +102,10 @@ def batch_concurrency() -> int:
     return _env_int('COFIND_CLAUSE_SENTIMENT_CONCURRENCY', 3, min_value=1, max_value=8)
 
 
+def clause_structured_output_enabled() -> bool:
+    return _env_flag('COFIND_LLM_STRUCTURED_CLAUSE', False)
+
+
 def sentiment_config() -> Dict[str, object]:
     return {
         'enabled': clause_sentiment_enabled(),
@@ -111,7 +115,80 @@ def sentiment_config() -> Dict[str, object]:
         'concurrency': batch_concurrency(),
         'dedup_enabled': clause_dedup_enabled(),
         'dedup_min_similarity': clause_dedup_min_similarity(),
+        'structured_output': clause_structured_output_enabled(),
     }
+
+
+def _bi_encoder_scores(preference_line: str, clauses: Sequence[str]) -> Dict[str, float]:
+    from semantic_match import embed_texts
+    import numpy as np
+
+    pref = str(preference_line or '').strip()
+    items = [str(c).strip() for c in clauses if str(c).strip()]
+    if not pref or not items:
+        return {}
+    vectors = embed_texts([pref, *items])
+    pref_vec = vectors.get(pref)
+    if pref_vec is None:
+        return {}
+    pv = np.asarray(pref_vec, dtype=np.float32)
+    out: Dict[str, float] = {}
+    for clause in items:
+        vec = vectors.get(clause)
+        if vec is None:
+            continue
+        out[clause] = float(np.dot(pv, np.asarray(vec, dtype=np.float32)))
+    return out
+
+
+def _apply_clause_triage(
+    pending: List[str],
+    preference_line: str,
+    telemetry: Dict[str, object],
+) -> Tuple[List[str], Dict[str, dict]]:
+    """Kurangi panggilan LLM via bi-encoder + cross-encoder triase."""
+    from cross_encoder import cross_encoder_enabled, score_pairs
+    from semantic_triage import tau_high, tau_low, triage_clause
+
+    if not pending:
+        return [], {}
+    bi_scores = _bi_encoder_scores(preference_line, pending)
+    auto: Dict[str, dict] = {}
+    need_llm: List[str] = []
+    ambiguous: List[str] = []
+    lo, hi = tau_low(), tau_high()
+    for clause in pending:
+        bi = bi_scores.get(clause)
+        if bi is not None and bi >= hi:
+            auto[clause] = {'relevant': True, 'sentiment': 'positif', 'source': 'triaged_accept'}
+            telemetry['triaged_accept'] = int(telemetry.get('triaged_accept') or 0) + 1
+            continue
+        if bi is not None and bi < lo:
+            auto[clause] = {'relevant': False, 'sentiment': 'netral', 'source': 'triaged_reject'}
+            telemetry['triaged_reject'] = int(telemetry.get('triaged_reject') or 0) + 1
+            continue
+        ambiguous.append(clause)
+
+    cross_scores: Dict[str, float] = {}
+    if ambiguous and cross_encoder_enabled():
+        scores = score_pairs(preference_line, ambiguous)
+        if scores and len(scores) == len(ambiguous):
+            cross_scores = dict(zip(ambiguous, scores))
+            telemetry['cross_encoder_scored'] = len(cross_scores)
+
+    for clause in ambiguous:
+        decision = triage_clause(bi_scores.get(clause), cross_scores.get(clause))
+        if decision == 'accept':
+            auto[clause] = {'relevant': True, 'sentiment': 'positif', 'source': 'triaged_accept'}
+            telemetry['triaged_accept'] = int(telemetry.get('triaged_accept') or 0) + 1
+        elif decision == 'reject':
+            auto[clause] = {'relevant': False, 'sentiment': 'netral', 'source': 'triaged_reject'}
+            telemetry['triaged_reject'] = int(telemetry.get('triaged_reject') or 0) + 1
+        else:
+            need_llm.append(clause)
+            telemetry['triaged_llm'] = int(telemetry.get('triaged_llm') or 0) + 1
+
+    return need_llm, auto
 
 
 def _dedup_clauses_by_embedding(clauses: Sequence[str]) -> Tuple[List[str], Dict[str, str]]:
@@ -189,6 +266,26 @@ def _user_prompt(preference_line: str, clauses: Sequence[str]) -> str:
 
 def _parse_batch_response(raw: object, parse_json_fn: Optional[Callable]) -> Optional[list]:
     import json
+
+    if clause_structured_output_enabled():
+        try:
+            from llm_schemas import ClauseSentimentBatch, parse_json_with_pydantic
+
+            repair = None
+            if parse_json_fn is not None:
+                repair = lambda t: parse_json_fn(t, expected='array')
+            model = parse_json_with_pydantic(
+                ClauseSentimentBatch,
+                str(raw or ''),
+                repair_fn=repair,
+            )
+            if model is not None:
+                return [
+                    {'id': item.id, 'relevan': item.relevan, 'sentimen': item.sentimen}
+                    for item in model.items
+                ]
+        except Exception:
+            pass
 
     if parse_json_fn is not None:
         try:
@@ -273,6 +370,13 @@ def _classify_clauses(
     if not pending:
         return verdicts, telemetry
 
+    triage_enabled = _env_flag('COFIND_CLAUSE_TRIAGE', True)
+    if triage_enabled:
+        pending, triaged = _apply_clause_triage(pending, preference_line, telemetry)
+        verdicts.update(triaged)
+        if not pending:
+            return verdicts, telemetry
+
     llm_targets, alias_map = _dedup_clauses_by_embedding(pending)
     telemetry['dedup_aliases'] = max(0, len(pending) - len(llm_targets))
 
@@ -281,10 +385,19 @@ def _classify_clauses(
     batches = [llm_targets[offset:offset + size] for offset in range(0, len(llm_targets), size)]
     to_store: Dict[str, dict] = {}
 
+    response_format = None
+    if clause_structured_output_enabled():
+        try:
+            from llm_schemas import ClauseSentimentBatch
+
+            response_format = ClauseSentimentBatch.json_schema_for_llm()
+        except Exception:
+            response_format = None
+
     def run_batch(batch: List[str]):
         """Satu panggilan LLM untuk satu batch klausa; error dikembalikan, tidak diangkat."""
         try:
-            raw = chat_fn(
+            kwargs = dict(
                 messages=[
                     {'role': 'system', 'content': _SYSTEM_PROMPT},
                     {'role': 'user', 'content': _user_prompt(preference_line, batch)},
@@ -293,6 +406,9 @@ def _classify_clauses(
                 temperature=0.0,
                 usage_stage='clause_sentiment',
             )
+            if response_format is not None:
+                kwargs['response_format'] = response_format
+            raw = chat_fn(**kwargs)
             return batch, raw, None
         except Exception as err:
             return batch, None, str(err)[:160]

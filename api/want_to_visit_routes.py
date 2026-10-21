@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from flask import Blueprint, jsonify, request
 
+from auth_guards import forbid_user_id_spoofing, require_authenticated_user
 from logging_config import get_logger
 from want_to_visit_utils import (
     add_want_to_visit,
@@ -19,14 +20,20 @@ LOG_API = get_logger('api')
 def api_add_want_to_visit():
     """Add a coffee shop to want_to_visit"""
     try:
-        data = request.get_json()
-        user_id = data.get('user_id')
-        place_id = data.get('place_id')
+        auth_user, auth_error = require_authenticated_user()
+        if auth_error:
+            return auth_error
 
-        if not user_id or not place_id:
+        data = request.get_json(silent=True) or {}
+        spoof_error = forbid_user_id_spoofing(auth_user, data.get('user_id'))
+        if spoof_error:
+            return spoof_error
+
+        place_id = data.get('place_id')
+        if not place_id:
             return jsonify({'status': 'error', 'message': 'Missing required fields'}), 400
 
-        result = add_want_to_visit(user_id, place_id)
+        result = add_want_to_visit(auth_user['id'], place_id)
 
         if result['success']:
             return jsonify({
@@ -47,13 +54,16 @@ def api_add_want_to_visit():
 def api_remove_want_to_visit(place_id):
     """Remove a coffee shop from want_to_visit"""
     try:
-        data = request.get_json()
-        user_id = data.get('user_id')
+        auth_user, auth_error = require_authenticated_user()
+        if auth_error:
+            return auth_error
 
-        if not user_id:
-            return jsonify({'status': 'error', 'message': 'user_id required'}), 400
+        data = request.get_json(silent=True) or {}
+        spoof_error = forbid_user_id_spoofing(auth_user, data.get('user_id'))
+        if spoof_error:
+            return spoof_error
 
-        result = remove_want_to_visit(user_id, place_id)
+        result = remove_want_to_visit(auth_user['id'], place_id)
 
         if result['success']:
             return jsonify({
@@ -73,6 +83,15 @@ def api_remove_want_to_visit(place_id):
 def api_get_user_want_to_visit(user_id):
     """Get all want_to_visit for a user"""
     try:
+        auth_user, auth_error = require_authenticated_user()
+        if auth_error:
+            return auth_error
+        if int(auth_user['id']) != int(user_id):
+            return jsonify({
+                'status': 'error',
+                'message': 'Akses ditolak.',
+            }), 403
+
         limit = request.args.get('limit', 100, type=int)
         result = get_user_want_to_visit(user_id, limit)
 
@@ -94,12 +113,15 @@ def api_get_user_want_to_visit(user_id):
 def api_check_want_to_visit(place_id):
     """Check if a coffee shop is in user's want_to_visit"""
     try:
-        user_id = request.args.get('user_id', type=int)
+        auth_user, auth_error = require_authenticated_user()
+        if auth_error:
+            return auth_error
 
-        if not user_id:
-            return jsonify({'status': 'error', 'message': 'user_id required'}), 400
+        spoof_error = forbid_user_id_spoofing(auth_user, request.args.get('user_id'))
+        if spoof_error:
+            return spoof_error
 
-        result = is_want_to_visit(user_id, place_id)
+        result = is_want_to_visit(auth_user['id'], place_id)
 
         if result['success']:
             return jsonify({
@@ -114,4 +136,3 @@ def api_check_want_to_visit(place_id):
     except Exception as e:
         LOG_API.exception("api_check_want_to_visit gagal")
         return jsonify({'status': 'error', 'message': str(e)}), 500
-

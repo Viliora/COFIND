@@ -6,26 +6,52 @@ import secrets
 import string
 from datetime import datetime, timedelta
 
+from argon2 import PasswordHasher
+from argon2.exceptions import InvalidHash, VerifyMismatchError
+
 from db_backend import dict_from_row, get_connection
+
+_password_hasher = PasswordHasher()
 
 
 def get_db_connection():
     """Koneksi DB (SQLite atau Postgres sesuai .env)."""
     return get_connection()
 
+def _verify_legacy_sha256_password(password: str, password_hash: str) -> bool:
+    """Verifikasi hash lama (SHA256 + salt per user) untuk migrasi bertahap."""
+    try:
+        salt, pwd_hash = password_hash.split('$', 1)
+        if salt.startswith('argon2') or len(salt) != 64:
+            return False
+        return hashlib.sha256((salt + password).encode()).hexdigest() == pwd_hash
+    except Exception:
+        return False
+
+
 def hash_password(password: str) -> str:
-    """Hash password dengan SHA256 + salt"""
-    salt = secrets.token_hex(32)
-    pwd_hash = hashlib.sha256((salt + password).encode()).hexdigest()
-    return f"{salt}${pwd_hash}"
+    """Hash password dengan Argon2id."""
+    return _password_hasher.hash(password)
+
 
 def verify_password(password: str, password_hash: str) -> bool:
-    """Verify password"""
-    try:
-        salt, pwd_hash = password_hash.split('$')
-        return hashlib.sha256((salt + password).encode()).hexdigest() == pwd_hash
-    except:
+    """Verifikasi password (Argon2id atau hash SHA256 legacy)."""
+    if not password_hash:
         return False
+    if password_hash.startswith('$argon2'):
+        try:
+            _password_hasher.verify(password_hash, password)
+            return True
+        except (VerifyMismatchError, InvalidHash):
+            return False
+    return _verify_legacy_sha256_password(password, password_hash)
+
+
+def password_hash_needs_upgrade(password_hash: str) -> bool:
+    """True jika hash perlu di-upgrade ke Argon2id (legacy atau parameter usang)."""
+    if not password_hash or not password_hash.startswith('$argon2'):
+        return True
+    return _password_hasher.check_needs_rehash(password_hash)
 
 def generate_token(length: int = 64) -> str:
     """Generate secure session token"""
@@ -125,7 +151,13 @@ def login(email: str, password: str) -> dict:
             # Verify password
             if not verify_password(password, password_hash):
                 return {'success': False, 'error': 'Invalid email or password'}
-            
+
+            if password_hash_needs_upgrade(password_hash):
+                cursor.execute(
+                    'UPDATE users SET password_hash = ? WHERE id = ?',
+                    (hash_password(password), user['id']),
+                )
+
             # Create session token
             token = generate_token()
             expires_at = datetime.utcnow() + timedelta(days=30)

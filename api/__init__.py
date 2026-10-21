@@ -16,6 +16,7 @@ def register_blueprints(app: Flask) -> None:
     from api.favorite_routes import bp as favorite_bp
     from api.review_routes import bp as review_bp
     from api.vote_routes import bp as vote_bp
+    from api.recommendation_routes import bp as recommendation_bp
     from api.want_to_visit_routes import bp as want_to_visit_bp
 
     for blueprint in (
@@ -26,5 +27,6 @@ def register_blueprints(app: Flask) -> None:
         vote_bp,
         want_to_visit_bp,
         admin_bp,
+        recommendation_bp,
     ):
         app.register_blueprint(blueprint)

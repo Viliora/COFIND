@@ -3,6 +3,7 @@ import { useAuth } from '../context/authContext';
 import { Link } from 'react-router-dom';
 
 import { API_BASE } from '../config/apiBase.js';
+import { authService } from '../services/authService';
 const MAX_PHOTOS = 1;
 /** Batas ukuran file gambar per foto (2 MiB, selaras dengan backend). */
 const MAX_REVIEW_IMAGE_BYTES = 2 * 1024 * 1024;
@@ -86,7 +87,7 @@ const ReviewForm = ({
       };
       const response = await fetch(`${API_BASE}/api/reviews`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authService.getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(payload)
       });
       const data = await response.json();
