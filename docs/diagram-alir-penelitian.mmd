@@ -1,0 +1,52 @@
+flowchart TD
+    START(["Start"])
+    subgraph ANALISIS["Analisis Masalah"]
+        direction TB
+        ANALISIS_0["Menentukan Latar Belakang dan Rumusan Masalah"]
+    end
+    subgraph LITERATUR["Studi Literatur"]
+        direction TB
+        LITERATUR_0["Retrieval-Augmented Generation (RAG)"]
+        LITERATUR_1["Hybrid Retrieval: BM25 + Dense Embedding"]
+        LITERATUR_2["LLM Reranking & Grounding Kutipan"]
+        LITERATUR_3["Evaluasi Ringkasan: ROUGE & BERTScore"]
+    end
+    subgraph PENGUMPULAN["Pengumpulan Data"]
+        direction TB
+        PENGUMPULAN_0["Review Pengguna Cofind<br/>(Supabase PostgreSQL)"]
+        PENGUMPULAN_1["Metadata & Rating Coffee Shop<br/>(salinan Google Maps, input admin)"]
+        PENGUMPULAN_2["Data Fasilitas per Toko<br/>(facilities.json)"]
+        PENGUMPULAN_3["Vote Komunitas & Pros-Cons<br/>(shop_votes, shop_pros_cons)"]
+    end
+    subgraph PEMROSESAN["Pemrosesan Data"]
+        direction TB
+        PEMROSESAN_0["Build Profile Review<br/>(review + vote + fasilitas per toko)"]
+        PEMROSESAN_1["Keywords Mapping<br/>(PILL_MAPPING: aktivitas + atribut)"]
+        PEMROSESAN_2["Filtering<br/>(min. 1 review, eksklusi feedback not_helpful)"]
+        PEMROSESAN_3["Indeks BM25 + Embedding Kalimat<br/>(MiniLM multilingual) & Vector Cache"]
+    end
+    subgraph IMPLEMENTASI["Integrasi & Implementasi — Pipeline RAG 3 Fase"]
+        direction TB
+        IMPLEMENTASI_0["Fase 1 — Hard Filter: validasi pill, eksklusi feedback negatif, susun profil kandidat"]
+        IMPLEMENTASI_1["Fase 2 — Hybrid Retrieval: skor BM25 (sparse) + Dense Embedding (cosine), gerbang aktivitas wajib, normalisasi min-max & fusi berbobot dengan skor kualitas toko → Top-K = 7 kandidat"]
+        IMPLEMENTASI_2["Fase 3 — Penggunaan LLM (Llama 3.1 8B Instruct via HF Router): rerank fit_score 0–10, grounding check kutipan, skor akhir = 0,6 × LLM + 0,4 × Hybrid"]
+        IMPLEMENTASI_3["Seleksi Top-3 Rekomendasi<br/>(fit_score ≥ 5,0 + bukti aktivitas)"]
+        IMPLEMENTASI_4["Build Evidence<br/>(kutipan pendukung & caveat dari review)"]
+        IMPLEMENTASI_5["Ringkasan Naratif per Toko<br/>(LLM, fallback deterministik)"]
+        IMPLEMENTASI_6["Pembuatan User Interface Output Recommendation<br/>(React + progres SSE)"]
+    end
+    subgraph PENGUJIAN["Pengujian"]
+        direction TB
+        PENGUJIAN_0["ROUGE-Score & BERT-Score<br/>(kualitas ringkasan naratif)"]
+        PENGUJIAN_1["Grounding Rate<br/>(kutipan terverifikasi ada di korpus review)"]
+        PENGUJIAN_2["Feedback Pengguna<br/>(helpful / not helpful)"]
+        PENGUJIAN_3["Pengujian Fungsional & Latensi Pipeline"]
+    end
+    KESIMPULAN(["Kesimpulan"])
+    START --> ANALISIS
+    ANALISIS --> LITERATUR
+    LITERATUR --> PENGUMPULAN
+    PENGUMPULAN --> PEMROSESAN
+    PEMROSESAN --> IMPLEMENTASI
+    IMPLEMENTASI --> PENGUJIAN
+    PENGUJIAN --> KESIMPULAN
