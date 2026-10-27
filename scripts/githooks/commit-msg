@@ -1,0 +1,6 @@
+#!/bin/sh
+# Final pass: strip Cursor co-author trailer if it slipped in (e.g. amend templates).
+set -e
+ROOT="$(git rev-parse --show-toplevel)"
+MSG_FILE="$1"
+exec python "$ROOT/scripts/githooks/strip_cursor_coauthor.py" "$MSG_FILE"

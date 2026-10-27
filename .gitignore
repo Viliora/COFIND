@@ -85,6 +85,10 @@ backup_task.xml
 scripts/*
 !scripts/eval/
 !scripts/eval/**
+!scripts/githooks/
+!scripts/githooks/**
+!scripts/git/
+!scripts/git/**
 tests/
 pytest.ini
 .pytest_cache/
