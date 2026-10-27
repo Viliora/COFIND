@@ -81,7 +81,8 @@
 | Min reviews | `app.py:1123`, `1231` | 1 | — | Hard filter Fase 1 | 1–3 | Count shops dropped |
 | Free text intent | `free_text_intent.py:45-46` | true | `COFIND_FREE_TEXT_INTENT` | Keywords untuk RRF | — | Intent telemetry |
 | Max free text chars | `free_text_intent.py:33` | 50 | — | Panjang query | — | API validation [TIDAK TERVERIFIKASI di app.py baris spesifik] |
-| Clause sentiment | `llm_clause_sentiment.py:71` | true | `COFIND_LLM_CLAUSE_SENTIMENT` | Verdict caveat/support (indirect Fase 3) | — | `clause_sentiment_ms` |
+| ABSA kutipan (Fase 2) | `absa_sentiment.py` | true | `COFIND_ABSA_ENABLED` | Verdict caveat/support | — | `clause_sentiment_ms` |
+| CE rerank (Fase 3) | `cross_encoder_rerank.py` | true | `COFIND_CE_RERANK` + `COFIND_CROSS_ENCODER` | Urutan final vs hybrid | 0.4–0.7 | `rerank_backend` |
 | Batch/max/pool/concurrency | `llm_clause_sentiment.py:90-102` | 16/96/6/3 | `COFIND_CLAUSE_*` | Latency & coverage verdict | — | Telemetry quotes |
 | Dedup min cosine | `llm_clause_sentiment.py:79` | 0.92 | `COFIND_CLAUSE_SENTIMENT_DEDUP_MIN` | Dedup klausa | 0.88–0.95 | — |
 | Coverage bonus (legacy) | `app.py:2812` | 0.25 | `COFIND_COVERAGE_BONUS` | Scorer lama, bukan RRF (`.env.example:107-110`) | — | Grep pemanggil di jalur recommend |
@@ -111,7 +112,8 @@ Tidak mengubah urutan hybrid langsung: `COFIND_DEV_LLM_STRICT`, `COFIND_SUMMARY_
 |-----------|---------|------|
 | `COFIND_CLAUSE_TRIAGE` | true | Bi-encoder triase sebelum LLM clause sentiment |
 | `COFIND_CROSS_ENCODER` | false | Cross-encoder pada pita ambigu (`cross_encoder.py`) |
-| `COFIND_TAU_LOW` / `COFIND_TAU_HIGH` | 0.35 / 0.72 | Ambang accept/reject vs needs_llm (`semantic_triage.py`) |
+| `COFIND_CROSS_ENCODER_MODEL` | jina-reranker-v2-base-multilingual | Model pasangan query–klausa; alternatif `BAAI/bge-reranker-v2-m3`. Jina butuh `einops` + shim transformers 5.x di `cross_encoder.py` |
+| `COFIND_TAU_LOW` / `COFIND_TAU_HIGH` | 0.35 / 0.72 | Ambang accept/reject vs needs_llm (`semantic_triage.py`). Skor Jina cross-encoder bisa lebih rendah dari BGE pada teks pendek — pantau `triaged_reject` / `triaged_llm` setelah ganti model; sesuaikan jika perlu |
 | `COFIND_BM25_BACKEND` | memory | `postgres` memakai `coffee_shops.review_tsv` |
 | `COFIND_EMBEDDING_MODEL` + `COFIND_PGVECTOR_DIM` | MiniLM / 384 | Set `BAAI/bge-m3` + 1024 lalu backfill + `tests/smoke/smoke_threshold.py` |
 

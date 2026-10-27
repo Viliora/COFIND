@@ -27,8 +27,15 @@ function reviewTarget(placeId, item) {
   };
 }
 
+const MAX_PANEL_QUOTES = 3;
+
 const triggerClassName =
   'inline-flex max-w-full items-center gap-1 rounded-full border border-slate-200/90 bg-slate-50/80 px-2 py-0.5 text-[11px] font-normal leading-none text-slate-600 align-middle transition-colors hover:border-slate-300 hover:bg-slate-100 hover:text-slate-800 dark:border-zinc-600/70 dark:bg-zinc-800/50 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-gray-900';
+
+function shopDetailPath(placeId) {
+  if (!placeId) return null;
+  return `/shop/${encodeURIComponent(placeId)}`;
+}
 
 function EvidenceReviewRow({ item, placeId, onClosePanel, onNavigate }) {
   const target = reviewTarget(placeId, item);
@@ -169,7 +176,16 @@ export default function RecommendationReviewSourcePills({
 
   if (!list.length) return null;
 
-  const countLabel = list.length === 1 ? '1 ulasan' : `${list.length} ulasan`;
+  const totalCount = list.length;
+  const hasMoreThanMax = totalCount > MAX_PANEL_QUOTES;
+  const countLabel =
+    totalCount === 1
+      ? '1 bukti ulasan'
+      : hasMoreThanMax
+        ? '3 and more bukti ulasan'
+        : `${totalCount} bukti ulasan`;
+  const panelItems = hasMoreThanMax ? list.slice(0, MAX_PANEL_QUOTES) : list;
+  const detailPath = shopDetailPath(placeId);
 
   const bubble =
     open && panelStyle
@@ -189,7 +205,7 @@ export default function RecommendationReviewSourcePills({
               Bukti ulasan relevan
             </p>
             <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-y-contain pr-0.5 [-webkit-overflow-scrolling:touch]">
-              {list.map((item, index) => (
+              {panelItems.map((item, index) => (
                 <li key={pillKey(item, index)}>
                   <EvidenceReviewRow
                     item={item}
@@ -200,6 +216,21 @@ export default function RecommendationReviewSourcePills({
                 </li>
               ))}
             </ul>
+            {hasMoreThanMax && detailPath ? (
+              <div className="mt-2 shrink-0 border-t border-slate-100 pt-2 dark:border-zinc-700/80">
+                <Link
+                  to={detailPath}
+                  onClick={(e) => {
+                    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+                    closePanel();
+                    onNavigate?.();
+                  }}
+                  className="block text-center text-[11px] font-semibold text-indigo-600 no-underline hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
+                >
+                  See more
+                </Link>
+              </div>
+            ) : null}
           </div>,
           document.body,
         )

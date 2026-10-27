@@ -21,8 +21,8 @@ flowchart TD
   C --> G
   G --> H[Fase 2 hybrid RRF]
   H --> I[Evidence + scored_candidates]
-  I --> J[Fase 2b clause sentiment]
-  J --> K[Fase 3 LLM rerank opsional]
+  I --> J[ABSA kutipan di Fase 2]
+  J --> K[Fase 3 CE rerank Jina]
   K --> L[_select_top_shops max 3]
   L --> M[Step 5 summary LLM]
   M --> N[JSON recommendations]
@@ -39,7 +39,7 @@ flowchart TD
 | Fase 2 | `retrieve_top_k` (pill) atau `retrieve_top_k_by_text` | `app.py:5599–5617` |
 | Quality map | `_quality_score_for_profile` per `place_id` | `app.py:5594–5597`, `2332–2342` |
 | Post-retrieval | Evidence, pill coverage, clause sentiment | `app.py:5632–5715` |
-| Fase 3 | `llm_rerank_candidates` jika LLM siap + `llm_rerank_enabled()` | `app.py:5717–5765` |
+| Fase 3 | `ce_rerank_candidates` jika `ce_rerank_enabled()` (Jina lokal) | `cross_encoder_rerank.py`, `recommendation/pipeline.py` |
 | Seleksi akhir | `_select_top_shops` → kutipan/kontradiksi → max 3 | `app.py:5767–5836`, `5392–5423` |
 | Step 5 | `_generate_llm_review_summary` | `app.py:5866–5875` |
 | Respons | `recommendations` + `llm_pipeline` telemetry | `app.py:5933–5958` |

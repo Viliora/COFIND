@@ -102,6 +102,7 @@ def full_pipeline_config() -> Dict[str, object]:
         use_pgvector_store,
     )
     from semantic_match import gate_config as semantic_gate_config, model_name as embedding_model_name
+    from recommendation.flags import recommendation_overall_experience_enabled
 
     def _flag(name: str, default: bool = False) -> bool:
         raw = (os.getenv(name) or '').strip().lower()
@@ -128,6 +129,7 @@ def full_pipeline_config() -> Dict[str, object]:
         'dense_use_ann': dense_use_ann_enabled(),
         'ann_top_k': ann_top_k(),
         'embedding_async': _flag('COFIND_EMBEDDING_ASYNC', False),
+        'recommend_use_overall_experience': recommendation_overall_experience_enabled(),
     }
 
 
@@ -148,14 +150,23 @@ def build_degradation_snapshot(
         clause_mode = 'disabled'
     elif skipped:
         clause_mode = f'skipped:{skipped}'
-    elif int(clause.get('llm_calls') or 0) > 0 or int(clause.get('from_cache') or 0) > 0:
-        clause_mode = 'applied'
+    elif (
+        int(clause.get('from_absa') or 0) > 0
+        or int(clause.get('llm_calls') or 0) > 0
+        or int(clause.get('from_cache') or 0) > 0
+    ):
+        clause_mode = 'absa'
     else:
         clause_mode = 'heuristic_only'
 
     rerank_tel = dict(rerank_telemetry or {})
     rerank_backend = str(rerank_backend or 'hybrid').strip().lower()
-    ranking = 'llm' if rerank_backend == 'llm' else 'hybrid_fallback'
+    if rerank_backend in ('cross_encoder', 'cache'):
+        ranking = 'cross_encoder'
+    elif rerank_backend == 'llm':
+        ranking = 'llm'
+    else:
+        ranking = 'hybrid_fallback'
 
     return {
         'llm_available': bool(llm_available),

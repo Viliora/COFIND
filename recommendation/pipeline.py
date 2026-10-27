@@ -1,8 +1,11 @@
 """Generator event pipeline rekomendasi pill / free-text."""
 from __future__ import annotations
 
-from recommendation.helpers import *  # noqa: F403
-from recommendation.evidence import *  # noqa: F403
+from recommendation.wiring import ensure_recommendation_wiring, populate_pipeline_namespace
+
+ensure_recommendation_wiring()
+populate_pipeline_namespace(globals())
+
 
 def _recommendation_progress(stage, **extra):
     payload = dict(
@@ -11,11 +14,8 @@ def _recommendation_progress(stage, **extra):
     )
     payload.update(extra)
     return ('progress', payload)
-def _split_preference_pills(pills):
-    pills = list(pills or [])
-    activity_pills = [p for p in pills if p not in FACILITY_ATTRIBUTE_PILLS]
-    attribute_pills = [p for p in pills if p in FACILITY_ATTRIBUTE_PILLS]
-    return activity_pills, attribute_pills
+
+
 def recommendation_pipeline_events(prefs, _auth_user, query_text=''):
     """
     Pipeline RAG 3 fase. Dua jalur input SALING EKSKLUSIF per request:
@@ -28,14 +28,10 @@ def recommendation_pipeline_events(prefs, _auth_user, query_text=''):
 
       Fase 1 — Hard filter: wajib minimal 1 ulasan pipeline (Cofind + Google Places,
                get_reviews_for_recommendation_batch / REVIEW_BASED_MIN_REVIEWS=1).
-      Fase 2 — Hybrid retrieval (semua jalur): BM25 + dense/ANN → RRF (k=COFIND_RRF_K).
-               Jalur pill: gerbang aktivitas + metadata gate setelah RRF.
-               Jalur free text: tanpa gerbang pill (rerank/summary yang menilai bukti).
-               Top ~7 ke LLM.
-      Fase 2b — Sentimen kutipan kandidat (default nyala, COFIND_LLM_CLAUSE_SENTIMENT):
-                LLM label supporting/caveat; rule hanya fallback.
-      Fase 3 — LLM rerank: pilih 0–3 toko yang kutipannya mendukung aktivitas,
-               ekstrak kutipan pendukung (bukan jendela ±6 token).
+      Fase 2 — Hybrid retrieval + evidence + ABSA kutipan (BM25 + dense/ANN → RRF;
+               sentimen klausa damasukma/indobert-absa + triase e5/Jina).
+               Top ~7 ke rerank.
+      Fase 3 — Cross-encoder rerank (Jina): pilih 0–3 toko, kutipan pendukung/caveat.
 
       Feedback thumbs (helpful / not_helpful) disimpan via API feedback ke DB untuk
       analitik, evaluasi admin, dan UI modal — tidak mem-filter toko di Fase 1/2/3.
@@ -55,6 +51,7 @@ def recommendation_pipeline_events(prefs, _auth_user, query_text=''):
     llm_run_route = None
     pipeline_run_id = None
     try:
+        ensure_recommendation_wiring()
         pipeline_run_id = new_pipeline_run_id()
         llm_usage_token = begin_llm_usage_collection()
         llm_route_token = begin_llm_run_route()
@@ -331,6 +328,13 @@ def recommendation_pipeline_events(prefs, _auth_user, query_text=''):
             }
             _attach_pill_coverage(shop, valid_pills)
             scored_candidates.append(shop)
+        sentiment_t0 = time.perf_counter()
+        verdicts, clause_sentiment_telemetry = _run_clause_sentiment_for_candidates(
+            scored_candidates, valid_pills,
+        )
+        if verdicts:
+            clause_sentiment_token = _set_clause_verdicts(verdicts)
+        stage_ms['clause_sentiment_ms'] = round((time.perf_counter() - sentiment_t0) * 1000, 1)
         stage_ms['hybrid_retrieval_ms'] = round((time.perf_counter() - stage_t0) * 1000, 1)
         stage_t0 = time.perf_counter()
         LOG_RECOMMEND.info(
@@ -343,6 +347,14 @@ def recommendation_pipeline_events(prefs, _auth_user, query_text=''):
             f"meta_penalty={retrieval_telemetry.get('metadata_penalized', 0)}) "
             f"bm25_shops={retrieval_telemetry.get('bm25_shops')}, "
             f"dense={retrieval_telemetry.get('dense')})")
+        if clause_sentiment_telemetry.get('skipped'):
+            LOG_RECOMMEND.info(
+                f"ABSA kutipan dilewati: {clause_sentiment_telemetry.get('skipped')}")
+        else:
+            LOG_RECOMMEND.info(
+                f"ABSA kutipan: quotes={clause_sentiment_telemetry.get('quotes', 0)} "
+                f"verdicts={clause_sentiment_telemetry.get('verdicts', 0)} "
+                f"absa={clause_sentiment_telemetry.get('from_absa', 0)}")
         yield _recommendation_progress('scoring', candidates=len(scored_candidates))
 
         if not scored_candidates:
@@ -354,30 +366,14 @@ def recommendation_pipeline_events(prefs, _auth_user, query_text=''):
             }, 200))
             return
 
-        sentiment_t0 = time.perf_counter()
-        verdicts, clause_sentiment_telemetry = _run_clause_sentiment_for_candidates(
-            scored_candidates, valid_pills,
-        )
-        if verdicts:
-            clause_sentiment_token = _set_clause_verdicts(verdicts)
-        stage_ms['clause_sentiment_ms'] = round((time.perf_counter() - sentiment_t0) * 1000, 1)
-        if clause_sentiment_telemetry.get('skipped'):
-            LOG_RECOMMEND.info(
-                f"Clause sentiment dilewati: {clause_sentiment_telemetry.get('skipped')}")
-        else:
-            LOG_RECOMMEND.info(
-                f"Clause sentiment: quotes={clause_sentiment_telemetry.get('quotes', 0)} "
-                f"verdicts={clause_sentiment_telemetry.get('verdicts', 0)} "
-                f"llm_calls={clause_sentiment_telemetry.get('llm_calls', 0)}")
-
-        # --- Fase 3: LLM rerank + ekstraksi kutipan/caveat (fallback: urutan hybrid) ---
+        # --- Fase 3: cross-encoder rerank + kutipan (fallback: urutan hybrid) ---
         rerank_backend = 'hybrid'
         rerank_telemetry = {}
         ranked_candidates = scored_candidates
         keyword_line = query_text or ', '.join(query_tokens[:20])
         if free_text_summary_framing:
             keyword_line = f'{keyword_line}\n\n[Framing respons]\n{free_text_summary_framing}'
-        if scored_candidates and _llm_ready_for_recommend_run() and llm_rerank_enabled():
+        if scored_candidates and ce_rerank_enabled():
             rerank_pool = scored_candidates[:llm_rerank_pool()]
             rerank_user_id = _auth_user.get('id')
             cached_fits = _get_cached_rerank_fits(
@@ -386,13 +382,10 @@ def recommendation_pipeline_events(prefs, _auth_user, query_text=''):
                 user_id=rerank_user_id,
                 search_keywords=query_tokens,
             )
-            rerank_result = llm_rerank_candidates(
+            rerank_result = ce_rerank_candidates(
                 scored_candidates,
                 valid_pills,
                 pill_labels=PILL_LABELS,
-                pill_mapping=PILL_MAPPING,
-                chat_fn=_llm_chat_for_pipeline,
-                parse_json_fn=_parse_llm_json_with_repair,
                 user_taste_block=user_taste_block,
                 keyword_line=keyword_line,
                 cached_fits=cached_fits,
@@ -400,11 +393,12 @@ def recommendation_pipeline_events(prefs, _auth_user, query_text=''):
                 activity_pills=activity_pills,
                 activity_tokens=activity_tokens,
                 activity_matcher=activity_matcher,
+                activity_query_text=activity_query_text,
             ) or {}
             rerank_telemetry = rerank_result.get('telemetry') or {}
             if rerank_result.get('ranked'):
                 ranked_candidates = rerank_result['ranked']
-                rerank_backend = rerank_telemetry.get('backend') or 'llm'
+                rerank_backend = rerank_telemetry.get('backend') or 'cross_encoder'
                 if not cached_fits:
                     _store_rerank_fits(
                         rerank_pool,
@@ -415,12 +409,8 @@ def recommendation_pipeline_events(prefs, _auth_user, query_text=''):
                     )
             else:
                 LOG_RECOMMEND.warning(
-                    f"Fase 3: LLM rerank tidak dipakai "
+                    f"Fase 3: CE rerank tidak dipakai "
                     f"({rerank_telemetry.get('backend')}: {rerank_telemetry.get('error')})")
-                if COFIND_DEV_LLM_STRICT:
-                    raise RuntimeError(
-                        f"LLM strict mode aktif: rerank gagal ({rerank_telemetry.get('error')})"
-                    )
 
         top_shops = _select_top_shops(
             ranked_candidates,

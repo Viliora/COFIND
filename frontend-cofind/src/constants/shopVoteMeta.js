@@ -18,5 +18,5 @@ export const BEST_FOR_META = [
   { key: 'nge_game', label: 'Nge-game', emoji: '🎮' },
   { key: 'meeting', label: 'Meeting/Pertemuan', emoji: '🤝' },
   { key: 'family_time', label: 'Family Time', emoji: '👨‍👩‍👧' },
-  { key: 'instagrammable', label: 'Instagrammable', emoji: '📸' },
+  { key: 'instagrammable', label: 'Feeds Hunter', emoji: '📸' },
 ];

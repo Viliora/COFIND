@@ -211,7 +211,8 @@ def load_model():
             _model = SentenceTransformer(model_name(), **kwargs)
             expected_dim = int(os.getenv('COFIND_PGVECTOR_DIM', '384') or '384')
             try:
-                actual_dim = int(_model.get_sentence_embedding_dimension())
+                dim_fn = getattr(_model, 'get_embedding_dimension', None) or _model.get_sentence_embedding_dimension
+                actual_dim = int(dim_fn())
                 if actual_dim != expected_dim:
                     raise ValueError(
                         f'COFIND_PGVECTOR_DIM={expected_dim} tetapi model={actual_dim}'
@@ -303,6 +304,18 @@ def split_clauses(text: object, *, limit: Optional[int] = None) -> List[str]:
 # Embedding + cache
 # --------------------------------------------------------------------------
 
+def _uses_e5_prefix() -> bool:
+    name = model_name().lower()
+    return 'e5' in name or 'multilingual-e5' in name
+
+
+def _embedding_encode_text(text: str) -> str:
+    """Model E5 mengharapkan prefix query:/passage: (symmetric → query untuk klausa/frasa pill)."""
+    if _uses_e5_prefix():
+        return f'query: {text}'
+    return text
+
+
 def _cache_key(text: str) -> str:
     return digest_key(model_name(), 'v1', text.lower())
 
@@ -352,8 +365,9 @@ def embed_texts(texts: Sequence[str]) -> Dict[str, object]:
         batch = encode_batch_size()
         # Encoding diserialisasi agar dua request paralel tidak berebut CPU.
         with _encode_lock:
+            encode_inputs = [_embedding_encode_text(t) for t in missing]
             encoded = model.encode(
-                missing,
+                encode_inputs,
                 batch_size=batch,
                 normalize_embeddings=True,
                 convert_to_numpy=True,

@@ -1,6 +1,6 @@
 {
-  "recorded_at": "2026-10-21T10:15:30.424768+00:00",
-  "git_commit": "035395990b9b995f12b7fba0c1481945b839b454",
+  "recorded_at": "2026-10-21T10:49:09.934815+00:00",
+  "git_commit": "6b69f4caaf8744fe80a02ad13a96f1a81d7e9e0e",
   "mode": {
     "llm_rerank": true,
     "bm25_backend": "memory",

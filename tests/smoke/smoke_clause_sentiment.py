@@ -1,4 +1,4 @@
-"""Smoke test manual: verifikasi sentimen klausa oleh LLM + cascade _quote_is_caveat."""
+"""Smoke test manual: verifikasi sentimen klausa ABSA + cascade _quote_is_caveat."""
 
 import os
 
@@ -19,12 +19,10 @@ QUOTES = [
     'Kopinya enak dan baristanya ramah sekali',
 ]
 
-print('LLM tersedia:', app.llm_is_available())
+print('ABSA enabled:', lcs.clause_sentiment_enabled())
 verdicts, telemetry = lcs.classify_quotes(
     QUOTES,
     preference_line='Wifi kencang',
-    chat_fn=app._llm_chat_for_pipeline,
-    parse_json_fn=app._parse_llm_json_with_repair,
 )
 print('telemetry:', telemetry)
 for quote in QUOTES:

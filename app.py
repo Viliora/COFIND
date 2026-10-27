@@ -86,6 +86,7 @@ from recommendation_coverage import (
 )
 from pill_aspect_sentiment import aggregate_reviews_sentiment
 from review_weakness import review_has_weakness_near_preference_keywords as _weakness_near_keywords
+from cross_encoder_rerank import ce_rerank_enabled
 from llm_recommender import (
     build_user_taste_profile,
     format_activity_context_block,
@@ -141,8 +142,8 @@ app = Flask(__name__)
 register_blueprints(app)
 
 # Database: lihat db_backend.py (Supabase Postgres via DATABASE_URL / SUPABASE_DB_URL)
-# Rerank: LLM menilai kandidat teratas hasil hybrid retrieval (lihat llm_recommender.py).
-COFIND_RERANK_BACKEND = 'llm' if llm_rerank_enabled() else 'none'
+# Rerank Fase 3: cross-encoder Jina (lihat cross_encoder_rerank.py).
+COFIND_RERANK_BACKEND = 'cross_encoder' if ce_rerank_enabled() else 'none'
 COFIND_DEV_LLM_STRICT = os.getenv('COFIND_DEV_LLM_STRICT', 'false').strip().lower() in ('1', 'true', 'yes', 'on')
 # Modal quote summary: default deterministik (tanpa LLM per toko). Set true untuk LLM.
 COFIND_MODAL_QUOTE_LLM = os.getenv('COFIND_MODAL_QUOTE_LLM', 'false').strip().lower() in ('1', 'true', 'yes', 'on')
@@ -195,36 +196,72 @@ try:
 except Exception as _migrate_err:
     LOG_STARTUP.warning(f"Migrasi rating review -> shop_votes gagal: {_migrate_err}")
 
-try:
-    if ensure_recommendation_feedback_table():
-        LOG_STARTUP.info("Table recommendation_feedback siap.")
-except Exception as _fb_err:
-    LOG_STARTUP.warning(f"Inisialisasi recommendation_feedback gagal: {_fb_err}")
+def _startup_db_migrations_with_retry(*, rounds: int = 4) -> None:
+    """Migrasi ringan idempotent; ulang bila DNS/jaringan ke Supabase belum siap."""
+    import time
 
-try:
-    from shop_search_store import ensure_coffee_shop_search_columns
-    if ensure_coffee_shop_search_columns():
-        LOG_STARTUP.info("Kolom coffee_shops review_tsv siap.")
-except Exception as _fts_err:
-    LOG_STARTUP.warning(f"Inisialisasi FTS coffee_shops gagal: {_fts_err}")
-
-try:
-    from review_embedding_store import ensure_review_embedding_vector_dim
-    ensure_review_embedding_vector_dim()
-except Exception as _emb_dim_err:
-    LOG_STARTUP.warning(f"Selarasan dimensi pgvector: {_emb_dim_err}")
-
-try:
     from db_backend import get_connection
     from google_places_sync import ensure_coffee_shop_google_columns
     from google_reviews_snapshot_import import ensure_reviews_unified_schema
+    from review_embedding_store import ensure_review_embedding_vector_dim
+    from shop_search_store import ensure_coffee_shop_search_columns
 
-    _places_conn = get_connection()
-    ensure_coffee_shop_google_columns(_places_conn)
-    ensure_reviews_unified_schema(_places_conn)
-    _places_conn.close()
-except Exception as _places_schema_err:
-    LOG_STARTUP.warning(f"Inisialisasi kolom Google Places gagal: {_places_schema_err}")
+    fb_ok = fts_ok = places_ok = False
+    for attempt in range(max(1, rounds)):
+        if not fb_ok:
+            try:
+                fb_ok = bool(ensure_recommendation_feedback_table())
+            except Exception as err:
+                LOG_STARTUP.warning(f"Inisialisasi recommendation_feedback gagal: {err}")
+        if not fts_ok:
+            try:
+                fts_ok = bool(ensure_coffee_shop_search_columns())
+            except Exception as err:
+                LOG_STARTUP.warning(f"Inisialisasi FTS coffee_shops gagal: {err}")
+        if not places_ok:
+            try:
+                _places_conn = get_connection()
+                try:
+                    ensure_coffee_shop_google_columns(_places_conn)
+                    ensure_reviews_unified_schema(_places_conn)
+                    places_ok = True
+                finally:
+                    _places_conn.close()
+            except Exception as err:
+                LOG_STARTUP.warning(f"Inisialisasi kolom Google Places gagal: {err}")
+        try:
+            ensure_review_embedding_vector_dim()
+        except Exception as err:
+            if attempt == 0:
+                LOG_STARTUP.warning(f"Selarasan dimensi pgvector: {err}")
+
+        if fb_ok and fts_ok and places_ok:
+            break
+        if attempt < rounds - 1:
+            delay = 2.5 * (attempt + 1)
+            LOG_STARTUP.info(
+                "Koneksi Supabase belum stabil (DNS/jaringan); migrasi startup diulang dalam %.1fs…",
+                delay,
+            )
+            time.sleep(delay)
+
+    if fb_ok:
+        LOG_STARTUP.info("Table recommendation_feedback siap.")
+    else:
+        LOG_STARTUP.warning(
+            "Table recommendation_feedback belum siap — periksa internet/VPN dan "
+            "DATABASE_URL (hostname pooler Supabase) di .env."
+        )
+    if fts_ok:
+        LOG_STARTUP.info("Kolom coffee_shops review_tsv siap.")
+    elif not fb_ok:
+        LOG_STARTUP.warning("Kolom review_tsv belum siap (sama seperti di atas).")
+
+
+try:
+    _startup_db_migrations_with_retry()
+except Exception as _startup_db_err:
+    LOG_STARTUP.warning(f"Startup migrasi DB: {_startup_db_err}")
 
 # Konfigurasi LLM: lihat llm_backend.py (HF_LLM_BACKEND, HF_MODEL, HF_API_TOKEN, dll.)
 LOG_STARTUP.info(f"LLM backend aktif: {LLM_BACKEND} | model={HF_MODEL}")
@@ -517,15 +554,7 @@ from pill_config import (
     PILL_MAPPING,
 )
 
-RATING_VOTE_WEIGHTS = {
-    'love': 1.0,
-    'like': 0.75,
-    'ok': 0.5,
-    'dislike': 0.25,
-    'hate': 0.0,
-}
-
-
+from recommendation.helpers import RATING_VOTE_WEIGHTS  # noqa: F401 — compat smoke/tests
 
 
 

@@ -21,7 +21,7 @@ PILL_LABELS = {
     'kerja': 'Kerja/WFC',
     'meeting_sosialisasi': 'Meeting/Pertemuan',
     'keluarga': 'Keluarga',
-    'instagrammable': 'Instagrammable',
+    'instagrammable': 'Feeds Hunter',
     'wifi_kencang': 'Wifi kencang',
     'banyak_colokan_terminal': 'Banyak colokan / terminal',
 }

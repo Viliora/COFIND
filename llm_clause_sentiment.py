@@ -1,28 +1,16 @@
 """
-Analisis sentimen aspek per klausa memakai LLM (lapis kedua setelah heuristik).
+Analisis sentimen aspek per klausa (ABSA lokal + triase bi/cross-encoder).
 
-Kenapa ada modul ini: deteksi keluhan berbasis aturan (jendela ±N token di
-app.py) rapuh untuk tiga pola yang umum di ulasan nyata —
-  1. jarak kata jauh: "lambat sekali untuk semua wifi yang tersedia di sini"
-  2. negasi pada kata dasar positif: "ngga nyaman" (kata "nyaman" sendiri positif)
-  3. klausa tercampur: "kursinya bagus tapi ngga nyaman, wifinya bagus"
-LLM membaca satu klausa utuh, jadi keputusannya berbasis makna, bukan posisi kata.
-
-Alur: klausa dinilai satu per satu (relevan terhadap preferensi? sentimennya
-apa?), lalu digabung menjadi verdict per kutipan. Klausa negatif yang TIDAK
-relevan dengan preferensi user tidak lagi menjatuhkan kutipan itu.
-
-Efisiensi: klausa dikelompokkan per batch dalam satu panggilan LLM, dan hasilnya
-disimpan di vector_cache sehingga klausa yang sama tidak dinilai dua kali.
+Alur: klausa → triase e5/Jina → damasukma/indobert-absa untuk yang ambigu,
+lalu digabung menjadi verdict per kutipan (supporting/caveat/irrelevant).
 
 Env:
-  COFIND_LLM_CLAUSE_SENTIMENT           aktifkan tahap ini (default: true)
-  COFIND_CLAUSE_SENTIMENT_BATCH         klausa per panggilan LLM (default: 16)
-  COFIND_CLAUSE_SENTIMENT_MAX           batas klausa per request rekomendasi (default: 96)
-  COFIND_CLAUSE_SENTIMENT_POOL          jumlah kandidat toko yang diverifikasi (default: 6)
-  COFIND_CLAUSE_SENTIMENT_CONCURRENCY   batch yang dikirim paralel (default: 3)
-  COFIND_CLAUSE_SENTIMENT_DEDUP         dedup klausa mirip via embedding (default: true)
-  COFIND_CLAUSE_SENTIMENT_DEDUP_MIN     ambang cosine dedup 0..1 (default: 0.92)
+  COFIND_ABSA_ENABLED                   aktifkan ABSA (default: true)
+  COFIND_ABSA_MODEL                     default damasukma/indobert-absa
+  COFIND_LLM_CLAUSE_SENTIMENT           alias legacy (jika ABSA_ENABLED tidak diset)
+  COFIND_CLAUSE_SENTIMENT_MAX           batas klausa per request (default: 96)
+  COFIND_CLAUSE_SENTIMENT_POOL          kandidat toko (default: 6)
+  COFIND_CLAUSE_SENTIMENT_DEDUP         dedup klausa via embedding (default: true)
 """
 
 from __future__ import annotations
@@ -39,14 +27,6 @@ _cache = PersistentCache('clause_sentiment')
 
 _ALLOWED_SENTIMENTS = ('positif', 'negatif', 'netral')
 _MIN_CLAUSE_CHARS = 3
-
-_SYSTEM_PROMPT = (
-    'Anda mesin analisis sentimen aspek untuk ulasan coffee shop Indonesia. '
-    'Untuk setiap klausa, tentukan apakah klausa itu membahas aspek yang diminta user, '
-    'dan bila ya, apakah nadanya positif, negatif, atau netral. '
-    'Nilai hanya dari isi klausa; jangan menebak hal di luar teks. '
-    'Jawab HANYA JSON array valid tanpa markdown dan tanpa penjelasan tambahan.'
-)
 
 
 def _env_flag(name: str, default: bool) -> bool:
@@ -68,7 +48,9 @@ def _env_int(name: str, default: int, *, min_value: int, max_value: int) -> int:
 
 
 def clause_sentiment_enabled() -> bool:
-    return _env_flag('COFIND_LLM_CLAUSE_SENTIMENT', True)
+    from absa_sentiment import absa_enabled
+
+    return absa_enabled()
 
 
 def clause_dedup_enabled() -> bool:
@@ -107,88 +89,19 @@ def clause_structured_output_enabled() -> bool:
 
 
 def sentiment_config() -> Dict[str, object]:
+    from absa_sentiment import absa_model_name
+
     return {
         'enabled': clause_sentiment_enabled(),
+        'backend': 'absa',
+        'absa_model': absa_model_name(),
         'batch_size': batch_size(),
         'max_clauses': max_clauses_per_request(),
         'candidate_pool': candidate_pool(),
         'concurrency': batch_concurrency(),
         'dedup_enabled': clause_dedup_enabled(),
         'dedup_min_similarity': clause_dedup_min_similarity(),
-        'structured_output': clause_structured_output_enabled(),
     }
-
-
-def _bi_encoder_scores(preference_line: str, clauses: Sequence[str]) -> Dict[str, float]:
-    from semantic_match import embed_texts
-    import numpy as np
-
-    pref = str(preference_line or '').strip()
-    items = [str(c).strip() for c in clauses if str(c).strip()]
-    if not pref or not items:
-        return {}
-    vectors = embed_texts([pref, *items])
-    pref_vec = vectors.get(pref)
-    if pref_vec is None:
-        return {}
-    pv = np.asarray(pref_vec, dtype=np.float32)
-    out: Dict[str, float] = {}
-    for clause in items:
-        vec = vectors.get(clause)
-        if vec is None:
-            continue
-        out[clause] = float(np.dot(pv, np.asarray(vec, dtype=np.float32)))
-    return out
-
-
-def _apply_clause_triage(
-    pending: List[str],
-    preference_line: str,
-    telemetry: Dict[str, object],
-) -> Tuple[List[str], Dict[str, dict]]:
-    """Kurangi panggilan LLM via bi-encoder + cross-encoder triase."""
-    from cross_encoder import cross_encoder_enabled, score_pairs
-    from semantic_triage import tau_high, tau_low, triage_clause
-
-    if not pending:
-        return [], {}
-    bi_scores = _bi_encoder_scores(preference_line, pending)
-    auto: Dict[str, dict] = {}
-    need_llm: List[str] = []
-    ambiguous: List[str] = []
-    lo, hi = tau_low(), tau_high()
-    for clause in pending:
-        bi = bi_scores.get(clause)
-        if bi is not None and bi >= hi:
-            auto[clause] = {'relevant': True, 'sentiment': 'positif', 'source': 'triaged_accept'}
-            telemetry['triaged_accept'] = int(telemetry.get('triaged_accept') or 0) + 1
-            continue
-        if bi is not None and bi < lo:
-            auto[clause] = {'relevant': False, 'sentiment': 'netral', 'source': 'triaged_reject'}
-            telemetry['triaged_reject'] = int(telemetry.get('triaged_reject') or 0) + 1
-            continue
-        ambiguous.append(clause)
-
-    cross_scores: Dict[str, float] = {}
-    if ambiguous and cross_encoder_enabled():
-        scores = score_pairs(preference_line, ambiguous)
-        if scores and len(scores) == len(ambiguous):
-            cross_scores = dict(zip(ambiguous, scores))
-            telemetry['cross_encoder_scored'] = len(cross_scores)
-
-    for clause in ambiguous:
-        decision = triage_clause(bi_scores.get(clause), cross_scores.get(clause))
-        if decision == 'accept':
-            auto[clause] = {'relevant': True, 'sentiment': 'positif', 'source': 'triaged_accept'}
-            telemetry['triaged_accept'] = int(telemetry.get('triaged_accept') or 0) + 1
-        elif decision == 'reject':
-            auto[clause] = {'relevant': False, 'sentiment': 'netral', 'source': 'triaged_reject'}
-            telemetry['triaged_reject'] = int(telemetry.get('triaged_reject') or 0) + 1
-        else:
-            need_llm.append(clause)
-            telemetry['triaged_llm'] = int(telemetry.get('triaged_llm') or 0) + 1
-
-    return need_llm, auto
 
 
 def _dedup_clauses_by_embedding(clauses: Sequence[str]) -> Tuple[List[str], Dict[str, str]]:
@@ -247,66 +160,6 @@ def _clause_cache_key(preference_line: str, clause: str) -> str:
     return digest_key('clause-sentiment-v1', preference_line.lower(), clause.lower())
 
 
-def _user_prompt(preference_line: str, clauses: Sequence[str]) -> str:
-    numbered = '\n'.join(f'[{idx}] "{clause}"' for idx, clause in enumerate(clauses, 1))
-    return (
-        f'Aspek yang dicari user: {preference_line}\n\n'
-        f'Klausa ulasan:\n{numbered}\n\n'
-        'Tugas: untuk setiap klausa, isi dua hal.\n'
-        '- "relevan": true bila klausa membahas salah satu aspek yang dicari user '
-        '(termasuk bila memakai kata lain yang bermakna sama, misalnya "koneksinya ngebut" '
-        'untuk aspek wifi kencang). false bila klausa membahas hal lain.\n'
-        '- "sentimen": "positif" bila klausa memuji aspek itu, "negatif" bila mengeluh '
-        '(termasuk negasi seperti "ngga nyaman", "kurang oke"), "netral" bila ragu-ragu, '
-        'sekadar menyebut, atau tidak relevan.\n'
-        'Aturan: satu objek JSON per klausa, pakai nomor id yang sama, jangan menambah klausa baru.\n'
-        'Format keluaran: [{"id":1,"relevan":true,"sentimen":"positif"}]'
-    )
-
-
-def _parse_batch_response(raw: object, parse_json_fn: Optional[Callable]) -> Optional[list]:
-    import json
-
-    if clause_structured_output_enabled():
-        try:
-            from llm_schemas import ClauseSentimentBatch, parse_json_with_pydantic
-
-            repair = None
-            if parse_json_fn is not None:
-                repair = lambda t: parse_json_fn(t, expected='array')
-            model = parse_json_with_pydantic(
-                ClauseSentimentBatch,
-                str(raw or ''),
-                repair_fn=repair,
-            )
-            if model is not None:
-                return [
-                    {'id': item.id, 'relevan': item.relevan, 'sentimen': item.sentimen}
-                    for item in model.items
-                ]
-        except Exception:
-            pass
-
-    if parse_json_fn is not None:
-        try:
-            parsed = parse_json_fn(raw, expected='array')
-            if isinstance(parsed, list):
-                return parsed
-        except Exception:
-            pass
-    text = str(raw or '').strip()
-    text = re.sub(r'^```(?:json)?\s*', '', text, flags=re.IGNORECASE)
-    text = re.sub(r'\s*```$', '', text).strip()
-    match = re.search(r'\[[\s\S]*\]', text)
-    if not match:
-        return None
-    try:
-        parsed = json.loads(match.group(0))
-    except Exception:
-        return None
-    return parsed if isinstance(parsed, list) else None
-
-
 def _coerce_bool(value: object, default: bool = False) -> bool:
     if isinstance(value, bool):
         return value
@@ -335,18 +188,21 @@ def _classify_clauses(
     clauses: Sequence[str],
     *,
     preference_line: str,
-    chat_fn: Callable[..., str],
-    parse_json_fn: Optional[Callable],
+    chat_fn: Optional[Callable[..., str]] = None,
+    parse_json_fn: Optional[Callable] = None,
 ) -> Tuple[Dict[str, dict], Dict[str, object]]:
-    """Verdict per klausa unik (cache dulu, sisanya batch ke LLM)."""
+    """Verdict per klausa unik (cache legacy + ABSA lokal)."""
+    _ = chat_fn, parse_json_fn
+    from absa_sentiment import classify_clauses_absa
+
     telemetry: Dict[str, object] = {
         'clauses': len(clauses),
         'from_cache': 0,
-        'from_llm': 0,
+        'from_absa': 0,
+        'absa_batches': 0,
         'llm_calls': 0,
-        'failed_batches': 0,
         'latency_ms': 0.0,
-        'error': None,
+        'backend': 'absa',
     }
     verdicts: Dict[str, dict] = {}
     if not clauses:
@@ -370,97 +226,25 @@ def _classify_clauses(
     if not pending:
         return verdicts, telemetry
 
-    triage_enabled = _env_flag('COFIND_CLAUSE_TRIAGE', True)
-    if triage_enabled:
-        pending, triaged = _apply_clause_triage(pending, preference_line, telemetry)
-        verdicts.update(triaged)
-        if not pending:
-            return verdicts, telemetry
-
     llm_targets, alias_map = _dedup_clauses_by_embedding(pending)
     telemetry['dedup_aliases'] = max(0, len(pending) - len(llm_targets))
 
-    started = time.perf_counter()
-    size = batch_size()
-    batches = [llm_targets[offset:offset + size] for offset in range(0, len(llm_targets), size)]
+    absa_verdicts, absa_telemetry = classify_clauses_absa(
+        llm_targets,
+        preference_line=preference_line,
+    )
+    telemetry.update(absa_telemetry or {})
+    telemetry['llm_calls'] = int(telemetry.get('absa_batches') or 0)
+
     to_store: Dict[str, dict] = {}
-
-    response_format = None
-    if clause_structured_output_enabled():
-        try:
-            from llm_schemas import ClauseSentimentBatch
-
-            response_format = ClauseSentimentBatch.json_schema_for_llm()
-        except Exception:
-            response_format = None
-
-    def run_batch(batch: List[str]):
-        """Satu panggilan LLM untuk satu batch klausa; error dikembalikan, tidak diangkat."""
-        try:
-            kwargs = dict(
-                messages=[
-                    {'role': 'system', 'content': _SYSTEM_PROMPT},
-                    {'role': 'user', 'content': _user_prompt(preference_line, batch)},
-                ],
-                max_tokens=min(900, 80 + 30 * len(batch)),
-                temperature=0.0,
-                usage_stage='clause_sentiment',
-            )
-            if response_format is not None:
-                kwargs['response_format'] = response_format
-            raw = chat_fn(**kwargs)
-            return batch, raw, None
-        except Exception as err:
-            return batch, None, str(err)[:160]
-
-    workers = min(batch_concurrency(), len(batches))
-    if workers > 1:
-        import contextvars
-        from concurrent.futures import ThreadPoolExecutor
-
-        with ThreadPoolExecutor(max_workers=workers) as pool:
-            results = list(
-                pool.map(
-                    lambda batch: contextvars.copy_context().run(run_batch, batch),
-                    batches,
-                )
-            )
-    else:
-        results = [run_batch(batch) for batch in batches]
-
-    for batch, raw, error in results:
-        if error is not None:
-            telemetry['failed_batches'] = int(telemetry['failed_batches']) + 1
-            telemetry['error'] = error
+    for clause, verdict in (absa_verdicts or {}).items():
+        if clause in verdicts:
             continue
-        telemetry['llm_calls'] = int(telemetry['llm_calls']) + 1
-
-        parsed = _parse_batch_response(raw, parse_json_fn)
-        if not parsed:
-            telemetry['failed_batches'] = int(telemetry['failed_batches']) + 1
-            telemetry['error'] = telemetry['error'] or 'parse_failed'
-            continue
-
-        for item in parsed:
-            if not isinstance(item, dict):
-                continue
-            try:
-                position = int(re.sub(r'[^0-9-]', '', str(item.get('id'))) or 0)
-            except (TypeError, ValueError):
-                continue
-            if not (1 <= position <= len(batch)):
-                continue
-            clause = batch[position - 1]
-            if clause in verdicts:
-                continue
-            sentiment = _coerce_sentiment(item.get('sentimen') or item.get('sentiment'))
-            relevant = _coerce_bool(item.get('relevan', item.get('relevant')), default=False)
-            # Klausa tidak relevan tidak punya sentimen terhadap aspek yang dicari.
-            if not relevant:
-                sentiment = 'netral'
-            verdicts[clause] = {'relevant': relevant, 'sentiment': sentiment, 'source': 'llm'}
-            to_store[cache_keys[clause]] = {'relevan': relevant, 'sentimen': sentiment}
-            telemetry['from_llm'] = int(telemetry['from_llm']) + 1
+        verdicts[clause] = verdict
+        to_store[cache_keys[clause]] = {
+            'relevan': bool(verdict.get('relevant')),
+            'sentimen': verdict.get('sentiment'),
+        }
 
     if to_store:
         _cache.set_many(to_store)
@@ -472,7 +256,6 @@ def _classify_clauses(
         if isinstance(canon_verdict, dict):
             verdicts[alias] = dict(canon_verdict)
 
-    telemetry['latency_ms'] = round((time.perf_counter() - started) * 1000, 1)
     return verdicts, telemetry
 
 
@@ -496,7 +279,7 @@ def classify_quotes(
     quotes: Sequence[str],
     *,
     preference_line: str,
-    chat_fn: Callable[..., str],
+    chat_fn: Optional[Callable[..., str]] = None,
     parse_json_fn: Optional[Callable] = None,
     max_clauses: Optional[int] = None,
 ) -> Tuple[Dict[str, dict], Dict[str, object]]:
@@ -507,10 +290,10 @@ def classify_quotes(
         'label': 'supporting' | 'caveat' | 'irrelevant',
         'sentiment': 'positif' | 'negatif' | 'netral',
         'clause': klausa yang menentukan label (selalu potongan teks asli),
-        'source': 'llm' | 'cache',
+        'source': 'absa' | 'cache' | 'triaged_accept',
     }
 
-    Kutipan tanpa verdict (LLM gagal / klausa terlalu pendek) tidak dimasukkan,
+    Kutipan tanpa verdict (ABSA gagal / klausa terlalu pendek) tidak dimasukkan,
     sehingga pemanggil otomatis kembali ke heuristik lama.
     """
     telemetry: Dict[str, object] = {'quotes': 0, 'verdicts': 0, 'skipped': None}
@@ -567,7 +350,7 @@ def classify_quotes(
                 'label': 'irrelevant',
                 'sentiment': 'netral',
                 'clause': judged[0][0],
-                'source': judged[0][1].get('source', 'llm'),
+                'source': judged[0][1].get('source', 'absa'),
             }
             continue
         # Keluhan pada aspek yang diminta selalu menang: kutipan itu jadi catatan,
@@ -578,7 +361,7 @@ def classify_quotes(
                 'label': 'caveat',
                 'sentiment': 'negatif',
                 'clause': negative[0],
-                'source': negative[1].get('source', 'llm'),
+                'source': negative[1].get('source', 'absa'),
             }
             continue
         positive = next((pair for pair in relevant if pair[1].get('sentiment') == 'positif'), None)
@@ -587,14 +370,14 @@ def classify_quotes(
                 'label': 'supporting',
                 'sentiment': 'positif',
                 'clause': positive[0],
-                'source': positive[1].get('source', 'llm'),
+                'source': positive[1].get('source', 'absa'),
             }
             continue
         quote_verdicts[key] = {
             'label': 'irrelevant',
             'sentiment': 'netral',
             'clause': relevant[0][0],
-            'source': relevant[0][1].get('source', 'llm'),
+            'source': relevant[0][1].get('source', 'absa'),
         }
 
     telemetry['verdicts'] = len(quote_verdicts)
@@ -603,6 +386,12 @@ def classify_quotes(
 
 def flush_cache() -> None:
     _cache.flush()
+    try:
+        from absa_sentiment import flush_cache as flush_absa
+
+        flush_absa()
+    except Exception:
+        pass
 
 
 def cache_stats() -> Dict[str, int]:

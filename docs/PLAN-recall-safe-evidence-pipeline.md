@@ -340,7 +340,8 @@ Tugas:
    pemotong recall — pastikan implementasinya benar-benar mewariskan label dan
    tidak membuang anggota klaster.
 3. **Cross-encoder untuk band ambigu.** Tambahkan `cross_encoder.py` memakai
-   `BAAI/bge-reranker-v2-m3` (akurat) atau `mmarco-mMiniLMv2-L12-H384-v1`
+   `jinaai/jina-reranker-v2-base-multilingual` (default operasional),
+   `BAAI/bge-reranker-v2-m3` (alternatif), atau `mmarco-mMiniLMv2-L12-H384-v1`
    (ringan), dijalankan lewat ONNX Runtime di CPU. Perannya menilai pasangan
    (aspek, klausa) di band `tau_low..tau_high` sebelum LLM dipanggil.
    Env: `COFIND_CROSS_ENCODER` (default `false`), `COFIND_CROSS_ENCODER_MODEL`.
@@ -494,7 +495,7 @@ Acceptance criteria:
 | `COFIND_TAU_LOW` | dari kalibrasi | 4 | Ambang bawah gate |
 | `COFIND_TAU_HIGH` | dari kalibrasi | 4 | Ambang auto-accept |
 | `COFIND_CROSS_ENCODER` | `false` | 4 | Aktifkan reranker |
-| `COFIND_CROSS_ENCODER_MODEL` | `BAAI/bge-reranker-v2-m3` | 4 | Model reranker |
+| `COFIND_CROSS_ENCODER_MODEL` | `jinaai/jina-reranker-v2-base-multilingual` | 4 | Model reranker (alt. BGE) |
 | `COFIND_CLUSTER_THRESHOLD` | `0.92` | 4 | Ambang klaster near-duplicate |
 | `COFIND_LLM_CLAUSE_SENTIMENT` | `false` -> `true` | 4 | Sudah ada, diaktifkan setelah terbukti |
 | `COFIND_SHADOW_RUN` | `false` | 7 | Jalankan pembanding tanpa gate |

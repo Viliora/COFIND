@@ -164,6 +164,29 @@ class AdaptingConnection:
             self._raw.row_factory = value
 
 
+def _connect_max_attempts() -> int:
+    try:
+        return max(1, min(12, int(os.getenv("COFIND_DB_CONNECT_RETRIES", "6") or "6")))
+    except ValueError:
+        return 6
+
+
+def _is_transient_db_error(message: str) -> bool:
+    msg = (message or "").lower()
+    return any(
+        s in msg
+        for s in (
+            "could not translate host name",
+            "name or service not known",
+            "temporary failure in name resolution",
+            "could not connect to server",
+            "timeout expired",
+            "connection timed out",
+            "network is unreachable",
+        )
+    )
+
+
 def get_connection() -> AdaptingConnection:
     import time
 
@@ -173,28 +196,16 @@ def get_connection() -> AdaptingConnection:
     if not DATABASE_URL:
         raise RuntimeError("DATABASE_URL (atau SUPABASE_DB_URL) wajib untuk backend Postgres/Supabase.")
 
-    # Transient DNS / network blips (common with Supabase pooler) — retry briefly.
+    # Transient DNS / network blips (umum pada Supabase pooler saat Wi‑Fi/VPN belum stabil).
+    attempts = _connect_max_attempts()
     last_err: Optional[BaseException] = None
-    for attempt in range(3):
+    for attempt in range(attempts):
         try:
-            raw = psycopg2.connect(DATABASE_URL, connect_timeout=10)
+            raw = psycopg2.connect(DATABASE_URL, connect_timeout=15)
             return AdaptingConnection(raw)
         except OperationalError as e:
             last_err = e
-            msg = str(e).lower()
-            transient = any(
-                s in msg
-                for s in (
-                    "could not translate host name",
-                    "name or service not known",
-                    "temporary failure in name resolution",
-                    "could not connect to server",
-                    "timeout expired",
-                    "connection timed out",
-                    "network is unreachable",
-                )
-            )
-            if not transient or attempt == 2:
+            if not _is_transient_db_error(str(e)) or attempt >= attempts - 1:
                 raise
-            time.sleep(0.5 * (2 ** attempt))
+            time.sleep(min(10.0, 1.0 * (2 ** attempt)))
     raise last_err  # pragma: no cover

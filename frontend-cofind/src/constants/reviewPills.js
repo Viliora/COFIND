@@ -26,9 +26,9 @@ export const CONTEXT_PILL_OPTIONS = [
     desc: 'Tempat luas, ramah anak, nyaman untuk keluarga, dan menu variatif.',
   },
   {
-    label: 'Instagrammable',
+    label: 'Feeds Hunter',
     value: 'instagrammable',
-    desc: 'Estetika interior visual, pencahayaan bagus, dan spot foto menarik.',
+    desc: 'Estetika visual, pencahayaan bagus, dan spot foto untuk konten/feeds.',
   },
 ];
 
@@ -70,6 +70,7 @@ export const FACILITY_ATTRIBUTE_GROUPS = [
     label: 'Menu',
     options: [
       { label: 'Menu Lengkap (Makanan & Minuman)', value: 'makanan_berat', icon: '🍽️' },
+      { label: 'Dessert', value: 'dessert', icon: '🍰' },
     ],
   },
 ];

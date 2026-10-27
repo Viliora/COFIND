@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "description": "Smoke RAGAS — faithfulness tinggi/rendah + relevansi (judge Gemini).",
+  "cases": [
+    {
+      "id": "smoke-faithful-01",
+      "question": "Apakah tempat ini cocok untuk kerja dengan wifi kencang?",
+      "contexts": [
+        "Wifi kencang dan stabil, cocok untuk WFH di lantai dua.",
+        "Stopkontak tersedia di hampir setiap meja."
+      ],
+      "answer": "Cocok untuk kerja: ulasan menyebut wifi kencang dan stabil untuk WFH, plus stopkontak di meja.",
+      "ground_truth": "Toko dengan ulasan positif tentang wifi/koneksi untuk kerja dan fasilitas stopkontak."
+    },
+    {
+      "id": "smoke-hallucination-02",
+      "question": "Apakah ada kolam renang dan bioskop pribadi?",
+      "contexts": [
+        "Suasana tenang, kopi enak, tempat duduk nyaman.",
+        "Pelayanan ramah tapi antrian kadang panjang."
+      ],
+      "answer": "Ya, tersedia kolam renang olympic-size dan bioskop pribadi berkapasitas 200 orang.",
+      "ground_truth": "Tidak ada bukti kolam renang atau bioskop; hanya suasana tenang dan kopi."
+    },
+    {
+      "id": "smoke-relevancy-03",
+      "question": "Rekomendasi tempat belajar yang tenang",
+      "contexts": [
+        "Suasana tenang cocok untuk belajar dan nugas.",
+        "Tidak terlalu ramai di pagi hari."
+      ],
+      "answer": "Tempat ini tenang di pagi hari dan cocok untuk belajar atau mengerjakan tugas.",
+      "ground_truth": "Rekomendasi dengan bukti ulasan belajar/fokus dan suasana tenang."
+    },
+    {
+      "id": "smoke-offtopic-04",
+      "question": "Tempat belajar tenang dekat kampus",
+      "contexts": [
+        "Menu dessert paling favorit adalah cheesecake.",
+        "Parkir motor sempit di akhir pekan."
+      ],
+      "answer": "Cheesecake di sini juara dan parkir motor luas dengan valet gratis.",
+      "ground_truth": "Fokus belajar tenang; dessert dan parkir bukan kriteria utama."
+    }
+  ]
+}

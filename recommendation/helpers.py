@@ -42,6 +42,7 @@ from pipeline_telemetry import (
     reset_llm_usage_collection,
 )
 from slang_normalize import normalize_text_with_slang, tokenize_normalized
+from recommendation.flags import recommendation_overall_experience_enabled
 from hybrid_retrieval import (
     retrieve_top_k,
     retrieve_top_k_by_text,
@@ -69,6 +70,10 @@ from free_text_query_handling import (
 from recommendation_coverage import merge_pill_coverage, supplemental_coverage_lines
 from pill_aspect_sentiment import aggregate_reviews_sentiment
 from review_weakness import review_has_weakness_near_preference_keywords as _weakness_near_keywords
+from cross_encoder_rerank import (
+    ce_rerank_candidates,
+    ce_rerank_enabled,
+)
 from llm_recommender import (
     build_user_taste_profile,
     format_activity_context_block,
@@ -172,7 +177,7 @@ _FACILITY_HIGHLIGHT_ORDER = [
 ]
 
 RERANK_CACHE_PATH = os.path.join(CACHE_DIR, "rerank_cache.json")
-RERANK_CACHE_VERSION = "v3-pill-set"
+RERANK_CACHE_VERSION = "v4-ce-rerank"
 
 PILL_TO_REVIEW_CATEGORY = {
     'belajar': 'rating_suasana',
@@ -183,6 +188,48 @@ PILL_TO_REVIEW_CATEGORY = {
     'instagrammable': 'rating_suasana',
 }
 REVIEW_BASED_MIN_REVIEWS = 1
+
+RATING_VOTE_WEIGHTS = {
+    'love': 1.0,
+    'like': 0.75,
+    'ok': 0.5,
+    'dislike': 0.25,
+    'hate': 0.0,
+}
+
+
+def _coverage_env_float(name: str, default: float, *, lo: float = 0.0, hi: float = 1.0) -> float:
+    raw = os.getenv(name)
+    if raw is None or str(raw).strip() == '':
+        return default
+    try:
+        val = float(raw)
+    except ValueError:
+        return default
+    return max(lo, min(hi, val))
+
+
+def coverage_bonus() -> float:
+    """Penalti skor bila cakupan pill rendah (.env COFIND_COVERAGE_BONUS, default 0.25)."""
+    return _coverage_env_float('COFIND_COVERAGE_BONUS', 0.25)
+
+
+def activity_coverage_share() -> float:
+    """Bobot lapis aktivitas vs atribut dalam multiplier cakupan (default 0.6)."""
+    return _coverage_env_float('COFIND_ACTIVITY_COVERAGE_SHARE', 0.6)
+
+
+def coverage_semantic_min() -> float:
+    """Ambang cosine semantic match untuk menghitung pill ter-cover (default 0.65)."""
+    return _coverage_env_float('COFIND_COVERAGE_SEMANTIC_MIN', 0.65)
+
+
+def _split_preference_pills(pills):
+    """Pisah pill aktivitas (lapis 1) vs atribut fasilitas (lapis 2)."""
+    pills = list(pills or [])
+    activity_pills = [p for p in pills if p not in FACILITY_ATTRIBUTE_PILLS]
+    attribute_pills = [p for p in pills if p in FACILITY_ATTRIBUTE_PILLS]
+    return activity_pills, attribute_pills
 
 _ID_AFFIX_SUFFIXES = ('nya', 'lah', 'kah', 'pun', 'ku', 'mu', 'kan', 'an', 'i')
 _ID_AFFIX_PREFIXES = ('ber', 'me', 'di', 'ter', 'se', 'pe', 'per', 'ke', 'nge', 'ng')
@@ -1002,6 +1049,8 @@ def _overall_experience_score_from_signals(signals):
     rata-rata slider pelayanan, kebersihan, kenyamanan, harga (skala 1..5 → 0..1).
     None jika belum ada data slider sama sekali.
     """
+    if not recommendation_overall_experience_enabled():
+        return None
     vote = ((signals or {}).get('vote') or {})
     sliders = vote.get('slider_averages') or {}
     slider_vals = []
@@ -1102,14 +1151,15 @@ def _community_prompt_lines(signals, pills=None, indent='  - '):
         if bits:
             lines.append(f'{indent}Penilaian pengunjung: {", ".join(bits[:4])} (dari {total_rating} penilaian)')
 
-    slider_bits = []
-    sliders = vote.get('slider_averages') or {}
-    for field, label in (('pelayanan', 'pelayanan'), ('kebersihan', 'kebersihan'), ('kenyamanan', 'kenyamanan'), ('harga', 'harga')):
-        val = sliders.get(field)
-        if val is not None:
-            slider_bits.append(f'{label} {float(val):.1f}/5')
-    if slider_bits:
-        lines.append(f'{indent}Pengalaman pengunjung: {", ".join(slider_bits)}')
+    if recommendation_overall_experience_enabled():
+        slider_bits = []
+        sliders = vote.get('slider_averages') or {}
+        for field, label in (('pelayanan', 'pelayanan'), ('kebersihan', 'kebersihan'), ('kenyamanan', 'kenyamanan'), ('harga', 'harga')):
+            val = sliders.get(field)
+            if val is not None:
+                slider_bits.append(f'{label} {float(val):.1f}/5')
+        if slider_bits:
+            lines.append(f'{indent}Pengalaman pengunjung: {", ".join(slider_bits)}')
 
     pros = data.get('top_pros') or []
     pro_texts = [str(item.get('text') or '').strip() for item in pros if str(item.get('text') or '').strip()]
@@ -1672,6 +1722,7 @@ def _score_shop_by_user_reviews(
         },
     }
 def _build_review_based_evidence(profile, score_detail, pills, search_keywords=None):
+    _merge_evidence_private_api()
     """
     Bangun supporting_evidence hanya dari review user.
     Key utama: review_quotes, pill_stats, category_ratings,
@@ -3026,9 +3077,6 @@ def _run_clause_sentiment_for_candidates(candidates, pills):
     if not clause_sentiment_enabled():
         telemetry['skipped'] = 'disabled'
         return {}, telemetry
-    if not _llm_ready_for_recommend_run():
-        telemetry['skipped'] = 'llm_unavailable'
-        return {}, telemetry
     pool = list(candidates or [])[:clause_sentiment_pool()]
     quotes = []
     seen = set()
@@ -3046,8 +3094,6 @@ def _run_clause_sentiment_for_candidates(candidates, pills):
     verdicts, sentiment_telemetry = classify_clause_quotes(
         quotes,
         preference_line=_preference_line_for_sentiment(pills),
-        chat_fn=_llm_chat_for_pipeline,
-        parse_json_fn=_parse_llm_json_with_repair,
     )
     telemetry.update(sentiment_telemetry or {})
     telemetry['verdicts'] = len(verdicts or {})
@@ -3798,3 +3844,13 @@ _RECOMMENDATION_PROGRESS_STAGES = (
 _RECOMMENDATION_PROGRESS_BY_STAGE = _build_recommendation_progress_map(
     _RECOMMENDATION_PROGRESS_STAGES,
 )
+
+
+_evidence_private_api_merged = False
+
+
+def _merge_evidence_private_api() -> None:
+    """Compat: delegasi ke recommendation.wiring (dipanggil sebelum bukti lintas-modul)."""
+    from recommendation.wiring import ensure_recommendation_wiring
+
+    ensure_recommendation_wiring()

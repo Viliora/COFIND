@@ -3,6 +3,21 @@ from __future__ import annotations
 
 from recommendation import helpers as _h
 from recommendation.helpers import *  # noqa: F403
+from recommendation.helpers import _split_preference_pills
+
+
+def _bind_helpers_private_api() -> None:
+    """Star-import tidak mengekspor `_MIN_QUOTE_CHARS`, `_normalize_whitespace`, dll."""
+    g = globals()
+    for name, val in vars(_h).items():
+        if name.startswith('__'):
+            continue
+        if name.startswith('_') and name not in g:
+            g[name] = val
+
+
+_bind_helpers_private_api()
+del _bind_helpers_private_api
 
 def _facilities_item_matches_intent(item_label, intent_blob_lower):
     if not item_label or not intent_blob_lower:

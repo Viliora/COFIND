@@ -99,7 +99,7 @@
       "input": {
         "pills": ["instagrammable"]
       },
-      "tags": ["aesthetic", "instagrammable"],
+      "tags": ["aesthetic", "feeds_hunter"],
       "expect": {
         "activity_gate": true,
         "metadata_gate": false,

@@ -117,7 +117,7 @@ PILL_MAPPING = {
         ],
     },
     'instagrammable': {
-        'label': 'Instagrammable',
+        'label': 'Feeds Hunter',
         'definition': (
             'Kunjungan untuk berswafoto, konten visual, atau menikmati estetika interior dan '
             'arsitektur tempat yang unik, artistik, trendi, dan memiliki pencahayaan menarik.'
@@ -263,6 +263,18 @@ PILL_MAPPING = {
             'menu lengkap', 'bisa makan berat', 'sarapan', 'brunch',
         ],
     },
+    'dessert': {
+        'label': 'Dessert',
+        'facility_fields': {
+            'highlights': ['good_desserts'],
+            'dining_options': ['dessert'],
+        },
+        'review_keywords': [
+            'dessert', 'cheesecake', 'kue', 'pastry', 'croissant', 'brownies',
+            'tiramisu', 'donat', 'waffle', 'pudding', 'es krim', 'manis',
+            'hidangan penutup', 'kue basah', 'kue kering',
+        ],
+    },
 }
 
 # Pill lapis 2 dibedakan dari pill aktivitas hanya saat validasi input & pembatasan
@@ -273,7 +285,7 @@ FACILITY_ATTRIBUTE_PILLS = frozenset({
     'ruangan_ac', 'suasana_tenang', 'area_outdoor', 'smoking_area',
     'wifi_kencang', 'banyak_colokan_terminal', 'ruang_privat',
     'buka_sampai_malam_24_hours', 'musholla', 'parkir_luas', 'toilet_bersih',
-    'makanan_berat',
+    'makanan_berat', 'dessert',
 })
 
 # Label lapis 2: fallback jika mapping fasilitas belum punya kunci `label`.
@@ -290,6 +302,7 @@ _FACILITY_PILL_LABELS = {
     'parkir_luas': 'Parkir luas',
     'toilet_bersih': 'Toilet bersih',
     'makanan_berat': 'Menu Lengkap (Makanan & Minuman)',
+    'dessert': 'Dessert',
 }
 
 PILL_LABELS = {}

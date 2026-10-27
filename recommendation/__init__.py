@@ -1,1 +1,4 @@
+from recommendation.wiring import ensure_recommendation_wiring
+
+ensure_recommendation_wiring()
 from recommendation.pipeline import recommendation_pipeline_events

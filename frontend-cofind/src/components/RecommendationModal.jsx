@@ -947,31 +947,19 @@ const RecommendationModal = ({
                                                 {metadataSupportItems.length > 0 ? (
                                                     <div className="mt-3 rounded-lg border border-sky-200 bg-sky-50/70 px-3 py-2 text-sm dark:border-sky-900/60 dark:bg-sky-950/30">
                                                         <p className="text-xs font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">
-                                                            Info tambahan dari metadata
+                                                            CLAIM DARI METADATA
                                                         </p>
-                                                        <div className="mt-2 space-y-2">
-                                                            {metadataSupportItems.map((item, metaIdx) => (
-                                                                <div key={`${placeId || shopName}-metadata-${metaIdx}`}>
-                                                                    <p className="text-xs font-medium text-gray-700 dark:text-gray-200">
-                                                                        {item.title}
-                                                                    </p>
-                                                                    <div className="mt-1 flex flex-wrap gap-1.5">
-                                                                        {item.items.map((value) => (
-                                                                            <span
-                                                                                key={`${placeId || shopName}-${item.title}-${value}`}
-                                                                                className="inline-flex rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-sky-800 ring-1 ring-sky-200 dark:bg-sky-950/60 dark:text-sky-100 dark:ring-sky-800/70"
-                                                                            >
-                                                                                {value}
-                                                                            </span>
-                                                                        ))}
-                                                                    </div>
-                                                                    {item.note ? (
-                                                                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                                                            {item.note}
-                                                                        </p>
-                                                                    ) : null}
-                                                                </div>
-                                                            ))}
+                                                        <div className="mt-2 flex flex-wrap gap-1.5">
+                                                            {metadataSupportItems.flatMap((item, metaIdx) =>
+                                                                (item.items || []).map((value, valueIdx) => (
+                                                                    <span
+                                                                        key={`${placeId || shopName}-metadata-${metaIdx}-${valueIdx}-${value}`}
+                                                                        className="inline-flex rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-sky-800 ring-1 ring-sky-200 dark:bg-sky-950/60 dark:text-sky-100 dark:ring-sky-800/70"
+                                                                    >
+                                                                        {value}
+                                                                    </span>
+                                                                )),
+                                                            )}
                                                         </div>
                                                     </div>
                                                 ) : null}

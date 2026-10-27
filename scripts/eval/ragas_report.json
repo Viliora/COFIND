@@ -1,17 +1,69 @@
 {
-  "dataset": "C:\\Users\\User\\cofind\\scripts\\eval\\sample_ragas_dataset.json",
-  "case_count": 2,
-  "ragas": null,
+  "dataset": "scripts\\eval\\ragas_smoke_dataset.json",
+  "case_count": 4,
   "simple_coverage": [
     {
-      "id": "pill-kerja-wifi-01",
-      "has_gold_place": false,
-      "reference_snippets": 2
+      "id": "smoke-faithful-01",
+      "has_user_input": true,
+      "has_response": true,
+      "context_count": 2,
+      "has_reference": true,
+      "has_gold_place": false
     },
     {
-      "id": "pill-belajar-02",
-      "has_gold_place": false,
-      "reference_snippets": 2
+      "id": "smoke-hallucination-02",
+      "has_user_input": true,
+      "has_response": true,
+      "context_count": 2,
+      "has_reference": true,
+      "has_gold_place": false
+    },
+    {
+      "id": "smoke-relevancy-03",
+      "has_user_input": true,
+      "has_response": true,
+      "context_count": 2,
+      "has_reference": true,
+      "has_gold_place": false
+    },
+    {
+      "id": "smoke-offtopic-04",
+      "has_user_input": true,
+      "has_response": true,
+      "context_count": 2,
+      "has_reference": true,
+      "has_gold_place": false
     }
-  ]
+  ],
+  "ragas": {
+    "ragas_version": "0.4.3",
+    "judge_model": "gemini-3.8-flash",
+    "embedding_model": "gemini-embedding-001",
+    "metrics_requested": [
+      "faithfulness",
+      "answer_relevancy"
+    ],
+    "metric_means": {
+      "faithfulness": 0.4167,
+      "answer_relevancy": 0.7625
+    },
+    "per_case_scores": [
+      {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.8054291829352371
+      },
+      {
+        "faithfulness": 0.0,
+        "answer_relevancy": 0.9012110173723056
+      },
+      {
+        "faithfulness": 0.6666666666666666,
+        "answer_relevancy": 0.700745105011443
+      },
+      {
+        "faithfulness": 0.0,
+        "answer_relevancy": 0.6424633125777126
+      }
+    ]
+  }
 }

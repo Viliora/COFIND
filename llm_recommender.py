@@ -96,8 +96,15 @@ def rerank_weight() -> float:
 
 def pipeline_config() -> Dict[str, object]:
     """Ringkasan flag pipeline untuk telemetry / endpoint status."""
+    try:
+        from cross_encoder_rerank import ce_rerank_enabled, ce_rerank_weight
+    except Exception:
+        ce_rerank_enabled = lambda: False  # type: ignore[misc, assignment]
+        ce_rerank_weight = lambda: rerank_weight()  # type: ignore[misc, assignment]
     return {
         'rerank': rerank_enabled(),
+        'ce_rerank': ce_rerank_enabled(),
+        'ce_rerank_weight': ce_rerank_weight(),
         'personalization': personalization_enabled(),
         'grounding_check': grounding_check_enabled(),
         'rerank_candidate_pool': rerank_candidate_pool(),
@@ -421,7 +428,7 @@ _RERANK_SYSTEM_PROMPT = (
     'Anda mesin pemeringkat rekomendasi coffee shop Cofind. '
     'Anda boleh memilih 0 sampai 3 toko. Jangan memaksa 3. '
     'Toko hanya boleh dipilih jika kutipan benar-benar membahas aktivitas user '
-    '(belajar, kerja/WFC, bermain game, meeting, keluarga, atau instagrammable), '
+    '(belajar, kerja/WFC, bermain game, meeting, keluarga, atau Feeds Hunter), '
     'bukan hanya wifi, parkir, atau nongkrong. '
     'Fasilitas tambahan hanya penguat ranking. Ketiadaan ulasan fasilitas bukan alasan menolak '
     'toko yang aktivitasnya terbukti, dan bukan alasan menaikkan skor. '
@@ -494,6 +501,8 @@ _RATING_PROMPT_LABELS = {
 }
 def _community_signal_lines(evidence: Dict[str, object], pills: Optional[Sequence[str]] = None) -> List[str]:
     """Baris fakta pengunjung untuk blok kandidat; kosong bila toko belum punya data."""
+    from recommendation.flags import recommendation_overall_experience_enabled
+
     data = (evidence or {}).get('community_signals') or {}
     vote = data.get('vote') or {}
     lines: List[str] = []
@@ -509,17 +518,18 @@ def _community_signal_lines(evidence: Dict[str, object], pills: Optional[Sequenc
         if bits:
             lines.append(f'    - penilaian: {", ".join(bits[:4])} (dari {total_rating} penilaian)')
 
-    slider_bits = []
-    sliders = vote.get('slider_averages') or {}
-    for field in ('pelayanan', 'kebersihan', 'kenyamanan', 'harga'):
-        val = sliders.get(field)
-        if val is not None:
-            try:
-                slider_bits.append(f'{field} {float(val):.1f}/5')
-            except (TypeError, ValueError):
-                pass
-    if slider_bits:
-        lines.append(f'    - pengalaman: {", ".join(slider_bits)}')
+    if recommendation_overall_experience_enabled():
+        slider_bits = []
+        sliders = vote.get('slider_averages') or {}
+        for field in ('pelayanan', 'kebersihan', 'kenyamanan', 'harga'):
+            val = sliders.get(field)
+            if val is not None:
+                try:
+                    slider_bits.append(f'{field} {float(val):.1f}/5')
+                except (TypeError, ValueError):
+                    pass
+        if slider_bits:
+            lines.append(f'    - pengalaman: {", ".join(slider_bits)}')
 
     pro_texts = [
         str(item.get('text') or '').strip()
@@ -1093,9 +1103,10 @@ def _blend_rerank_scores(
     fits: Dict[str, Dict[str, object]],
     *,
     telemetry: Dict[str, object],
+    weight: Optional[float] = None,
 ) -> Dict[str, object]:
     """Campur fit LLM dengan skor statistik lalu urutkan. Dipakai jalur LLM dan cache."""
-    weight = rerank_weight()
+    w = rerank_weight() if weight is None else max(0.0, min(1.0, float(weight)))
     ranked: List[Dict[str, object]] = []
     for position, candidate in enumerate(pool):
         place_id = str(candidate.get('place_id'))
@@ -1107,7 +1118,7 @@ def _blend_rerank_scores(
             entry['final_score'] = round(hybrid_score, 4)
             entry['llm_fit'] = None
         else:
-            blended = weight * (float(fit.get('fit_score') or 0.0) / 10.0) + (1.0 - weight) * hybrid_score
+            blended = w * (float(fit.get('fit_score') or 0.0) / 10.0) + (1.0 - w) * hybrid_score
             entry['final_score'] = round(blended, 4)
             entry['llm_fit'] = dict(fit, hybrid_score=round(hybrid_score, 4))
         entry['hybrid_rank'] = position + 1
