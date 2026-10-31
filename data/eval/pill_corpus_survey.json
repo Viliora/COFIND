@@ -1,0 +1,1194 @@
+{
+  "generated_at": "2026-10-29T19:46:54.555855+00:00",
+  "corpus": {
+    "reviews_in_db": 300,
+    "reviews_usable_min_chars": 245,
+    "reviews_matching_any_activity_pill": 105,
+    "pct_any_activity": 42.86,
+    "reviews_matching_any_pill": 142,
+    "reviews_multi_pill": 85,
+    "reviews_no_pill_match": 103
+  },
+  "activity_pills_summary": [
+    {
+      "pill": "belajar",
+      "label": "Belajar",
+      "x": 36,
+      "y": 245,
+      "pct": 14.69,
+      "shops": 20
+    },
+    {
+      "pill": "kerja",
+      "label": "Kerja/WFC",
+      "x": 47,
+      "y": 245,
+      "pct": 19.18,
+      "shops": 25
+    },
+    {
+      "pill": "bermain game",
+      "label": "Nge-game",
+      "x": 5,
+      "y": 245,
+      "pct": 2.04,
+      "shops": 4
+    },
+    {
+      "pill": "meeting_sosialisasi",
+      "label": "Meeting/Pertemuan",
+      "x": 12,
+      "y": 245,
+      "pct": 4.9,
+      "shops": 8
+    },
+    {
+      "pill": "keluarga",
+      "label": "Keluarga",
+      "x": 12,
+      "y": 245,
+      "pct": 4.9,
+      "shops": 10
+    },
+    {
+      "pill": "instagrammable",
+      "label": "Feeds Hunter",
+      "x": 13,
+      "y": 245,
+      "pct": 5.31,
+      "shops": 8
+    },
+    {
+      "pill": "nongkrong_hangout",
+      "label": "Nongkrong/Hangout",
+      "x": 40,
+      "y": 245,
+      "pct": 16.33,
+      "shops": 25
+    }
+  ],
+  "per_pill": {
+    "belajar": {
+      "pill_key": "belajar",
+      "pill_label": "Belajar",
+      "pill_kind": "activity",
+      "reviews_mentioning": 36,
+      "reviews_total": 245,
+      "pct_reviews": 14.69,
+      "shops_with_evidence": 20,
+      "match_method": "activity_gate (lexical+frasa khas, sama pipeline hybrid)",
+      "sample_evidence": [
+        {
+          "review_id": 314,
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "score": 1.0,
+          "excerpt": "Overall sangat rekomen buat yang nyari ketenangan, baca buku, nugas, dan bahkan ngobrol sama temen di sini."
+        },
+        {
+          "review_id": 317,
+          "place_id": "ChIJPa6swGtZHS4RrbIlRvgBgok",
+          "score": 1.0,
+          "excerpt": "Suasana nyaman, tapi cocok buat nongki daripada nugas sih Lebih banyak outdoor daripada indoor"
+        },
+        {
+          "review_id": 111,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "score": 1.0,
+          "excerpt": "nuansa warkopnya sangat sederhana dan santai , anda tidak akan menjumpai suasana ini di coffeeshop/warkop modern , tempatnya yang santai membuat hangout bersama teman ,partner ,keluarga ,atau bahkan pacar anda terasa lebih asik , harganya sangat relatif dan terjangkau, pas dikalangan mahasiswa ,dan pelajar , tidak lupa rasa kopinya sangat luar biasa , dan mempunyai ciri khas dan signature tersendi"
+        },
+        {
+          "review_id": 169,
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "score": 1.0,
+          "excerpt": "tempat ini sangat nyaman untuk laptopan bagi saya mahasiswa dan pekerja wfc, harganya standar coffee shop di pontianak, ada musholla yang cukup besar dan bersih."
+        },
+        {
+          "review_id": 137,
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "score": 1.0,
+          "excerpt": "Asik untuk sambil belajar atau kerja."
+        },
+        {
+          "review_id": 139,
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "score": 1.0,
+          "excerpt": "Cocok buat belajar."
+        },
+        {
+          "review_id": 140,
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "score": 1.0,
+          "excerpt": "Enak untuk nyantai dan ngumpul sm teman atau pun untuk ngerjain tugas. mau nugas."
+        },
+        {
+          "review_id": 395,
+          "place_id": "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+          "score": 1.0,
+          "excerpt": "Cafe nya bagus buat ngerjain tugas maupun menghabiskan waktu untuk relax sehabis kerja, main-main pas lagi bosan dan lainnya"
+        }
+      ]
+    },
+    "kerja": {
+      "pill_key": "kerja",
+      "pill_label": "Kerja/WFC",
+      "pill_kind": "activity",
+      "reviews_mentioning": 47,
+      "reviews_total": 245,
+      "pct_reviews": 19.18,
+      "shops_with_evidence": 25,
+      "match_method": "activity_gate (lexical+frasa khas, sama pipeline hybrid)",
+      "sample_evidence": [
+        {
+          "review_id": 311,
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "score": 1.0,
+          "excerpt": "Cocok bgt buat yg mau wfc soalnya walo lagu yg diputer A7X (lagu metal), volumenya masih sopan di telinga ngga seperti cafe2 komersial."
+        },
+        {
+          "review_id": 115,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "score": 1.0,
+          "excerpt": "untuk meeting koordinasi atau meeting online. hanya untuk pertemuan biasa ngobrol santai biasa tanpa pembahasan kerja."
+        },
+        {
+          "review_id": 169,
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "score": 1.0,
+          "excerpt": "tempat ini sangat nyaman untuk laptopan bagi saya mahasiswa dan pekerja wfc, harganya standar coffee shop di pontianak, ada musholla yang cukup besar dan bersih."
+        },
+        {
+          "review_id": 137,
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "score": 1.0,
+          "excerpt": "Asik untuk sambil belajar atau kerja."
+        },
+        {
+          "review_id": 395,
+          "place_id": "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+          "score": 1.0,
+          "excerpt": "Cafe nya bagus buat ngerjain tugas maupun menghabiskan waktu untuk relax sehabis kerja, main-main pas lagi bosan dan lainnya"
+        },
+        {
+          "review_id": 135,
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "score": 1.0,
+          "excerpt": "Cocok untuk wfc karena tidak begitu ribut"
+        },
+        {
+          "review_id": 413,
+          "place_id": "ChIJ-9zLddBZHS4R-8L5Jj7n77M",
+          "score": 1.0,
+          "excerpt": "Akan menjadi pilihan prioritas saya untuk WFC."
+        },
+        {
+          "review_id": 149,
+          "place_id": "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+          "score": 1.0,
+          "excerpt": "gak tau mereka udh selesai shift kerja atau break tpi cukup mengganggu."
+        }
+      ]
+    },
+    "bermain game": {
+      "pill_key": "bermain game",
+      "pill_label": "Nge-game",
+      "pill_kind": "activity",
+      "reviews_mentioning": 5,
+      "reviews_total": 245,
+      "pct_reviews": 2.04,
+      "shops_with_evidence": 4,
+      "match_method": "activity_gate (lexical+frasa khas, sama pipeline hybrid)",
+      "sample_evidence": [
+        {
+          "review_id": 324,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "score": 1.0,
+          "excerpt": "Tempatnya tempat nongkrong anak2 muda pada mabar."
+        },
+        {
+          "review_id": 123,
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "score": 1.0,
+          "excerpt": "Selalu ramai anak remaja nongkrong main game, anak kuliahan mengerjakan tugas, maupun nongkrong disini."
+        },
+        {
+          "review_id": 120,
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "score": 1.0,
+          "excerpt": "Tempat yg enak untuk nongkrong atau bermain game bersama teman-teman"
+        },
+        {
+          "review_id": 361,
+          "place_id": "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+          "score": 1.0,
+          "excerpt": "Hehehe Ke sini emang paling bener pagi, karena masih lumayan sepi, begitu ke sini malem udah dipastikan bakal rame banget karena habitnya orang Pontianak itu malem-malem nongkrong dan mabar"
+        },
+        {
+          "review_id": 368,
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "score": 1.0,
+          "excerpt": "Trimakasih info tambahan dari RnS untuk 'colokan' tersedia, penggunanan printer gratis, board games, mushola, smoking area 🙏👍"
+        }
+      ]
+    },
+    "meeting_sosialisasi": {
+      "pill_key": "meeting_sosialisasi",
+      "pill_label": "Meeting/Pertemuan",
+      "pill_kind": "activity",
+      "reviews_mentioning": 12,
+      "reviews_total": 245,
+      "pct_reviews": 4.9,
+      "shops_with_evidence": 8,
+      "match_method": "activity_gate (lexical+frasa khas, sama pipeline hybrid)",
+      "sample_evidence": [
+        {
+          "review_id": 115,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "score": 1.0,
+          "excerpt": "untuk meeting koordinasi atau meeting online. hanya untuk pertemuan biasa ngobrol santai biasa tanpa pembahasan kerja."
+        },
+        {
+          "review_id": 116,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "score": 1.0,
+          "excerpt": "Kafe yang cozy, nyaman buat meeting, minumannya enak, harganya terjangkau baik makanan dan minuman, saya pesan es kopi susu, pisang goreng sari kaya dan roti bakar sarikaya."
+        },
+        {
+          "review_id": 142,
+          "place_id": "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+          "score": 1.0,
+          "excerpt": "Coffe shop yang cocok untuk anda berdiskusi, berkongkow serta bercanda gurau dengan teman atau pasangan anda, tempatnya juga memiliki tempat parkir yang lumayan luas, serta tidak jauh dari kafe nya ada masjid yang besar juga, jadi untuk anda yang muslim/mah aman ketika ingin beribadah"
+        },
+        {
+          "review_id": 159,
+          "place_id": "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+          "score": 1.0,
+          "excerpt": "Tempatnya cozy Ada private study space, room meeting dan outdoor indoor Bisa juga untuk WFC Wifi lancar Area parkir luas, jadi aman buat yg bawa kendaraan roda 4 Sistem pesan sudah upgrade jadi ngga perlu antri panjang."
+        },
+        {
+          "review_id": 160,
+          "place_id": "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+          "score": 1.0,
+          "excerpt": "This place has NUMEROUS facilities, including a study area, meeting room, photobox, etc."
+        },
+        {
+          "review_id": 348,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "score": 1.0,
+          "excerpt": "Tempat nya nyaman bangeet, pas tuk pertemuan, ketemu temen, kumpul keluarga , tempat ngerjain tugas ketik, pelayanan ramah, perfect sih ini"
+        },
+        {
+          "review_id": 374,
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "score": 1.0,
+          "excerpt": "Cocok untuk rapat kecil dgm tim kerja"
+        },
+        {
+          "review_id": 383,
+          "place_id": "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+          "score": 1.0,
+          "excerpt": "Meskipun sebagian menu di sini mulai dari rentang 25K ke atas, tetapi suasana dan layanan yang diberikan, cocok untuk WFC, meeting, maupun me time (dengan ada ruangan private study room)."
+        }
+      ]
+    },
+    "keluarga": {
+      "pill_key": "keluarga",
+      "pill_label": "Keluarga",
+      "pill_kind": "activity",
+      "reviews_mentioning": 12,
+      "reviews_total": 245,
+      "pct_reviews": 4.9,
+      "shops_with_evidence": 10,
+      "match_method": "activity_gate (lexical+frasa khas, sama pipeline hybrid)",
+      "sample_evidence": [
+        {
+          "review_id": 110,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "score": 1.0,
+          "excerpt": "tempat santai yang nyaman baik sendirian ataupun bersama pasangan, kawan, atau keluarga"
+        },
+        {
+          "review_id": 111,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "score": 1.0,
+          "excerpt": "nuansa warkopnya sangat sederhana dan santai , anda tidak akan menjumpai suasana ini di coffeeshop/warkop modern , tempatnya yang santai membuat hangout bersama teman ,partner ,keluarga ,atau bahkan pacar anda terasa lebih asik , harganya sangat relatif dan terjangkau, pas dikalangan mahasiswa ,dan pelajar , tidak lupa rasa kopinya sangat luar biasa , dan mempunyai ciri khas dan signature tersendi"
+        },
+        {
+          "review_id": 118,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "score": 1.0,
+          "excerpt": "Makanan sih enak , nasi goreng nye oke , ape lagi pisang srikaya nye the best 👍 Tempat nya pun nyaman , apa lagi ada playground nye , jd lebih santai bawa anak2 dan layanan nya OKE 👍"
+        },
+        {
+          "review_id": 336,
+          "place_id": "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+          "score": 1.0,
+          "excerpt": "Ada babychair dan mushola."
+        },
+        {
+          "review_id": 123,
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "score": 1.0,
+          "excerpt": "Selalu ramai anak remaja nongkrong main game, anak kuliahan mengerjakan tugas, maupun nongkrong disini. Jika untuk berkumpul dengan keluarga kurang disarankan"
+        },
+        {
+          "review_id": 119,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "score": 1.0,
+          "excerpt": "Tempat nya cozy Ada 3 Jenis ruangan Outdoor Ac bisa rokok Ac tidak bisa rokok Ramah anak Pelayanan cepat Recommended WC nya jelek Bau Ga terawat"
+        },
+        {
+          "review_id": 132,
+          "place_id": "ChIJPa6swGtZHS4RrbIlRvgBgok",
+          "score": 1.0,
+          "excerpt": "Minuman dan makanan nya enak semuanya, pelayanan nya sangat baik, suasana tempat nya nyaman untuk tempat bersantai santai bersama keluarga dan teman teman, tempat nya ok la Cafe 5 CM Coffee"
+        },
+        {
+          "review_id": 348,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "score": 1.0,
+          "excerpt": "Tempat nya nyaman bangeet, pas tuk pertemuan, ketemu temen, kumpul keluarga , tempat ngerjain tugas ketik, pelayanan ramah, perfect sih ini"
+        }
+      ]
+    },
+    "instagrammable": {
+      "pill_key": "instagrammable",
+      "pill_label": "Feeds Hunter",
+      "pill_kind": "activity",
+      "reviews_mentioning": 13,
+      "reviews_total": 245,
+      "pct_reviews": 5.31,
+      "shops_with_evidence": 8,
+      "match_method": "activity_gate (lexical+frasa khas, sama pipeline hybrid)",
+      "sample_evidence": [
+        {
+          "review_id": 126,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "score": 1.0,
+          "excerpt": "salah satu coffeshop aesthetic di Pontianak tempatnya bersih nyaman banget buat sekedar nongki sama temen atau ngerjain tugas kuliah. ada indoor dan outdoor yang instagramable buat foto-foto."
+        },
+        {
+          "review_id": 125,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "score": 1.0,
+          "excerpt": "Dekorasi ruangan yang estetik. Spot foto oke."
+        },
+        {
+          "review_id": 336,
+          "place_id": "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+          "score": 1.0,
+          "excerpt": "Area indoor dan outdoor sama -sama ademm + banyak spot foto ✨"
+        },
+        {
+          "review_id": 337,
+          "place_id": "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+          "score": 1.0,
+          "excerpt": "Interiornya cakep, foto random aja bisa estetik wkwk. Tersedia musala di lantai 3 Banyak cermin, bisaa mirror selfie dimanapun wkwk Rekomendasi menu: 📌Kopi kaleng : Almond 📌Tamarind Black (asem segar) 📌Cendol Macchiato + add on espresso 📌Potato Wedges 📌 Banana Bread Tapii jujur agak susah dapat tempat karena selalu RAME, opsinya bisa pilih di jam 2 siang atau menghindari jam istirahat/ pulang kerj"
+        },
+        {
+          "review_id": 343,
+          "place_id": "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+          "score": 1.0,
+          "excerpt": "Yang indoor ada AC dan ada cermin cocok buat yg suka mirror selfie jadi sangat estetik, minuman enak harga standar coffe shop pontianak."
+        },
+        {
+          "review_id": 127,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "score": 1.0,
+          "excerpt": "Tersedia ruangan ber ac dan outdoor yang estetik."
+        },
+        {
+          "review_id": 349,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "score": 1.0,
+          "excerpt": "+ suasanya ny ccok buat krja n nongki smua oke, ak ud dtg dua kalic, satu buat wfc, satu lg nongki skligus krj sm tmen + ada banyak spot foto/ desain tpt ddukny indoor outdoor ad khasnya sendiri gtu + ada photobox dong gaisssss 🥹😍."
+        },
+        {
+          "review_id": 502,
+          "place_id": "ChIJfWPGdYFZHS4RYfv8vJ8RB6Y",
+          "score": 1.0,
+          "excerpt": "View cafenya juga menarik buat spot foto juga pelayanannya yang ramah."
+        }
+      ]
+    },
+    "nongkrong_hangout": {
+      "pill_key": "nongkrong_hangout",
+      "pill_label": "Nongkrong/Hangout",
+      "pill_kind": "activity",
+      "reviews_mentioning": 40,
+      "reviews_total": 245,
+      "pct_reviews": 16.33,
+      "shops_with_evidence": 25,
+      "match_method": "activity_gate (lexical+frasa khas, sama pipeline hybrid)",
+      "sample_evidence": [
+        {
+          "review_id": 314,
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "score": 1.0,
+          "excerpt": "Overall sangat rekomen buat yang nyari ketenangan, baca buku, nugas, dan bahkan ngobrol sama temen di sini."
+        },
+        {
+          "review_id": 315,
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "score": 1.0,
+          "excerpt": "Tempat parkir juga nyaman luas dan banyak, bisa buat nongkrong santai sambol menikmati secangkir kopi nikmat"
+        },
+        {
+          "review_id": 317,
+          "place_id": "ChIJPa6swGtZHS4RrbIlRvgBgok",
+          "score": 1.0,
+          "excerpt": "Suasana nyaman, tapi cocok buat nongki daripada nugas sih Lebih banyak outdoor daripada indoor"
+        },
+        {
+          "review_id": 111,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "score": 1.0,
+          "excerpt": "nuansa warkopnya sangat sederhana dan santai , anda tidak akan menjumpai suasana ini di coffeeshop/warkop modern , tempatnya yang santai membuat hangout bersama teman ,partner ,keluarga ,atau bahkan pacar anda terasa lebih asik , harganya sangat relatif dan terjangkau, pas dikalangan mahasiswa ,dan pelajar , tidak lupa rasa kopinya sangat luar biasa , dan mempunyai ciri khas dan signature tersendi"
+        },
+        {
+          "review_id": 115,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "score": 1.0,
+          "excerpt": "hanya untuk pertemuan biasa ngobrol santai biasa tanpa pembahasan kerja."
+        },
+        {
+          "review_id": 140,
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "score": 1.0,
+          "excerpt": "Enak untuk nyantai dan ngumpul sm teman atau pun untuk ngerjain tugas."
+        },
+        {
+          "review_id": 396,
+          "place_id": "ChIJab9iZ7xZHS4RLvSMRkEKzUs",
+          "score": 1.0,
+          "excerpt": "Dari tahun 2025 aku udh suka bgt sama cw coffee pancasila, soalnya tuh bnyk kenangan kek ngobrol sama temen, ngerjain tugas, ketawa\" pokoknya hampir setiap hari ke cw coffee sampai udh akrab sama karyawan disini🥺❤️❤️❤️❤️❤️, best bgt dh cw coffee SUKSES TRS YAAAA 🫶🫶🫶🫶"
+        },
+        {
+          "review_id": 404,
+          "place_id": "ChIJHdYrWU1ZHS4RuU_qB_QKTdI",
+          "score": 1.0,
+          "excerpt": "Cocok untuk nongki malmingan."
+        }
+      ]
+    },
+    "area_outdoor": {
+      "pill_key": "area_outdoor",
+      "pill_label": "Outdoor area",
+      "pill_kind": "attribute",
+      "reviews_mentioning": 38,
+      "reviews_mentioning_positive_keyword": 38,
+      "reviews_total": 245,
+      "pct_reviews": 15.51,
+      "shops_with_evidence": 19,
+      "match_method": "review_keywords + pill_aspect_sentiment (exclude explicit negative)",
+      "sample_evidence": [
+        {
+          "review_id": 317,
+          "place_id": "ChIJPa6swGtZHS4RrbIlRvgBgok",
+          "sentiment": "positive",
+          "excerpt": "Suasana nyaman, tapi cocok buat nongki daripada nugas sih\nLebih banyak outdoor daripada indoor"
+        },
+        {
+          "review_id": 140,
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "sentiment": "positive",
+          "excerpt": "Tempatnya cozy, tenang, free wifi, dan ada colokan di beberapa meja. Enak untuk nyantai dan ngumpul sm teman atau pun untuk ngerjain tugas. Pas siang2, tempatnya sepi jd enak kalau mau nugas. Disini ada makanan berat, cemilan kyak Japanese Cheese Cake (JCC) dll, dan aneka minuman. Ada area outdoor dan indoor."
+        },
+        {
+          "review_id": 131,
+          "place_id": "ChIJPa6swGtZHS4RrbIlRvgBgok",
+          "sentiment": "positive",
+          "excerpt": "Tempat nya nyaman ada indoor atau outdoor, menu makanan bervariasi, kopi nya enak dan nyaman di lambung yg mudah naik asam lambung ku. Berani coba santai disini, pas waktu jam istirahat, suasana enak dan tempatnya jg gak bgitu sempit ya."
+        },
+        {
+          "review_id": 126,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "sentiment": "positive",
+          "excerpt": "salah satu coffeshop aesthetic di Pontianak tempatnya bersih nyaman banget buat sekedar nongki sama temen atau ngerjain tugas kuliah. ada indoor dan outdoor yang instagramable buat foto-foto. salah satu pelayannya best bgt orangnya ramah bgt masuk langsung disambut terus pas order dijelasin menu menunya dan pas anter orderan senyum dan ngucapin ke customer. minumannya enak harganya juga standard k"
+        },
+        {
+          "review_id": 125,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "sentiment": "positive",
+          "excerpt": "Pengalaman pertama yang cukup menyenangkan. Lokasi dipinggir jalan besar. Tersedia parkir motor dan mobil yg memadai. Dekorasi ruangan yang estetik. Ada pilihan outdoor dan indoor. Ada booth buat foto sama teman-teman. Harga menengah ke atas. Makanan dan minuman cukup enak. Rasa kopi b aja. Pelayanan cepat dan ramah. Spot foto oke."
+        },
+        {
+          "review_id": 151,
+          "place_id": "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+          "sentiment": "positive",
+          "excerpt": "Tempatnya nyaman luas ada indoor dan outdoor. Pesen pasta carbonaranya ternyata terlalu cair rasanya kurang cuman ada rasa asin tapi chickennya enak. Pad thai nya jauh lebih enak asem bumbunya strong gurih. Tapi yang paling favorit loaded friesnya, kentangnya crispy diluar lembut didalam sausnya ga pelit dalat potongan daging ayam sama keju juga. Kalau dimsum standar enak sih sausnya juga. Minum a"
+        },
+        {
+          "review_id": 159,
+          "place_id": "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+          "sentiment": "positive",
+          "excerpt": "Tempatnya cozy\r\nAda private study space, room meeting dan outdoor indoor\r\nBisa juga untuk WFC\r\nWifi lancar\r\nArea parkir luas, jadi aman buat yg bawa kendaraan roda 4\r\n\r\nSistem pesan sudah upgrade jadi ngga perlu antri panjang. Rekomendasi banget buat yang mau WFC atau cari tempat buat nugas"
+        },
+        {
+          "review_id": 331,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "sentiment": "positive",
+          "excerpt": "Tempatnya luas, banyak tempat duduk untuk semi outdoor, ada ruangan indoor non smoking berAC, ada juga ruangan indoor untuk smoking area berAC, tersedia toilet.\nIce kopi susu gula arennya enak, pisang srikaya enak, harga terjangkau.\nCocok untuk WFC, karena di ruangan indoor sepi dan tidak berisik."
+        }
+      ]
+    },
+    "banyak_colokan_terminal": {
+      "pill_key": "banyak_colokan_terminal",
+      "pill_label": "Banyak colokan / terminal",
+      "pill_kind": "attribute",
+      "reviews_mentioning": 14,
+      "reviews_mentioning_positive_keyword": 14,
+      "reviews_total": 245,
+      "pct_reviews": 5.71,
+      "shops_with_evidence": 11,
+      "match_method": "review_keywords + pill_aspect_sentiment (exclude explicit negative)",
+      "sample_evidence": [
+        {
+          "review_id": 140,
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "sentiment": "positive",
+          "excerpt": "Tempatnya cozy, tenang, free wifi, dan ada colokan di beberapa meja. Enak untuk nyantai dan ngumpul sm teman atau pun untuk ngerjain tugas. Pas siang2, tempatnya sepi jd enak kalau mau nugas. Disini ada makanan berat, cemilan kyak Japanese Cheese Cake (JCC) dll, dan aneka minuman. Ada area outdoor dan indoor."
+        },
+        {
+          "review_id": 349,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "sentiment": "positive",
+          "excerpt": "Tempatnya cantik bangeeet, suasananya enak buat wfc, interior, minuman, makanan, ac, wifi colokan smua oke. Paling bbrp seat g ada colokan. Mau indoor outdoor smua cantik2. Rsanya ga banyak yg tau, tryta hidden gem. Jd ini deh rinciannyaa\n\n(+)\n+ makanan minuman smua harga wajar, affordable, porsi dan rasa pas pula\n+ paket chill hour ny murah affordable parah, 26k uda bs dpt seporsi makanan dan mnu"
+        },
+        {
+          "review_id": 351,
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "sentiment": "positive",
+          "excerpt": "Lunch after jemput anak, tempatnya cozy dan lumayan tenang untuk ngobrol, musiknya oke tidak terlalu keras.\nArea untuk WFC atau nugas juga banyak, nge-charge laptop hp bisa dimana saja."
+        },
+        {
+          "review_id": 352,
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "sentiment": "positive",
+          "excerpt": "Lumayan\nEnak untuk nongkrong\nAda outdoor yang besar\nCuma speaker nya kebesaran\nAgak dikecilkan dikit\nLubang charger banyak\nEmang ini yang ditunggu sama anak nongkrong\nLubang chargeran\nSuasana ga modern\nTapi lumayan comfort\nParkiran cukup untuk 5 mobil di dalamnya.\nKalau untuk motor bisa nampung banyak"
+        },
+        {
+          "review_id": 355,
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "sentiment": "positive",
+          "excerpt": "Tempatnya luas, parkiran juga luas. Ada ruang indoor yang dibagi 2 tempat. Dan outdoor dibagian depan, samping kanan dan kiri serta belakang. Wifi lancar, banyak colokan. Cocok utk wfc dan santai. Bnyak varian makanan, cemilan dan minuman. Harga seperti pada caffe pada umumnya. Tempat nya bersih. Adem. Pelayanan ok, rasa makanan dan minumannya enak dengan porsi yg pas. Kursinya bnyak juga. Yang pe"
+        },
+        {
+          "review_id": 368,
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "sentiment": "positive",
+          "excerpt": "Tempatnya nyaman. Lumayan luas. Lantai 1 dan 2 adem berAC. Pelayanan ramah.\nMenunya beragam dari kopi - non kopi, camilan sampai makanan berat. Dengan harga yang bervariasi standar kafe.\nBlack orange, milo boba, spanish latte, honey lemon tea, orange juice, nasi goreng yangchow, yakiniku beef bowlnya nikmat pas sesuai selera.\nPembayaran selain cash bisa juga dengan debit dan qris👍.\nInternet lancar"
+        },
+        {
+          "review_id": 372,
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "sentiment": "positive",
+          "excerpt": "White coffee terenakk se Ponti menurutku!! Queen “Cheesy Irish”. Terus aku suka ambience nya, kesannya warm karena banyak pakai finishing kayu gituu sukak!! Makanannya enak enak pastinya, yang penting ada colokan + wifi + mushola dah mantapss🩵"
+        },
+        {
+          "review_id": 373,
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "sentiment": "positive",
+          "excerpt": "Salah satu coffee shop favorit di Pontianak. Area indoornya dingin dan nyaman, area outdoor juga luas. Minuman dan makanannya enakk! Nilai plus lagi karena ada mushola disini. Ohiya, cocok banget buat WFC karena ada wifi dan ada banyak stopkontak✨"
+        }
+      ]
+    },
+    "buka_sampai_malam_24_hours": {
+      "pill_key": "buka_sampai_malam_24_hours",
+      "pill_label": "24 hours",
+      "pill_kind": "attribute",
+      "reviews_mentioning": 1,
+      "reviews_mentioning_positive_keyword": 1,
+      "reviews_total": 245,
+      "pct_reviews": 0.41,
+      "shops_with_evidence": 1,
+      "match_method": "review_keywords + pill_aspect_sentiment (exclude explicit negative)",
+      "sample_evidence": [
+        {
+          "review_id": 508,
+          "place_id": "ChIJIRKzS6lbHS4RcUszDziz-jw",
+          "sentiment": "positive",
+          "excerpt": "Oho? Katanya buka 24 jam ya disini? Barutau ya aku 😭😭😭"
+        }
+      ]
+    },
+    "dessert": {
+      "pill_key": "dessert",
+      "pill_label": "Dessert",
+      "pill_kind": "attribute",
+      "reviews_mentioning": 12,
+      "reviews_mentioning_positive_keyword": 12,
+      "reviews_total": 245,
+      "pct_reviews": 4.9,
+      "shops_with_evidence": 8,
+      "match_method": "review_keywords + pill_aspect_sentiment (exclude explicit negative)",
+      "sample_evidence": [
+        {
+          "review_id": 140,
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "sentiment": "positive",
+          "excerpt": "Tempatnya cozy, tenang, free wifi, dan ada colokan di beberapa meja. Enak untuk nyantai dan ngumpul sm teman atau pun untuk ngerjain tugas. Pas siang2, tempatnya sepi jd enak kalau mau nugas. Disini ada makanan berat, cemilan kyak Japanese Cheese Cake (JCC) dll, dan aneka minuman. Ada area outdoor dan indoor."
+        },
+        {
+          "review_id": 141,
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "sentiment": "positive",
+          "excerpt": "Beli cheesecake nya untuk di bungkus, enakkkk Suka banget ngga terlalu manis kejunya berasa banget"
+        },
+        {
+          "review_id": 428,
+          "place_id": "ChIJ-4iNNH1ZHS4RYvU4WkG0ik4",
+          "sentiment": "positive",
+          "excerpt": "Kedai kopi bagus lainnya di area Pontianak. Outletnya berukuran besar, dengan area luar ruangan yang estetis dan ruang dalam ruangan VVIP. Menyajikan kopi, teh, berbagai minuman, pisang goreng, kerupuk basah, berbagai macam kue dan pastry, termasuk makanan berat seperti nasi goreng yang bisa Anda dapatkan di sana. Harganya juga sangat terjangkau."
+        },
+        {
+          "review_id": 452,
+          "place_id": "ChIJa8iTQOpZHS4RdVFAK__JB-c",
+          "sentiment": "positive",
+          "excerpt": "Fav brown sugar milk tea. Karena tidak terlalu manis 👍🏻.  Cheesecake coklatnya enaakk, zuzuuurr. Sama pesen beef teriyaki rice bowlnya juga enak. 🫶🏻"
+        },
+        {
+          "review_id": 465,
+          "place_id": "ChIJQRsGzyVZHS4R8dx2vktO02k",
+          "sentiment": "positive",
+          "excerpt": "Kopinya enak, banyak kue juga, buat nugas bawa tempatnya aga kecil ya"
+        },
+        {
+          "review_id": 471,
+          "place_id": "ChIJOeviAWhYHS4R03LHTCewhU4",
+          "sentiment": "positive",
+          "excerpt": "Weng Coffe adalah kopi legendaris favorit masyarakat Pontianak. Warkop dengan nuansa Kafe ini menyajikan weng dengan racikan aslinya. Selain itu di sini juga disajikan aneka pastry dan makanan berat lainnya."
+        },
+        {
+          "review_id": 499,
+          "place_id": "ChIJ2bmXfABZHS4RViKTqagFQq0",
+          "sentiment": "positive",
+          "excerpt": "Kunjungan terakhir pada Agustus, 2024 (Termasuk kunjungan pertama, saat soft-opening) - Info yg saya dpt dari owner, Grand Opening nnti di tgl 3 September 2024 🎊 Kebetulan dikirimkan undangan utk hadir di soft-openingnya 😁\n\nPRODUK:\nMaaf sebelumnya, saya lupa foto menu nya 🙏🏻 Tapi yg pasti menunya banyak, gak hanya minuman aja... ada kue juga 👍🏻 Untuk produk yg saya foto itu ada Matcha Latte & Matc"
+        },
+        {
+          "review_id": 500,
+          "place_id": "ChIJ2bmXfABZHS4RViKTqagFQq0",
+          "sentiment": "positive",
+          "excerpt": "Brand coffee shop yang akhirnya buka salah satu gerai nya di Pontianak. Untuk pilihan menu minuman nya cukup ber variasi.\nUntuk harga standar cafe pada umumnya.\nSemoga bisa menyediakan lebih banyak variasi snack selain cake ya"
+        }
+      ]
+    },
+    "makanan_berat": {
+      "pill_key": "makanan_berat",
+      "pill_label": "Menu Lengkap (Makanan & Minuman)",
+      "pill_kind": "attribute",
+      "reviews_mentioning": 12,
+      "reviews_mentioning_positive_keyword": 12,
+      "reviews_total": 245,
+      "pct_reviews": 4.9,
+      "shops_with_evidence": 11,
+      "match_method": "review_keywords + pill_aspect_sentiment (exclude explicit negative)",
+      "sample_evidence": [
+        {
+          "review_id": 118,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "sentiment": "positive",
+          "excerpt": "Makanan sih enak , nasi goreng nye oke , ape lagi pisang srikaya nye the best 👍 Tempat nya pun nyaman , apa lagi ada playground nye , jd lebih santai bawa anak2 dan layanan nya OKE 👍"
+        },
+        {
+          "review_id": 140,
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "sentiment": "positive",
+          "excerpt": "Tempatnya cozy, tenang, free wifi, dan ada colokan di beberapa meja. Enak untuk nyantai dan ngumpul sm teman atau pun untuk ngerjain tugas. Pas siang2, tempatnya sepi jd enak kalau mau nugas. Disini ada makanan berat, cemilan kyak Japanese Cheese Cake (JCC) dll, dan aneka minuman. Ada area outdoor dan indoor."
+        },
+        {
+          "review_id": 326,
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "sentiment": "positive",
+          "excerpt": "Aming disini tidak pernah sepi. Letaknya tidak di tepi jalan utama. Bangunan terdiri dari 2 lantai. Ada ruang berAC di tiap lantai. Ada lesehan juga di lantai 1.\nMenunya beragam, dari minuman, camilan dan makanan berat. Bisa pilih sesuai selera 😊. Wifi lancar. Parkir luas."
+        },
+        {
+          "review_id": 349,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "sentiment": "positive",
+          "excerpt": "Tempatnya cantik bangeeet, suasananya enak buat wfc, interior, minuman, makanan, ac, wifi colokan smua oke. Paling bbrp seat g ada colokan. Mau indoor outdoor smua cantik2. Rsanya ga banyak yg tau, tryta hidden gem. Jd ini deh rinciannyaa\n\n(+)\n+ makanan minuman smua harga wajar, affordable, porsi dan rasa pas pula\n+ paket chill hour ny murah affordable parah, 26k uda bs dpt seporsi makanan dan mnu"
+        },
+        {
+          "review_id": 368,
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "sentiment": "positive",
+          "excerpt": "Tempatnya nyaman. Lumayan luas. Lantai 1 dan 2 adem berAC. Pelayanan ramah.\nMenunya beragam dari kopi - non kopi, camilan sampai makanan berat. Dengan harga yang bervariasi standar kafe.\nBlack orange, milo boba, spanish latte, honey lemon tea, orange juice, nasi goreng yangchow, yakiniku beef bowlnya nikmat pas sesuai selera.\nPembayaran selain cash bisa juga dengan debit dan qris👍.\nInternet lancar"
+        },
+        {
+          "review_id": 369,
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "sentiment": "positive",
+          "excerpt": "Baru pertama kali mampir ke Rice n Shine Dansen, lokasinya masih satu deretan ruko dengan lokale. Suka banget sama suasana tempatnya yang cozy, bersih, dan cocok buat nongkrong atau WFC. Menu makanannya juga variatif, dari aneka minuman baik coffee maupun non coffee, makanan berat sampai camilan. porsinya pas dengan harga yang affordable.\n\nSitting areanya lumayan banyak, ada 2 lantai full AC (no s"
+        },
+        {
+          "review_id": 428,
+          "place_id": "ChIJ-4iNNH1ZHS4RYvU4WkG0ik4",
+          "sentiment": "positive",
+          "excerpt": "Kedai kopi bagus lainnya di area Pontianak. Outletnya berukuran besar, dengan area luar ruangan yang estetis dan ruang dalam ruangan VVIP. Menyajikan kopi, teh, berbagai minuman, pisang goreng, kerupuk basah, berbagai macam kue dan pastry, termasuk makanan berat seperti nasi goreng yang bisa Anda dapatkan di sana. Harganya juga sangat terjangkau."
+        },
+        {
+          "review_id": 431,
+          "place_id": "ChIJmQzQurxZHS4Rg1tWAwBIS-g",
+          "sentiment": "positive",
+          "excerpt": "Suka sama nasi gorengnya"
+        }
+      ]
+    },
+    "musholla": {
+      "pill_key": "musholla",
+      "pill_label": "Ada musholla",
+      "pill_kind": "attribute",
+      "reviews_mentioning": 15,
+      "reviews_mentioning_positive_keyword": 15,
+      "reviews_total": 245,
+      "pct_reviews": 6.12,
+      "shops_with_evidence": 9,
+      "match_method": "review_keywords + pill_aspect_sentiment (exclude explicit negative)",
+      "sample_evidence": [
+        {
+          "review_id": 169,
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "sentiment": "positive",
+          "excerpt": "tempat ini sangat nyaman untuk laptopan bagi saya mahasiswa dan pekerja wfc, harganya standar coffee shop di pontianak, ada musholla yang cukup besar dan bersih. overall this is a good place for me"
+        },
+        {
+          "review_id": 336,
+          "place_id": "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+          "sentiment": "positive",
+          "excerpt": "Salah satu coffee shop yang bakal aku rekomendasiin kalau ada yang nanya \"wfc dimana?\" tapi harus pagii, karena sore pasti rame. Pelayanan juara! Kakak2 dan abang2nya ramah banget. Minuman dan makanannya enak. Ada babychair dan mushola. Area indoor dan outdoor sama -sama ademm + banyak spot foto ✨"
+        },
+        {
+          "review_id": 121,
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "sentiment": "positive",
+          "excerpt": "saya solat di musolla dengan membawa sepatu saya ke dalam secara tidak sengaja, namun dibicarain sesama karyawan secara keras dari luar. sangat tidak beretika."
+        },
+        {
+          "review_id": 355,
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "sentiment": "positive",
+          "excerpt": "Tempatnya luas, parkiran juga luas. Ada ruang indoor yang dibagi 2 tempat. Dan outdoor dibagian depan, samping kanan dan kiri serta belakang. Wifi lancar, banyak colokan. Cocok utk wfc dan santai. Bnyak varian makanan, cemilan dan minuman. Harga seperti pada caffe pada umumnya. Tempat nya bersih. Adem. Pelayanan ok, rasa makanan dan minumannya enak dengan porsi yg pas. Kursinya bnyak juga. Yang pe"
+        },
+        {
+          "review_id": 367,
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "sentiment": "positive",
+          "excerpt": "Ambience di sini cocok buat kerja seharian. Tempat duduk comfy, toilet bersih, ada mushola. Semua makanan enak enak, pelayanan sangat cepat dan ramah. Desain tempatnya earthy, jadi buat nyaman. Sound musik juga tidak berisik, playlist lagunya enak enak. Untuk kopinya enak, tapi semoga bisa improve lagi ya. Btw, udah lebih dari 10x memilih RnS untuk WFA 😆"
+        },
+        {
+          "review_id": 177,
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "sentiment": "positive",
+          "excerpt": "Menu nya enak enak, pelayanan nya juga ramah dan suasana nya nyaman banget bisa untuk family atau sekedar nongki sama temen dan yg paling aku suka adalah ada musholla nya, itu nilai plus banget si bagi aku\nTerus kenapa bintang 4, karna kesempurnaan hanya milik Allah 🙏😁"
+        },
+        {
+          "review_id": 176,
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "sentiment": "positive",
+          "excerpt": "Tempat cozy dan ada musholla nya, top !!"
+        },
+        {
+          "review_id": 368,
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "sentiment": "positive",
+          "excerpt": "Tempatnya nyaman. Lumayan luas. Lantai 1 dan 2 adem berAC. Pelayanan ramah.\nMenunya beragam dari kopi - non kopi, camilan sampai makanan berat. Dengan harga yang bervariasi standar kafe.\nBlack orange, milo boba, spanish latte, honey lemon tea, orange juice, nasi goreng yangchow, yakiniku beef bowlnya nikmat pas sesuai selera.\nPembayaran selain cash bisa juga dengan debit dan qris👍.\nInternet lancar"
+        }
+      ]
+    },
+    "parkir_luas": {
+      "pill_key": "parkir_luas",
+      "pill_label": "Parkir luas",
+      "pill_kind": "attribute",
+      "reviews_mentioning": 20,
+      "reviews_mentioning_positive_keyword": 20,
+      "reviews_total": 245,
+      "pct_reviews": 8.16,
+      "shops_with_evidence": 16,
+      "match_method": "review_keywords + pill_aspect_sentiment (exclude explicit negative)",
+      "sample_evidence": [
+        {
+          "review_id": 311,
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "sentiment": "positive",
+          "excerpt": "Cafe yg gabakal bosen kumention ke org2 yg nyari kopi fresh baru diroasting dari mesinnya.\n\nSebenernya aku paling suka kopi arennya karena ada rasa smoky dan creamynya ga heavy.  Tp gamasuk frame karena keburu habis diserap lambung saking enaknya dawg 😂 Sedangkan manual brew dan cappucinonya bakal cocok ke org2 yg demen rasa strong. After tastenya bervariasi mulai dari nutty ke fruity, sayang pas "
+        },
+        {
+          "review_id": 315,
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "sentiment": "positive",
+          "excerpt": "Coffee unik dan enak cocok dilidah Dan dikantong, rekomendasi untuk pecinta kopi wajib cobain kopi disini, unik punya rasa tersendiri yang ga dipunyai tempat lain. Tempat parkir juga nyaman luas dan banyak, bisa buat nongkrong santai sambol menikmati secangkir kopi nikmat"
+        },
+        {
+          "review_id": 142,
+          "place_id": "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+          "sentiment": "positive",
+          "excerpt": "Coffe shop yang cocok untuk anda berdiskusi, berkongkow serta bercanda gurau dengan teman atau pasangan anda, tempatnya juga memiliki tempat parkir yang lumayan luas, serta tidak jauh dari kafe nya ada masjid yang besar juga, jadi untuk anda yang muslim/mah aman ketika ingin beribadah"
+        },
+        {
+          "review_id": 125,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "sentiment": "positive",
+          "excerpt": "Pengalaman pertama yang cukup menyenangkan. Lokasi dipinggir jalan besar. Tersedia parkir motor dan mobil yg memadai. Dekorasi ruangan yang estetik. Ada pilihan outdoor dan indoor. Ada booth buat foto sama teman-teman. Harga menengah ke atas. Makanan dan minuman cukup enak. Rasa kopi b aja. Pelayanan cepat dan ramah. Spot foto oke."
+        },
+        {
+          "review_id": 159,
+          "place_id": "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+          "sentiment": "positive",
+          "excerpt": "Tempatnya cozy\r\nAda private study space, room meeting dan outdoor indoor\r\nBisa juga untuk WFC\r\nWifi lancar\r\nArea parkir luas, jadi aman buat yg bawa kendaraan roda 4\r\n\r\nSistem pesan sudah upgrade jadi ngga perlu antri panjang. Rekomendasi banget buat yang mau WFC atau cari tempat buat nugas"
+        },
+        {
+          "review_id": 326,
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "sentiment": "positive",
+          "excerpt": "Aming disini tidak pernah sepi. Letaknya tidak di tepi jalan utama. Bangunan terdiri dari 2 lantai. Ada ruang berAC di tiap lantai. Ada lesehan juga di lantai 1.\nMenunya beragam, dari minuman, camilan dan makanan berat. Bisa pilih sesuai selera 😊. Wifi lancar. Parkir luas."
+        },
+        {
+          "review_id": 335,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "sentiment": "positive",
+          "excerpt": "Lokasi parkir luar, menu nya bisa untuk anak kecil. Ada mini play ground untuk anak bermain. Dan harga nya terjangkau"
+        },
+        {
+          "review_id": 340,
+          "place_id": "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+          "sentiment": "positive",
+          "excerpt": "Makanan semua enak. Kopi enak. Pelayanan cepat dan ramah . Bisa bayar pake non tunai ya. Parkiran mobil aja mau pandai 2 cari karena di gajahmada suka macet."
+        }
+      ]
+    },
+    "ruang_privat": {
+      "pill_key": "ruang_privat",
+      "pill_label": "Ruang privat / meeting",
+      "pill_kind": "attribute",
+      "reviews_mentioning": 2,
+      "reviews_mentioning_positive_keyword": 2,
+      "reviews_total": 245,
+      "pct_reviews": 0.82,
+      "shops_with_evidence": 1,
+      "match_method": "review_keywords + pill_aspect_sentiment (exclude explicit negative)",
+      "sample_evidence": [
+        {
+          "review_id": 160,
+          "place_id": "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+          "sentiment": "positive",
+          "excerpt": "Best cafe I've ever been to. This place has NUMEROUS facilities, including a study area, meeting room, photobox, etc. I've been in the study room, it's very quiet despite how many people were in there which is very good. The atmosphere in the study room was peaceful. The room wasn't hot, so I don't have to worry about sweating since it has AC. It gave me some quiet space to think and focus on my w"
+        },
+        {
+          "review_id": 384,
+          "place_id": "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+          "sentiment": "positive",
+          "excerpt": "Tempat sangat luas.\nPrice mid-high.\nAda mesin self-order di dpn.\nRasa makanan dan minuman enak.\nAda vip room dgn m.o 400k, tp mungkin sudah berubah ya.\nKebersihan wc perlu dijaga ya krn agak bau."
+        }
+      ]
+    },
+    "ruangan_ac": {
+      "pill_key": "ruangan_ac",
+      "pill_label": "Ruangan sejuk",
+      "pill_kind": "attribute",
+      "reviews_mentioning": 27,
+      "reviews_mentioning_positive_keyword": 27,
+      "reviews_total": 245,
+      "pct_reviews": 11.02,
+      "shops_with_evidence": 18,
+      "match_method": "review_keywords + pill_aspect_sentiment (exclude explicit negative)",
+      "sample_evidence": [
+        {
+          "review_id": 411,
+          "place_id": "ChIJ-9zLddBZHS4R-8L5Jj7n77M",
+          "sentiment": "positive",
+          "excerpt": "Tempat ny lumayan luas, dan ada smoking room ac nya"
+        },
+        {
+          "review_id": 160,
+          "place_id": "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+          "sentiment": "positive",
+          "excerpt": "Best cafe I've ever been to. This place has NUMEROUS facilities, including a study area, meeting room, photobox, etc. I've been in the study room, it's very quiet despite how many people were in there which is very good. The atmosphere in the study room was peaceful. The room wasn't hot, so I don't have to worry about sweating since it has AC. It gave me some quiet space to think and focus on my w"
+        },
+        {
+          "review_id": 336,
+          "place_id": "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+          "sentiment": "positive",
+          "excerpt": "Salah satu coffee shop yang bakal aku rekomendasiin kalau ada yang nanya \"wfc dimana?\" tapi harus pagii, karena sore pasti rame. Pelayanan juara! Kakak2 dan abang2nya ramah banget. Minuman dan makanannya enak. Ada babychair dan mushola. Area indoor dan outdoor sama -sama ademm + banyak spot foto ✨"
+        },
+        {
+          "review_id": 162,
+          "place_id": "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+          "sentiment": "positive",
+          "excerpt": "Kalau mau cari kopi yang enak nutricula salah satu pilihan yang tepat. Menu nya ga aneh2, Pilihan beans manual brew rekomen barista nya ga pernah gagal. Ac indornya dingin pool cocok kalau mau kerja/nugas, outdoor nya lega ga pengap dan ga panas kalau sianf hari. 5 staarrr deh pokoknya"
+        },
+        {
+          "review_id": 343,
+          "place_id": "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+          "sentiment": "positive",
+          "excerpt": "Tempat nyaman, ada outdoor dan indoor, ada lantai 2 juga di atas. Yang indoor ada AC dan ada cermin cocok buat yg suka mirror selfie jadi sangat estetik, minuman enak harga standar coffe shop pontianak. Suasana tenang banget, kalo bagian indoor krn kursi cuma 2 jadi enak sepi, cocok buat nugass. Cuma gaada makanan pas kesini, moga besok besok nyediaain snack biar bisa nyemil sambil cerite bual bar"
+        },
+        {
+          "review_id": 119,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "sentiment": "positive",
+          "excerpt": "Tempat nya cozy\r\nAda 3 Jenis ruangan\r\nOutdoor\r\nAc bisa rokok\r\nAc tidak bisa rokok\r\nRamah anak\r\nPelayanan cepat\r\nRecommended\r\n\r\nWC nya jelek\r\nBau\r\nGa terawat"
+        },
+        {
+          "review_id": 127,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "sentiment": "positive",
+          "excerpt": "Rate 9.5/10 Salah satu tempat nyantai pontianak yang cocok untuk WFH dan menyendiri dan ada photoboxnya juga. Tersedia ruangan ber ac dan outdoor yang estetik. best seller menurut aku disini adalah cromboloni nya enak banget harum dan capucchino nya cocok di aku. Pelayananan nya ramah dan ganteng. fix balik lagi sih.."
+        },
+        {
+          "review_id": 349,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "sentiment": "positive",
+          "excerpt": "Tempatnya cantik bangeeet, suasananya enak buat wfc, interior, minuman, makanan, ac, wifi colokan smua oke. Paling bbrp seat g ada colokan. Mau indoor outdoor smua cantik2. Rsanya ga banyak yg tau, tryta hidden gem. Jd ini deh rinciannyaa\n\n(+)\n+ makanan minuman smua harga wajar, affordable, porsi dan rasa pas pula\n+ paket chill hour ny murah affordable parah, 26k uda bs dpt seporsi makanan dan mnu"
+        }
+      ]
+    },
+    "smoking_area": {
+      "pill_key": "smoking_area",
+      "pill_label": "Smoking area",
+      "pill_kind": "attribute",
+      "reviews_mentioning": 9,
+      "reviews_mentioning_positive_keyword": 9,
+      "reviews_total": 245,
+      "pct_reviews": 3.67,
+      "shops_with_evidence": 7,
+      "match_method": "review_keywords + pill_aspect_sentiment (exclude explicit negative)",
+      "sample_evidence": [
+        {
+          "review_id": 112,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "sentiment": "positive",
+          "excerpt": "Sangat ramai saat saya datang ke sini di malam hari. Mungkin tidak nyaman bagi mereka yang sensitif terhadap asap/rokok.. kecepatan Wi-Fi bagus, kopinya enak dan tamu bisa membeli kopi bubuk untuk dibawa pulang."
+        },
+        {
+          "review_id": 411,
+          "place_id": "ChIJ-9zLddBZHS4R-8L5Jj7n77M",
+          "sentiment": "positive",
+          "excerpt": "Tempat ny lumayan luas, dan ada smoking room ac nya"
+        },
+        {
+          "review_id": 331,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "sentiment": "positive",
+          "excerpt": "Tempatnya luas, banyak tempat duduk untuk semi outdoor, ada ruangan indoor non smoking berAC, ada juga ruangan indoor untuk smoking area berAC, tersedia toilet.\nIce kopi susu gula arennya enak, pisang srikaya enak, harga terjangkau.\nCocok untuk WFC, karena di ruangan indoor sepi dan tidak berisik."
+        },
+        {
+          "review_id": 119,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "sentiment": "positive",
+          "excerpt": "Tempat nya cozy\r\nAda 3 Jenis ruangan\r\nOutdoor\r\nAc bisa rokok\r\nAc tidak bisa rokok\r\nRamah anak\r\nPelayanan cepat\r\nRecommended\r\n\r\nWC nya jelek\r\nBau\r\nGa terawat"
+        },
+        {
+          "review_id": 368,
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "sentiment": "positive",
+          "excerpt": "Tempatnya nyaman. Lumayan luas. Lantai 1 dan 2 adem berAC. Pelayanan ramah.\nMenunya beragam dari kopi - non kopi, camilan sampai makanan berat. Dengan harga yang bervariasi standar kafe.\nBlack orange, milo boba, spanish latte, honey lemon tea, orange juice, nasi goreng yangchow, yakiniku beef bowlnya nikmat pas sesuai selera.\nPembayaran selain cash bisa juga dengan debit dan qris👍.\nInternet lancar"
+        },
+        {
+          "review_id": 369,
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "sentiment": "positive",
+          "excerpt": "Baru pertama kali mampir ke Rice n Shine Dansen, lokasinya masih satu deretan ruko dengan lokale. Suka banget sama suasana tempatnya yang cozy, bersih, dan cocok buat nongkrong atau WFC. Menu makanannya juga variatif, dari aneka minuman baik coffee maupun non coffee, makanan berat sampai camilan. porsinya pas dengan harga yang affordable.\n\nSitting areanya lumayan banyak, ada 2 lantai full AC (no s"
+        },
+        {
+          "review_id": 376,
+          "place_id": "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+          "sentiment": "positive",
+          "excerpt": "Cocok untuk tempat bersantai di sore atau malam hari.\nUntuk citarasa dan harga normalnya standar cafe cafe lainmya, tidak over price, cukup worth it.\nUntuk weekend pengunjung  sangat ramai terutama muda mudi. Sulit mencari tempat duduk.\nTersedia ruang terbuka bagi yang ingin merokok.\nSuasana cukup tenang ssat jumlah pengunjung sedang - ramai, tapi ketika pengunjung sangat ramai jadi sedikit bising"
+        },
+        {
+          "review_id": 499,
+          "place_id": "ChIJ2bmXfABZHS4RViKTqagFQq0",
+          "sentiment": "positive",
+          "excerpt": "Kunjungan terakhir pada Agustus, 2024 (Termasuk kunjungan pertama, saat soft-opening) - Info yg saya dpt dari owner, Grand Opening nnti di tgl 3 September 2024 🎊 Kebetulan dikirimkan undangan utk hadir di soft-openingnya 😁\n\nPRODUK:\nMaaf sebelumnya, saya lupa foto menu nya 🙏🏻 Tapi yg pasti menunya banyak, gak hanya minuman aja... ada kue juga 👍🏻 Untuk produk yg saya foto itu ada Matcha Latte & Matc"
+        }
+      ]
+    },
+    "suasana_tenang": {
+      "pill_key": "suasana_tenang",
+      "pill_label": "Suasana tenang",
+      "pill_kind": "attribute",
+      "reviews_mentioning": 16,
+      "reviews_mentioning_positive_keyword": 16,
+      "reviews_total": 245,
+      "pct_reviews": 6.53,
+      "shops_with_evidence": 14,
+      "match_method": "review_keywords + pill_aspect_sentiment (exclude explicit negative)",
+      "sample_evidence": [
+        {
+          "review_id": 140,
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "sentiment": "positive",
+          "excerpt": "Tempatnya cozy, tenang, free wifi, dan ada colokan di beberapa meja. Enak untuk nyantai dan ngumpul sm teman atau pun untuk ngerjain tugas. Pas siang2, tempatnya sepi jd enak kalau mau nugas. Disini ada makanan berat, cemilan kyak Japanese Cheese Cake (JCC) dll, dan aneka minuman. Ada area outdoor dan indoor."
+        },
+        {
+          "review_id": 167,
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "sentiment": "positive",
+          "excerpt": "Tenang suasana nya untuk makanan minuman enak bgt, sampein salam dong sama barista yg itu min haha, rumah saya ga jauh kok dari aming hehe"
+        },
+        {
+          "review_id": 326,
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "sentiment": "positive",
+          "excerpt": "Aming disini tidak pernah sepi. Letaknya tidak di tepi jalan utama. Bangunan terdiri dari 2 lantai. Ada ruang berAC di tiap lantai. Ada lesehan juga di lantai 1.\nMenunya beragam, dari minuman, camilan dan makanan berat. Bisa pilih sesuai selera 😊. Wifi lancar. Parkir luas."
+        },
+        {
+          "review_id": 331,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "sentiment": "positive",
+          "excerpt": "Tempatnya luas, banyak tempat duduk untuk semi outdoor, ada ruangan indoor non smoking berAC, ada juga ruangan indoor untuk smoking area berAC, tersedia toilet.\nIce kopi susu gula arennya enak, pisang srikaya enak, harga terjangkau.\nCocok untuk WFC, karena di ruangan indoor sepi dan tidak berisik."
+        },
+        {
+          "review_id": 343,
+          "place_id": "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+          "sentiment": "positive",
+          "excerpt": "Tempat nyaman, ada outdoor dan indoor, ada lantai 2 juga di atas. Yang indoor ada AC dan ada cermin cocok buat yg suka mirror selfie jadi sangat estetik, minuman enak harga standar coffe shop pontianak. Suasana tenang banget, kalo bagian indoor krn kursi cuma 2 jadi enak sepi, cocok buat nugass. Cuma gaada makanan pas kesini, moga besok besok nyediaain snack biar bisa nyemil sambil cerite bual bar"
+        },
+        {
+          "review_id": 134,
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "sentiment": "positive",
+          "excerpt": "Good place, good coffee. Barista nya enak diajak ngobrol. Beansnya oke. Tempatnya oke dan tenang. Datang pas pagi dan sepi. Enak buat sendirian atau ngobrol yang gak rame."
+        },
+        {
+          "review_id": 351,
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "sentiment": "positive",
+          "excerpt": "Lunch after jemput anak, tempatnya cozy dan lumayan tenang untuk ngobrol, musiknya oke tidak terlalu keras.\nArea untuk WFC atau nugas juga banyak, nge-charge laptop hp bisa dimana saja."
+        },
+        {
+          "review_id": 361,
+          "place_id": "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+          "sentiment": "positive",
+          "excerpt": "Ini salah satu coffee shop terbaik di Pontianak. Saking enaknya, bahkan gak cuma beli coffeenya doang, tapi sampe beli anniversary merchandise mereka juga. Hehehe\n\nKe sini emang paling bener pagi, karena masih lumayan sepi, begitu ke sini malem udah dipastikan bakal rame banget karena habitnya orang Pontianak itu malem-malem nongkrong dan mabar"
+        }
+      ]
+    },
+    "toilet_bersih": {
+      "pill_key": "toilet_bersih",
+      "pill_label": "Toilet bersih",
+      "pill_kind": "attribute",
+      "reviews_mentioning": 8,
+      "reviews_mentioning_positive_keyword": 8,
+      "reviews_total": 245,
+      "pct_reviews": 3.27,
+      "shops_with_evidence": 8,
+      "match_method": "review_keywords + pill_aspect_sentiment (exclude explicit negative)",
+      "sample_evidence": [
+        {
+          "review_id": 402,
+          "place_id": "ChIJHdYrWU1ZHS4RuU_qB_QKTdI",
+          "sentiment": "positive",
+          "excerpt": "Namenye cw,tapi wc nya nda pw,lebih diperhatikan lagi ya"
+        },
+        {
+          "review_id": 172,
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "sentiment": "positive",
+          "excerpt": "tempatnya lumayan coze untuk indoor, outdoornya menurut saya kurang banyak kipas angin, in this cuaca of pontianak sih panas banget ya. ada musholla jadi enak mau solat. wc lumayan bersih"
+        },
+        {
+          "review_id": 331,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "sentiment": "positive",
+          "excerpt": "Tempatnya luas, banyak tempat duduk untuk semi outdoor, ada ruangan indoor non smoking berAC, ada juga ruangan indoor untuk smoking area berAC, tersedia toilet.\nIce kopi susu gula arennya enak, pisang srikaya enak, harga terjangkau.\nCocok untuk WFC, karena di ruangan indoor sepi dan tidak berisik."
+        },
+        {
+          "review_id": 349,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "sentiment": "positive",
+          "excerpt": "Tempatnya cantik bangeeet, suasananya enak buat wfc, interior, minuman, makanan, ac, wifi colokan smua oke. Paling bbrp seat g ada colokan. Mau indoor outdoor smua cantik2. Rsanya ga banyak yg tau, tryta hidden gem. Jd ini deh rinciannyaa\n\n(+)\n+ makanan minuman smua harga wajar, affordable, porsi dan rasa pas pula\n+ paket chill hour ny murah affordable parah, 26k uda bs dpt seporsi makanan dan mnu"
+        },
+        {
+          "review_id": 355,
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "sentiment": "positive",
+          "excerpt": "Tempatnya luas, parkiran juga luas. Ada ruang indoor yang dibagi 2 tempat. Dan outdoor dibagian depan, samping kanan dan kiri serta belakang. Wifi lancar, banyak colokan. Cocok utk wfc dan santai. Bnyak varian makanan, cemilan dan minuman. Harga seperti pada caffe pada umumnya. Tempat nya bersih. Adem. Pelayanan ok, rasa makanan dan minumannya enak dengan porsi yg pas. Kursinya bnyak juga. Yang pe"
+        },
+        {
+          "review_id": 367,
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "sentiment": "positive",
+          "excerpt": "Ambience di sini cocok buat kerja seharian. Tempat duduk comfy, toilet bersih, ada mushola. Semua makanan enak enak, pelayanan sangat cepat dan ramah. Desain tempatnya earthy, jadi buat nyaman. Sound musik juga tidak berisik, playlist lagunya enak enak. Untuk kopinya enak, tapi semoga bisa improve lagi ya. Btw, udah lebih dari 10x memilih RnS untuk WFA 😆"
+        },
+        {
+          "review_id": 522,
+          "place_id": "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+          "sentiment": "positive",
+          "excerpt": "menurutku ya, salah satu coffeshop yang bagus dinilai dari kebersihan toiletnya. askara toiletnya memanusiakan manusia banget terutama perempuan. karna udah disiapin juga segala pembalut, tissue dan wangi banget. makanannya juga enak-enak."
+        },
+        {
+          "review_id": 542,
+          "place_id": "ChIJoy_lbNpZHS4R703thlouzo8",
+          "sentiment": "positive",
+          "excerpt": "Tempatnya bersih, pelayanan ramah dan cepat. Suasananya nyaman dan tenang.\nBisa bersantai di lantai 1, 2 dan disekitar water front. Sambil menikmati pemandangan sekitar sungai kapuas.\nMenu makanan lebih beragam di pagi hari.\nTersedia mushola dan toilet bersih ada di lantai 1 dan 2."
+        }
+      ]
+    },
+    "wifi_kencang": {
+      "pill_key": "wifi_kencang",
+      "pill_label": "Wifi kencang",
+      "pill_kind": "attribute",
+      "reviews_mentioning": 17,
+      "reviews_mentioning_positive_keyword": 17,
+      "reviews_total": 245,
+      "pct_reviews": 6.94,
+      "shops_with_evidence": 14,
+      "match_method": "review_keywords + pill_aspect_sentiment (exclude explicit negative)",
+      "sample_evidence": [
+        {
+          "review_id": 112,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "sentiment": "positive",
+          "excerpt": "Sangat ramai saat saya datang ke sini di malam hari. Mungkin tidak nyaman bagi mereka yang sensitif terhadap asap/rokok.. kecepatan Wi-Fi bagus, kopinya enak dan tamu bisa membeli kopi bubuk untuk dibawa pulang."
+        },
+        {
+          "review_id": 140,
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "sentiment": "positive",
+          "excerpt": "Tempatnya cozy, tenang, free wifi, dan ada colokan di beberapa meja. Enak untuk nyantai dan ngumpul sm teman atau pun untuk ngerjain tugas. Pas siang2, tempatnya sepi jd enak kalau mau nugas. Disini ada makanan berat, cemilan kyak Japanese Cheese Cake (JCC) dll, dan aneka minuman. Ada area outdoor dan indoor."
+        },
+        {
+          "review_id": 159,
+          "place_id": "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+          "sentiment": "positive",
+          "excerpt": "Tempatnya cozy\r\nAda private study space, room meeting dan outdoor indoor\r\nBisa juga untuk WFC\r\nWifi lancar\r\nArea parkir luas, jadi aman buat yg bawa kendaraan roda 4\r\n\r\nSistem pesan sudah upgrade jadi ngga perlu antri panjang. Rekomendasi banget buat yang mau WFC atau cari tempat buat nugas"
+        },
+        {
+          "review_id": 326,
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "sentiment": "positive",
+          "excerpt": "Aming disini tidak pernah sepi. Letaknya tidak di tepi jalan utama. Bangunan terdiri dari 2 lantai. Ada ruang berAC di tiap lantai. Ada lesehan juga di lantai 1.\nMenunya beragam, dari minuman, camilan dan makanan berat. Bisa pilih sesuai selera 😊. Wifi lancar. Parkir luas."
+        },
+        {
+          "review_id": 349,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "sentiment": "positive",
+          "excerpt": "Tempatnya cantik bangeeet, suasananya enak buat wfc, interior, minuman, makanan, ac, wifi colokan smua oke. Paling bbrp seat g ada colokan. Mau indoor outdoor smua cantik2. Rsanya ga banyak yg tau, tryta hidden gem. Jd ini deh rinciannyaa\n\n(+)\n+ makanan minuman smua harga wajar, affordable, porsi dan rasa pas pula\n+ paket chill hour ny murah affordable parah, 26k uda bs dpt seporsi makanan dan mnu"
+        },
+        {
+          "review_id": 354,
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "sentiment": "positive",
+          "excerpt": "Tempat yang nyaman\nMenu jg variatif, fasilitas jg lengkap, cocok untuk kaum wifi only 😁"
+        },
+        {
+          "review_id": 355,
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "sentiment": "positive",
+          "excerpt": "Tempatnya luas, parkiran juga luas. Ada ruang indoor yang dibagi 2 tempat. Dan outdoor dibagian depan, samping kanan dan kiri serta belakang. Wifi lancar, banyak colokan. Cocok utk wfc dan santai. Bnyak varian makanan, cemilan dan minuman. Harga seperti pada caffe pada umumnya. Tempat nya bersih. Adem. Pelayanan ok, rasa makanan dan minumannya enak dengan porsi yg pas. Kursinya bnyak juga. Yang pe"
+        },
+        {
+          "review_id": 368,
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "sentiment": "positive",
+          "excerpt": "Tempatnya nyaman. Lumayan luas. Lantai 1 dan 2 adem berAC. Pelayanan ramah.\nMenunya beragam dari kopi - non kopi, camilan sampai makanan berat. Dengan harga yang bervariasi standar kafe.\nBlack orange, milo boba, spanish latte, honey lemon tea, orange juice, nasi goreng yangchow, yakiniku beef bowlnya nikmat pas sesuai selera.\nPembayaran selain cash bisa juga dengan debit dan qris👍.\nInternet lancar"
+        }
+      ]
+    }
+  },
+  "methodology": {
+    "activity": "hybrid_retrieval.compile_activity_matcher per pill (keywords + extra phrases)",
+    "attribute": "pill_aspect_sentiment.review_sentiment_for_pill; hits count non-negative keyword mention",
+    "note": "Satu ulasan bisa menghitung di beberapa pill. Dense/semantic gate tidak termasuk (hanya bukti leksikal traceable)."
+  }
+}

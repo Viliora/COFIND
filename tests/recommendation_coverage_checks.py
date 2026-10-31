@@ -5,7 +5,6 @@ import unittest
 from recommendation_coverage import (
     hours_indicate_24_7,
     merge_pill_coverage,
-    pills_covered_by_metadata,
     pills_covered_by_opening_hours,
     pills_with_review_keyword_hits,
 )
@@ -24,20 +23,6 @@ class RecommendationCoverageTests(unittest.TestCase):
         }
         got = pills_covered_by_opening_hours(shop, ['buka_sampai_malam_24_hours', 'belajar'])
         self.assertIn('buka_sampai_malam_24_hours', got)
-
-    def test_metadata_covers_facility_pill(self):
-        shop = {
-            'evidence': {
-                'metadata_gate': {
-                    'matched_attribute_pills': ['banyak_colokan_terminal'],
-                    'contradicted_pills': [],
-                },
-            },
-        }
-        facility = {'banyak_colokan_terminal', 'wifi_kencang'}
-        got = pills_covered_by_metadata(shop, ['banyak_colokan_terminal', 'belajar'], facility_attribute_pills=facility)
-        self.assertIn('banyak_colokan_terminal', got)
-        self.assertNotIn('belajar', got)
 
     def test_keyword_hits_cover_pill(self):
         shop = {
@@ -59,12 +44,7 @@ class RecommendationCoverageTests(unittest.TestCase):
                     'banyak_colokan_terminal': {'keyword_review_hits': 1},
                 },
             },
-            'evidence': {
-                'metadata_gate': {
-                    'matched_attribute_pills': ['wifi_kencang'],
-                    'contradicted_pills': [],
-                },
-            },
+            'evidence': {},
         }
         pills = ['belajar', 'wifi_kencang', 'banyak_colokan_terminal', 'buka_sampai_malam_24_hours']
         covered, uncovered = merge_pill_coverage(

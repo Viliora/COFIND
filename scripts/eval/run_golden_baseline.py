@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Jalankan golden_queries.json (retrieval-only / gate hints) dan simpan baseline metrik.
+Catat baseline konfigurasi + daftar query eval (data/eval/eval_queries.json).
 
 Usage:
   python scripts/eval/run_golden_baseline.py
@@ -17,7 +17,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-GOLDEN = ROOT / "tests" / "golden_queries.json"
 DEFAULT_OUT = ROOT / "data" / "eval" / "baseline.json"
 
 
@@ -35,47 +34,54 @@ def _git_head() -> str | None:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--queries", type=Path, default=DEFAULT_EVAL_QUERIES)
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
     args = parser.parse_args()
 
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
+    _eval_dir = ROOT / "scripts" / "eval"
+    if str(_eval_dir) not in sys.path:
+        sys.path.insert(0, str(_eval_dir))
+    from eval_queries_io import DEFAULT_EVAL_QUERIES, load_eval_queries
 
-    golden = json.loads(GOLDEN.read_text(encoding="utf-8"))
+    try:
+        query_items = load_eval_queries(args.queries)
+    except FileNotFoundError as err:
+        print(err, file=sys.stderr)
+        return 1
     from hybrid_retrieval import retrieval_top_k
-    from llm_recommender import rerank_enabled as llm_rerank_enabled
+    from cross_encoder_rerank import ce_rerank_enabled
     from postgres_fts import bm25_backend
     from semantic_match import model_name
 
     rows = []
-    for item in golden.get("queries") or []:
-        expect = item.get("expect") or {}
+    for item in query_items:
         rows.append({
             "id": item.get("id"),
             "route": item.get("route"),
             "input": item.get("input"),
-            "expect_activity_gate": expect.get("activity_gate"),
-            "expect_metadata_gate": expect.get("metadata_gate"),
-            "tags": item.get("tags") or [],
+            "source": item.get("source"),
+            "verbatim": item.get("verbatim"),
         })
 
     payload = {
         "recorded_at": datetime.now(timezone.utc).isoformat(),
         "git_commit": _git_head(),
         "mode": {
-            "llm_rerank": llm_rerank_enabled(),
+            "ce_rerank": ce_rerank_enabled(),
             "bm25_backend": bm25_backend(),
             "embedding_model": model_name(),
             "retrieval_top_k": retrieval_top_k(),
-            "COFIND_LLM_RERANK": os.getenv("COFIND_LLM_RERANK"),
             "COFIND_CROSS_ENCODER": os.getenv("COFIND_CROSS_ENCODER"),
+            "COFIND_CE_RERANK_WEIGHT": os.getenv("COFIND_CE_RERANK_WEIGHT"),
             "COFIND_BM25_BACKEND": os.getenv("COFIND_BM25_BACKEND"),
         },
-        "golden_query_count": len(rows),
+        "eval_query_count": len(rows),
         "queries": rows,
         "metrics_note": (
-            "Baseline struktural: konfigurasi + daftar golden. "
-            "Precision@k / citation precision butuh hit DB penuh (ragas_eval / E2E)."
+            "Baseline struktural: konfigurasi + daftar query calon pengguna. "
+            "nDCG/MRR: relevance_judgments.json + relevance_metrics.py."
         ),
     }
 

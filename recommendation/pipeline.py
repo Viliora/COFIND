@@ -56,7 +56,9 @@ def recommendation_pipeline_events(prefs, _auth_user, query_text=''):
         llm_usage_token = begin_llm_usage_collection()
         llm_route_token = begin_llm_run_route()
 
-        query_text = str(query_text or '').strip()[:FREE_TEXT_MAX_CHARS]
+        from free_text_intent import normalize_free_text_query
+
+        query_text = normalize_free_text_query(query_text)
         has_pills_input = bool(prefs)
         has_query_text = bool(query_text)
 
@@ -108,13 +110,19 @@ def recommendation_pipeline_events(prefs, _auth_user, query_text=''):
             free_text_telemetry['intent_hint_attributes'] = (
                 intent_result.get('matched_attribute_pills') or []
             )
+            intent_backend = (intent_result.get('telemetry') or {}).get('backend')
+            llm_class_trusted = intent_backend == 'llm'
             free_text_query_handling = merge_query_classification(
                 query_text,
                 llm_query_class=intent_result.get('query_class'),
+                llm_classification_trusted=llm_class_trusted,
                 impossible_detail=intent_result.get('impossible_detail'),
                 alternative_keywords=intent_result.get('alternative_keywords'),
             )
             free_text_telemetry['query_class'] = free_text_query_handling.get('query_class')
+            free_text_telemetry['query_class_source'] = free_text_query_handling.get(
+                'query_class_source',
+            )
             free_text_response_message = free_text_query_handling.get('response_message')
             free_text_summary_framing = free_text_query_handling.get('summary_framing')
             LOG_RECOMMEND.info(
@@ -129,9 +137,7 @@ def recommendation_pipeline_events(prefs, _auth_user, query_text=''):
                     'status': 'success',
                     'message': free_text_response_message,
                     'recommendations': [],
-                    'query_handling': {
-                        'class': free_text_query_handling.get('query_class'),
-                    },
+                    'query_handling': query_handling_for_api(free_text_query_handling),
                 }, 200))
                 return
 
@@ -151,13 +157,6 @@ def recommendation_pipeline_events(prefs, _auth_user, query_text=''):
                 )
                 free_text_keywords = adjusted['keywords']
                 free_text_dense_query = adjusted['dense_query']
-
-            if (
-                free_text_query_handling.get('query_class') == QUERY_CLASS_NEGATIVE
-                and not free_text_keywords
-            ):
-                free_text_keywords = ['rating', 'keluhan']
-                free_text_dense_query = 'coffee shop dengan rating rendah dan keluhan di ulasan'
 
             if not free_text_keywords:
                 yield ('result', ({
@@ -245,15 +244,6 @@ def recommendation_pipeline_events(prefs, _auth_user, query_text=''):
                 activity_pills=activity_pills,
                 attribute_pills=attribute_pills,
             )
-        elif (
-            has_query_text
-            and free_text_query_handling.get('query_class') == QUERY_CLASS_NEGATIVE
-        ):
-            retrieval = retrieve_top_k_by_negative_sentiment(
-                profiles,
-                quality_by_place=quality_by_place,
-                top_k=retrieval_top_k(),
-            )
         else:
             retrieval = retrieve_top_k_by_text(
                 profiles,
@@ -304,17 +294,7 @@ def recommendation_pipeline_events(prefs, _auth_user, query_text=''):
                     retrieval_ev.get('positive_review_quotes'),
                     review_ev.get('positive_review_quotes'),
                 )
-            attached_evidence = _attach_metadata_gate_to_evidence(
-                retrieval_ev,
-                score_detail=score_detail,
-                metadata_gate=item.get('metadata_gate'),
-                reviews=(profile.get('reviews') or []),
-            )
-            attached_evidence['metadata_support'] = _build_metadata_support_items(
-                attached_evidence,
-                facilities_tab_intent=review_ev.get('facilities_tab_intent') or {},
-                facilities_intent_aligned=review_ev.get('facilities_intent_aligned'),
-            )
+            attached_evidence = retrieval_ev
             shop = {
                 'place_id': item.get('place_id'),
                 'name': item.get('name') or profile.get('name') or '',
@@ -343,8 +323,6 @@ def recommendation_pipeline_events(prefs, _auth_user, query_text=''):
             f"lex={retrieval_telemetry.get('activity_pass_lexical', 0)}, "
             f"dense_only={retrieval_telemetry.get('activity_pass_dense_only', 0)}, "
             f"rejected={retrieval_telemetry.get('activity_rejected', 0)}, "
-            f"meta_prior={retrieval_telemetry.get('metadata_prior_applied', 0)}, "
-            f"meta_penalty={retrieval_telemetry.get('metadata_penalized', 0)}) "
             f"bm25_shops={retrieval_telemetry.get('bm25_shops')}, "
             f"dense={retrieval_telemetry.get('dense')})")
         if clause_sentiment_telemetry.get('skipped'):
@@ -374,7 +352,7 @@ def recommendation_pipeline_events(prefs, _auth_user, query_text=''):
         if free_text_summary_framing:
             keyword_line = f'{keyword_line}\n\n[Framing respons]\n{free_text_summary_framing}'
         if scored_candidates and ce_rerank_enabled():
-            rerank_pool = scored_candidates[:llm_rerank_pool()]
+            rerank_pool = scored_candidates[:rerank_candidate_pool()]
             rerank_user_id = _auth_user.get('id')
             cached_fits = _get_cached_rerank_fits(
                 rerank_pool,
@@ -556,10 +534,7 @@ def recommendation_pipeline_events(prefs, _auth_user, query_text=''):
             'stage_ms': stage_ms,
             'token_usage': token_usage,
             'degradation': degradation,
-            'retrieval': {
-                'metadata_prior_applied': retrieval_telemetry.get('metadata_prior_applied'),
-                'metadata_penalized': retrieval_telemetry.get('metadata_penalized'),
-            },
+            'retrieval': {},
         }
         log_recommendation_run_json(metric_payload)
         record_pipeline_run(
@@ -577,6 +552,11 @@ def recommendation_pipeline_events(prefs, _auth_user, query_text=''):
         LOG_RECOMMEND.info(
             f"Selesai: {len(recommendations)} rekomendasi dikirim ke client "
             f"(run_id={pipeline_run_id}, llm_tokens={token_usage.get('total_tokens')})")
+
+        other_options = _build_other_options_from_phase2(
+            scored_candidates,
+            [r.get('place_id') for r in recommendations],
+        )
 
         yield _recommendation_progress('done', delivered=len(recommendations))
         result_body = {
@@ -605,14 +585,12 @@ def recommendation_pipeline_events(prefs, _auth_user, query_text=''):
                 ),
             },
             'recommendations': recommendations,
+            'other_options': other_options,
         }
         if free_text_response_message:
             result_body['message'] = free_text_response_message
         if free_text_query_handling.get('query_class'):
-            result_body['query_handling'] = {
-                'class': free_text_query_handling.get('query_class'),
-                'impossible_detail': free_text_query_handling.get('impossible_detail'),
-            }
+            result_body['query_handling'] = query_handling_for_api(free_text_query_handling)
         yield ('result', (result_body, 200))
 
     except Exception as e:

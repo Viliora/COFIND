@@ -1,18 +1,17 @@
 """
-Backend LLM: Hugging Face Router (utama) + Google AI Studio Gemini (fallback OpenAI-compatible).
-
-Lingkungan HF:
-  HF_MODEL, HF_API_TOKEN / HF_TOKEN, HF_LLM_* (timeout, retries, token caps)
+Backend LLM: Google AI Studio Gemini (utama) + Hugging Face Router / Llama (fallback).
 
 Lingkungan Gemini (Google AI Studio):
   GEMINI_API_KEY — API key dari AI Studio
-  GEMINI_MODEL — default gemini-2.0-flash
+  GEMINI_MODEL — default gemini-3.8-flash
   GEMINI_PROJECT_ID — opsional (logging / dokumentasi)
-  COFIND_LLM_GEMINI_FALLBACK — true/false, default true
 
-Alur chat: coba HF dulu; jika gagal (402 kredit, 401, 429, quota, dll.) dan fallback
-aktif + GEMINI_API_KEY ada, panggil Gemini. Jika keduanya gagal, exception ke pemanggil
-(pipeline memakai fallback deterministik).
+Lingkungan HF (fallback Llama via Router):
+  HF_MODEL, HF_API_TOKEN / HF_TOKEN, HF_LLM_* (retries, token caps)
+  COFIND_LLM_GEMINI_FALLBACK — true/false, default true (aktifkan fallback ke HF bila Gemini gagal)
+
+Alur chat: coba Gemini dulu; jika gagal (quota, 429, dll.) dan fallback aktif + HF token ada,
+panggil HF Router (Llama). Jika keduanya gagal, exception ke pemanggil (fallback deterministik).
 """
 from __future__ import annotations
 
@@ -47,7 +46,6 @@ _DEFAULT_TOP_P = float(os.getenv("HF_LLM_DEFAULT_TOP_P", "0.9"))
 _DEFAULT_REPETITION_PENALTY = float(os.getenv("HF_LLM_DEFAULT_REPETITION_PENALTY", "1.1"))
 _MAX_RETRIES = max(0, int(os.getenv("HF_LLM_MAX_RETRIES", "1")))
 _BACKOFF_FACTOR = float(os.getenv("HF_LLM_BACKOFF_FACTOR", "0.8"))
-_TIMEOUT_SECONDS = float(os.getenv("HF_LLM_TIMEOUT_SECONDS", "60"))
 # Model Gemini "thinking" menghitung token penalaran ke max_tokens; 1024 sering habis
 # sebelum JSON summary selesai (finish_reason=length, completion ~35 token).
 GEMINI_SUMMARY_MAX_TOKENS = int(os.getenv("GEMINI_SUMMARY_MAX_TOKENS", "2048"))
@@ -88,8 +86,8 @@ class LlmRunRoute:
 _llm_run_route: contextvars.ContextVar[Optional[LlmRunRoute]] = contextvars.ContextVar(
     "llm_run_route", default=None,
 )
-_hf_fallback_warned: contextvars.ContextVar[bool] = contextvars.ContextVar(
-    "hf_fallback_warned", default=False,
+_llm_fallback_warned: contextvars.ContextVar[bool] = contextvars.ContextVar(
+    "llm_fallback_warned", default=False,
 )
 
 
@@ -102,10 +100,6 @@ def _env_flag(name: str, default: bool) -> bool:
 
 COFIND_LLM_GEMINI_FALLBACK = _env_flag("COFIND_LLM_GEMINI_FALLBACK", True)
 COFIND_LLM_PROBE_RECOMMEND = _env_flag("COFIND_LLM_PROBE_RECOMMEND", True)
-_PROBE_TIMEOUT_SECONDS = min(
-    float(os.getenv("COFIND_LLM_PROBE_TIMEOUT_SECONDS", str(_TIMEOUT_SECONDS))),
-    _TIMEOUT_SECONDS,
-)
 
 hf_client = None
 gemini_client = None
@@ -117,9 +111,9 @@ if HF_API_TOKEN:
         hf_client = OpenAI(
             base_url="https://router.huggingface.co/v1",
             api_key=HF_API_TOKEN,
-            timeout=_TIMEOUT_SECONDS,
+            timeout=None,
         )
-        logger.info(f"LLM primary: HF Router (timeout={_TIMEOUT_SECONDS}s)")
+        logger.info("LLM fallback HF Router (tanpa batas timeout klien)")
     except Exception as e:
         logger.warning(f"HF OpenAI client init gagal: {e}")
         hf_client = None
@@ -133,24 +127,24 @@ if GEMINI_API_KEY:
         gemini_client = OpenAI(
             base_url=_GEMINI_OPENAI_BASE,
             api_key=GEMINI_API_KEY,
-            timeout=_TIMEOUT_SECONDS,
+            timeout=None,
         )
         logger.info(
-            f"LLM fallback: Google AI Studio ({GEMINI_MODEL}"
+            f"LLM primary: Google AI Studio ({GEMINI_MODEL}"
             f"{', project=' + GEMINI_PROJECT_ID if GEMINI_PROJECT_ID else ''})"
         )
     except Exception as e:
         logger.warning(f"Gemini OpenAI client init gagal: {e}")
         gemini_client = None
 elif COFIND_LLM_GEMINI_FALLBACK:
-    logger.info("GEMINI_API_KEY kosong — fallback Gemini nonaktif.")
+    logger.info("GEMINI_API_KEY kosong — primary Gemini nonaktif.")
 
-if hf_client and gemini_client and COFIND_LLM_GEMINI_FALLBACK:
-    LLM_BACKEND = "hf_router_openai+gemini_fallback"
-elif hf_client:
-    LLM_BACKEND = "hf_router_openai"
+if gemini_client and hf_client and COFIND_LLM_GEMINI_FALLBACK:
+    LLM_BACKEND = "gemini_openai+hf_fallback"
 elif gemini_client:
     LLM_BACKEND = "gemini_openai"
+elif hf_client:
+    LLM_BACKEND = "hf_router_openai"
 else:
     LLM_BACKEND = "none"
 
@@ -198,9 +192,7 @@ def _error_code(err: Exception) -> Optional[int]:
     return None
 
 
-def _should_try_gemini_after_hf_error(err: Exception) -> bool:
-    if not COFIND_LLM_GEMINI_FALLBACK or gemini_client is None:
-        return False
+def _retryable_provider_error(err: Exception) -> bool:
     code = _error_code(err)
     if code in (401, 402, 403, 429, 500, 502, 503, 504):
         return True
@@ -218,12 +210,24 @@ def _should_try_gemini_after_hf_error(err: Exception) -> bool:
     return any(m in text for m in markers)
 
 
+def _should_try_hf_after_gemini_error(err: Exception) -> bool:
+    if not COFIND_LLM_GEMINI_FALLBACK or hf_client is None:
+        return False
+    return _retryable_provider_error(err)
+
+
+def _should_try_gemini_after_hf_error(err: Exception) -> bool:
+    if not COFIND_LLM_GEMINI_FALLBACK or gemini_client is None:
+        return False
+    return _retryable_provider_error(err)
+
+
 def llm_is_available() -> bool:
     return hf_client is not None or gemini_client is not None
 
 
 def begin_llm_run_route() -> contextvars.Token:
-    _hf_fallback_warned.set(False)
+    _llm_fallback_warned.set(False)
     return _llm_run_route.set(None)
 
 
@@ -239,12 +243,13 @@ def set_llm_run_route(route: LlmRunRoute) -> None:
     _llm_run_route.set(route)
 
 
-def _warn_hf_fallback_once(err: Exception) -> None:
-    if _hf_fallback_warned.get():
+def _warn_llm_fallback_once(*, from_provider: str, to_provider: str, err: Exception) -> None:
+    if _llm_fallback_warned.get():
         return
-    _hf_fallback_warned.set(True)
+    _llm_fallback_warned.set(True)
     logger.warning(
-        f"HF LLM gagal ({str(err)[:160]}), mencoba Gemini fallback..."
+        f"LLM {from_provider} gagal ({str(err)[:160]}), "
+        f"mencoba fallback {to_provider}..."
     )
 
 
@@ -281,10 +286,10 @@ def probe_llm_for_recommendation_run() -> LlmRunRoute:
         return route
 
     if not COFIND_LLM_PROBE_RECOMMEND:
-        if hf_client is not None:
-            mode: Literal["hf", "gemini", "off"] = "hf"
-        elif gemini_client is not None:
-            mode = "gemini"
+        if gemini_client is not None:
+            mode: Literal["hf", "gemini", "off"] = "gemini"
+        elif hf_client is not None:
+            mode = "hf"
         else:
             mode = "off"
         route = LlmRunRoute(
@@ -295,56 +300,56 @@ def probe_llm_for_recommendation_run() -> LlmRunRoute:
         set_llm_run_route(route)
         return route
 
-    if hf_client is not None:
-        ok, hf_err = _probe_provider_once("hf", HF_MODEL)
-        if ok:
-            route = LlmRunRoute(mode="hf", reason="hf_probe_ok", probed_at=now)
-            set_llm_run_route(route)
-            return route
-        hf_snippet = hf_err or "hf_probe_failed"
-        if (
-            gemini_client is not None
-            and COFIND_LLM_GEMINI_FALLBACK
-            and _should_try_gemini_after_hf_error(Exception(hf_snippet))
-        ):
-            ok_g, gem_err = _probe_provider_once("gemini", GEMINI_MODEL)
-            if ok_g:
-                route = LlmRunRoute(
-                    mode="gemini",
-                    reason="hf_probe_failed_use_gemini",
-                    probed_at=now,
-                    hf_error_snippet=hf_snippet,
-                )
-                set_llm_run_route(route)
-                return route
-            route = LlmRunRoute(
-                mode="off",
-                reason="hf_and_gemini_probe_failed",
-                probed_at=now,
-                hf_error_snippet=hf_snippet or gem_err,
-            )
-            set_llm_run_route(route)
-            return route
-        route = LlmRunRoute(
-            mode="off",
-            reason="hf_probe_failed_no_fallback",
-            probed_at=now,
-            hf_error_snippet=hf_snippet,
-        )
-        set_llm_run_route(route)
-        return route
-
     if gemini_client is not None:
         ok, gem_err = _probe_provider_once("gemini", GEMINI_MODEL)
         if ok:
             route = LlmRunRoute(mode="gemini", reason="gemini_probe_ok", probed_at=now)
             set_llm_run_route(route)
             return route
+        gem_snippet = gem_err or "gemini_probe_failed"
+        if (
+            hf_client is not None
+            and COFIND_LLM_GEMINI_FALLBACK
+            and _should_try_hf_after_gemini_error(Exception(gem_snippet))
+        ):
+            ok_h, hf_err = _probe_provider_once("hf", HF_MODEL)
+            if ok_h:
+                route = LlmRunRoute(
+                    mode="hf",
+                    reason="gemini_probe_failed_use_hf",
+                    probed_at=now,
+                    hf_error_snippet=gem_snippet,
+                )
+                set_llm_run_route(route)
+                return route
+            route = LlmRunRoute(
+                mode="off",
+                reason="gemini_and_hf_probe_failed",
+                probed_at=now,
+                hf_error_snippet=gem_snippet or hf_err,
+            )
+            set_llm_run_route(route)
+            return route
         route = LlmRunRoute(
             mode="off",
-            reason="gemini_probe_failed",
+            reason="gemini_probe_failed_no_fallback",
             probed_at=now,
-            hf_error_snippet=gem_err,
+            hf_error_snippet=gem_snippet,
+        )
+        set_llm_run_route(route)
+        return route
+
+    if hf_client is not None:
+        ok, hf_err = _probe_provider_once("hf", HF_MODEL)
+        if ok:
+            route = LlmRunRoute(mode="hf", reason="hf_probe_ok", probed_at=now)
+            set_llm_run_route(route)
+            return route
+        route = LlmRunRoute(
+            mode="off",
+            reason="hf_probe_failed",
+            probed_at=now,
+            hf_error_snippet=hf_err,
         )
         set_llm_run_route(route)
         return route
@@ -390,7 +395,8 @@ def llm_provider_summary() -> Dict[str, object]:
         "backend": LLM_BACKEND,
         "hf_configured": hf_client is not None,
         "gemini_configured": gemini_client is not None,
-        "gemini_fallback_enabled": COFIND_LLM_GEMINI_FALLBACK,
+        "hf_fallback_enabled": COFIND_LLM_GEMINI_FALLBACK,
+        "primary_provider": "gemini" if gemini_client else ("hf" if hf_client else None),
         "hf_model": HF_MODEL if hf_client else None,
         "gemini_model": GEMINI_MODEL if gemini_client else None,
         "gemini_project_id": GEMINI_PROJECT_ID or None,
@@ -478,6 +484,46 @@ def _create_chat_completion(
     return _call_with_retry(client.chat.completions.create, **call_kwargs)
 
 
+def _ordered_chat_providers(
+    *,
+    prefer_provider: Optional[Literal["hf", "gemini"]],
+) -> List[Literal["hf", "gemini"]]:
+    route = get_llm_run_route()
+    if route is not None and route.mode == "off":
+        return []
+
+    if prefer_provider == "gemini" and gemini_client is not None:
+        return ["gemini"]
+    if prefer_provider == "hf" and hf_client is not None:
+        return ["hf"]
+
+    if route is not None and route.mode == "gemini" and gemini_client is not None:
+        order: List[Literal["hf", "gemini"]] = ["gemini"]
+        if hf_client is not None and COFIND_LLM_GEMINI_FALLBACK:
+            order.append("hf")
+        return order
+    if route is not None and route.mode == "hf" and hf_client is not None:
+        return ["hf"]
+
+    order = []
+    if gemini_client is not None:
+        order.append("gemini")
+    if hf_client is not None and COFIND_LLM_GEMINI_FALLBACK:
+        order.append("hf")
+    elif hf_client is not None and not gemini_client:
+        order = ["hf"]
+    return order
+
+
+def _should_fallback_after_error(
+    failed_provider: Literal["hf", "gemini"],
+    err: Exception,
+) -> bool:
+    if failed_provider == "gemini":
+        return _should_try_hf_after_gemini_error(err)
+    return _should_try_gemini_after_hf_error(err)
+
+
 def _chat_with_fallback(
     *,
     hf_model: Optional[str],
@@ -491,23 +537,24 @@ def _chat_with_fallback(
 ) -> Tuple[str, Optional[Dict[str, int]], str, str]:
     """
     Return (content, usage, provider_used, model_id_used).
-    provider_used: 'hf' | 'gemini'
+    provider_used: 'hf' | 'gemini' — Gemini utama, HF fallback.
     """
-    last_err: Optional[Exception] = None
     route = get_llm_run_route()
     if route is not None and route.mode == "off":
         raise LlmRunRouteOfflineError(route.reason or "llm_off")
 
-    skip_hf = (
-        prefer_provider == "gemini"
-        or (route is not None and route.mode == "gemini")
-    )
+    providers = _ordered_chat_providers(prefer_provider=prefer_provider)
+    if not providers:
+        raise RuntimeError(
+            "Tidak ada backend LLM (set GEMINI_API_KEY dan/atau HF_API_TOKEN)"
+        )
 
-    if hf_client is not None and not skip_hf:
-        model_id = (hf_model or HF_MODEL).strip()
+    last_err: Optional[Exception] = None
+    for idx, provider in enumerate(providers):
+        model_id = GEMINI_MODEL if provider == "gemini" else (hf_model or HF_MODEL).strip()
         try:
             resp = _create_chat_completion(
-                provider="hf",
+                provider=provider,
                 model_id=model_id,
                 messages=messages,
                 max_tokens=max_tokens,
@@ -517,56 +564,16 @@ def _chat_with_fallback(
                 response_format=response_format,
             )
             usage = usage_from_chat_response(resp)
+            stage = usage_stage or "llm_chat"
             if usage is not None:
                 try:
                     from pipeline_telemetry import push_llm_usage
-                    push_llm_usage(stage=usage_stage or 'llm_chat', model=model_id, **usage)
-                except Exception:
-                    pass
-            content = ((resp.choices or [{}])[0].message.content or "").strip()
-            _last_finish_reason.set(finish_reason_from_chat_response(resp))
-            _record_last_llm_call("hf", model_id)
-            return content, usage, "hf", model_id
-        except Exception as err:
-            last_err = err
-            if response_format is not None:
-                raise
-            if _should_try_gemini_after_hf_error(err):
-                if route is None:
-                    logger.warning(
-                        f"HF LLM gagal ({str(err)[:160]}), mencoba Gemini fallback..."
-                    )
-                else:
-                    _warn_hf_fallback_once(err)
-            else:
-                raise
 
-    if gemini_client is not None and (
-        prefer_provider == "gemini"
-        or (route is not None and route.mode == "gemini")
-        or hf_client is None
-        or (last_err is not None and COFIND_LLM_GEMINI_FALLBACK)
-    ):
-        model_id = GEMINI_MODEL
-        try:
-            resp = _create_chat_completion(
-                provider="gemini",
-                model_id=model_id,
-                messages=messages,
-                max_tokens=max_tokens,
-                temperature=temperature,
-                top_p=top_p,
-                usage_stage=usage_stage,
-                response_format=response_format,
-            )
-            usage = usage_from_chat_response(resp)
-            stage = usage_stage or 'llm_chat'
-            if usage is not None:
-                try:
-                    from pipeline_telemetry import push_llm_usage
-                    telemetry_stage = (
-                        f"{stage}:gemini_fallback" if last_err is not None else stage
-                    )
+                    if idx > 0:
+                        fallback_tag = "hf_fallback" if provider == "hf" else "gemini_fallback"
+                        telemetry_stage = f"{stage}:{fallback_tag}"
+                    else:
+                        telemetry_stage = stage
                     push_llm_usage(
                         stage=telemetry_stage,
                         model=model_id,
@@ -576,19 +583,26 @@ def _chat_with_fallback(
                     pass
             content = ((resp.choices or [{}])[0].message.content or "").strip()
             _last_finish_reason.set(finish_reason_from_chat_response(resp))
-            _record_last_llm_call("gemini", model_id)
-            return content, usage, "gemini", model_id
-        except Exception as gemini_err:
-            if last_err is not None:
-                raise RuntimeError(
-                    f"HF dan Gemini gagal. HF: {last_err}; Gemini: {gemini_err}"
-                ) from gemini_err
+            _record_last_llm_call(provider, model_id)
+            return content, usage, provider, model_id
+        except Exception as err:
+            last_err = err
+            if response_format is not None:
+                raise
+            has_next = idx < len(providers) - 1
+            if has_next and _should_fallback_after_error(provider, err):
+                _warn_llm_fallback_once(
+                    from_provider=provider,
+                    to_provider=providers[idx + 1],
+                    err=err,
+                )
+                continue
             raise
 
     if last_err is not None:
         raise last_err
     raise RuntimeError(
-        "Tidak ada backend LLM (set HF_API_TOKEN dan/atau GEMINI_API_KEY)"
+        "Tidak ada backend LLM (set GEMINI_API_KEY dan/atau HF_API_TOKEN)"
     )
 
 
@@ -675,6 +689,6 @@ def llm_chat_completions_create_with_usage(
         prefer_provider=prefer_provider,
         response_format=response_format,
     )
-    if provider == "gemini" and usage_stage:
-        logger.debug(f"LLM via Gemini fallback stage={usage_stage} model={model_used}")
+    if provider == "hf" and usage_stage:
+        logger.debug(f"LLM via HF fallback stage={usage_stage} model={model_used}")
     return content, usage

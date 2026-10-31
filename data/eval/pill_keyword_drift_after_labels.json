@@ -1,0 +1,164 @@
+{
+  "reviews": 125,
+  "pills": {
+    "belajar": {
+      "keywords": 6,
+      "tokens": 7,
+      "broad_tokens": [
+        "nugas"
+      ],
+      "review_touch": 0.176,
+      "broad_only_touch": 0.072
+    },
+    "kerja": {
+      "keywords": 6,
+      "tokens": 8,
+      "broad_tokens": [
+        "kerja",
+        "work",
+        "from",
+        "cafe"
+      ],
+      "review_touch": 0.304,
+      "broad_only_touch": 0.28
+    },
+    "bermain game": {
+      "keywords": 6,
+      "tokens": 8,
+      "broad_tokens": [],
+      "review_touch": 0.056,
+      "broad_only_touch": 0.0
+    },
+    "meeting_sosialisasi": {
+      "keywords": 5,
+      "tokens": 5,
+      "broad_tokens": [],
+      "review_touch": 0.056,
+      "broad_only_touch": 0.0
+    },
+    "keluarga": {
+      "keywords": 6,
+      "tokens": 8,
+      "broad_tokens": [
+        "ramah",
+        "anak"
+      ],
+      "review_touch": 0.312,
+      "broad_only_touch": 0.216
+    },
+    "instagrammable": {
+      "keywords": 6,
+      "tokens": 7,
+      "broad_tokens": [],
+      "review_touch": 0.08,
+      "broad_only_touch": 0.0
+    },
+    "ruangan_ac": {
+      "keywords": 3,
+      "tokens": 3,
+      "broad_tokens": [
+        "ac"
+      ],
+      "review_touch": 0.16,
+      "broad_only_touch": 0.08
+    },
+    "suasana_tenang": {
+      "keywords": 4,
+      "tokens": 4,
+      "broad_tokens": [
+        "tenang"
+      ],
+      "review_touch": 0.136,
+      "broad_only_touch": 0.056
+    },
+    "area_outdoor": {
+      "keywords": 3,
+      "tokens": 3,
+      "broad_tokens": [
+        "outdoor"
+      ],
+      "review_touch": 0.216,
+      "broad_only_touch": 0.2
+    },
+    "smoking_area": {
+      "keywords": 4,
+      "tokens": 5,
+      "broad_tokens": [
+        "area"
+      ],
+      "review_touch": 0.168,
+      "broad_only_touch": 0.064
+    },
+    "wifi_kencang": {
+      "keywords": 2,
+      "tokens": 2,
+      "broad_tokens": [
+        "wifi"
+      ],
+      "review_touch": 0.112,
+      "broad_only_touch": 0.104
+    },
+    "banyak_colokan_terminal": {
+      "keywords": 4,
+      "tokens": 5,
+      "broad_tokens": [],
+      "review_touch": 0.08,
+      "broad_only_touch": 0.0
+    },
+    "ruang_privat": {
+      "keywords": 4,
+      "tokens": 6,
+      "broad_tokens": [],
+      "review_touch": 0.096,
+      "broad_only_touch": 0.0
+    },
+    "buka_sampai_malam_24_hours": {
+      "keywords": 4,
+      "tokens": 4,
+      "broad_tokens": [],
+      "review_touch": 0.072,
+      "broad_only_touch": 0.0
+    },
+    "musholla": {
+      "keywords": 3,
+      "tokens": 3,
+      "broad_tokens": [
+        "musholla"
+      ],
+      "review_touch": 0.112,
+      "broad_only_touch": 0.096
+    },
+    "parkir_luas": {
+      "keywords": 1,
+      "tokens": 1,
+      "broad_tokens": [
+        "parkir"
+      ],
+      "review_touch": 0.136,
+      "broad_only_touch": 0.136
+    },
+    "toilet_bersih": {
+      "keywords": 5,
+      "tokens": 6,
+      "broad_tokens": [],
+      "review_touch": 0.064,
+      "broad_only_touch": 0.0
+    },
+    "makanan_berat": {
+      "keywords": 7,
+      "tokens": 10,
+      "broad_tokens": [
+        "makanan"
+      ],
+      "review_touch": 0.224,
+      "broad_only_touch": 0.144
+    },
+    "dessert": {
+      "keywords": 7,
+      "tokens": 7,
+      "broad_tokens": [],
+      "review_touch": 0.032,
+      "broad_only_touch": 0.0
+    }
+  }
+}

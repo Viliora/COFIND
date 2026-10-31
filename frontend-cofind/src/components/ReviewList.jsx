@@ -63,9 +63,10 @@ const ReviewList = ({ placeId, shopName, newReview, onReviewSubmitted }) => {
     }
     
     try {
+      const pid = encodeURIComponent(String(placeId));
       const url = user?.id
-        ? `${API_BASE}/api/coffeeshops/${placeId}/reviews?user_id=${user.id}&limit=50`
-        : `${API_BASE}/api/coffeeshops/${placeId}/reviews?limit=50`;
+        ? `${API_BASE}/api/coffeeshops/${pid}/reviews?user_id=${user.id}&limit=200`
+        : `${API_BASE}/api/coffeeshops/${pid}/reviews?limit=200`;
       const response = await fetch(url, {
         method: 'GET',
         headers: authService.getAuthHeaders({ 'Content-Type': 'application/json' }),

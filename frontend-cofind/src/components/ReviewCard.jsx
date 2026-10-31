@@ -5,13 +5,6 @@ import { authService } from '../services/authService';
 import { RATING_META } from '../constants/shopVoteMeta';
 
 import { API_BASE } from '../config/apiBase.js';
-const MAX_PHOTOS = 1;
-const MAX_REVIEW_IMAGE_BYTES = 2 * 1024 * 1024;
-
-/** Foto yang boleh ditampilkan/diedit per review (maksimal MAX_PHOTOS). */
-function sliceReviewPhotos(photos) {
-  return (photos || []).filter((p) => p.image_data).slice(0, MAX_PHOTOS);
-}
 
 function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -46,20 +39,15 @@ const ReviewCard = ({ review, placeId, onDelete, onUpdate, onLike, highlightKeyw
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(review.text || '');
   const [editRating, setEditRating] = useState(review.rating || 0);
-  const [editPhotos, setEditPhotos] = useState(() =>
-    sliceReviewPhotos(review.photos).map((p) => ({ id: p.id, image_data: p.image_data }))
-  );
   const [editError, setEditError] = useState('');
   const [success, setSuccess] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [showReportConfirm, setShowReportConfirm] = useState(false);
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [reportFeedback, setReportFeedback] = useState(null);
-  const [photoModal, setPhotoModal] = useState(null);
   const [likeCount, setLikeCount] = useState(review.like_count ?? 0);
   const [userHasLiked, setUserHasLiked] = useState(review.user_has_liked ?? false);
   const [likeLoading, setLikeLoading] = useState(false);
-  const editPhotoInputRef = useRef(null);
   const editTextareaRef = useRef(null);
 
   React.useEffect(() => {
@@ -111,9 +99,6 @@ const ReviewCard = ({ review, placeId, onDelete, onUpdate, onLike, highlightKeyw
   const handleEditClick = () => {
     setEditText(review.text || '');
     setEditRating(review.rating || 0);
-    setEditPhotos(
-      sliceReviewPhotos(review.photos).map((p) => ({ id: p.id, image_data: p.image_data })),
-    );
     setEditError('');
     setSuccess('');
     setIsEditing(true);
@@ -128,46 +113,11 @@ const ReviewCard = ({ review, placeId, onDelete, onUpdate, onLike, highlightKeyw
     }
   }, [isEditing]);
 
-  const fileToBase64 = (file) =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-    });
-
-  const handleEditAddPhoto = async (e) => {
-    const files = e.target.files;
-    if (!files?.length || editPhotos.length >= MAX_PHOTOS) return;
-    for (let i = 0; i < files.length && editPhotos.length < MAX_PHOTOS; i++) {
-      const file = files[i];
-      if (!file.type.startsWith('image/')) continue;
-      if (file.size > MAX_REVIEW_IMAGE_BYTES) {
-        setEditError(`Ukuran gambar maksimal 2 MB per file. "${file.name}" dilewati.`);
-        continue;
-      }
-      try {
-        const image_data = await fileToBase64(file);
-        setEditPhotos((prev) => [...prev, { image_data }]);
-      } catch {
-        setEditError('Gagal membaca file.');
-      }
-    }
-    e.target.value = '';
-  };
-
-  const removeEditPhoto = (index) => {
-    setEditPhotos((prev) => prev.filter((_, i) => i !== index));
-  };
-
   const closeEditModal = () => {
     setMenuOpen(false);
     setIsEditing(false);
     setEditText(review.text || '');
     setEditRating(review.rating || 0);
-    setEditPhotos(
-      sliceReviewPhotos(review.photos).map((p) => ({ id: p.id, image_data: p.image_data })),
-    );
     setEditError('');
     setSuccess('');
   };
@@ -236,7 +186,6 @@ const ReviewCard = ({ review, placeId, onDelete, onUpdate, onLike, highlightKeyw
           user_id: user.id,
           text: editText.trim(),
           rating: editRating,
-          photos: editPhotos.map((p) => ({ image_data: p.image_data })),
         })
       });
 
@@ -354,8 +303,6 @@ const ReviewCard = ({ review, placeId, onDelete, onUpdate, onLike, highlightKeyw
       || 'Anonim'
     );
   const totalUlasan = review.user_total_reviews != null ? review.user_total_reviews : 0;
-  const displayReviewPhotos = sliceReviewPhotos(review.photos);
-
   const renderHighlightedReviewText = () => {
     const text = String(review.text || '');
     if (!highlightKeyword?.trim()) return text;
@@ -463,7 +410,7 @@ const ReviewCard = ({ review, placeId, onDelete, onUpdate, onLike, highlightKeyw
   // Klik kartu review (oleh pemilik ataupun user lain) langsung membuka detail shop
   // dan auto-scroll ke review yang bersangkutan.
   const effectivePlaceId = placeId || review.place_id || review.placeId || '';
-  const canOpenShop = Boolean(effectivePlaceId) && Boolean(review.id) && !isEditing && !menuOpen && !photoModal && !showReportConfirm;
+  const canOpenShop = Boolean(effectivePlaceId) && Boolean(review.id) && !isEditing && !menuOpen && !showReportConfirm;
 
   const handleCardClick = (e) => {
     if (!canOpenShop) return;
@@ -636,41 +583,6 @@ const ReviewCard = ({ review, placeId, onDelete, onUpdate, onLike, highlightKeyw
               placeholder="Bagikan pengalaman Anda tentang tempat ini..."
             />
 
-            <div className="mt-3">
-              <input
-                ref={editPhotoInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleEditAddPhoto}
-              />
-              <button
-                type="button"
-                onClick={() => editPhotoInputRef.current?.click()}
-                disabled={editPhotos.length >= MAX_PHOTOS}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed border-gray-300 dark:border-zinc-600 text-gray-600 dark:text-gray-400 hover:border-amber-500 hover:text-amber-600 dark:hover:text-amber-400 transition-colors disabled:opacity-50"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 13v7a2 2 0 01-2 2H7a2 2 0 01-2-2v-7" />
-                </svg>
-                Tambahkan foto ({editPhotos.length}/{MAX_PHOTOS})
-              </button>
-              {editPhotos.length > 0 && (
-                <div className="mt-2 space-y-2">
-                  {editPhotos.map((p, i) => (
-                    <div key={p.id ?? `new-${i}`} className="flex gap-2 items-center p-2 bg-gray-50 dark:bg-zinc-900/50 rounded-lg">
-                      <img src={p.image_data} alt="" className="w-14 h-14 object-cover rounded flex-shrink-0" />
-                      <button type="button" onClick={() => removeEditPhoto(i)} className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded flex-shrink-0 ml-auto" aria-label="Hapus foto">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
             {editError && <p className="text-sm text-red-600 dark:text-red-400 mt-2">{editError}</p>}
 
             <div className="flex justify-end gap-2 mt-3">
@@ -687,63 +599,9 @@ const ReviewCard = ({ review, placeId, onDelete, onUpdate, onLike, highlightKeyw
             <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed mb-3 whitespace-pre-wrap">
               {renderHighlightedReviewText()}
             </p>
-            {displayReviewPhotos.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-3">
-                {displayReviewPhotos.map((photo) => (
-                  <div key={photo.id} className="flex flex-col">
-                    <button
-                      type="button"
-                      onClick={() => setPhotoModal(photo)}
-                      className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-lg border-2 border-gray-200 dark:border-zinc-600 overflow-hidden cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 transition-all duration-200 hover:scale-105 hover:border-amber-400 dark:hover:border-amber-500 hover:shadow-lg group"
-                    >
-                      <img
-                        src={photo.image_data}
-                        alt="Foto review"
-                        className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
-                      />
-                      <span className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-200 pointer-events-none" aria-hidden />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
           </>
         )}
 
-          {/* Modal foto review - tampil saat foto diklik */}
-          {photoModal && (
-            <>
-              <div
-                className="fixed inset-0 bg-black/70 z-[100]"
-                aria-hidden="true"
-                onClick={() => setPhotoModal(null)}
-              />
-              <div
-                className="fixed inset-0 z-[101] flex items-center justify-center p-4"
-                role="dialog"
-                aria-modal="true"
-                aria-label="Tampilan foto review"
-              >
-                <div className="relative max-w-4xl max-h-[90vh] w-full flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    type="button"
-                    onClick={() => setPhotoModal(null)}
-                    className="absolute -top-2 -right-2 sm:right-0 sm:top-0 z-10 p-2 rounded-full bg-white dark:bg-zinc-800 shadow-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
-                    aria-label="Tutup"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                  <img
-                    src={photoModal.image_data}
-                    alt="Foto review"
-                    className="max-w-full max-h-[85vh] w-auto h-auto object-contain rounded-lg shadow-2xl"
-                  />
-                </div>
-              </div>
-            </>
-          )}
           {success && (
             <p className="text-sm text-green-600 dark:text-green-400 mb-3">{success}</p>
           )}

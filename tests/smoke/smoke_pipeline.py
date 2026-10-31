@@ -11,7 +11,7 @@ except ModuleNotFoundError:  # dijalankan sebagai modul (python -m tests.smoke..
 # Isolasi tahap baru: ekspansi keyword & rerank LLM dimatikan agar yang diuji
 # adalah gerbang makna + verifikasi sentimen klausa.
 os.environ.setdefault('COFIND_LLM_KEYWORD_EXPANSION', 'false')
-os.environ.setdefault('COFIND_LLM_RERANK', 'false')
+os.environ.setdefault('COFIND_CROSS_ENCODER', 'false')
 os.environ.setdefault('COFIND_MODAL_QUOTE_LLM', 'false')
 
 import app

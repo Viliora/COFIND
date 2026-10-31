@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from typing import Dict, List, Sequence
 
 from logging_config import get_logger
@@ -26,26 +27,33 @@ def score_shops_fts(place_ids: Sequence[str], query_tokens: Sequence[str]) -> Di
 
     if not ensure_coffee_shop_search_columns():
         return {}
-    query = ' & '.join(
-        t.replace("'", "''") for t in query_tokens if str(t or '').strip()
-    )
-    if not query:
+    tokens = [str(t or '').strip() for t in query_tokens if str(t or '').strip()]
+    if not tokens:
         return {}
+    ts_parts = []
+    for tok in tokens:
+        safe = re.sub(r"[^\w]", "", tok, flags=re.UNICODE)
+        if not safe:
+            continue
+        ts_parts.append(safe.replace("'", "''"))
+    if not ts_parts:
+        return {}
+    tsquery = " & ".join(ts_parts)
     ids = [str(p).strip() for p in place_ids if str(p or '').strip()]
     if not ids:
         return {}
     placeholders = ','.join(['%s'] * len(ids))
     sql = f"""
         SELECT place_id,
-               ts_rank_cd(review_tsv, plainto_tsquery('simple', %s)) AS rank
+               ts_rank_cd(review_tsv, to_tsquery('simple', %s)) AS rank
         FROM coffee_shops
         WHERE place_id IN ({placeholders})
-          AND review_tsv @@ plainto_tsquery('simple', %s)
+          AND review_tsv @@ to_tsquery('simple', %s)
     """
     conn = get_connection()
     try:
         cur = conn.cursor()
-        params = [query, *ids, query]
+        params = [tsquery, *ids, tsquery]
         cur.execute(sql, params)
         out: Dict[str, float] = {}
         for row in cur.fetchall():

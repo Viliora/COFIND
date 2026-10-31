@@ -3,30 +3,25 @@ Fase 2 — Hybrid Retrieval untuk rekomendasi Cofind.
 
 Pencarian kandidat: BM25 (sparse) + embedding/ANN (dense) → Reciprocal Rank
 Fusion (RRF), lalu sedikit bobot kualitas toko. Jalur pill menambahkan
-gerbang aktivitas dan metadata gate setelah RRF.
+gerbang aktivitas setelah RRF.
 
 PILL_MAPPING dipakai sebagai TEKS QUERY, bukan gerbang lolos/gugur:
-  - BM25: label pill + review_keywords (nama fasilitas, istilah spesifik)
-  - Dense: kalimat intent dari label pill ("cocok untuk kerja, wifi kencang")
+  - BM25: review_keywords (jangkar leksikal); label UI hanya fallback
+  - Dense: dense_query per pill (gaya bahasa ulasan); fallback definition, lalu label
 Review yang memparafrase preferensi tetap bisa unggul lewat cosine similarity.
-Metadata fasilitas (hanya pill lapis 2 yang user pilih) jadi prior lemah
-(COFIND_METADATA_PRIOR_WEIGHT); kontradiksi ulasan memotong skor
-(COFIND_METADATA_PENALTY_WEIGHT).
-
 Env (RRF aktif):
   COFIND_RRF_K / COFIND_RRF_POOL_SIZE — konstanta RRF dan lebar pool per daftar
-  COFIND_METADATA_GATE             default true
-  COFIND_METADATA_PRIOR_WEIGHT     default 0.08
-  COFIND_METADATA_PENALTY_WEIGHT   default 0.18
   COFIND_RETRIEVAL_TOP_K           default 7
   COFIND_DENSE_MAX_REVIEWS         ulasan per toko untuk max-pool dense fallback (default: 20)
   COFIND_DENSE_USE_ANN             ANN pgvector scoped place_id (default: on if pgvector)
   COFIND_ANN_TOP_K                 review rows fetched by ANN (default: 300)
   COFIND_PROMPT_REVIEW_SCAN        ulasan yang di-scan saat pilih kutipan LLM (default: 60)
-  COFIND_ACTIVITY_DENSE_MIN        ambang cosine cadangan gerbang aktivitas
+  COFIND_ACTIVITY_DENSE_MIN        admisi aktivitas cadangan (cosine dense) bila leksikal miss
                                    (default: 0.55). Toko lolos jika ada kata/frasa
                                    aktivitas ATAU act_dense >= ambang ini.
   COFIND_LLM_MIN_FIT               fit_score minimum agar toko dipilih (default: 5.0)
+  COFIND_REVIEW_ACTIVITY_INDEX     gunakan tabel review_activity_hits (default: true)
+  COFIND_ACTIVITY_LEXICON_PATH     path JSON leksikon (default: data/lexicon/activity_lexicon.json)
 """
 
 from __future__ import annotations
@@ -42,9 +37,19 @@ from bm25_utils import (
     score_shops_bm25,
 )
 from logging_config import get_logger
-from metadata_prior import evaluate_metadata_gate, metadata_gate_enabled
 from semantic_match import score_documents, score_reviews_by_id
 from slang_normalize import normalize_text_with_slang, tokenize_normalized
+
+from activity_lexicon import (
+    acronym_context_tokens,
+    activity_extra_phrases,
+    activity_short_acronyms,
+    activity_stop_tokens_by_pill,
+    activity_whole_words,
+    game_word_re,
+    hidden_gem_typo_re,
+    rejection_phrases,
+)
 
 logger = get_logger('recommend')
 
@@ -54,39 +59,7 @@ _MIN_REVIEW_CHARS = 6
 _MIN_ACTIVITY_QUOTE_CHARS = 8
 _LEXICAL_WEIGHT = 0.3
 _DENSE_WEIGHT = 0.7
-# Token generik yang tidak boleh jadi bukti aktivitas sendirian.
-_GENERIC_ACTIVITY_STOP = frozenset({
-    'cari', 'cocok', 'coffee', 'shop', 'kafe', 'cafe', 'tempat', 'enak',
-})
-_ACTIVITY_STOP_TOKENS_BY_PILL = {
-    'bermain game': _GENERIC_ACTIVITY_STOP | frozenset({
-        'nongkrong', 'main', 'bareng', 'gas', 'push', 'rank', 'bermain', 'mobile',
-        'nge',  # pecahan nge-game; "nge-charge" / "ngecas" bukan bukti nge-game
-    }),
-    'kerja': _GENERIC_ACTIVITY_STOP | frozenset({'nongkrong', 'ngopi'}),
-    'belajar': _GENERIC_ACTIVITY_STOP | frozenset({'nongkrong'}),
-    'meeting_sosialisasi': _GENERIC_ACTIVITY_STOP | frozenset({'nongkrong', 'nongki'}),
-    'keluarga': _GENERIC_ACTIVITY_STOP,
-    'instagrammable': _GENERIC_ACTIVITY_STOP,
-}
-# Klausa bernada menolak tidak boleh jadi bukti lolos gerbang aktivitas.
-# Penolakan "keluarga kurang disarankan" tidak boleh menenggelamkan "main game".
-_REJECTION_PHRASES = (
-    'tidak cocok',
-    'kurang cocok',
-    'tidak disarankan',
-    'kurang disarankan',
-    'bukan untuk',
-    'ga cocok',
-    'gak cocok',
-    'nggak cocok',
-    'enggak cocok',
-    'tidak direkomendasikan',
-    'kurang direkomendasikan',
-    'tidak recommended',
-    'kurang recommended',
-    'bukan tempat yang cocok',
-)
+# Leksikon aktivitas: data/lexicon/activity_lexicon.json (activity_lexicon.py).
 _SENTENCE_SPLIT_RE = re.compile(r'(?<=[.!?])\s+|[\n;]+')
 _CLAUSE_SPLIT_RE = re.compile(
     r'(?<=[.!?])\s+|'
@@ -95,75 +68,17 @@ _CLAUSE_SPLIT_RE = re.compile(
     re.IGNORECASE,
 )
 
-# Frasa/istilah khas yang tidak boleh dipecah jadi token generik.
-_ACTIVITY_EXTRA_PHRASES = {
-    'bermain game': (
-        'nge game', 'ngegame', 'main game', 'bermain game', 'main bareng game',
-        'mobile legends', 'mobile legend', 'mlbb', 'valorant', 'pubg',
-        'free fire', 'honor of kings', 'push rank', 'nge rank', 'ngerank',
-        'mabar', 'ngemabar', 'gas game', 'turnamen', 'esport', 'e sport',
-        'playstation', 'ps5', 'ps4', 'nintendo', 'steam deck',
-        'main ml', 'main ff', 'main pubg', 'main valorant', 'main hok',
-        'gamer', 'gaming', 'gamers',
-    ),
-    'kerja': (
-        'work from cafe', 'wfc', 'kerja remote', 'ngantor', 'laptopan',
-        'nugas kerja', 'kerjaan kantor', 'work from anywhere', 'meeting online',
-        'kerja dari kafe', 'remote working',
-    ),
-    'belajar': (
-        'belajar', 'nugas', 'ngerjain tugas', 'skripsi', 'baca buku',
-        'fokus belajar', 'ruang belajar', 'tugas kuliah', 'mengerjakan tugas',
-    ),
-    'meeting_sosialisasi': (
-        'meeting', 'rapat', 'buat rapat', 'untuk meeting', 'pertemuan bisnis',
-        'kumpul tim', 'kumpul kerja', 'meeting kantor',
-    ),
-    'keluarga': (
-        'ramah keluarga', 'ramah anak', 'bawa anak', 'family friendly',
-        'kumpul keluarga', 'cocok keluarga', 'bawa anak kecil',
-    ),
-    'instagrammable': (
-        'instagrammable', 'spot foto', 'photo spot', 'estetik', 'fotogenik',
-        'banyak spot foto',
-    ),
-}
-_ACTIVITY_WHOLE_WORDS = {
-    'bermain game': frozenset({
-        'game', 'games', 'gaming', 'gamer', 'gamers', 'ngegame', 'ngemabar',
-        'mabar', 'mlbb', 'valorant', 'pubg', 'esport', 'esports',
-        'playstation', 'turnamen', 'nintendo',
-    }),
-    'kerja': frozenset({
-        'wfc', 'wfh', 'laptopan', 'ngantor', 'deadline', 'zoom', 'produktif',
-    }),
-    'belajar': frozenset({
-        'belajar', 'nugas', 'skripsi', 'kuliah', 'ujian', 'tugas',
-    }),
-    'meeting_sosialisasi': frozenset({
-        'meeting', 'rapat', 'diskusi', 'arisan', 'networking',
-    }),
-    'keluarga': frozenset({
-        'keluarga', 'family', 'playground',
-    }),
-    'instagrammable': frozenset({
-        'instagrammable', 'instagramable', 'fotogenik', 'estetik',
-    }),
-}
-# Akronim pendek hanya dihitung bila ada konteks game di sekitarnya.
-_ACTIVITY_SHORT_ACRONYMS = {
-    'bermain game': frozenset({'ml', 'ff', 'hok', 'lol'}),
-}
-_ACRONYM_CONTEXT_TOKENS = frozenset({
-    'main', 'mabar', 'game', 'gaming', 'gamer', 'legends', 'mobile', 'rank',
-    'push', 'bareng', 'temen', 'teman', 'squad', 'slot', 'rank', 'ngerank',
-})
-_GAME_WORD_RE = re.compile(
-    r'^(?:nge)?game(?:nya|an)?$|^gaming$|^gamers?$',
-    re.IGNORECASE,
-)
-# "hidden game" = salah ketik "hidden gem", bukan aktivitas bermain game.
-_HIDDEN_GEM_TYPO_RE = re.compile(r'\bhidden\s+games?\b')
+
+def _lexicon_extra_phrases(pill: str) -> Sequence[str]:
+    return activity_extra_phrases().get(pill, ())
+
+
+def _lexicon_whole_words(pill: str) -> frozenset:
+    return activity_whole_words().get(pill, frozenset())
+
+
+def _lexicon_stop_tokens(pill: str) -> frozenset:
+    return activity_stop_tokens_by_pill().get(pill, frozenset())
 
 
 def _env_int(name: str, default: int, *, min_value: int, max_value: int) -> int:
@@ -251,23 +166,6 @@ def minmax_normalize(raw_by_place: Dict[str, float]) -> Dict[str, float]:
     return normalize_bm25_scores(raw_by_place)
 
 
-def _gated_minmax(raw_by_place: Dict[str, float]) -> Dict[str, float]:
-    """Minmax di antara toko yang lolos gerbang, tanpa menolkan sinyal yang kalah tipis."""
-    norm = minmax_normalize(raw_by_place)
-    out: Dict[str, float] = {}
-    for pid, raw in (raw_by_place or {}).items():
-        try:
-            value = float(raw or 0.0)
-        except (TypeError, ValueError):
-            value = 0.0
-        mapped = float(norm.get(pid) or 0.0)
-        if value > 0:
-            out[pid] = 0.55 + 0.45 * mapped
-        else:
-            out[pid] = mapped
-    return out
-
-
 def review_row_id(review: object):
     if isinstance(review, dict):
         rid = review.get("id")
@@ -292,18 +190,12 @@ def iter_review_clauses(text: str) -> List[str]:
 
 def _sentence_has_rejection_phrase(sentence: str) -> bool:
     raw = str(sentence or '').lower()
-    if any(phrase in raw for phrase in _REJECTION_PHRASES):
+    if any(phrase in raw for phrase in rejection_phrases()):
         return True
     norm = normalize_text_with_slang(sentence)
     if not norm:
         return False
-    return any(normalize_text_with_slang(phrase) in norm for phrase in _REJECTION_PHRASES)
-
-
-def drop_rejection_sentences(text: str) -> str:
-    """Buang klausa yang memuat frasa penolakan; klausa pendukung tetap dipakai."""
-    kept = [part for part in iter_review_clauses(text) if not _sentence_has_rejection_phrase(part)]
-    return ' '.join(kept)
+    return any(normalize_text_with_slang(phrase) in norm for phrase in rejection_phrases())
 
 
 def lexical_review_score(text: str, query_tokens: Sequence[str]) -> float:
@@ -311,10 +203,9 @@ def lexical_review_score(text: str, query_tokens: Sequence[str]) -> float:
     q = [t for t in (query_tokens or []) if t]
     if not q:
         return 0.0
-    kept = drop_rejection_sentences(text)
-    if not kept:
+    if not str(text or '').strip():
         return 0.0
-    tokens = set(tokenize_for_match(kept))
+    tokens = set(tokenize_for_match(text))
     if not tokens:
         return 0.0
     unique_q = list(dict.fromkeys(q))
@@ -344,7 +235,7 @@ def lexical_review_score(text: str, query_tokens: Sequence[str]) -> float:
 def _normalize_activity_text(text: str) -> str:
     """Lowercase + hyphen jadi spasi, tanpa kamus slang (mabar tidak boleh jadi 'main bareng')."""
     raw = str(text or '').lower().replace('-', ' ').replace('_', ' ')
-    raw = _HIDDEN_GEM_TYPO_RE.sub('hidden gem', raw)
+    raw = hidden_gem_typo_re().sub('hidden gem', raw)
     return re.sub(r'\s+', ' ', raw).strip()
 
 
@@ -381,16 +272,21 @@ def compile_activity_matcher(
     stops = set()
     acronyms = set()
     words: set = set()
+    short_acronyms_map = activity_short_acronyms()
     for pill in pills:
-        stops |= _ACTIVITY_STOP_TOKENS_BY_PILL.get(pill, frozenset())
-        acronyms |= _ACTIVITY_SHORT_ACRONYMS.get(pill, frozenset())
-        words.update(_ACTIVITY_WHOLE_WORDS.get(pill, ()))
+        stops |= _lexicon_stop_tokens(pill)
+        acronyms |= short_acronyms_map.get(pill, frozenset())
+        words.update(_lexicon_whole_words(pill))
 
     for pill in pills:
-        _add_phrase(labels.get(pill, pill))
-        for kw in (mapping.get(pill) or {}).get('review_keywords') or []:
+        keywords = (mapping.get(pill) or {}).get('review_keywords') or []
+        extras = _lexicon_extra_phrases(pill)
+        # Label UI ("Feeds Hunter") bukan frasa ulasan; dipakai hanya bila tak ada frasa lain.
+        if not keywords and not extras:
+            _add_phrase(labels.get(pill, pill))
+        for kw in keywords:
             _add_phrase(str(kw))
-        for extra in _ACTIVITY_EXTRA_PHRASES.get(pill, ()):
+        for extra in extras:
             _add_phrase(extra)
 
     bm25_tokens: List[str] = []
@@ -444,18 +340,19 @@ def activity_text_score(text: str, matcher: Optional[dict]) -> float:
     allow_game_word = 'bermain game' in set(matcher.get('pills') or ())
     for tok in tokens:
         if tok in (matcher.get('words') or ()) or (
-            allow_game_word and _GAME_WORD_RE.match(tok)
+            allow_game_word and game_word_re().match(tok)
         ):
             best = max(best, 1.0)
             return 1.0
 
     acronyms = matcher.get('acronyms') or ()
     if acronyms:
+        ctx = acronym_context_tokens()
         for idx, tok in enumerate(tokens):
             if tok not in acronyms:
                 continue
             window = set(tokens[max(0, idx - 3): idx + 4])
-            if window & _ACRONYM_CONTEXT_TOKENS or window & set(matcher.get('words') or ()):
+            if window & ctx or window & set(matcher.get('words') or ()):
                 best = max(best, 0.6)
     return best
 
@@ -516,8 +413,6 @@ def _usable_reviews(reviews: Sequence[object], *, min_chars: int = _MIN_REVIEW_C
     for review in reviews or []:
         text = review_text(review)
         if len(text) < min_chars:
-            continue
-        if len(drop_rejection_sentences(text)) < min_chars:
             continue
         key = re.sub(r'\s+', ' ', text).strip().lower()
         if not key or key in seen:
@@ -600,7 +495,7 @@ def rank_reviews_for_query(
         if id(row) not in seen_ids:
             pool.append(row)
             seen_ids.add(id(row))
-    texts = [drop_rejection_sentences(review_text(row)) for row in pool]
+    texts = [review_text(row) for row in pool]
     review_items = [(review_row_id(row), review_text(row)) for row in pool]
     full_cosines, telemetry = score_reviews_by_id(query_text, review_items)
     if telemetry.get('skipped'):
@@ -651,15 +546,20 @@ def build_sparse_query_tokens(
     pill_labels: Dict[str, str],
     pill_mapping: Dict[str, dict],
 ) -> List[str]:
-    """Token BM25: id pill + label + review_keywords dari mapping (query, bukan filter)."""
+    """
+    Token BM25 dari review_keywords (query, bukan filter).
 
-    def keywords(pill: str) -> List[str]:
-        mapping = pill_mapping.get(pill) or {}
-        out = [pill_labels.get(pill, pill)]
-        out.extend(mapping.get('review_keywords') or [])
-        return out
-
-    return build_query_tokens(pills, keywords, tokenize_fn=tokenize_for_match)
+    Key pill dan label UI tidak ikut: "Ada musholla" / "Menu Lengkap (Makanan & Minuman)"
+    menghasilkan token umum (ada, menu) yang cocok ke hampir semua ulasan.
+    Label hanya dipakai bila pill belum punya review_keywords.
+    """
+    phrases: List[str] = []
+    for pill in pills or []:
+        keywords = list((pill_mapping.get(pill) or {}).get('review_keywords') or [])
+        phrases.extend(keywords or [pill_labels.get(pill, pill)])
+    return build_query_tokens(
+        [], lambda _pill: [], search_keywords=phrases, tokenize_fn=tokenize_for_match,
+    )
 
 
 _DENSE_DEFINITION_CHARS = 180
@@ -682,22 +582,27 @@ def build_dense_query_text(
     pill_labels: Dict[str, str],
     pill_mapping: Optional[Dict[str, dict]] = None,
 ) -> str:
-    """Kalimat intent + potongan definisi aktivitas (tanpa negative_scope)."""
+    """
+    Teks dense per pill: dense_query, fallback potongan definition, lalu label.
+
+    Tanpa awalan bersama ("Cari coffee shop yang cocok untuk ..."): awalan itu
+    mendominasi vektor sehingga query antar-atribut nyaris identik (cosine ~0.91).
+    negative_scope tidak pernah masuk dense.
+    """
     mapping = pill_mapping or {}
     chunks = []
     for pill in pills or []:
         if not pill:
             continue
-        label = str(pill_labels.get(pill, pill) or pill).strip()
         spec = mapping.get(pill) or {}
-        definition = _dense_definition_snippet(spec.get('definition') or '')
-        if definition:
-            chunks.append(f'{label}: {definition}')
-        elif label:
-            chunks.append(label)
-    if not chunks:
-        return ''
-    return 'Cari coffee shop yang cocok untuk ' + ' '.join(chunks)
+        text = str(spec.get('dense_query') or '').strip()
+        if not text:
+            text = _dense_definition_snippet(spec.get('definition') or '')
+        if not text:
+            text = str(pill_labels.get(pill, pill) or pill).strip()
+        if text:
+            chunks.append(text)
+    return '. '.join(chunks)
 
 
 def _score_shops_dense_maxpool(
@@ -737,7 +642,7 @@ def _score_shops_dense_maxpool(
         kept_docs = []
         kept_ids: List[Optional[int]] = []
         for row in selected:
-            kept = drop_rejection_sentences(review_text(row))
+            kept = review_text(row)
             if len(kept) < _MIN_REVIEW_CHARS:
                 continue
             kept_docs.append(kept)
@@ -855,9 +760,10 @@ def activity_signal_tokens(
     """Buang token generik agar gerbang/kutipan aktivitas tidak tertipu 'nongkrong'/'nge'."""
     stops = set()
     acronyms = set()
+    short_acronyms_map = activity_short_acronyms()
     for pill in activity_pills or []:
-        stops |= _ACTIVITY_STOP_TOKENS_BY_PILL.get(pill, frozenset())
-        acronyms |= _ACTIVITY_SHORT_ACRONYMS.get(pill, frozenset())
+        stops |= _lexicon_stop_tokens(pill)
+        acronyms |= short_acronyms_map.get(pill, frozenset())
     out = []
     seen = set()
     for tok in tokens or []:
@@ -870,25 +776,23 @@ def activity_signal_tokens(
     return out
 
 
-def activity_phrases(
-    activity_pills: Sequence[str],
-    *,
-    pill_labels: Dict[str, str],
-    pill_mapping: Dict[str, dict],
-) -> List[str]:
-    """Frasa gerbang aktivitas; delegasi ke compile_activity_matcher."""
-    matcher = compile_activity_matcher(
-        activity_pills, pill_labels=pill_labels, pill_mapping=pill_mapping,
-    )
-    return list(matcher.get('phrases') or [])
-
-
 def shop_has_activity_signal(
     reviews: Sequence[object],
     activity_tokens: Sequence[str],
     phrases: Optional[Sequence[str]] = None,
     activity_matcher: Optional[dict] = None,
+    *,
+    place_id: Optional[str] = None,
 ) -> bool:
+    if place_id and activity_matcher:
+        try:
+            from review_activity_index import place_has_activity_pills
+
+            pills = list(activity_matcher.get("pills") or [])
+            if pills and place_has_activity_pills(str(place_id), pills):
+                return True
+        except Exception:
+            pass
     matcher = activity_matcher
     if matcher:
         for row in reviews or []:
@@ -902,12 +806,13 @@ def shop_has_activity_signal(
         return False
     norm_needles = [normalize_text_with_slang(p) for p in needles]
     for row in reviews or []:
-        kept = drop_rejection_sentences(review_text(row)).lower()
-        if not kept:
+        raw = review_text(row)
+        if not raw:
             continue
-        if any(p in kept for p in needles):
+        lowered = raw.lower()
+        if any(p in lowered for p in needles):
             return True
-        norm = normalize_text_with_slang(kept)
+        norm = normalize_text_with_slang(raw)
         if any(np and np in norm for np in norm_needles):
             return True
     return False
@@ -920,18 +825,22 @@ def shop_passes_activity_gate(
     activity_matcher: Optional[dict] = None,
     *,
     dense_activity_score: float = 0.0,
+    place_id: Optional[str] = None,
 ) -> tuple:
     """
     Gerbang admisi aktivitas: hanya bukti leksikal/frasa (shop_has_activity_signal).
 
     Return (passed, pass_mode):
-      - passed True hanya bila ada sinyal leksikal.
-      - pass_mode 'dense_only' = tidak lolos admisi, tetapi dense >= COFIND_ACTIVITY_DENSE_MIN
-        (hanya untuk telemetri activity_pass_dense_only, bukan admisi).
-      - pass_mode '' = ditolak penuh.
+      - 'lexical' = sinyal leksikal/indeks ulasan.
+      - 'dense' = cosine dense >= COFIND_ACTIVITY_DENSE_MIN (cadangan admisi).
+      - '' = ditolak.
     """
     if shop_has_activity_signal(
-        reviews, activity_tokens, phrases, activity_matcher=activity_matcher,
+        reviews,
+        activity_tokens,
+        phrases,
+        activity_matcher=activity_matcher,
+        place_id=place_id,
     ):
         return True, 'lexical'
     try:
@@ -939,7 +848,7 @@ def shop_passes_activity_gate(
     except (TypeError, ValueError):
         dense_score = 0.0
     if dense_score >= activity_dense_min():
-        return False, 'dense_only'
+        return True, 'dense'
     return False, ''
 
 
@@ -1155,7 +1064,11 @@ def _hybrid_retrieve_rrf_core(
         for pid, profile in profiles_by_pid.items():
             reviews = profile.get('reviews') or []
             if not shop_has_activity_signal(
-                reviews, act_tokens_gate, act_phrases, activity_matcher=act_matcher,
+                reviews,
+                act_tokens_gate,
+                act_phrases,
+                activity_matcher=act_matcher,
+                place_id=pid,
             ):
                 continue
             lex_scores[pid] = shop_activity_lexical_max(
@@ -1169,21 +1082,8 @@ def _hybrid_retrieve_rrf_core(
     rrf_scores = reciprocal_rank_fusion(rank_lists)
     telemetry['rrf_candidates'] = len(rrf_scores)
 
-    empty_gate = {
-        'enabled': False,
-        'claimed_pills': [],
-        'claimed_fields': [],
-        'matched_attribute_pills': [],
-        'matched_attribute_labels': [],
-        'prior': 0.0,
-        'contradicted_pills': [],
-        'contradiction': 0.0,
-        'quotes': [],
-    }
-
     pill_list = list(pills or [])
     attr_list = list(attribute_pills or [])
-    use_metadata = metadata_gate_enabled() and pill_list and pill_labels and pill_mapping
 
     # RRF mentah ~1/(k+rank) ≈ 0.016–0.033; tanpa normalisasi, quality (0..1) di
     # blend 0.9/0.1 justru mendominasi dan relevansi intent hampir tidak berpengaruh.
@@ -1208,8 +1108,12 @@ def _hybrid_retrieve_rrf_core(
                 act_phrases,
                 act_matcher,
                 dense_activity_score=float(dense_raw.get(pid) or 0.0),
+                place_id=pid,
             )
-            if pass_mode == 'dense_only':
+            if pass_mode == 'dense':
+                telemetry['activity_pass_dense'] = int(
+                    telemetry.get('activity_pass_dense') or 0,
+                ) + 1
                 telemetry['activity_pass_dense_only'] = int(
                     telemetry.get('activity_pass_dense_only') or 0,
                 ) + 1
@@ -1221,23 +1125,11 @@ def _hybrid_retrieve_rrf_core(
                     telemetry.get('activity_pass_lexical') or 0,
                 ) + 1
 
-        gate = dict(empty_gate)
-        if use_metadata:
-            gate = evaluate_metadata_gate(
-                profile,
-                pill_list,
-                pill_mapping=pill_mapping,
-                pill_labels=pill_labels,
-                attribute_pills=attr_list,
-            )
-        fusion = {'prior_boost': 0.0, 'penalty': 0.0}
-
         scored.append({
             'place_id': pid,
             'name': profile.get('name') or '',
             'score': round(total, 6),
             'profile': profile,
-            'metadata_gate': gate,
             'score_detail': {
                 'bm25_raw': round(float(bm25_raw.get(pid) or 0.0), 4),
                 'bm25_score': round(float(bm25_raw.get(pid) or 0.0), 4),
@@ -1250,14 +1142,6 @@ def _hybrid_retrieve_rrf_core(
                 'quality_score': None if quality_s is None else round(quality_s, 4),
                 'retrieval_score': round(total, 4),
                 'total_score': round(total, 4),
-                'metadata_prior': gate.get('prior'),
-                'metadata_prior_boost': fusion.get('prior_boost', 0.0),
-                'metadata_contradiction': gate.get('contradiction'),
-                'metadata_penalty': fusion.get('penalty', 0.0),
-                'metadata_claimed_pills': list(gate.get('claimed_pills') or []),
-                'metadata_matched_attribute_pills': list(gate.get('matched_attribute_pills') or []),
-                'metadata_matched_attribute_labels': list(gate.get('matched_attribute_labels') or []),
-                'metadata_contradicted_pills': list(gate.get('contradicted_pills') or []),
                 'covered_pills': [],
                 'uncovered_pills': list(pill_list),
                 'activity_pills': list(activity_pills or []),
@@ -1323,8 +1207,6 @@ def retrieve_top_k(
         'activity_pass_dense_only': 0,
         'activity_rejected': 0,
         'activity_dense_min': activity_dense_min(),
-        'metadata_prior_applied': 0,
-        'metadata_penalized': 0,
     }
 
     query_tokens = build_sparse_query_tokens(
@@ -1492,17 +1374,6 @@ def retrieve_top_k_by_negative_sentiment(
             'name': profile.get('name') or '',
             'score': round(total, 6),
             'profile': profile,
-            'metadata_gate': {
-                'enabled': False,
-                'claimed_pills': [],
-                'claimed_fields': [],
-                'matched_attribute_pills': [],
-                'matched_attribute_labels': [],
-                'prior': 0.0,
-                'contradicted_pills': [],
-                'contradiction': 0.0,
-                'quotes': [],
-            },
             'score_detail': {
                 'mode': 'negative_sentiment',
                 'avg_user_rating': avg,

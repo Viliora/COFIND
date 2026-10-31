@@ -13,7 +13,7 @@ from sentence_transformers import SentenceTransformer
 
 import semantic_match
 
-model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')
+model = SentenceTransformer(semantic_match.model_name())
 sentences = [
     'The weather is lovely today.',
     "It's so sunny outside!",

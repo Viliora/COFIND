@@ -1,6 +1,8 @@
 """Kutipan, modal, dan metadata gate untuk bukti rekomendasi."""
 from __future__ import annotations
 
+from activity_lexicon import rejection_phrases
+
 from recommendation import helpers as _h
 from recommendation.helpers import *  # noqa: F403
 from recommendation.helpers import _split_preference_pills
@@ -82,63 +84,6 @@ def _build_facilities_evidence_summary(display_tab, intent_aligned):
     if intent_aligned:
         text += " Ini selaras dengan preferensi yang Anda masukkan."
     return text
-def _build_metadata_support_items(evidence, *, facilities_tab_intent=None, facilities_intent_aligned=None):
-    """Info metadata yang cocok intent user; hanya untuk tampilan, bukan skoring."""
-    ev = evidence or {}
-    out = []
-    seen = set()
-
-    def push(kind, title, items, note):
-        clean_items = [str(x).strip() for x in (items or []) if str(x or '').strip()]
-        if not clean_items:
-            return
-        key = (kind, tuple(clean_items[:6]))
-        if key in seen:
-            return
-        seen.add(key)
-        out.append({
-            'type': kind,
-            'title': title,
-            'items': clean_items[:6],
-            'note': note,
-            'source': 'metadata',
-        })
-
-    gate = ev.get('metadata_gate') or {}
-    matched_labels = [
-        str(x).strip()
-        for x in (gate.get('matched_attribute_labels') or ev.get('matched_facility_labels') or [])
-        if str(x or '').strip()
-    ]
-    if matched_labels:
-        push(
-            'profile_facility',
-            'Profil fasilitas',
-            matched_labels,
-            'Klaim profil tempat yang cocok dengan fasilitas tambahan pilihan Anda.',
-        )
-
-    tab = facilities_tab_intent if facilities_tab_intent is not None else ev.get('facilities_tab_intent')
-    aligned = (
-        bool(facilities_intent_aligned)
-        if facilities_intent_aligned is not None
-        else bool(ev.get('facilities_intent_aligned'))
-    )
-    if aligned and isinstance(tab, dict):
-        for key, title in (
-            ('popular_for', 'Populer untuk'),
-            ('highlights', 'Keunggulan'),
-            ('atmosphere', 'Suasana'),
-        ):
-            values = tab.get(key) or []
-            push(
-                f'facility_tab_{key}',
-                title,
-                values,
-                'Metadata fasilitas yang cocok dengan intent pencarian Anda.',
-            )
-
-    return out[:4]
 def _quote_ui_extras(src):
     """Field opsional yang diwariskan ke JSON kutipan untuk UI."""
     if not isinstance(src, dict):
@@ -175,23 +120,7 @@ def _quote_has_unsuitability_phrase(quote_text):
     normalized = _normalize_keyword_phrase(quote_text)
     if not normalized:
         return False
-    return any(phrase in normalized for phrase in _UNSUITABILITY_PHRASES)
-def _quote_mentions_activity(quote_text, activity_pills, activity_tokens):
-    text = str(quote_text or '')
-    if not text.strip():
-        return False
-    if activity_tokens and text_matches_tokens(text, activity_tokens):
-        return True
-    for pill in activity_pills or []:
-        for keyword in _expand_pill_to_keywords(pill):
-            if _matches_keyword_phrase(text, keyword):
-                return True
-    return False
-def _quote_rejects_activity(quote_text, activity_pills, activity_tokens, activity_matcher=None):
-    """Kontradiksi: klausa yang sama menyebut aktivitas dan menolaknya."""
-    return text_rejects_requested_activity(
-        quote_text, activity_matcher, activity_tokens,
-    )
+    return any(phrase in normalized for phrase in rejection_phrases())
 def _quote_llm_label(quote_text):
     """Label sentimen LLM: supporting | caveat | irrelevant, atau None bila belum dinilai."""
     verdict = _quote_llm_verdict(quote_text)
@@ -217,93 +146,24 @@ def _quote_destination(quote_text, default):
     return label
 def _quote_marker_key(quote_text):
     return clause_quote_key(str(quote_text or '').strip())
-def _attach_metadata_gate_to_evidence(
-    evidence,
-    score_detail=None,
-    metadata_gate=None,
-    reviews=None,
-):
-    """Salin prior/penalti metadata ke evidence + caveat jika ulasan menentang klaim."""
-    ev = dict(evidence or {})
-    gate = metadata_gate or (score_detail or {}).get('metadata_gate')
-    if not isinstance(gate, dict) and isinstance(score_detail, dict):
-        gate = {
-            'claimed_pills': score_detail.get('metadata_claimed_pills') or [],
-            'contradicted_pills': score_detail.get('metadata_contradicted_pills') or [],
-            'matched_attribute_pills': score_detail.get('metadata_matched_attribute_pills') or [],
-            'matched_attribute_labels': score_detail.get('metadata_matched_attribute_labels') or [],
-            'prior': score_detail.get('metadata_prior') or 0.0,
-            'contradiction': score_detail.get('metadata_contradiction') or 0.0,
-            'quotes': [],
-        }
-    gate = gate or {}
-    quotes = list(gate.get('quotes') or ev.get('metadata_contradiction_quotes') or [])
-    claimed = list(gate.get('claimed_pills') or [])
-    contradicted = list(gate.get('contradicted_pills') or [])
-    matched_pills, matched_labels = _matched_facility_from_gate(
-        gate,
-        score_detail,
-        reviews=reviews,
-    )
-    ev['metadata_gate'] = {
-        'claimed_pills': claimed,
-        'contradicted_pills': contradicted,
-        'matched_attribute_pills': matched_pills,
-        'matched_attribute_labels': matched_labels,
-        'prior': gate.get('prior') or 0.0,
-        'contradiction': gate.get('contradiction') or 0.0,
-        'prior_boost': (score_detail or {}).get('metadata_prior_boost'),
-        'penalty': (score_detail or {}).get('metadata_penalty'),
-    }
-    ev['matched_facility_pills'] = matched_pills
-    ev['matched_facility_labels'] = matched_labels
-    ev['metadata_contradiction_quotes'] = quotes
-    ev['metadata_support'] = _build_metadata_support_items(ev)
-    if contradicted:
-        labels = [PILL_LABELS.get(p, p) for p in contradicted]
-        ev['facilities_evidence_summary'] = (
-            'Profil tempat menandai '
-            + _join_indonesian_topics([str(label).lower() for label in labels])
-            + ', tetapi ulasan pengunjung menentang klaim itu.'
-        )
-    elif matched_labels:
-        note = (
-            'Profil tempat menandai '
-            + _join_indonesian_topics([str(label).lower() for label in matched_labels])
-            + ' (klaim pendukung, bukan bukti utama).'
-        )
-        if not ev.get('facilities_evidence_summary'):
-            ev['facilities_evidence_summary'] = note
-    if quotes:
-        ev['modal_caveat_quotes'] = _merge_caveat_quote_rows(
-            quotes,
-            ev.get('modal_caveat_quotes'),
-            limit=2,
-        )
-    return ev
 def _quote_is_caveat(quote_text, preference_keywords):
     """
     True bila kutipan tidak layak dipakai sebagai bukti kecocokan.
 
     Urutan:
       1. frasa ekstrem ("kurang/tidak disarankan") — selalu caveat
-      2. verdict LLM per kutipan
-      3. heuristik jendela token (fallback)
+      2. verdict ABSA per kutipan (supporting / caveat / irrelevant)
     """
+    _ = preference_keywords
     text = str(quote_text or '')
     if len(text.strip()) < _MIN_QUOTE_CHARS:
         return False
     if _quote_has_unsuitability_phrase(text):
         return True
-    llm_label = _quote_llm_label(text)
-    if llm_label is not None:
-        return llm_label in ('caveat', 'irrelevant')
-    normalized = _normalize_keyword_phrase(text)
-    if normalized and any(phrase in normalized for phrase in _UNSUITABILITY_PHRASES):
-        return True
-    if preference_keywords:
-        return _review_has_weakness_near_preference_keywords(text, preference_keywords)
-    return _review_has_weakness_signal(text)
+    absa_label = _quote_llm_label(text)
+    if absa_label is not None:
+        return absa_label in ('caveat', 'irrelevant')
+    return False
 def _apply_llm_verdicts_to_quote_groups(supporting, caveats):
     """
     Re-bucket kutipan rerank/modal menurut verdict LLM.
@@ -656,14 +516,6 @@ def _build_modal_quote_summary(shop_name, quotes, intent_phrase, evidence=None, 
         facility_lines.append('  - (sinyal fasilitas di atas selaras dengan preferensi user)')
     if not facility_lines:
         facility_lines = ['  - (tidak ada sinyal fasilitas tab)']
-    gate = ev.get('metadata_gate') or {}
-    matched_labels = [
-        str(x) for x in (gate.get('matched_attribute_labels') or []) if x
-    ]
-    if matched_labels:
-        facility_lines.append(
-            '  - Profil fasilitas resmi selaras pill user: ' + ', '.join(matched_labels)
-        )
     hours = str(ev.get('opening_hours_display') or '').strip()
     if hours:
         facility_lines.append(f'  - Jam operasional toko (database): {hours}')

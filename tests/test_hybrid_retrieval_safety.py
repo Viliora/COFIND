@@ -30,7 +30,6 @@ from hybrid_retrieval import (  # noqa: E402
     shop_has_activity_signal,
 )
 
-GOLDEN_PATH = Path(__file__).resolve().parent / "golden_queries.json"
 
 MINI_PILL_LABELS = {
     "kerja": "Kerja/WFC",
@@ -242,7 +241,7 @@ class TestHybridRetrieveRrfCoreMocked(unittest.TestCase):
         mock_bm25_index.return_value = (["shop-a", "shop-b"], None, None)
         mock_bm25_score.return_value = {"shop-a": 1.0, "shop-b": 3.0}
         mock_dense.return_value = (
-            {"shop-a": 0.5, "shop-b": 0.99},
+            {"shop-a": 0.5, "shop-b": 0.2},
             {"pool": "mock"},
         )
         profiles = [
@@ -262,7 +261,7 @@ class TestHybridRetrieveRrfCoreMocked(unittest.TestCase):
     @patch("hybrid_retrieval.score_shops_dense")
     @patch("hybrid_retrieval.score_shops_bm25")
     @patch("hybrid_retrieval.build_bm25_index")
-    def test_activity_pass_dense_only_telemetry_without_admission(
+    def test_activity_pass_dense_admits_when_cosine_high(
         self, mock_bm25_index, mock_bm25_score, mock_dense
     ):
         mock_bm25_index.return_value = (["shop-b"], None, None)
@@ -274,8 +273,9 @@ class TestHybridRetrieveRrfCoreMocked(unittest.TestCase):
             apply_activity_gate=True,
             activity_pills=["kerja"],
         )
-        self.assertEqual(result["candidates"], [])
-        self.assertGreaterEqual(int(telemetry.get("activity_pass_dense_only") or 0), 1)
+        ids = {c["place_id"] for c in result["candidates"]}
+        self.assertIn("shop-b", ids)
+        self.assertGreaterEqual(int(telemetry.get("activity_pass_dense") or 0), 1)
         self.assertEqual(int(telemetry.get("activity_pass_lexical") or 0), 0)
 
     @patch("hybrid_retrieval.score_shops_dense")
@@ -408,7 +408,7 @@ class TestRetrieveTopKEntrypointsMocked(unittest.TestCase):
     @patch("hybrid_retrieval.score_shops_dense")
     @patch("hybrid_retrieval.score_shops_bm25")
     @patch("hybrid_retrieval.build_bm25_index")
-    def test_retrieve_top_k_by_text_skips_metadata_gate(
+    def test_retrieve_top_k_by_text_has_no_metadata_gate(
         self, mock_bm25_index, mock_bm25_score, mock_dense
     ):
         mock_bm25_index.return_value = (["shop-a"], None, None)
@@ -421,22 +421,7 @@ class TestRetrieveTopKEntrypointsMocked(unittest.TestCase):
             dense_query_text="kopi enak",
             top_k=3,
         )
-        gate = result["candidates"][0].get("metadata_gate") or {}
-        self.assertFalse(gate.get("enabled"))
-
-
-class TestGoldenQueriesSchema(unittest.TestCase):
-    def test_golden_queries_file_valid(self):
-        with GOLDEN_PATH.open(encoding="utf-8") as fh:
-            data = json.load(fh)
-        queries = data.get("queries") or []
-        self.assertGreaterEqual(len(queries), 15)
-        ids = [q.get("id") for q in queries]
-        self.assertEqual(len(ids), len(set(ids)))
-        for q in queries:
-            self.assertIn(q.get("route"), ("pill", "free_text"))
-            self.assertIn("input", q)
-            self.assertIn("expect", q)
+        self.assertNotIn("metadata_gate", result["candidates"][0])
 
 
 if __name__ == "__main__":

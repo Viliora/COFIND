@@ -1,0 +1,5 @@
+{
+  "schema_version": 1,
+  "description": "Query evaluasi retrieval/rekomendasi dari calon pengguna (wawancara, think-aloud, log beta). Isi manual; jangan kurasi tim dev di folder tests/.",
+  "queries": []
+}

@@ -1,0 +1,200 @@
+{
+  "reviews": 125,
+  "pills": {
+    "belajar": {
+      "keywords": 16,
+      "tokens": 17,
+      "broad_tokens": [
+        "nugas",
+        "teman",
+        "anak"
+      ],
+      "review_touch": 0.368,
+      "broad_only_touch": 0.2
+    },
+    "kerja": {
+      "keywords": 24,
+      "tokens": 27,
+      "broad_tokens": [
+        "kerja",
+        "work",
+        "from",
+        "cafe"
+      ],
+      "review_touch": 0.36,
+      "broad_only_touch": 0.232
+    },
+    "bermain game": {
+      "keywords": 28,
+      "tokens": 30,
+      "broad_tokens": [],
+      "review_touch": 0.104,
+      "broad_only_touch": 0.0
+    },
+    "meeting_sosialisasi": {
+      "keywords": 16,
+      "tokens": 16,
+      "broad_tokens": [
+        "untuk",
+        "buat",
+        "kerja"
+      ],
+      "review_touch": 0.704,
+      "broad_only_touch": 0.632
+    },
+    "keluarga": {
+      "keywords": 15,
+      "tokens": 19,
+      "broad_tokens": [
+        "anak",
+        "ramah",
+        "cocok",
+        "area",
+        "menu"
+      ],
+      "review_touch": 0.616,
+      "broad_only_touch": 0.392
+    },
+    "instagrammable": {
+      "keywords": 8,
+      "tokens": 11,
+      "broad_tokens": [
+        "banyak"
+      ],
+      "review_touch": 0.216,
+      "broad_only_touch": 0.136
+    },
+    "ruangan_ac": {
+      "keywords": 9,
+      "tokens": 7,
+      "broad_tokens": [
+        "ac",
+        "indoor"
+      ],
+      "review_touch": 0.28,
+      "broad_only_touch": 0.176
+    },
+    "suasana_tenang": {
+      "keywords": 10,
+      "tokens": 11,
+      "broad_tokens": [
+        "suasana",
+        "tenang",
+        "tidak",
+        "berisik",
+        "enggak"
+      ],
+      "review_touch": 0.56,
+      "broad_only_touch": 0.472
+    },
+    "area_outdoor": {
+      "keywords": 16,
+      "tokens": 18,
+      "broad_tokens": [
+        "outdoor",
+        "area",
+        "tempat",
+        "di"
+      ],
+      "review_touch": 0.696,
+      "broad_only_touch": 0.48
+    },
+    "smoking_area": {
+      "keywords": 9,
+      "tokens": 9,
+      "broad_tokens": [
+        "area",
+        "tempat",
+        "bisa"
+      ],
+      "review_touch": 0.512,
+      "broad_only_touch": 0.368
+    },
+    "wifi_kencang": {
+      "keywords": 11,
+      "tokens": 11,
+      "broad_tokens": [
+        "wifi"
+      ],
+      "review_touch": 0.168,
+      "broad_only_touch": 0.04
+    },
+    "banyak_colokan_terminal": {
+      "keywords": 9,
+      "tokens": 14,
+      "broad_tokens": [
+        "banyak",
+        "di"
+      ],
+      "review_touch": 0.52,
+      "broad_only_touch": 0.384
+    },
+    "ruang_privat": {
+      "keywords": 9,
+      "tokens": 12,
+      "broad_tokens": [
+        "bisa"
+      ],
+      "review_touch": 0.376,
+      "broad_only_touch": 0.2
+    },
+    "buka_sampai_malam_24_hours": {
+      "keywords": 12,
+      "tokens": 12,
+      "broad_tokens": [],
+      "review_touch": 0.136,
+      "broad_only_touch": 0.0
+    },
+    "musholla": {
+      "keywords": 9,
+      "tokens": 8,
+      "broad_tokens": [
+        "ada",
+        "musholla",
+        "tempat",
+        "bisa"
+      ],
+      "review_touch": 0.624,
+      "broad_only_touch": 0.576
+    },
+    "parkir_luas": {
+      "keywords": 9,
+      "tokens": 8,
+      "broad_tokens": [
+        "parkir",
+        "luas",
+        "tempat"
+      ],
+      "review_touch": 0.424,
+      "broad_only_touch": 0.32
+    },
+    "toilet_bersih": {
+      "keywords": 7,
+      "tokens": 8,
+      "broad_tokens": [
+        "bersih"
+      ],
+      "review_touch": 0.16,
+      "broad_only_touch": 0.072
+    },
+    "makanan_berat": {
+      "keywords": 19,
+      "tokens": 23,
+      "broad_tokens": [
+        "menu",
+        "makanan",
+        "minuman",
+        "bisa"
+      ],
+      "review_touch": 0.576,
+      "broad_only_touch": 0.376
+    },
+    "dessert": {
+      "keywords": 15,
+      "tokens": 17,
+      "broad_tokens": [],
+      "review_touch": 0.096,
+      "broad_only_touch": 0.0
+    }
+  }
+}

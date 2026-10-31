@@ -163,18 +163,12 @@ def admin_dashboard():
                 SELECT u.id AS user_id,
                        u.username,
                        COUNT(r.id) AS review_count,
-                       COALESCE(SUM(photo_counts.photo_count), 0) AS photo_count,
                        COUNT(DISTINCT r.place_id) AS shop_count
                 FROM users u
                 INNER JOIN reviews r ON r.user_id = u.id
-                LEFT JOIN (
-                    SELECT review_id, COUNT(*) AS photo_count
-                    FROM review_photos
-                    GROUP BY review_id
-                ) photo_counts ON photo_counts.review_id = r.id
                 WHERE {sql_user_flag_false('u.is_admin')}
                 GROUP BY u.id, u.username
-                ORDER BY review_count DESC, photo_count DESC
+                ORDER BY review_count DESC
                 LIMIT 8
                 '''
             ).fetchall()
@@ -184,7 +178,7 @@ def admin_dashboard():
                     'user_id': rd.get('user_id'),
                     'username': rd.get('username') or 'Anonim',
                     'review_count': _safe_int(rd.get('review_count')),
-                    'photo_count': _safe_int(rd.get('photo_count')),
+                    'photo_count': 0,
                     'shop_count': _safe_int(rd.get('shop_count')),
                 })
         except Exception as contrib_err:
@@ -896,7 +890,6 @@ def admin_delete_shop(place_id):
         if review_ids:
             placeholders = ','.join('?' * len(review_ids))
             cursor.execute(f'DELETE FROM review_likes WHERE review_id IN ({placeholders})', review_ids)
-            cursor.execute(f'DELETE FROM review_photos WHERE review_id IN ({placeholders})', review_ids)
             cursor.execute(f'DELETE FROM review_reports WHERE review_id IN ({placeholders})', review_ids)
             cursor.execute(f'DELETE FROM reviews WHERE id IN ({placeholders})', review_ids)
 
@@ -973,7 +966,6 @@ def admin_get_reviews():
 
         items = []
         for rd in row_dicts:
-            photo_count = cursor.execute('SELECT COUNT(*) FROM review_photos WHERE review_id = ?', (rd['id'],)).fetchone()[0]
             like_count = cursor.execute('SELECT COUNT(*) FROM review_likes WHERE review_id = ?', (rd['id'],)).fetchone()[0]
             items.append({
                 'id': rd['id'],
@@ -983,7 +975,7 @@ def admin_get_reviews():
                 'rating': rd['rating'],
                 'text': rd['review_text'],
                 'created_at': rd['created_at'],
-                'photo_count': photo_count,
+                'photo_count': 0,
                 'like_count': like_count,
             })
 
@@ -1130,7 +1122,6 @@ def admin_delete_review(review_id):
         cursor = conn.cursor()
 
         cursor.execute('DELETE FROM review_likes WHERE review_id = ?', (review_id,))
-        cursor.execute('DELETE FROM review_photos WHERE review_id = ?', (review_id,))
         cursor.execute('DELETE FROM review_reports WHERE review_id = ?', (review_id,))
         cursor.execute('DELETE FROM reviews WHERE id = ?', (review_id,))
 

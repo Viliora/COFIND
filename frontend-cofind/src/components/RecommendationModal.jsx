@@ -649,6 +649,7 @@ const RecommendationModal = ({
     isOpen,
     onClose,
     recommendations = [],
+    otherOptions = [],
     shopsByKey = {},
     confirmedPills = [],
     confirmedAttributes = [],
@@ -658,6 +659,11 @@ const RecommendationModal = ({
     responseNotice = '',
 }) => {
     const [feedbackByPlaceId, setFeedbackByPlaceId] = useState({});
+    const [showOtherOptions, setShowOtherOptions] = useState(false);
+
+    useEffect(() => {
+        if (!isOpen) setShowOtherOptions(false);
+    }, [isOpen]);
 
     useEffect(() => {
         if (!isOpen) return undefined;
@@ -678,6 +684,7 @@ const RecommendationModal = ({
     useEffect(() => {
         if (!isOpen) {
             setFeedbackByPlaceId({});
+            setShowOtherOptions(false);
             return undefined;
         }
 
@@ -755,6 +762,22 @@ const RecommendationModal = ({
             return a.apiIndex - b.apiIndex;
         })
         .map(({ rec, shop }, displayIndex) => ({ rec, shop, displayIndex }));
+
+    const alternateItems = (Array.isArray(otherOptions) ? otherOptions : [])
+        .map((opt) => {
+            const placeId = String(opt?.place_id || '').trim();
+            const shop =
+                (placeId && shopsByKey[placeId])
+                || (opt?.name && shopsByKey[normalizeMatchText(opt.name)])
+                || null;
+            return {
+                placeId,
+                name: String(opt?.name || shop?.name || '').trim(),
+                address: String(opt?.address || shop?.address || '').trim(),
+                shop: shop || opt,
+            };
+        })
+        .filter((entry) => entry.placeId && entry.name);
 
     /** Koordinat ada di katalog `coffeeShops`, bukan di payload API rekomendasi. */
     const mapShops = items.map(({ rec, shop, displayIndex }) => ({
@@ -999,6 +1022,87 @@ const RecommendationModal = ({
                                     })}
                                 </ul>
                             </div>
+
+                            {alternateItems.length > 0 ? (
+                                <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-4 shadow-sm dark:border-gray-600 dark:bg-gray-900/80">
+                                    {!showOtherOptions ? (
+                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-medium text-gray-800 dark:text-gray-100">
+                                                    Ingin lihat opsi lain?
+                                                </p>
+                                                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                                                    {alternateItems.length} coffee shop lain relevan dengan konteks
+                                                    pencarian Anda, tanpa masuk rekomendasi utama di atas.
+                                                </p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowOtherOptions(true)}
+                                                className="shrink-0 inline-flex items-center justify-center rounded-full border border-gray-300 bg-gray-50 px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                            >
+                                                Lihat opsi lain
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
+                                                <div>
+                                                    <p className="text-sm font-medium text-gray-800 dark:text-gray-100">
+                                                        Opsi lain (bukan rekomendasi)
+                                                    </p>
+                                                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                        Daftar ini hanya untuk eksplorasi; urutan mengikuti hasil
+                                                        pencarian internal, bukan saran utama Cofind.
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowOtherOptions(false)}
+                                                    className="text-xs font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-300"
+                                                >
+                                                    Sembunyikan
+                                                </button>
+                                            </div>
+                                            <ul className="space-y-2">
+                                                {alternateItems.map((entry) => {
+                                                    const distanceKm = distanceKmFromUser(
+                                                        userLocation,
+                                                        entry.shop,
+                                                    );
+                                                    const distanceLabel = formatDistanceKm(distanceKm);
+                                                    return (
+                                                        <li
+                                                            key={entry.placeId}
+                                                            className="rounded-lg border border-gray-200 bg-gray-50/80 px-3 py-2.5 dark:border-gray-700 dark:bg-gray-900/60"
+                                                        >
+                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                <Link
+                                                                    to={`/shop/${encodeURIComponent(entry.placeId)}`}
+                                                                    onClick={() => onClose?.()}
+                                                                    className="text-sm font-semibold text-gray-800 hover:text-indigo-600 hover:underline dark:text-gray-100 dark:hover:text-indigo-300"
+                                                                >
+                                                                    {entry.name}
+                                                                </Link>
+                                                                {distanceLabel ? (
+                                                                    <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                                                                        ± {distanceLabel}
+                                                                    </span>
+                                                                ) : null}
+                                                            </div>
+                                                            {entry.address ? (
+                                                                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
+                                                                    {entry.address}
+                                                                </p>
+                                                            ) : null}
+                                                        </li>
+                                                    );
+                                                })}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : null}
                         </div>
                     )}
                 </div>

@@ -26,16 +26,3 @@ def embed_review_task(review_id: int):
     if not ok:
         return {"status": "error", "message": "upsert failed", "review_id": rid}
     return {"status": "success", "review_id": rid}
-
-
-@celery_app.task(name="cofind.summarize_review_task")
-def summarize_review_task(place_id: str, shop_name: str):
-    """
-    Legacy task — _run_summarize_review_analysis tidak ada di app.py (nonaktif).
-    """
-    return {
-        "status": "error",
-        "message": "summarize_review_task nonaktif; gunakan pipeline rekomendasi Step 5",
-        "place_id": place_id,
-        "shop_name": shop_name,
-    }

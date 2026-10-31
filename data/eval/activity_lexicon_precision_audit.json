@@ -1,0 +1,1636 @@
+{
+  "review_count": 245,
+  "min_precision": 0.45,
+  "min_matches": 5,
+  "pruned": [],
+  "terms": [
+    {
+      "pill": "belajar",
+      "term": "belajar",
+      "kind": "review_keywords",
+      "match_count": 6,
+      "tp": 6,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "belajar",
+      "term": "nugas",
+      "kind": "review_keywords",
+      "match_count": 18,
+      "tp": 18,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "belajar",
+      "term": "ngerjain tugas",
+      "kind": "review_keywords",
+      "match_count": 7,
+      "tp": 7,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "belajar",
+      "term": "skripsi",
+      "kind": "review_keywords",
+      "match_count": 1,
+      "tp": 1,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "belajar",
+      "term": "mahasiswa",
+      "kind": "review_keywords",
+      "match_count": 3,
+      "tp": 3,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "belajar",
+      "term": "tugas kuliah",
+      "kind": "review_keywords",
+      "match_count": 3,
+      "tp": 3,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "belajar",
+      "term": "belajar",
+      "kind": "extra_phrases",
+      "match_count": 6,
+      "tp": 6,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "belajar",
+      "term": "nugas",
+      "kind": "extra_phrases",
+      "match_count": 18,
+      "tp": 18,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "belajar",
+      "term": "ngerjain tugas",
+      "kind": "extra_phrases",
+      "match_count": 7,
+      "tp": 7,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "belajar",
+      "term": "skripsi",
+      "kind": "extra_phrases",
+      "match_count": 1,
+      "tp": 1,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "belajar",
+      "term": "baca buku",
+      "kind": "extra_phrases",
+      "match_count": 2,
+      "tp": 2,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "belajar",
+      "term": "fokus belajar",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "belajar",
+      "term": "ruang belajar",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "belajar",
+      "term": "mengerjakan tugas",
+      "kind": "extra_phrases",
+      "match_count": 2,
+      "tp": 2,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "belajar",
+      "term": "belajar",
+      "kind": "whole_words",
+      "match_count": 6,
+      "tp": 6,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "belajar",
+      "term": "nugas",
+      "kind": "whole_words",
+      "match_count": 18,
+      "tp": 18,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "belajar",
+      "term": "skripsi",
+      "kind": "whole_words",
+      "match_count": 1,
+      "tp": 1,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "belajar",
+      "term": "kuliah",
+      "kind": "whole_words",
+      "match_count": 3,
+      "tp": 3,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "belajar",
+      "term": "ujian",
+      "kind": "whole_words",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "mabar",
+      "kind": "review_keywords",
+      "match_count": 2,
+      "tp": 2,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "main game",
+      "kind": "review_keywords",
+      "match_count": 2,
+      "tp": 2,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "mlbb",
+      "kind": "review_keywords",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "mobile legends",
+      "kind": "review_keywords",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "pubg",
+      "kind": "review_keywords",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "valorant",
+      "kind": "review_keywords",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "nge game",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "ngegame",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "main game",
+      "kind": "extra_phrases",
+      "match_count": 2,
+      "tp": 2,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "bermain game",
+      "kind": "extra_phrases",
+      "match_count": 1,
+      "tp": 1,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "main bareng game",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "mobile legends",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "mobile legend",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "mlbb",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "valorant",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "pubg",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "free fire",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "push rank",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "nge rank",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "ngerank",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "mabar",
+      "kind": "extra_phrases",
+      "match_count": 2,
+      "tp": 2,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "ngemabar",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "gas game",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "turnamen",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "esport",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "e sport",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "playstation",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "ps5",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "ps4",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "nintendo",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "main ml",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "main ff",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "main pubg",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "main valorant",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "main hok",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "gamer",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "gaming",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "gamers",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "game",
+      "kind": "whole_words",
+      "match_count": 3,
+      "tp": 2,
+      "fp": 1,
+      "precision": 0.6667,
+      "samples_fp": [
+        "Lokasinya hidden game."
+      ]
+    },
+    {
+      "pill": "bermain game",
+      "term": "games",
+      "kind": "whole_words",
+      "match_count": 1,
+      "tp": 1,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "gaming",
+      "kind": "whole_words",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "gamer",
+      "kind": "whole_words",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "gamers",
+      "kind": "whole_words",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "ngegame",
+      "kind": "whole_words",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "ngemabar",
+      "kind": "whole_words",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "mabar",
+      "kind": "whole_words",
+      "match_count": 2,
+      "tp": 2,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "mlbb",
+      "kind": "whole_words",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "valorant",
+      "kind": "whole_words",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "pubg",
+      "kind": "whole_words",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "esport",
+      "kind": "whole_words",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "esports",
+      "kind": "whole_words",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "playstation",
+      "kind": "whole_words",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "turnamen",
+      "kind": "whole_words",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "bermain game",
+      "term": "nintendo",
+      "kind": "whole_words",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "instagrammable",
+      "term": "instagrammable",
+      "kind": "review_keywords",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "instagrammable",
+      "term": "instagramable",
+      "kind": "review_keywords",
+      "match_count": 2,
+      "tp": 2,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "instagrammable",
+      "term": "spot foto",
+      "kind": "review_keywords",
+      "match_count": 5,
+      "tp": 5,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "instagrammable",
+      "term": "estetik",
+      "kind": "review_keywords",
+      "match_count": 7,
+      "tp": 7,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "instagrammable",
+      "term": "aesthetic",
+      "kind": "review_keywords",
+      "match_count": 3,
+      "tp": 2,
+      "fp": 1,
+      "precision": 0.6667,
+      "samples_fp": [
+        "Lokasi strategis banget loh mudah diakses, parkiran lumayan luas, harga terjangkau di dompet mahasiswa/i, pelayanan ramah dan oke, beragam makanan,cemilan serta minuman yang dapat kita pilih sesuai se"
+      ]
+    },
+    {
+      "pill": "instagrammable",
+      "term": "fotogenik",
+      "kind": "review_keywords",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "instagrammable",
+      "term": "selfie",
+      "kind": "review_keywords",
+      "match_count": 2,
+      "tp": 2,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "instagrammable",
+      "term": "instagrammable",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "instagrammable",
+      "term": "spot foto",
+      "kind": "extra_phrases",
+      "match_count": 5,
+      "tp": 5,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "instagrammable",
+      "term": "photo spot",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "instagrammable",
+      "term": "estetik",
+      "kind": "extra_phrases",
+      "match_count": 7,
+      "tp": 7,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "instagrammable",
+      "term": "fotogenik",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "instagrammable",
+      "term": "banyak spot foto",
+      "kind": "extra_phrases",
+      "match_count": 2,
+      "tp": 2,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "instagrammable",
+      "term": "instagrammable",
+      "kind": "whole_words",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "instagrammable",
+      "term": "instagramable",
+      "kind": "whole_words",
+      "match_count": 2,
+      "tp": 2,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "instagrammable",
+      "term": "fotogenik",
+      "kind": "whole_words",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "instagrammable",
+      "term": "estetik",
+      "kind": "whole_words",
+      "match_count": 7,
+      "tp": 7,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "keluarga",
+      "term": "keluarga",
+      "kind": "review_keywords",
+      "match_count": 7,
+      "tp": 6,
+      "fp": 1,
+      "precision": 0.8571,
+      "samples_fp": [
+        "Jika untuk berkumpul dengan keluarga kurang disarankan"
+      ]
+    },
+    {
+      "pill": "keluarga",
+      "term": "family",
+      "kind": "review_keywords",
+      "match_count": 2,
+      "tp": 2,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "keluarga",
+      "term": "ramah anak",
+      "kind": "review_keywords",
+      "match_count": 1,
+      "tp": 1,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "keluarga",
+      "term": "playground",
+      "kind": "review_keywords",
+      "match_count": 1,
+      "tp": 1,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "keluarga",
+      "term": "kursi bayi",
+      "kind": "review_keywords",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "keluarga",
+      "term": "babychair",
+      "kind": "review_keywords",
+      "match_count": 1,
+      "tp": 1,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "keluarga",
+      "term": "ramah keluarga",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "keluarga",
+      "term": "ramah anak",
+      "kind": "extra_phrases",
+      "match_count": 1,
+      "tp": 1,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "keluarga",
+      "term": "bawa anak",
+      "kind": "extra_phrases",
+      "match_count": 1,
+      "tp": 1,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "keluarga",
+      "term": "family friendly",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "keluarga",
+      "term": "kumpul keluarga",
+      "kind": "extra_phrases",
+      "match_count": 1,
+      "tp": 1,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "keluarga",
+      "term": "cocok keluarga",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "keluarga",
+      "term": "bawa anak kecil",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "keluarga",
+      "term": "keluarga",
+      "kind": "whole_words",
+      "match_count": 7,
+      "tp": 6,
+      "fp": 1,
+      "precision": 0.8571,
+      "samples_fp": [
+        "Jika untuk berkumpul dengan keluarga kurang disarankan"
+      ]
+    },
+    {
+      "pill": "keluarga",
+      "term": "family",
+      "kind": "whole_words",
+      "match_count": 2,
+      "tp": 2,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "keluarga",
+      "term": "playground",
+      "kind": "whole_words",
+      "match_count": 1,
+      "tp": 1,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "kerja",
+      "term": "kerja",
+      "kind": "review_keywords",
+      "match_count": 20,
+      "tp": 20,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "kerja",
+      "term": "wfc",
+      "kind": "review_keywords",
+      "match_count": 26,
+      "tp": 26,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "kerja",
+      "term": "laptopan",
+      "kind": "review_keywords",
+      "match_count": 1,
+      "tp": 1,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "kerja",
+      "term": "wfh",
+      "kind": "review_keywords",
+      "match_count": 2,
+      "tp": 2,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "kerja",
+      "term": "ngantor",
+      "kind": "review_keywords",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "kerja",
+      "term": "kerja remote",
+      "kind": "review_keywords",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "kerja",
+      "term": "work from cafe",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "kerja",
+      "term": "wfc",
+      "kind": "extra_phrases",
+      "match_count": 26,
+      "tp": 26,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "kerja",
+      "term": "kerja remote",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "kerja",
+      "term": "ngantor",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "kerja",
+      "term": "laptopan",
+      "kind": "extra_phrases",
+      "match_count": 1,
+      "tp": 1,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "kerja",
+      "term": "kerjaan kantor",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "kerja",
+      "term": "kerja dari kafe",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "kerja",
+      "term": "remote working",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "kerja",
+      "term": "wfc",
+      "kind": "whole_words",
+      "match_count": 26,
+      "tp": 26,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "kerja",
+      "term": "wfh",
+      "kind": "whole_words",
+      "match_count": 2,
+      "tp": 2,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "kerja",
+      "term": "laptopan",
+      "kind": "whole_words",
+      "match_count": 1,
+      "tp": 1,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "kerja",
+      "term": "ngantor",
+      "kind": "whole_words",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "meeting_sosialisasi",
+      "term": "meeting",
+      "kind": "review_keywords",
+      "match_count": 7,
+      "tp": 7,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "meeting_sosialisasi",
+      "term": "pertemuan",
+      "kind": "review_keywords",
+      "match_count": 2,
+      "tp": 2,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "meeting_sosialisasi",
+      "term": "rapat",
+      "kind": "review_keywords",
+      "match_count": 2,
+      "tp": 2,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "meeting_sosialisasi",
+      "term": "diskusi",
+      "kind": "review_keywords",
+      "match_count": 1,
+      "tp": 1,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "meeting_sosialisasi",
+      "term": "berdiskusi",
+      "kind": "review_keywords",
+      "match_count": 1,
+      "tp": 1,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "meeting_sosialisasi",
+      "term": "arisan",
+      "kind": "review_keywords",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "meeting_sosialisasi",
+      "term": "meeting",
+      "kind": "extra_phrases",
+      "match_count": 7,
+      "tp": 7,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "meeting_sosialisasi",
+      "term": "rapat",
+      "kind": "extra_phrases",
+      "match_count": 2,
+      "tp": 2,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "meeting_sosialisasi",
+      "term": "pertemuan bisnis",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "meeting_sosialisasi",
+      "term": "kumpul tim",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "meeting_sosialisasi",
+      "term": "kumpul kerja",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "meeting_sosialisasi",
+      "term": "meeting kantor",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "meeting_sosialisasi",
+      "term": "meeting",
+      "kind": "whole_words",
+      "match_count": 7,
+      "tp": 7,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "meeting_sosialisasi",
+      "term": "rapat",
+      "kind": "whole_words",
+      "match_count": 2,
+      "tp": 2,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "meeting_sosialisasi",
+      "term": "arisan",
+      "kind": "whole_words",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "meeting_sosialisasi",
+      "term": "networking",
+      "kind": "whole_words",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "nongkrong_hangout",
+      "term": "nongkrong",
+      "kind": "review_keywords",
+      "match_count": 16,
+      "tp": 16,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "nongkrong_hangout",
+      "term": "hangout",
+      "kind": "review_keywords",
+      "match_count": 1,
+      "tp": 1,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "nongkrong_hangout",
+      "term": "ngobrol",
+      "kind": "review_keywords",
+      "match_count": 11,
+      "tp": 11,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "nongkrong_hangout",
+      "term": "ngumpul",
+      "kind": "review_keywords",
+      "match_count": 3,
+      "tp": 3,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "nongkrong_hangout",
+      "term": "bareng teman",
+      "kind": "review_keywords",
+      "match_count": 2,
+      "tp": 2,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "nongkrong_hangout",
+      "term": "nongkrong lama",
+      "kind": "review_keywords",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "nongkrong_hangout",
+      "term": "nongkrong",
+      "kind": "extra_phrases",
+      "match_count": 16,
+      "tp": 16,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "nongkrong_hangout",
+      "term": "nongki",
+      "kind": "extra_phrases",
+      "match_count": 9,
+      "tp": 9,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "nongkrong_hangout",
+      "term": "nongkrong lama",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "nongkrong_hangout",
+      "term": "hangout",
+      "kind": "extra_phrases",
+      "match_count": 1,
+      "tp": 1,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "nongkrong_hangout",
+      "term": "ngobrol santai",
+      "kind": "extra_phrases",
+      "match_count": 1,
+      "tp": 1,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "nongkrong_hangout",
+      "term": "ngobrol bareng",
+      "kind": "extra_phrases",
+      "match_count": 1,
+      "tp": 1,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "nongkrong_hangout",
+      "term": "kumpul santai",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "nongkrong_hangout",
+      "term": "tempat nongkrong",
+      "kind": "extra_phrases",
+      "match_count": 3,
+      "tp": 3,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "nongkrong_hangout",
+      "term": "nongkrong asik",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "nongkrong_hangout",
+      "term": "nongkrong bareng teman",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "nongkrong_hangout",
+      "term": "tempat nongki",
+      "kind": "extra_phrases",
+      "match_count": 0,
+      "tp": 0,
+      "fp": 0,
+      "precision": null,
+      "samples_fp": []
+    },
+    {
+      "pill": "nongkrong_hangout",
+      "term": "nongkrong",
+      "kind": "whole_words",
+      "match_count": 16,
+      "tp": 16,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "nongkrong_hangout",
+      "term": "nongki",
+      "kind": "whole_words",
+      "match_count": 9,
+      "tp": 9,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "nongkrong_hangout",
+      "term": "hangout",
+      "kind": "whole_words",
+      "match_count": 1,
+      "tp": 1,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "nongkrong_hangout",
+      "term": "ngobrol",
+      "kind": "whole_words",
+      "match_count": 11,
+      "tp": 11,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    },
+    {
+      "pill": "nongkrong_hangout",
+      "term": "ngumpul",
+      "kind": "whole_words",
+      "match_count": 3,
+      "tp": 3,
+      "fp": 0,
+      "precision": 1.0,
+      "samples_fp": []
+    }
+  ]
+}

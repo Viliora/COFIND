@@ -3,8 +3,6 @@ Review Management Utilities
 CRUD operations for coffee shop reviews
 """
 
-import base64
-import re
 from datetime import datetime
 from auth_utils import get_db_connection
 from db_backend import dict_from_row
@@ -13,48 +11,13 @@ from review_embedding_store import (
     schedule_review_embedding_after_write,
 )
 
-# Batas ukuran decoded image per foto (selaras dengan frontend review).
-MAX_REVIEW_PHOTO_BYTES = 2 * 1024 * 1024
-
-
-def _review_image_data_byte_len(image_data):
-    """Panjang bytes konten gambar dari data URL base64 atau string mentah."""
-    if not image_data:
-        return 0
-    s = str(image_data).strip()
-    m = re.match(r'^data:image/[^;]+;base64,(.+)$', s, re.DOTALL | re.IGNORECASE)
-    if not m:
-        return len(s.encode('utf-8'))
-    try:
-        return len(base64.b64decode(m.group(1), validate=False))
-    except Exception:
-        return None
-
-
-def _validate_review_photos_size(photos):
-    """Return error message string jika ada foto melebihi MAX_REVIEW_PHOTO_BYTES."""
-    if not photos:
-        return None
-    for idx, p in enumerate(photos[:1]):
-        if not isinstance(p, dict):
-            continue
-        data = p.get('image_data')
-        if not data:
-            continue
-        n = _review_image_data_byte_len(data)
-        if n is None:
-            return f'Format gambar tidak valid (foto #{idx + 1}).'
-        if n > MAX_REVIEW_PHOTO_BYTES:
-            return f'Ukuran gambar maksimal 2 MB per file (foto #{idx + 1}).'
-    return None
-
 def _validate_rating(r, allow_none=False):
     if allow_none and r is None:
         return True
     return r is not None and 1 <= r <= 5
 
-def create_review(user_id, place_id, rating, text='', photos=None):
-    """Create a new review with optional photos."""
+def create_review(user_id, place_id, rating, text=''):
+    """Create a new community review (text only, no photos)."""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -69,11 +32,6 @@ def create_review(user_id, place_id, rating, text='', photos=None):
         if not shop:
             return {'success': False, 'error': 'Coffee shop not found'}
         shop_id = shop[0]
-
-        photo_err = _validate_review_photos_size(photos)
-        if photo_err:
-            conn.close()
-            return {'success': False, 'error': photo_err}
 
         cursor.execute('''
             INSERT INTO reviews (
@@ -92,25 +50,12 @@ def create_review(user_id, place_id, rating, text='', photos=None):
             'cofind',
         ))
         review_id = cursor.lastrowid
-        
-        photos = photos or []
-        for i, p in enumerate(photos[:1]):  # maksimal 1 foto per review
-            caption = (p.get('caption') or '').strip() if isinstance(p, dict) else ''
-            image_data = p.get('image_data') if isinstance(p, dict) else None
-            cursor.execute(
-                'INSERT INTO review_photos (review_id, caption, image_data) VALUES (?, ?, ?)',
-                (review_id, caption or None, image_data)
-            )
-        
+
         conn.commit()
         row = cursor.execute(
             'SELECT id, user_id, shop_id, place_id, rating, review_text, created_at, updated_at FROM reviews WHERE id = ?',
             (review_id,)
         ).fetchone()
-        photos_out = cursor.execute(
-            'SELECT id, caption, image_data FROM review_photos WHERE review_id = ? ORDER BY id',
-            (review_id,)
-        ).fetchall()
         conn.close()
 
         schedule_review_embedding_after_write(review_id, text or '')
@@ -126,14 +71,13 @@ def create_review(user_id, place_id, rating, text='', photos=None):
                 'text': row[5],
                 'created_at': row[6],
                 'updated_at': row[7],
-                'photos': [{'id': p[0], 'caption': p[1], 'image_data': p[2]} for p in photos_out]
             }
         }
     except Exception as e:
         return {'success': False, 'error': str(e)}
 
 def get_review(review_id):
-    """Get a single review with photos."""
+    """Get a single review."""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -144,10 +88,6 @@ def get_review(review_id):
         if not review:
             conn.close()
             return {'success': False, 'error': 'Review not found'}
-        photos = cursor.execute(
-            'SELECT id, caption, image_data FROM review_photos WHERE review_id = ? ORDER BY id',
-            (review_id,)
-        ).fetchall()
         conn.close()
         return {
             'success': True,
@@ -160,7 +100,6 @@ def get_review(review_id):
                 'text': review[5],
                 'created_at': review[6],
                 'updated_at': review[7],
-                'photos': [{'id': p[0], 'caption': p[1], 'image_data': p[2]} for p in photos]
             }
         }
     except Exception as e:
@@ -236,7 +175,6 @@ def _review_row_to_api_dict(
     review,
     *,
     display_name=None,
-    photos=None,
     user_total_reviews=0,
     like_count=0,
     user_has_liked=False,
@@ -304,7 +242,6 @@ def _review_row_to_api_dict(
             'avatar_url': None,
         },
         'rating_vote_key': rating_vote_key,
-        'photos': photos if photos is not None else [],
         'user_total_reviews': user_total_reviews,
         'like_count': like_count,
         'user_has_liked': user_has_liked,
@@ -347,14 +284,18 @@ def get_reviews_for_shop(place_id, limit=50, current_user_id=None):
     """Get reviews for a coffee shop. Optionally include like_count and user_has_liked when current_user_id is set.
     limit=None: ambil semua baris (tanpa LIMIT), untuk pipeline rekomendasi / analisis LLM menyeluruh."""
     try:
+        trimmed_place = (place_id or '').strip()
+        if not trimmed_place:
+            return {'success': True, 'reviews': []}
+
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        base_sql = _REVIEW_SELECT_SQL + '''
-            WHERE r.place_id = ?
+        base_sql = _REVIEW_SELECT_SQL + f'''
+            WHERE {_review_place_id_predicate('r')}
             ORDER BY r.created_at DESC
         '''
-        reviews = cursor.execute(base_sql, (place_id,)).fetchall()
+        reviews = cursor.execute(base_sql, (trimmed_place, trimmed_place)).fetchall()
         review_columns = [d[0] for d in (cursor.description or [])]
         if limit is not None:
             reviews = reviews[: int(limit)]
@@ -393,13 +334,8 @@ def get_reviews_for_shop(place_id, limit=50, current_user_id=None):
             row_dict = _row_dict_from_columns(review_columns, review)
             review_id = review[0]
             uid = review[1]
-            photos = cursor.execute(
-                'SELECT id, caption, image_data FROM review_photos WHERE review_id = ? ORDER BY id',
-                (review_id,)
-            ).fetchall()
             review_list.append(_review_row_to_api_dict(
                 row_dict,
-                photos=[{'id': p[0], 'caption': p[1], 'image_data': p[2]} for p in photos],
                 user_total_reviews=user_total_reviews.get(uid, 0) if uid else 0,
                 like_count=like_counts.get(review_id, 0),
                 user_has_liked=user_liked.get(review_id, False),
@@ -529,7 +465,7 @@ def get_user_review_stats(user_id):
 
 
 def get_user_reviews(user_id, limit=50):
-    """Get all reviews by a user with shop name and optional photos."""
+    """Get all reviews by a user with shop name."""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -545,10 +481,6 @@ def get_user_reviews(user_id, limit=50):
         review_list = []
         for review in reviews:
             review_id = review[0]
-            photos = cursor.execute(
-                'SELECT id, caption, image_data FROM review_photos WHERE review_id = ? ORDER BY id',
-                (review_id,)
-            ).fetchall()
             like_count = cursor.execute(
                 'SELECT COUNT(*) FROM review_likes WHERE review_id = ?', (review_id,)
             ).fetchone()[0]
@@ -562,7 +494,6 @@ def get_user_reviews(user_id, limit=50):
                 'created_at': review[6],
                 'updated_at': review[7],
                 'shop_name': review[8],
-                'photos': [{'id': p[0], 'caption': p[1], 'image_data': p[2]} for p in photos],
                 'like_count': like_count
             })
         conn.close()
@@ -570,8 +501,8 @@ def get_user_reviews(user_id, limit=50):
     except Exception as e:
         return {'success': False, 'error': str(e)}
 
-def update_review(review_id, user_id, rating=None, text=None, photos=None):
-    """Update a review (rating, text, photos)."""
+def update_review(review_id, user_id, rating=None, text=None):
+    """Update a review (rating and text only)."""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -593,11 +524,6 @@ def update_review(review_id, user_id, rating=None, text=None, photos=None):
         if rating is not None and not _validate_rating(rating):
             conn.close()
             return {'success': False, 'error': 'Rating must be between 1 and 5'}
-        if photos is not None:
-            photo_err = _validate_review_photos_size(photos)
-            if photo_err:
-                conn.close()
-                return {'success': False, 'error': photo_err}
         cursor.execute('''
             UPDATE reviews
             SET rating = ?, review_text = ?, updated_at = ?
@@ -608,16 +534,6 @@ def update_review(review_id, user_id, rating=None, text=None, photos=None):
             datetime.utcnow().isoformat(),
             review_id,
         ))
-        if photos is not None:
-            cursor.execute('DELETE FROM review_photos WHERE review_id = ?', (review_id,))
-            for p in (photos or [])[:1]:
-                caption = (p.get('caption') or '').strip() if isinstance(p, dict) else ''
-                image_data = p.get('image_data') if isinstance(p, dict) else None
-                if image_data:
-                    cursor.execute(
-                        'INSERT INTO review_photos (review_id, caption, image_data) VALUES (?, ?, ?)',
-                        (review_id, caption or None, image_data)
-                    )
         conn.commit()
         conn.close()
 

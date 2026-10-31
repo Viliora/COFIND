@@ -1,0 +1,1407 @@
+{
+  "generated_at": "2026-10-29T19:49:59.174733+00:00",
+  "threshold": 0.85,
+  "reviews_usable": 245,
+  "reviews_with_vectors": 245,
+  "methodology": {
+    "encoder": "COFIND_EMBEDDING_MODEL (E5 query/passage via embed_query_vector + pgvector)",
+    "pill_text": "build_dense_query_text per pill (dense_query)",
+    "threshold_env": "COFIND_SEMANTIC_THRESHOLD"
+  },
+  "existing_activity_summary": [
+    {
+      "pill": "instagrammable",
+      "label": "Feeds Hunter",
+      "semantic": 92,
+      "lexical": 13,
+      "semantic_only": 82,
+      "pct_semantic": 37.55
+    },
+    {
+      "pill": "nongkrong_hangout",
+      "label": "Nongkrong/Hangout",
+      "semantic": 84,
+      "lexical": 40,
+      "semantic_only": 61,
+      "pct_semantic": 34.29
+    },
+    {
+      "pill": "keluarga",
+      "label": "Keluarga",
+      "semantic": 73,
+      "lexical": 12,
+      "semantic_only": 62,
+      "pct_semantic": 29.8
+    },
+    {
+      "pill": "meeting_sosialisasi",
+      "label": "Meeting/Pertemuan",
+      "semantic": 67,
+      "lexical": 12,
+      "semantic_only": 61,
+      "pct_semantic": 27.35
+    },
+    {
+      "pill": "belajar",
+      "label": "Belajar",
+      "semantic": 30,
+      "lexical": 36,
+      "semantic_only": 21,
+      "pct_semantic": 12.24
+    },
+    {
+      "pill": "kerja",
+      "label": "Kerja/WFC",
+      "semantic": 26,
+      "lexical": 47,
+      "semantic_only": 22,
+      "pct_semantic": 10.61
+    },
+    {
+      "pill": "bermain game",
+      "label": "Nge-game",
+      "semantic": 7,
+      "lexical": 5,
+      "semantic_only": 5,
+      "pct_semantic": 2.86
+    }
+  ],
+  "candidate_recommendations": [
+    {
+      "pill_key": "kencan_pacaran",
+      "label": "Kencan/Pacaran",
+      "semantic_hits": 62,
+      "semantic_only_hits": 62,
+      "tier": "strong_add",
+      "rationale": "Intent couple — jarang keyword eksplisit tapi muncul parafrase di review panjang."
+    },
+    {
+      "pill_key": "live_music_akustik",
+      "label": "Live music/Akustik",
+      "semantic_hits": 36,
+      "semantic_only_hits": 36,
+      "tier": "strong_add",
+      "rationale": "Beberapa ulasan menyebut musik live; beda dari pill tenang/kerja."
+    },
+    {
+      "pill_key": "kunjungan_singkat",
+      "label": "Grab-and-go / takeaway",
+      "semantic_hits": 26,
+      "semantic_only_hits": 26,
+      "tier": "strong_add",
+      "rationale": "Melengkapi negative_scope Kerja/WFC; validasi intent kunjungan singkat."
+    },
+    {
+      "pill_key": "event_komunitas",
+      "label": "Event/Komunitas",
+      "semantic_hits": 4,
+      "semantic_only_hits": 4,
+      "tier": "monitor",
+      "rationale": "Workshop/komunitas ≠ rapat kantor (meeting_sosialisasi)."
+    }
+  ],
+  "semantic_uplift_over_lexical": {
+    "count": 27,
+    "description": "Ulasan tanpa hit leksikal aktivitas, tapi cosine ≥ ambang ke pill aktivitas existing",
+    "samples": [
+      {
+        "review_id": 128,
+        "best_existing_activity": "instagrammable",
+        "cosine": 0.8619,
+        "excerpt": "Suasana cafenya bagus namun sedikit minimalis tidak terlalu luas. Untuk makanan dan minuman enak sesuai dengan harganya walaupun ada sedikit kekurangan tapi tidak terlalu bermasalah. Pelayanan cukup gesit dan ramah. Tersedia photobooth berbayar, dan ada beberapa kucing yang ramah"
+      },
+      {
+        "review_id": 143,
+        "best_existing_activity": "instagrammable",
+        "cosine": 0.8696,
+        "excerpt": "Sesuai dengan namanya \"Rumah Kita\" vibes nya beneran terasa kyk gitu. Walaupun tempatnya gak besar tp terasa nyaman. Makanannya enak & harganya terjangkau. Bakal balik lagi ke sini ☺️"
+      },
+      {
+        "review_id": 157,
+        "best_existing_activity": "belajar",
+        "cosine": 0.8638,
+        "excerpt": "Pertama kali kesini sebulan yang lalu dan overall bakalan balik lagi buat me time. study roomnya enak bgt, tenang dan tak berisik. Untuk makanannya enak dan ga terlalu mahal utk ukuran cafe, sambal matahnya enak, dimsumnya enak, chili oilnya enak, dan yang utama kopinya juga enak"
+      },
+      {
+        "review_id": 328,
+        "best_existing_activity": "nongkrong_hangout",
+        "cosine": 0.8545,
+        "excerpt": "Pelayan nya kok makin hari makin ga ada adab ya\nPadahal sebelum2 nya bagus-bagus pelayan nya.\nKasian orang yang dilayanin malah dijutekin"
+      },
+      {
+        "review_id": 339,
+        "best_existing_activity": "meeting_sosialisasi",
+        "cosine": 0.8872,
+        "excerpt": "rasa seperti minuman modern biasanya. tempat nyaman. tapi kalau sudah ramai kurang nyaman karena saking ramainya. harga relatif, bisa lihat foto menunya"
+      },
+      {
+        "review_id": 345,
+        "best_existing_activity": "keluarga",
+        "cosine": 0.8817,
+        "excerpt": "Suasananya oke banget, nyaman, tempatnya bagus, pelayanan sangat baik juga ramah. Kopinya juga enak, next bakal ke sini² lagi untuk coba menu menu lainnya👍🏻✨"
+      }
+    ]
+  },
+  "per_pill": {
+    "belajar": {
+      "pill_key": "belajar",
+      "pill_label": "Belajar",
+      "pill_kind": "activity",
+      "dense_query": "enak buat belajar dan nugas, ngerjain tugas kuliah atau skripsi",
+      "threshold": 0.85,
+      "reviews_with_embedding": 245,
+      "semantic_hits": 30,
+      "pct_semantic": 12.24,
+      "lexical_hits": 36,
+      "pct_lexical": 14.69,
+      "semantic_only_hits": 21,
+      "both_lex_and_sem": 9,
+      "shops_semantic": 21,
+      "sample_semantic": [
+        {
+          "review_id": 111,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.8504,
+          "excerpt": "nuansa warkopnya sangat sederhana dan santai , anda tidak akan menjumpai suasana ini di coffeeshop/warkop modern , tempatnya yang santai membuat hangout bersama teman ,partner ,keluarga ,atau bahkan pacar anda terasa lebih asik , harganya sangat relatif dan terjangkau, pas dikalangan mahasiswa ,dan pelajar , tidak lupa"
+        },
+        {
+          "review_id": 118,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "cosine": 0.8504,
+          "excerpt": "Makanan sih enak , nasi goreng nye oke , ape lagi pisang srikaya nye the best 👍 Tempat nya pun nyaman , apa lagi ada playground nye , jd lebih santai bawa anak2 dan layanan nya OKE 👍"
+        },
+        {
+          "review_id": 129,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "cosine": 0.8663,
+          "excerpt": "Tempatnya bagus banget buat nongki sama temen ataupun sambil buat tugas kuliah lama2.. makanannya enak dan coffenya juga enak.. ada makanan yang kids friendly juga kok.. tadi makanannya lupa ke foto"
+        },
+        {
+          "review_id": 134,
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "cosine": 0.8509,
+          "excerpt": "Good place, good coffee. Barista nya enak diajak ngobrol. Beansnya oke. Tempatnya oke dan tenang. Datang pas pagi dan sepi. Enak buat sendirian atau ngobrol yang gak rame."
+        },
+        {
+          "review_id": 137,
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "cosine": 0.871,
+          "excerpt": "Ruangan yang nyaman. Asik untuk sambil belajar atau kerja."
+        },
+        {
+          "review_id": 139,
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "cosine": 0.8825,
+          "excerpt": "Bagus, suasananya gk terlalu rame. Cocok buat belajar. Cafe kecil kayak rumah. Suka yg cafe kayak gini"
+        }
+      ]
+    },
+    "kerja": {
+      "pill_key": "kerja",
+      "pill_label": "Kerja/WFC",
+      "pill_kind": "activity",
+      "dense_query": "cocok buat kerja dan wfc, laptopan berjam-jam, kerja remote",
+      "threshold": 0.85,
+      "reviews_with_embedding": 245,
+      "semantic_hits": 26,
+      "pct_semantic": 10.61,
+      "lexical_hits": 47,
+      "pct_lexical": 19.18,
+      "semantic_only_hits": 22,
+      "both_lex_and_sem": 4,
+      "shops_semantic": 19,
+      "sample_semantic": [
+        {
+          "review_id": 161,
+          "place_id": "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+          "cosine": 0.8542,
+          "excerpt": "Pesan gak nunggu lama, tempatnya bersih, dan owner mutar Lo-fi Hip Hop bukan musik Pop jadi gak berisik, cocok buat kerja/belajar."
+        },
+        {
+          "review_id": 347,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "cosine": 0.8511,
+          "excerpt": "Suasana yang sudahh baruuuu dan luasss. Emg jadi andalan klo lagi malam minggu dekat sm rumah , makaanan dan minumannyaaa enak2. Emang andalan kopi harunaa sihhh THE BEST 💙💙💙💙💙 klo kesana jgn kupa carbonara creamy dan nasgor kampungnyaaaa dicoba gaess 🤏🏻🤏🏻🤏🏻🤏🏻"
+        },
+        {
+          "review_id": 348,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "cosine": 0.8615,
+          "excerpt": "Tempat nya nyaman bangeet, pas tuk pertemuan, ketemu temen,  kumpul keluarga , tempat ngerjain tugas ketik,  pelayanan ramah, perfect sih ini"
+        },
+        {
+          "review_id": 351,
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "cosine": 0.8602,
+          "excerpt": "Lunch after jemput anak, tempatnya cozy dan lumayan tenang untuk ngobrol, musiknya oke tidak terlalu keras.\nArea untuk WFC atau nugas juga banyak, nge-charge laptop hp bisa dimana saja."
+        },
+        {
+          "review_id": 358,
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "cosine": 0.8591,
+          "excerpt": "Tempatnya nyaman,pelayanannya kureng sih kata aku,kasirnya kooperatif cuman aku minjam pngecas bntr doang bnyak alasan,smpai 2 kali di janjiin bentr ya kak,taunya smpai sejam ngak dipinjam2in padaha cuma ngsi batrai bntr aja"
+        },
+        {
+          "review_id": 363,
+          "place_id": "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+          "cosine": 0.8563,
+          "excerpt": "tempat nya bersih dan wangi,harganya juga terjangkau kok masi standart. macha nye enakk sekali plus abang abangnye ramah ❤️❤️"
+        }
+      ]
+    },
+    "bermain game": {
+      "pill_key": "bermain game",
+      "pill_label": "Nge-game",
+      "pill_kind": "activity",
+      "dense_query": "seru buat main game dan mabar bareng teman, main mobile legends atau pubg",
+      "threshold": 0.85,
+      "reviews_with_embedding": 245,
+      "semantic_hits": 7,
+      "pct_semantic": 2.86,
+      "lexical_hits": 5,
+      "pct_lexical": 2.04,
+      "semantic_only_hits": 5,
+      "both_lex_and_sem": 2,
+      "shops_semantic": 6,
+      "sample_semantic": [
+        {
+          "review_id": 120,
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "cosine": 0.8831,
+          "excerpt": "Tempat yg enak untuk nongkrong atau bermain game bersama teman-teman"
+        },
+        {
+          "review_id": 123,
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "cosine": 0.8545,
+          "excerpt": "Selalu ramai anak remaja nongkrong main game, anak kuliahan mengerjakan tugas, maupun nongkrong disini. Jika untuk berkumpul dengan keluarga kurang disarankan"
+        },
+        {
+          "review_id": 348,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "cosine": 0.8526,
+          "excerpt": "Tempat nya nyaman bangeet, pas tuk pertemuan, ketemu temen,  kumpul keluarga , tempat ngerjain tugas ketik,  pelayanan ramah, perfect sih ini"
+        },
+        {
+          "review_id": 370,
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "cosine": 0.8516,
+          "excerpt": "numpang tidur bocil waktu mati lampu. pelayanane dan makanane top. maa syaa Alalh semoga selalu lancar dan berkah.."
+        },
+        {
+          "review_id": 375,
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "cosine": 0.8625,
+          "excerpt": "Pertama kali diajakin temen, tempatnya enak buat ngobrol atau nugas oke banget. Ada outdoor dan indoor juga"
+        },
+        {
+          "review_id": 466,
+          "place_id": "ChIJuRi629BZHS4ROKQCQ8ThFl0",
+          "cosine": 0.862,
+          "excerpt": "OIIII BECANDA KALO LO YA GUE PESEN LEWAT APP CW KOPINYA KAGA DIKASI ES BATU"
+        }
+      ]
+    },
+    "meeting_sosialisasi": {
+      "pill_key": "meeting_sosialisasi",
+      "pill_label": "Meeting/Pertemuan",
+      "pill_kind": "activity",
+      "dense_query": "nyaman buat meeting, rapat, atau pertemuan kelompok, mejanya muat banyak orang",
+      "threshold": 0.85,
+      "reviews_with_embedding": 245,
+      "semantic_hits": 67,
+      "pct_semantic": 27.35,
+      "lexical_hits": 12,
+      "pct_lexical": 4.9,
+      "semantic_only_hits": 61,
+      "both_lex_and_sem": 6,
+      "shops_semantic": 36,
+      "sample_semantic": [
+        {
+          "review_id": 110,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.894,
+          "excerpt": "tempat santai yang nyaman baik sendirian ataupun bersama pasangan, kawan, atau keluarga"
+        },
+        {
+          "review_id": 112,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.8684,
+          "excerpt": "Sangat ramai saat saya datang ke sini di malam hari. Mungkin tidak nyaman bagi mereka yang sensitif terhadap asap/rokok.. kecepatan Wi-Fi bagus, kopinya enak dan tamu bisa membeli kopi bubuk untuk dibawa pulang."
+        },
+        {
+          "review_id": 115,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "cosine": 0.881,
+          "excerpt": "Terlalu berisik music nya, jadi gak recommend jika untuk meeting koordinasi atau meeting online. Recommend jika hanya untuk pertemuan biasa ngobrol santai biasa tanpa pembahasan kerja."
+        },
+        {
+          "review_id": 116,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "cosine": 0.8703,
+          "excerpt": "Kafe yang cozy, nyaman buat meeting, minumannya enak, harganya terjangkau baik makanan dan minuman, saya pesan es kopi susu, pisang goreng sari kaya dan roti bakar sarikaya."
+        },
+        {
+          "review_id": 120,
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "cosine": 0.88,
+          "excerpt": "Tempat yg enak untuk nongkrong atau bermain game bersama teman-teman"
+        },
+        {
+          "review_id": 123,
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "cosine": 0.8555,
+          "excerpt": "Selalu ramai anak remaja nongkrong main game, anak kuliahan mengerjakan tugas, maupun nongkrong disini. Jika untuk berkumpul dengan keluarga kurang disarankan"
+        }
+      ]
+    },
+    "keluarga": {
+      "pill_key": "keluarga",
+      "pill_label": "Keluarga",
+      "pill_kind": "activity",
+      "dense_query": "cocok buat bawa keluarga dan anak kecil, ramah anak, ada kursi bayi",
+      "threshold": 0.85,
+      "reviews_with_embedding": 245,
+      "semantic_hits": 73,
+      "pct_semantic": 29.8,
+      "lexical_hits": 12,
+      "pct_lexical": 4.9,
+      "semantic_only_hits": 62,
+      "both_lex_and_sem": 11,
+      "shops_semantic": 37,
+      "sample_semantic": [
+        {
+          "review_id": 110,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.896,
+          "excerpt": "tempat santai yang nyaman baik sendirian ataupun bersama pasangan, kawan, atau keluarga"
+        },
+        {
+          "review_id": 112,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.8774,
+          "excerpt": "Sangat ramai saat saya datang ke sini di malam hari. Mungkin tidak nyaman bagi mereka yang sensitif terhadap asap/rokok.. kecepatan Wi-Fi bagus, kopinya enak dan tamu bisa membeli kopi bubuk untuk dibawa pulang."
+        },
+        {
+          "review_id": 116,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "cosine": 0.873,
+          "excerpt": "Kafe yang cozy, nyaman buat meeting, minumannya enak, harganya terjangkau baik makanan dan minuman, saya pesan es kopi susu, pisang goreng sari kaya dan roti bakar sarikaya."
+        },
+        {
+          "review_id": 118,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "cosine": 0.8501,
+          "excerpt": "Makanan sih enak , nasi goreng nye oke , ape lagi pisang srikaya nye the best 👍 Tempat nya pun nyaman , apa lagi ada playground nye , jd lebih santai bawa anak2 dan layanan nya OKE 👍"
+        },
+        {
+          "review_id": 119,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "cosine": 0.8726,
+          "excerpt": "Tempat nya cozy\r\nAda 3 Jenis ruangan\r\nOutdoor\r\nAc bisa rokok\r\nAc tidak bisa rokok\r\nRamah anak\r\nPelayanan cepat\r\nRecommended\r\n\r\nWC nya jelek\r\nBau\r\nGa terawat"
+        },
+        {
+          "review_id": 120,
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "cosine": 0.8781,
+          "excerpt": "Tempat yg enak untuk nongkrong atau bermain game bersama teman-teman"
+        }
+      ]
+    },
+    "instagrammable": {
+      "pill_key": "instagrammable",
+      "pill_label": "Feeds Hunter",
+      "pill_kind": "activity",
+      "dense_query": "tempatnya estetik, banyak spot foto bagus buat feed instagram dan konten sosmed",
+      "threshold": 0.85,
+      "reviews_with_embedding": 245,
+      "semantic_hits": 92,
+      "pct_semantic": 37.55,
+      "lexical_hits": 13,
+      "pct_lexical": 5.31,
+      "semantic_only_hits": 82,
+      "both_lex_and_sem": 10,
+      "shops_semantic": 41,
+      "sample_semantic": [
+        {
+          "review_id": 110,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.8718,
+          "excerpt": "tempat santai yang nyaman baik sendirian ataupun bersama pasangan, kawan, atau keluarga"
+        },
+        {
+          "review_id": 112,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.8693,
+          "excerpt": "Sangat ramai saat saya datang ke sini di malam hari. Mungkin tidak nyaman bagi mereka yang sensitif terhadap asap/rokok.. kecepatan Wi-Fi bagus, kopinya enak dan tamu bisa membeli kopi bubuk untuk dibawa pulang."
+        },
+        {
+          "review_id": 116,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "cosine": 0.8645,
+          "excerpt": "Kafe yang cozy, nyaman buat meeting, minumannya enak, harganya terjangkau baik makanan dan minuman, saya pesan es kopi susu, pisang goreng sari kaya dan roti bakar sarikaya."
+        },
+        {
+          "review_id": 119,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "cosine": 0.8637,
+          "excerpt": "Tempat nya cozy\r\nAda 3 Jenis ruangan\r\nOutdoor\r\nAc bisa rokok\r\nAc tidak bisa rokok\r\nRamah anak\r\nPelayanan cepat\r\nRecommended\r\n\r\nWC nya jelek\r\nBau\r\nGa terawat"
+        },
+        {
+          "review_id": 120,
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "cosine": 0.8721,
+          "excerpt": "Tempat yg enak untuk nongkrong atau bermain game bersama teman-teman"
+        },
+        {
+          "review_id": 124,
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "cosine": 0.856,
+          "excerpt": "Point +nya : Affordable price/harga terjangkau, good service/pelayanan baik, good place/tempat lumayan bagus (available/kesediaan; tempat indoor dan outdoor + lesehan, tissue ada, stop kontak ada, wifi lancar), payment bisa cashless. Point - : Toilet bau krn tdk ada pewangi toilet, akses wastafel paling ujung dpn toile"
+        }
+      ]
+    },
+    "nongkrong_hangout": {
+      "pill_key": "nongkrong_hangout",
+      "pill_label": "Nongkrong/Hangout",
+      "pill_kind": "activity",
+      "dense_query": "cocok nongkrong dan nongki santai bareng teman, hangout lama ngobrol sambil ngopi",
+      "threshold": 0.85,
+      "reviews_with_embedding": 245,
+      "semantic_hits": 84,
+      "pct_semantic": 34.29,
+      "lexical_hits": 40,
+      "pct_lexical": 16.33,
+      "semantic_only_hits": 61,
+      "both_lex_and_sem": 23,
+      "shops_semantic": 40,
+      "sample_semantic": [
+        {
+          "review_id": 110,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.8906,
+          "excerpt": "tempat santai yang nyaman baik sendirian ataupun bersama pasangan, kawan, atau keluarga"
+        },
+        {
+          "review_id": 111,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.8697,
+          "excerpt": "nuansa warkopnya sangat sederhana dan santai , anda tidak akan menjumpai suasana ini di coffeeshop/warkop modern , tempatnya yang santai membuat hangout bersama teman ,partner ,keluarga ,atau bahkan pacar anda terasa lebih asik , harganya sangat relatif dan terjangkau, pas dikalangan mahasiswa ,dan pelajar , tidak lupa"
+        },
+        {
+          "review_id": 112,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.8595,
+          "excerpt": "Sangat ramai saat saya datang ke sini di malam hari. Mungkin tidak nyaman bagi mereka yang sensitif terhadap asap/rokok.. kecepatan Wi-Fi bagus, kopinya enak dan tamu bisa membeli kopi bubuk untuk dibawa pulang."
+        },
+        {
+          "review_id": 115,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "cosine": 0.8776,
+          "excerpt": "Terlalu berisik music nya, jadi gak recommend jika untuk meeting koordinasi atau meeting online. Recommend jika hanya untuk pertemuan biasa ngobrol santai biasa tanpa pembahasan kerja."
+        },
+        {
+          "review_id": 116,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "cosine": 0.8635,
+          "excerpt": "Kafe yang cozy, nyaman buat meeting, minumannya enak, harganya terjangkau baik makanan dan minuman, saya pesan es kopi susu, pisang goreng sari kaya dan roti bakar sarikaya."
+        },
+        {
+          "review_id": 118,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "cosine": 0.8524,
+          "excerpt": "Makanan sih enak , nasi goreng nye oke , ape lagi pisang srikaya nye the best 👍 Tempat nya pun nyaman , apa lagi ada playground nye , jd lebih santai bawa anak2 dan layanan nya OKE 👍"
+        }
+      ]
+    },
+    "ruangan_ac": {
+      "pill_key": "ruangan_ac",
+      "pill_label": "Ruangan sejuk",
+      "pill_kind": "attribute",
+      "dense_query": "ruangannya sejuk dan adem, ada AC, udaranya segar",
+      "threshold": 0.85,
+      "reviews_with_embedding": 245,
+      "semantic_hits": 98,
+      "pct_semantic": 40.0,
+      "lexical_hits": 27,
+      "pct_lexical": 11.02,
+      "semantic_only_hits": 86,
+      "both_lex_and_sem": 12,
+      "shops_semantic": 39,
+      "sample_semantic": [
+        {
+          "review_id": 110,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.8542,
+          "excerpt": "tempat santai yang nyaman baik sendirian ataupun bersama pasangan, kawan, atau keluarga"
+        },
+        {
+          "review_id": 112,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.8501,
+          "excerpt": "Sangat ramai saat saya datang ke sini di malam hari. Mungkin tidak nyaman bagi mereka yang sensitif terhadap asap/rokok.. kecepatan Wi-Fi bagus, kopinya enak dan tamu bisa membeli kopi bubuk untuk dibawa pulang."
+        },
+        {
+          "review_id": 116,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "cosine": 0.8534,
+          "excerpt": "Kafe yang cozy, nyaman buat meeting, minumannya enak, harganya terjangkau baik makanan dan minuman, saya pesan es kopi susu, pisang goreng sari kaya dan roti bakar sarikaya."
+        },
+        {
+          "review_id": 118,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "cosine": 0.8645,
+          "excerpt": "Makanan sih enak , nasi goreng nye oke , ape lagi pisang srikaya nye the best 👍 Tempat nya pun nyaman , apa lagi ada playground nye , jd lebih santai bawa anak2 dan layanan nya OKE 👍"
+        },
+        {
+          "review_id": 119,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "cosine": 0.8686,
+          "excerpt": "Tempat nya cozy\r\nAda 3 Jenis ruangan\r\nOutdoor\r\nAc bisa rokok\r\nAc tidak bisa rokok\r\nRamah anak\r\nPelayanan cepat\r\nRecommended\r\n\r\nWC nya jelek\r\nBau\r\nGa terawat"
+        },
+        {
+          "review_id": 126,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "cosine": 0.8541,
+          "excerpt": "salah satu coffeshop aesthetic di Pontianak tempatnya bersih nyaman banget buat sekedar nongki sama temen atau ngerjain tugas kuliah. ada indoor dan outdoor yang instagramable buat foto-foto. salah satu pelayannya best bgt orangnya ramah bgt masuk langsung disambut terus pas order dijelasin menu menunya dan pas anter o"
+        }
+      ]
+    },
+    "suasana_tenang": {
+      "pill_key": "suasana_tenang",
+      "pill_label": "Suasana tenang",
+      "pill_kind": "attribute",
+      "dense_query": "suasananya tenang, sepi, dan kalem, musiknya pelan",
+      "threshold": 0.85,
+      "reviews_with_embedding": 245,
+      "semantic_hits": 29,
+      "pct_semantic": 11.84,
+      "lexical_hits": 16,
+      "pct_lexical": 6.53,
+      "semantic_only_hits": 27,
+      "both_lex_and_sem": 2,
+      "shops_semantic": 19,
+      "sample_semantic": [
+        {
+          "review_id": 110,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.8561,
+          "excerpt": "tempat santai yang nyaman baik sendirian ataupun bersama pasangan, kawan, atau keluarga"
+        },
+        {
+          "review_id": 133,
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "cosine": 0.8538,
+          "excerpt": "Tempatnya asik cocok untuk nugas tentram,menenangkan. untuk cemilan dan minuman Kopi susu caramel, matcha nya enak mantap"
+        },
+        {
+          "review_id": 137,
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "cosine": 0.8524,
+          "excerpt": "Ruangan yang nyaman. Asik untuk sambil belajar atau kerja."
+        },
+        {
+          "review_id": 139,
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "cosine": 0.8582,
+          "excerpt": "Bagus, suasananya gk terlalu rame. Cocok buat belajar. Cafe kecil kayak rumah. Suka yg cafe kayak gini"
+        },
+        {
+          "review_id": 165,
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "cosine": 0.859,
+          "excerpt": "Suasananya lumayan cozy tapi agak sedikit panas ya.. , makanannya enak tapi porsinya kecil jadi kalo pesan seporsi sering kurang hehe"
+        },
+        {
+          "review_id": 167,
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "cosine": 0.8523,
+          "excerpt": "Tenang suasana nya untuk makanan minuman enak bgt, sampein salam dong sama barista yg itu min haha, rumah saya ga jauh kok dari aming hehe"
+        }
+      ]
+    },
+    "area_outdoor": {
+      "pill_key": "area_outdoor",
+      "pill_label": "Outdoor area",
+      "pill_kind": "attribute",
+      "dense_query": "ada area outdoor buat duduk di luar, semi outdoor atau rooftop",
+      "threshold": 0.85,
+      "reviews_with_embedding": 245,
+      "semantic_hits": 55,
+      "pct_semantic": 22.45,
+      "lexical_hits": 38,
+      "pct_lexical": 15.51,
+      "semantic_only_hits": 32,
+      "both_lex_and_sem": 23,
+      "shops_semantic": 23,
+      "sample_semantic": [
+        {
+          "review_id": 110,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.8746,
+          "excerpt": "tempat santai yang nyaman baik sendirian ataupun bersama pasangan, kawan, atau keluarga"
+        },
+        {
+          "review_id": 119,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "cosine": 0.8689,
+          "excerpt": "Tempat nya cozy\r\nAda 3 Jenis ruangan\r\nOutdoor\r\nAc bisa rokok\r\nAc tidak bisa rokok\r\nRamah anak\r\nPelayanan cepat\r\nRecommended\r\n\r\nWC nya jelek\r\nBau\r\nGa terawat"
+        },
+        {
+          "review_id": 120,
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "cosine": 0.8693,
+          "excerpt": "Tempat yg enak untuk nongkrong atau bermain game bersama teman-teman"
+        },
+        {
+          "review_id": 124,
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "cosine": 0.8514,
+          "excerpt": "Point +nya : Affordable price/harga terjangkau, good service/pelayanan baik, good place/tempat lumayan bagus (available/kesediaan; tempat indoor dan outdoor + lesehan, tissue ada, stop kontak ada, wifi lancar), payment bisa cashless. Point - : Toilet bau krn tdk ada pewangi toilet, akses wastafel paling ujung dpn toile"
+        },
+        {
+          "review_id": 125,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "cosine": 0.8541,
+          "excerpt": "Pengalaman pertama yang cukup menyenangkan. Lokasi dipinggir jalan besar. Tersedia parkir motor dan mobil yg memadai. Dekorasi ruangan yang estetik. Ada pilihan outdoor dan indoor. Ada booth buat foto sama teman-teman. Harga menengah ke atas. Makanan dan minuman cukup enak. Rasa kopi b aja. Pelayanan cepat dan ramah. S"
+        },
+        {
+          "review_id": 126,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "cosine": 0.8576,
+          "excerpt": "salah satu coffeshop aesthetic di Pontianak tempatnya bersih nyaman banget buat sekedar nongki sama temen atau ngerjain tugas kuliah. ada indoor dan outdoor yang instagramable buat foto-foto. salah satu pelayannya best bgt orangnya ramah bgt masuk langsung disambut terus pas order dijelasin menu menunya dan pas anter o"
+        }
+      ]
+    },
+    "smoking_area": {
+      "pill_key": "smoking_area",
+      "pill_label": "Smoking area",
+      "pill_kind": "attribute",
+      "dense_query": "ada smoking area, boleh merokok di ruangan khusus perokok",
+      "threshold": 0.85,
+      "reviews_with_embedding": 245,
+      "semantic_hits": 55,
+      "pct_semantic": 22.45,
+      "lexical_hits": 9,
+      "pct_lexical": 3.67,
+      "semantic_only_hits": 50,
+      "both_lex_and_sem": 5,
+      "shops_semantic": 30,
+      "sample_semantic": [
+        {
+          "review_id": 112,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.8519,
+          "excerpt": "Sangat ramai saat saya datang ke sini di malam hari. Mungkin tidak nyaman bagi mereka yang sensitif terhadap asap/rokok.. kecepatan Wi-Fi bagus, kopinya enak dan tamu bisa membeli kopi bubuk untuk dibawa pulang."
+        },
+        {
+          "review_id": 119,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "cosine": 0.8771,
+          "excerpt": "Tempat nya cozy\r\nAda 3 Jenis ruangan\r\nOutdoor\r\nAc bisa rokok\r\nAc tidak bisa rokok\r\nRamah anak\r\nPelayanan cepat\r\nRecommended\r\n\r\nWC nya jelek\r\nBau\r\nGa terawat"
+        },
+        {
+          "review_id": 125,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "cosine": 0.8512,
+          "excerpt": "Pengalaman pertama yang cukup menyenangkan. Lokasi dipinggir jalan besar. Tersedia parkir motor dan mobil yg memadai. Dekorasi ruangan yang estetik. Ada pilihan outdoor dan indoor. Ada booth buat foto sama teman-teman. Harga menengah ke atas. Makanan dan minuman cukup enak. Rasa kopi b aja. Pelayanan cepat dan ramah. S"
+        },
+        {
+          "review_id": 126,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "cosine": 0.8547,
+          "excerpt": "salah satu coffeshop aesthetic di Pontianak tempatnya bersih nyaman banget buat sekedar nongki sama temen atau ngerjain tugas kuliah. ada indoor dan outdoor yang instagramable buat foto-foto. salah satu pelayannya best bgt orangnya ramah bgt masuk langsung disambut terus pas order dijelasin menu menunya dan pas anter o"
+        },
+        {
+          "review_id": 131,
+          "place_id": "ChIJPa6swGtZHS4RrbIlRvgBgok",
+          "cosine": 0.8683,
+          "excerpt": "Tempat nya nyaman ada indoor atau outdoor, menu makanan bervariasi, kopi nya enak dan nyaman di lambung yg mudah naik asam lambung ku. Berani coba santai disini, pas waktu jam istirahat, suasana enak dan tempatnya jg gak bgitu sempit ya."
+        },
+        {
+          "review_id": 137,
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "cosine": 0.8671,
+          "excerpt": "Ruangan yang nyaman. Asik untuk sambil belajar atau kerja."
+        }
+      ]
+    },
+    "wifi_kencang": {
+      "pill_key": "wifi_kencang",
+      "pill_label": "Wifi kencang",
+      "pill_kind": "attribute",
+      "dense_query": "wifinya kencang dan stabil, internetnya lancar",
+      "threshold": 0.85,
+      "reviews_with_embedding": 245,
+      "semantic_hits": 21,
+      "pct_semantic": 8.57,
+      "lexical_hits": 17,
+      "pct_lexical": 6.94,
+      "semantic_only_hits": 19,
+      "both_lex_and_sem": 2,
+      "shops_semantic": 15,
+      "sample_semantic": [
+        {
+          "review_id": 118,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "cosine": 0.8555,
+          "excerpt": "Makanan sih enak , nasi goreng nye oke , ape lagi pisang srikaya nye the best 👍 Tempat nya pun nyaman , apa lagi ada playground nye , jd lebih santai bawa anak2 dan layanan nya OKE 👍"
+        },
+        {
+          "review_id": 355,
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "cosine": 0.8529,
+          "excerpt": "Tempatnya luas, parkiran juga luas. Ada ruang indoor yang dibagi 2 tempat. Dan outdoor dibagian depan, samping kanan dan kiri serta belakang. Wifi lancar, banyak colokan. Cocok utk wfc dan santai. Bnyak varian makanan, cemilan dan minuman. Harga seperti pada caffe pada umumnya. Tempat nya bersih. Adem. Pelayanan ok, ra"
+        },
+        {
+          "review_id": 363,
+          "place_id": "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+          "cosine": 0.8766,
+          "excerpt": "tempat nya bersih dan wangi,harganya juga terjangkau kok masi standart. macha nye enakk sekali plus abang abangnye ramah ❤️❤️"
+        },
+        {
+          "review_id": 370,
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "cosine": 0.8675,
+          "excerpt": "numpang tidur bocil waktu mati lampu. pelayanane dan makanane top. maa syaa Alalh semoga selalu lancar dan berkah.."
+        },
+        {
+          "review_id": 377,
+          "place_id": "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+          "cosine": 0.8683,
+          "excerpt": "Sangat menyenangkan nyantai disini , apalagi ruangannya dingin. Dan wifi sangat kencang. Sangat direkomendasikan untuk yg wfh"
+        },
+        {
+          "review_id": 388,
+          "place_id": "ChIJadxvpWNZHS4ReuOoPA-QLqU",
+          "cosine": 0.8598,
+          "excerpt": "tempat suasana nyaa enak bangett ❤️"
+        }
+      ]
+    },
+    "banyak_colokan_terminal": {
+      "pill_key": "banyak_colokan_terminal",
+      "pill_label": "Banyak colokan / terminal",
+      "pill_kind": "attribute",
+      "dense_query": "banyak colokan dan terminal listrik di meja, gampang ngecas laptop dan hp",
+      "threshold": 0.85,
+      "reviews_with_embedding": 245,
+      "semantic_hits": 61,
+      "pct_semantic": 24.9,
+      "lexical_hits": 14,
+      "pct_lexical": 5.71,
+      "semantic_only_hits": 55,
+      "both_lex_and_sem": 6,
+      "shops_semantic": 37,
+      "sample_semantic": [
+        {
+          "review_id": 110,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.8562,
+          "excerpt": "tempat santai yang nyaman baik sendirian ataupun bersama pasangan, kawan, atau keluarga"
+        },
+        {
+          "review_id": 112,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.881,
+          "excerpt": "Sangat ramai saat saya datang ke sini di malam hari. Mungkin tidak nyaman bagi mereka yang sensitif terhadap asap/rokok.. kecepatan Wi-Fi bagus, kopinya enak dan tamu bisa membeli kopi bubuk untuk dibawa pulang."
+        },
+        {
+          "review_id": 116,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "cosine": 0.8674,
+          "excerpt": "Kafe yang cozy, nyaman buat meeting, minumannya enak, harganya terjangkau baik makanan dan minuman, saya pesan es kopi susu, pisang goreng sari kaya dan roti bakar sarikaya."
+        },
+        {
+          "review_id": 119,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "cosine": 0.8655,
+          "excerpt": "Tempat nya cozy\r\nAda 3 Jenis ruangan\r\nOutdoor\r\nAc bisa rokok\r\nAc tidak bisa rokok\r\nRamah anak\r\nPelayanan cepat\r\nRecommended\r\n\r\nWC nya jelek\r\nBau\r\nGa terawat"
+        },
+        {
+          "review_id": 120,
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "cosine": 0.8709,
+          "excerpt": "Tempat yg enak untuk nongkrong atau bermain game bersama teman-teman"
+        },
+        {
+          "review_id": 126,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "cosine": 0.8634,
+          "excerpt": "salah satu coffeshop aesthetic di Pontianak tempatnya bersih nyaman banget buat sekedar nongki sama temen atau ngerjain tugas kuliah. ada indoor dan outdoor yang instagramable buat foto-foto. salah satu pelayannya best bgt orangnya ramah bgt masuk langsung disambut terus pas order dijelasin menu menunya dan pas anter o"
+        }
+      ]
+    },
+    "ruang_privat": {
+      "pill_key": "ruang_privat",
+      "pill_label": "Ruang privat / meeting",
+      "pill_kind": "attribute",
+      "dense_query": "ada ruang privat, vip room, atau ruang meeting tertutup yang bisa dipesan",
+      "threshold": 0.85,
+      "reviews_with_embedding": 245,
+      "semantic_hits": 51,
+      "pct_semantic": 20.82,
+      "lexical_hits": 2,
+      "pct_lexical": 0.82,
+      "semantic_only_hits": 50,
+      "both_lex_and_sem": 1,
+      "shops_semantic": 33,
+      "sample_semantic": [
+        {
+          "review_id": 110,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.8881,
+          "excerpt": "tempat santai yang nyaman baik sendirian ataupun bersama pasangan, kawan, atau keluarga"
+        },
+        {
+          "review_id": 112,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.8637,
+          "excerpt": "Sangat ramai saat saya datang ke sini di malam hari. Mungkin tidak nyaman bagi mereka yang sensitif terhadap asap/rokok.. kecepatan Wi-Fi bagus, kopinya enak dan tamu bisa membeli kopi bubuk untuk dibawa pulang."
+        },
+        {
+          "review_id": 115,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "cosine": 0.8634,
+          "excerpt": "Terlalu berisik music nya, jadi gak recommend jika untuk meeting koordinasi atau meeting online. Recommend jika hanya untuk pertemuan biasa ngobrol santai biasa tanpa pembahasan kerja."
+        },
+        {
+          "review_id": 116,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "cosine": 0.8694,
+          "excerpt": "Kafe yang cozy, nyaman buat meeting, minumannya enak, harganya terjangkau baik makanan dan minuman, saya pesan es kopi susu, pisang goreng sari kaya dan roti bakar sarikaya."
+        },
+        {
+          "review_id": 119,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "cosine": 0.8761,
+          "excerpt": "Tempat nya cozy\r\nAda 3 Jenis ruangan\r\nOutdoor\r\nAc bisa rokok\r\nAc tidak bisa rokok\r\nRamah anak\r\nPelayanan cepat\r\nRecommended\r\n\r\nWC nya jelek\r\nBau\r\nGa terawat"
+        },
+        {
+          "review_id": 120,
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "cosine": 0.8778,
+          "excerpt": "Tempat yg enak untuk nongkrong atau bermain game bersama teman-teman"
+        }
+      ]
+    },
+    "buka_sampai_malam_24_hours": {
+      "pill_key": "buka_sampai_malam_24_hours",
+      "pill_label": "24 hours",
+      "pill_kind": "attribute",
+      "dense_query": "buka 24 jam nonstop, bisa datang kapan saja termasuk tengah malam",
+      "threshold": 0.85,
+      "reviews_with_embedding": 245,
+      "semantic_hits": 43,
+      "pct_semantic": 17.55,
+      "lexical_hits": 1,
+      "pct_lexical": 0.41,
+      "semantic_only_hits": 42,
+      "both_lex_and_sem": 1,
+      "shops_semantic": 30,
+      "sample_semantic": [
+        {
+          "review_id": 110,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.873,
+          "excerpt": "tempat santai yang nyaman baik sendirian ataupun bersama pasangan, kawan, atau keluarga"
+        },
+        {
+          "review_id": 112,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.877,
+          "excerpt": "Sangat ramai saat saya datang ke sini di malam hari. Mungkin tidak nyaman bagi mereka yang sensitif terhadap asap/rokok.. kecepatan Wi-Fi bagus, kopinya enak dan tamu bisa membeli kopi bubuk untuk dibawa pulang."
+        },
+        {
+          "review_id": 119,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "cosine": 0.8529,
+          "excerpt": "Tempat nya cozy\r\nAda 3 Jenis ruangan\r\nOutdoor\r\nAc bisa rokok\r\nAc tidak bisa rokok\r\nRamah anak\r\nPelayanan cepat\r\nRecommended\r\n\r\nWC nya jelek\r\nBau\r\nGa terawat"
+        },
+        {
+          "review_id": 120,
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "cosine": 0.8684,
+          "excerpt": "Tempat yg enak untuk nongkrong atau bermain game bersama teman-teman"
+        },
+        {
+          "review_id": 131,
+          "place_id": "ChIJPa6swGtZHS4RrbIlRvgBgok",
+          "cosine": 0.8555,
+          "excerpt": "Tempat nya nyaman ada indoor atau outdoor, menu makanan bervariasi, kopi nya enak dan nyaman di lambung yg mudah naik asam lambung ku. Berani coba santai disini, pas waktu jam istirahat, suasana enak dan tempatnya jg gak bgitu sempit ya."
+        },
+        {
+          "review_id": 132,
+          "place_id": "ChIJPa6swGtZHS4RrbIlRvgBgok",
+          "cosine": 0.8586,
+          "excerpt": "Minuman dan makanan nya enak semuanya, pelayanan nya sangat baik, suasana tempat nya nyaman untuk tempat bersantai santai bersama keluarga dan teman teman, tempat nya ok la Cafe 5 CM Coffee"
+        }
+      ]
+    },
+    "musholla": {
+      "pill_key": "musholla",
+      "pill_label": "Ada musholla",
+      "pill_kind": "attribute",
+      "dense_query": "ada musholla yang bersih buat sholat, tersedia mukena",
+      "threshold": 0.85,
+      "reviews_with_embedding": 245,
+      "semantic_hits": 21,
+      "pct_semantic": 8.57,
+      "lexical_hits": 15,
+      "pct_lexical": 6.12,
+      "semantic_only_hits": 20,
+      "both_lex_and_sem": 1,
+      "shops_semantic": 15,
+      "sample_semantic": [
+        {
+          "review_id": 141,
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "cosine": 0.8618,
+          "excerpt": "Beli cheesecake nya untuk di bungkus, enakkkk Suka banget ngga terlalu manis kejunya berasa banget"
+        },
+        {
+          "review_id": 172,
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "cosine": 0.8654,
+          "excerpt": "tempatnya lumayan coze untuk indoor, outdoornya menurut saya kurang banyak kipas angin, in this cuaca of pontianak sih panas banget ya. ada musholla jadi enak mau solat. wc lumayan bersih"
+        },
+        {
+          "review_id": 176,
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "cosine": 0.8731,
+          "excerpt": "Tempat cozy dan ada musholla nya, top !!"
+        },
+        {
+          "review_id": 313,
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "cosine": 0.8581,
+          "excerpt": "Untuk yang mau suasana tenang disini pas banget, sayangnya kurang mushola dan makan berat"
+        },
+        {
+          "review_id": 363,
+          "place_id": "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+          "cosine": 0.8696,
+          "excerpt": "tempat nya bersih dan wangi,harganya juga terjangkau kok masi standart. macha nye enakk sekali plus abang abangnye ramah ❤️❤️"
+        },
+        {
+          "review_id": 370,
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "cosine": 0.88,
+          "excerpt": "numpang tidur bocil waktu mati lampu. pelayanane dan makanane top. maa syaa Alalh semoga selalu lancar dan berkah.."
+        }
+      ]
+    },
+    "parkir_luas": {
+      "pill_key": "parkir_luas",
+      "pill_label": "Parkir luas",
+      "pill_kind": "attribute",
+      "dense_query": "parkirannya luas dan lega, gampang parkir motor dan mobil",
+      "threshold": 0.85,
+      "reviews_with_embedding": 245,
+      "semantic_hits": 55,
+      "pct_semantic": 22.45,
+      "lexical_hits": 20,
+      "pct_lexical": 8.16,
+      "semantic_only_hits": 43,
+      "both_lex_and_sem": 12,
+      "shops_semantic": 33,
+      "sample_semantic": [
+        {
+          "review_id": 110,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.8783,
+          "excerpt": "tempat santai yang nyaman baik sendirian ataupun bersama pasangan, kawan, atau keluarga"
+        },
+        {
+          "review_id": 112,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.8619,
+          "excerpt": "Sangat ramai saat saya datang ke sini di malam hari. Mungkin tidak nyaman bagi mereka yang sensitif terhadap asap/rokok.. kecepatan Wi-Fi bagus, kopinya enak dan tamu bisa membeli kopi bubuk untuk dibawa pulang."
+        },
+        {
+          "review_id": 116,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "cosine": 0.8586,
+          "excerpt": "Kafe yang cozy, nyaman buat meeting, minumannya enak, harganya terjangkau baik makanan dan minuman, saya pesan es kopi susu, pisang goreng sari kaya dan roti bakar sarikaya."
+        },
+        {
+          "review_id": 119,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "cosine": 0.8631,
+          "excerpt": "Tempat nya cozy\r\nAda 3 Jenis ruangan\r\nOutdoor\r\nAc bisa rokok\r\nAc tidak bisa rokok\r\nRamah anak\r\nPelayanan cepat\r\nRecommended\r\n\r\nWC nya jelek\r\nBau\r\nGa terawat"
+        },
+        {
+          "review_id": 120,
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "cosine": 0.871,
+          "excerpt": "Tempat yg enak untuk nongkrong atau bermain game bersama teman-teman"
+        },
+        {
+          "review_id": 125,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "cosine": 0.8703,
+          "excerpt": "Pengalaman pertama yang cukup menyenangkan. Lokasi dipinggir jalan besar. Tersedia parkir motor dan mobil yg memadai. Dekorasi ruangan yang estetik. Ada pilihan outdoor dan indoor. Ada booth buat foto sama teman-teman. Harga menengah ke atas. Makanan dan minuman cukup enak. Rasa kopi b aja. Pelayanan cepat dan ramah. S"
+        }
+      ]
+    },
+    "toilet_bersih": {
+      "pill_key": "toilet_bersih",
+      "pill_label": "Toilet bersih",
+      "pill_kind": "attribute",
+      "dense_query": "toiletnya bersih, wangi, dan terawat",
+      "threshold": 0.85,
+      "reviews_with_embedding": 245,
+      "semantic_hits": 35,
+      "pct_semantic": 14.29,
+      "lexical_hits": 8,
+      "pct_lexical": 3.27,
+      "semantic_only_hits": 33,
+      "both_lex_and_sem": 2,
+      "shops_semantic": 23,
+      "sample_semantic": [
+        {
+          "review_id": 110,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.8503,
+          "excerpt": "tempat santai yang nyaman baik sendirian ataupun bersama pasangan, kawan, atau keluarga"
+        },
+        {
+          "review_id": 124,
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "cosine": 0.8721,
+          "excerpt": "Point +nya : Affordable price/harga terjangkau, good service/pelayanan baik, good place/tempat lumayan bagus (available/kesediaan; tempat indoor dan outdoor + lesehan, tissue ada, stop kontak ada, wifi lancar), payment bisa cashless. Point - : Toilet bau krn tdk ada pewangi toilet, akses wastafel paling ujung dpn toile"
+        },
+        {
+          "review_id": 126,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "cosine": 0.8568,
+          "excerpt": "salah satu coffeshop aesthetic di Pontianak tempatnya bersih nyaman banget buat sekedar nongki sama temen atau ngerjain tugas kuliah. ada indoor dan outdoor yang instagramable buat foto-foto. salah satu pelayannya best bgt orangnya ramah bgt masuk langsung disambut terus pas order dijelasin menu menunya dan pas anter o"
+        },
+        {
+          "review_id": 176,
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "cosine": 0.8578,
+          "excerpt": "Tempat cozy dan ada musholla nya, top !!"
+        },
+        {
+          "review_id": 325,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.8613,
+          "excerpt": "Minuman dan makanannya enak. Suasananya oke."
+        },
+        {
+          "review_id": 348,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "cosine": 0.8541,
+          "excerpt": "Tempat nya nyaman bangeet, pas tuk pertemuan, ketemu temen,  kumpul keluarga , tempat ngerjain tugas ketik,  pelayanan ramah, perfect sih ini"
+        }
+      ]
+    },
+    "makanan_berat": {
+      "pill_key": "makanan_berat",
+      "pill_label": "Menu Lengkap (Makanan & Minuman)",
+      "pill_kind": "attribute",
+      "dense_query": "menu lengkap, ada makanan berat seperti nasi atau pasta dan banyak pilihan minuman",
+      "threshold": 0.85,
+      "reviews_with_embedding": 245,
+      "semantic_hits": 100,
+      "pct_semantic": 40.82,
+      "lexical_hits": 12,
+      "pct_lexical": 4.9,
+      "semantic_only_hits": 93,
+      "both_lex_and_sem": 7,
+      "shops_semantic": 41,
+      "sample_semantic": [
+        {
+          "review_id": 110,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.8612,
+          "excerpt": "tempat santai yang nyaman baik sendirian ataupun bersama pasangan, kawan, atau keluarga"
+        },
+        {
+          "review_id": 112,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.869,
+          "excerpt": "Sangat ramai saat saya datang ke sini di malam hari. Mungkin tidak nyaman bagi mereka yang sensitif terhadap asap/rokok.. kecepatan Wi-Fi bagus, kopinya enak dan tamu bisa membeli kopi bubuk untuk dibawa pulang."
+        },
+        {
+          "review_id": 116,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "cosine": 0.8733,
+          "excerpt": "Kafe yang cozy, nyaman buat meeting, minumannya enak, harganya terjangkau baik makanan dan minuman, saya pesan es kopi susu, pisang goreng sari kaya dan roti bakar sarikaya."
+        },
+        {
+          "review_id": 118,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "cosine": 0.8646,
+          "excerpt": "Makanan sih enak , nasi goreng nye oke , ape lagi pisang srikaya nye the best 👍 Tempat nya pun nyaman , apa lagi ada playground nye , jd lebih santai bawa anak2 dan layanan nya OKE 👍"
+        },
+        {
+          "review_id": 120,
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "cosine": 0.8606,
+          "excerpt": "Tempat yg enak untuk nongkrong atau bermain game bersama teman-teman"
+        },
+        {
+          "review_id": 125,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "cosine": 0.8683,
+          "excerpt": "Pengalaman pertama yang cukup menyenangkan. Lokasi dipinggir jalan besar. Tersedia parkir motor dan mobil yg memadai. Dekorasi ruangan yang estetik. Ada pilihan outdoor dan indoor. Ada booth buat foto sama teman-teman. Harga menengah ke atas. Makanan dan minuman cukup enak. Rasa kopi b aja. Pelayanan cepat dan ramah. S"
+        }
+      ]
+    },
+    "dessert": {
+      "pill_key": "dessert",
+      "pill_label": "Dessert",
+      "pill_kind": "attribute",
+      "dense_query": "dessertnya enak, ada kue, cake, cheesecake, brownies, dan pastry",
+      "threshold": 0.85,
+      "reviews_with_embedding": 245,
+      "semantic_hits": 69,
+      "pct_semantic": 28.16,
+      "lexical_hits": 12,
+      "pct_lexical": 4.9,
+      "semantic_only_hits": 65,
+      "both_lex_and_sem": 4,
+      "shops_semantic": 39,
+      "sample_semantic": [
+        {
+          "review_id": 110,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.8726,
+          "excerpt": "tempat santai yang nyaman baik sendirian ataupun bersama pasangan, kawan, atau keluarga"
+        },
+        {
+          "review_id": 112,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.8581,
+          "excerpt": "Sangat ramai saat saya datang ke sini di malam hari. Mungkin tidak nyaman bagi mereka yang sensitif terhadap asap/rokok.. kecepatan Wi-Fi bagus, kopinya enak dan tamu bisa membeli kopi bubuk untuk dibawa pulang."
+        },
+        {
+          "review_id": 116,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "cosine": 0.8936,
+          "excerpt": "Kafe yang cozy, nyaman buat meeting, minumannya enak, harganya terjangkau baik makanan dan minuman, saya pesan es kopi susu, pisang goreng sari kaya dan roti bakar sarikaya."
+        },
+        {
+          "review_id": 119,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "cosine": 0.8515,
+          "excerpt": "Tempat nya cozy\r\nAda 3 Jenis ruangan\r\nOutdoor\r\nAc bisa rokok\r\nAc tidak bisa rokok\r\nRamah anak\r\nPelayanan cepat\r\nRecommended\r\n\r\nWC nya jelek\r\nBau\r\nGa terawat"
+        },
+        {
+          "review_id": 120,
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "cosine": 0.8596,
+          "excerpt": "Tempat yg enak untuk nongkrong atau bermain game bersama teman-teman"
+        },
+        {
+          "review_id": 129,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "cosine": 0.8789,
+          "excerpt": "Tempatnya bagus banget buat nongki sama temen ataupun sambil buat tugas kuliah lama2.. makanannya enak dan coffenya juga enak.. ada makanan yang kids friendly juga kok.. tadi makanannya lupa ke foto"
+        }
+      ]
+    },
+    "live_music_akustik": {
+      "pill_key": "live_music_akustik",
+      "pill_label": "Live music/Akustik",
+      "pill_kind": "candidate_activity",
+      "dense_query": "ada live music atau akustik, suasananya seru buat dengerin musik",
+      "threshold": 0.85,
+      "reviews_with_embedding": 245,
+      "semantic_hits": 36,
+      "pct_semantic": 14.69,
+      "lexical_hits": 0,
+      "pct_lexical": 0.0,
+      "semantic_only_hits": 36,
+      "both_lex_and_sem": 0,
+      "shops_semantic": 23,
+      "sample_semantic": [
+        {
+          "review_id": 110,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.8577,
+          "excerpt": "tempat santai yang nyaman baik sendirian ataupun bersama pasangan, kawan, atau keluarga"
+        },
+        {
+          "review_id": 112,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.8526,
+          "excerpt": "Sangat ramai saat saya datang ke sini di malam hari. Mungkin tidak nyaman bagi mereka yang sensitif terhadap asap/rokok.. kecepatan Wi-Fi bagus, kopinya enak dan tamu bisa membeli kopi bubuk untuk dibawa pulang."
+        },
+        {
+          "review_id": 115,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "cosine": 0.8667,
+          "excerpt": "Terlalu berisik music nya, jadi gak recommend jika untuk meeting koordinasi atau meeting online. Recommend jika hanya untuk pertemuan biasa ngobrol santai biasa tanpa pembahasan kerja."
+        },
+        {
+          "review_id": 119,
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "cosine": 0.8563,
+          "excerpt": "Tempat nya cozy\r\nAda 3 Jenis ruangan\r\nOutdoor\r\nAc bisa rokok\r\nAc tidak bisa rokok\r\nRamah anak\r\nPelayanan cepat\r\nRecommended\r\n\r\nWC nya jelek\r\nBau\r\nGa terawat"
+        },
+        {
+          "review_id": 120,
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "cosine": 0.87,
+          "excerpt": "Tempat yg enak untuk nongkrong atau bermain game bersama teman-teman"
+        },
+        {
+          "review_id": 129,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "cosine": 0.8507,
+          "excerpt": "Tempatnya bagus banget buat nongki sama temen ataupun sambil buat tugas kuliah lama2.. makanannya enak dan coffenya juga enak.. ada makanan yang kids friendly juga kok.. tadi makanannya lupa ke foto"
+        }
+      ]
+    },
+    "kencan_pacaran": {
+      "pill_key": "kencan_pacaran",
+      "pill_label": "Kencan/Pacaran",
+      "pill_kind": "candidate_activity",
+      "dense_query": "cocok buat kencan atau date night berdua, romantis dan nyaman",
+      "threshold": 0.85,
+      "reviews_with_embedding": 245,
+      "semantic_hits": 62,
+      "pct_semantic": 25.31,
+      "lexical_hits": 0,
+      "pct_lexical": 0.0,
+      "semantic_only_hits": 62,
+      "both_lex_and_sem": 0,
+      "shops_semantic": 35,
+      "sample_semantic": [
+        {
+          "review_id": 110,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.8927,
+          "excerpt": "tempat santai yang nyaman baik sendirian ataupun bersama pasangan, kawan, atau keluarga"
+        },
+        {
+          "review_id": 112,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.8622,
+          "excerpt": "Sangat ramai saat saya datang ke sini di malam hari. Mungkin tidak nyaman bagi mereka yang sensitif terhadap asap/rokok.. kecepatan Wi-Fi bagus, kopinya enak dan tamu bisa membeli kopi bubuk untuk dibawa pulang."
+        },
+        {
+          "review_id": 120,
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "cosine": 0.873,
+          "excerpt": "Tempat yg enak untuk nongkrong atau bermain game bersama teman-teman"
+        },
+        {
+          "review_id": 126,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "cosine": 0.8569,
+          "excerpt": "salah satu coffeshop aesthetic di Pontianak tempatnya bersih nyaman banget buat sekedar nongki sama temen atau ngerjain tugas kuliah. ada indoor dan outdoor yang instagramable buat foto-foto. salah satu pelayannya best bgt orangnya ramah bgt masuk langsung disambut terus pas order dijelasin menu menunya dan pas anter o"
+        },
+        {
+          "review_id": 129,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "cosine": 0.8596,
+          "excerpt": "Tempatnya bagus banget buat nongki sama temen ataupun sambil buat tugas kuliah lama2.. makanannya enak dan coffenya juga enak.. ada makanan yang kids friendly juga kok.. tadi makanannya lupa ke foto"
+        },
+        {
+          "review_id": 131,
+          "place_id": "ChIJPa6swGtZHS4RrbIlRvgBgok",
+          "cosine": 0.8654,
+          "excerpt": "Tempat nya nyaman ada indoor atau outdoor, menu makanan bervariasi, kopi nya enak dan nyaman di lambung yg mudah naik asam lambung ku. Berani coba santai disini, pas waktu jam istirahat, suasana enak dan tempatnya jg gak bgitu sempit ya."
+        }
+      ]
+    },
+    "kunjungan_singkat": {
+      "pill_key": "kunjungan_singkat",
+      "pill_label": "Grab-and-go / takeaway",
+      "pill_kind": "candidate_activity",
+      "dense_query": "cocok buat mampir sebentar takeaway atau grab and go tanpa duduk lama",
+      "threshold": 0.85,
+      "reviews_with_embedding": 245,
+      "semantic_hits": 26,
+      "pct_semantic": 10.61,
+      "lexical_hits": 0,
+      "pct_lexical": 0.0,
+      "semantic_only_hits": 26,
+      "both_lex_and_sem": 0,
+      "shops_semantic": 18,
+      "sample_semantic": [
+        {
+          "review_id": 110,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.8502,
+          "excerpt": "tempat santai yang nyaman baik sendirian ataupun bersama pasangan, kawan, atau keluarga"
+        },
+        {
+          "review_id": 120,
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "cosine": 0.8502,
+          "excerpt": "Tempat yg enak untuk nongkrong atau bermain game bersama teman-teman"
+        },
+        {
+          "review_id": 129,
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "cosine": 0.8535,
+          "excerpt": "Tempatnya bagus banget buat nongki sama temen ataupun sambil buat tugas kuliah lama2.. makanannya enak dan coffenya juga enak.. ada makanan yang kids friendly juga kok.. tadi makanannya lupa ke foto"
+        },
+        {
+          "review_id": 131,
+          "place_id": "ChIJPa6swGtZHS4RrbIlRvgBgok",
+          "cosine": 0.8674,
+          "excerpt": "Tempat nya nyaman ada indoor atau outdoor, menu makanan bervariasi, kopi nya enak dan nyaman di lambung yg mudah naik asam lambung ku. Berani coba santai disini, pas waktu jam istirahat, suasana enak dan tempatnya jg gak bgitu sempit ya."
+        },
+        {
+          "review_id": 134,
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "cosine": 0.8543,
+          "excerpt": "Good place, good coffee. Barista nya enak diajak ngobrol. Beansnya oke. Tempatnya oke dan tenang. Datang pas pagi dan sepi. Enak buat sendirian atau ngobrol yang gak rame."
+        },
+        {
+          "review_id": 141,
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "cosine": 0.851,
+          "excerpt": "Beli cheesecake nya untuk di bungkus, enakkkk Suka banget ngga terlalu manis kejunya berasa banget"
+        }
+      ]
+    },
+    "event_komunitas": {
+      "pill_key": "event_komunitas",
+      "pill_label": "Event/Komunitas",
+      "pill_kind": "candidate_activity",
+      "dense_query": "sering ada acara komunitas workshop atau gathering di sini",
+      "threshold": 0.85,
+      "reviews_with_embedding": 245,
+      "semantic_hits": 4,
+      "pct_semantic": 1.63,
+      "lexical_hits": 0,
+      "pct_lexical": 0.0,
+      "semantic_only_hits": 4,
+      "both_lex_and_sem": 0,
+      "shops_semantic": 3,
+      "sample_semantic": [
+        {
+          "review_id": 110,
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "cosine": 0.8654,
+          "excerpt": "tempat santai yang nyaman baik sendirian ataupun bersama pasangan, kawan, atau keluarga"
+        },
+        {
+          "review_id": 120,
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "cosine": 0.8757,
+          "excerpt": "Tempat yg enak untuk nongkrong atau bermain game bersama teman-teman"
+        },
+        {
+          "review_id": 123,
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "cosine": 0.8523,
+          "excerpt": "Selalu ramai anak remaja nongkrong main game, anak kuliahan mengerjakan tugas, maupun nongkrong disini. Jika untuk berkumpul dengan keluarga kurang disarankan"
+        },
+        {
+          "review_id": 375,
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "cosine": 0.8548,
+          "excerpt": "Pertama kali diajakin temen, tempatnya enak buat ngobrol atau nugas oke banget. Ada outdoor dan indoor juga"
+        }
+      ]
+    }
+  }
+}

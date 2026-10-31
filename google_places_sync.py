@@ -13,14 +13,13 @@ from typing import Any
 
 import requests
 
-from fetch_google_places_reviews import (
-    _resolve_api_key,
+from fetch_google_places_reviews import fetch_coffee_shops_from_db
+from places_api_client import (
     build_search_query,
-    fetch_coffee_shops_from_db,
-    legacy_place_details,
-    legacy_text_search,
+    legacy_text_search_first as legacy_text_search,
     normalize_reviews_legacy,
     pick_place_candidate,
+    resolve_api_key,
 )
 
 LEGACY_METADATA_FIELDS = (
@@ -446,13 +445,59 @@ def sync_shop_from_google(
     }
 
 
+def sync_shops_by_place_ids(
+    place_ids: list[str],
+    *,
+    use_text_search: bool = False,
+    delay_seconds: float = 0.35,
+) -> dict[str, Any]:
+    """Sync metadata Google untuk daftar place_id (mis. batch migrasi staging)."""
+    api_key, _ = resolve_api_key()
+    from db_backend import get_connection
+
+    conn = get_connection()
+    try:
+        ensure_coffee_shop_google_columns(conn)
+    finally:
+        conn.close()
+
+    import time
+
+    session = requests.Session()
+    shops = fetch_coffee_shops_from_db()
+    by_id = {str(s.get("place_id")): s for s in shops}
+    results = []
+    errors = 0
+    for i, pid in enumerate(place_ids):
+        pid = str(pid or "").strip()
+        if not pid:
+            continue
+        shop = by_id.get(pid) or {"place_id": pid, "name": "", "address": ""}
+        if i > 0 and delay_seconds > 0:
+            time.sleep(delay_seconds)
+        row = sync_shop_from_google(
+            session,
+            api_key,
+            shop,
+            use_text_search=use_text_search,
+        )
+        results.append(row)
+        if not row.get("success"):
+            errors += 1
+    return {
+        "shop_count": len(results),
+        "error_count": errors,
+        "results": results,
+    }
+
+
 def sync_all_shops(
     *,
     limit: int | None = None,
     import_json_first: bool = True,
     delay_seconds: float = 0.35,
 ) -> dict[str, Any]:
-    api_key, _ = _resolve_api_key()
+    api_key, _ = resolve_api_key()
     from db_backend import get_connection
 
     conn = get_connection()

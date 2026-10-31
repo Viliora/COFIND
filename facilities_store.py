@@ -188,12 +188,6 @@ def save_facilities_entry(place_id: str, entry: dict) -> None:
     conn.commit()
     conn.close()
 
-
-def save_facilities_index(facilities_index: Dict[str, dict]) -> None:
-    for place_id, entry in (facilities_index or {}).items():
-        save_facilities_entry(place_id, entry)
-
-
 def default_facilities_entry(place_id: str, shop_name: str = '') -> dict:
     return {
         'place_id': place_id,

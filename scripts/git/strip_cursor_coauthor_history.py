@@ -43,13 +43,20 @@ def write_filter_repo_callback(dest: Path) -> None:
         '''\
 def message(message, metadata):
     import re
+    if message is None:
+        return b"\\n"
+    if isinstance(message, bytes):
+        text = message.decode("utf-8", errors="replace")
+    else:
+        text = message or ""
     pat = re.compile(
         r"^Co-authored-by:\\s*Cursor\\s*<cursoragent@cursor\\.com>\\s*\\r?\\n?",
         re.IGNORECASE | re.MULTILINE,
     )
-    cleaned = pat.sub("", message)
+    cleaned = pat.sub("", text)
     cleaned = re.sub(r"\\n{3,}", "\\n\\n", cleaned)
-    return cleaned.rstrip() + "\\n"
+    out = cleaned.rstrip() + "\\n"
+    return out.encode("utf-8") if isinstance(message, bytes) else out
 ''',
         encoding="utf-8",
     )
@@ -113,21 +120,54 @@ def main() -> int:
         )
         return 1
 
+    origin_url = ""
+    try:
+        origin_url = _run(["git", "remote", "get-url", "origin"], cwd=cwd).strip()
+    except subprocess.CalledProcessError:
+        pass
+
+    tree_before = _run(["git", "rev-parse", "main^{tree}"], cwd=cwd).strip()
+
     callback = cwd / ".git" / "filter-repo-cursor-coauthor-callback.py"
     write_filter_repo_callback(callback)
-    print("Running git filter-repo (this rewrites all commit SHAs)...")
+    print("Running git filter-repo on refs/heads/main only (this rewrites commit SHAs)...")
     subprocess.check_call(
         [
             "git",
             "filter-repo",
             "--force",
+            "--refs",
+            "refs/heads/main",
             f"--message-callback={callback}",
         ],
         cwd=cwd,
     )
     callback.unlink(missing_ok=True)
-    print("Done. Verify: git log -5 --format=%B")
+
+    tree_after = _run(["git", "rev-parse", "main^{tree}"], cwd=cwd).strip()
+    if tree_before != tree_after:
+        print(
+            f"ERROR: tree berubah ({tree_before} -> {tree_after}). Jangan force-push.",
+            file=sys.stderr,
+        )
+        return 1
+
+    try:
+        _run(["git", "remote", "get-url", "origin"], cwd=cwd)
+    except subprocess.CalledProcessError:
+        if origin_url:
+            subprocess.check_call(["git", "remote", "add", "origin", origin_url], cwd=cwd)
+            print(f"Restored origin: {origin_url}")
+
+    remaining = len(affected_commits(cwd, "main"))
+    if remaining:
+        print(f"WARNING: {remaining} commit(s) on main still mention cursoragent.", file=sys.stderr)
+        return 1
+
+    print("Done. Isi file (tree) identik; hanya SHA/pesan berubah.")
+    print("Verify: git log -5 --format=%B")
     print("RISK: force-push rewrites remote; tell collaborators to re-clone or reset.")
+    print("  git push --force-with-lease origin main")
     return 0
 
 

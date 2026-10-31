@@ -1,0 +1,4468 @@
+{
+  "reviews": 125,
+  "clauses": 839,
+  "pills": {
+    "belajar": {
+      "pos_clauses": 100,
+      "keyword_stats": [
+        {
+          "keyword": "belajar",
+          "review_hits": 5
+        },
+        {
+          "keyword": "tugas",
+          "review_hits": 5
+        },
+        {
+          "keyword": "nugas",
+          "review_hits": 10
+        },
+        {
+          "keyword": "ngerjain tugas",
+          "review_hits": 3
+        },
+        {
+          "keyword": "kuliah",
+          "review_hits": 2
+        },
+        {
+          "keyword": "kampus",
+          "review_hits": 0
+        },
+        {
+          "keyword": "ujian",
+          "review_hits": 0
+        },
+        {
+          "keyword": "skripsi",
+          "review_hits": 1
+        },
+        {
+          "keyword": "buku",
+          "review_hits": 2
+        },
+        {
+          "keyword": "baca buku",
+          "review_hits": 1
+        },
+        {
+          "keyword": "fokus belajar",
+          "review_hits": 0
+        },
+        {
+          "keyword": "ruang belajar",
+          "review_hits": 0
+        },
+        {
+          "keyword": "temen belajar",
+          "review_hits": 0
+        },
+        {
+          "keyword": "anak kuliahan",
+          "review_hits": 1
+        },
+        {
+          "keyword": "mahasiswa",
+          "review_hits": 2
+        },
+        {
+          "keyword": "tugas sekolah",
+          "review_hits": 0
+        }
+      ],
+      "candidates": [
+        {
+          "phrase": "salah satu",
+          "pos_df": 9,
+          "all_df": 13,
+          "lift": 5.81,
+          "score": 13.37
+        },
+        {
+          "phrase": "salah",
+          "pos_df": 9,
+          "all_df": 14,
+          "lift": 5.39,
+          "score": 12.42
+        },
+        {
+          "phrase": "rokok",
+          "pos_df": 3,
+          "all_df": 3,
+          "lift": 8.39,
+          "score": 11.63
+        },
+        {
+          "phrase": "silang",
+          "pos_df": 3,
+          "all_df": 3,
+          "lift": 8.39,
+          "score": 11.63
+        },
+        {
+          "phrase": "area indoornya",
+          "pos_df": 3,
+          "all_df": 3,
+          "lift": 8.39,
+          "score": 11.63
+        },
+        {
+          "phrase": "dingin",
+          "pos_df": 3,
+          "all_df": 3,
+          "lift": 8.39,
+          "score": 11.63
+        },
+        {
+          "phrase": "nyaman",
+          "pos_df": 16,
+          "all_df": 38,
+          "lift": 3.53,
+          "score": 10.01
+        },
+        {
+          "phrase": "ruangan",
+          "pos_df": 6,
+          "all_df": 10,
+          "lift": 5.03,
+          "score": 9.8
+        },
+        {
+          "phrase": "arennya",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "bubuk",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa pulang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "merupakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "berbeda",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "menyediakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "jenis",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "private",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "private study",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "terhadap",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "memiliki",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "nyaman luas",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "sekedar",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "sekedar nongki",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "study space",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "teras",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        }
+      ]
+    },
+    "kerja": {
+      "pos_clauses": 100,
+      "keyword_stats": [
+        {
+          "keyword": "kerja",
+          "review_hits": 12
+        },
+        {
+          "keyword": "wfc",
+          "review_hits": 16
+        },
+        {
+          "keyword": "work from cafe",
+          "review_hits": 0
+        },
+        {
+          "keyword": "laptopan",
+          "review_hits": 1
+        },
+        {
+          "keyword": "laptop",
+          "review_hits": 2
+        },
+        {
+          "keyword": "wfh",
+          "review_hits": 2
+        },
+        {
+          "keyword": "kerja remote",
+          "review_hits": 0
+        },
+        {
+          "keyword": "ngantor",
+          "review_hits": 0
+        },
+        {
+          "keyword": "zoom",
+          "review_hits": 0
+        },
+        {
+          "keyword": "meeting online",
+          "review_hits": 1
+        },
+        {
+          "keyword": "video call",
+          "review_hits": 0
+        },
+        {
+          "keyword": "webinar",
+          "review_hits": 0
+        },
+        {
+          "keyword": "produktif",
+          "review_hits": 1
+        },
+        {
+          "keyword": "deadline",
+          "review_hits": 0
+        },
+        {
+          "keyword": "presentasi",
+          "review_hits": 0
+        },
+        {
+          "keyword": "dokumen",
+          "review_hits": 0
+        },
+        {
+          "keyword": "ngerjain kerjaan",
+          "review_hits": 0
+        },
+        {
+          "keyword": "kerjaan kantor",
+          "review_hits": 0
+        },
+        {
+          "keyword": "lembur",
+          "review_hits": 0
+        },
+        {
+          "keyword": "freelance",
+          "review_hits": 0
+        },
+        {
+          "keyword": "remote working",
+          "review_hits": 0
+        },
+        {
+          "keyword": "work from anywhere",
+          "review_hits": 0
+        },
+        {
+          "keyword": "bisnis",
+          "review_hits": 0
+        },
+        {
+          "keyword": "kantor",
+          "review_hits": 1
+        }
+      ],
+      "candidates": [
+        {
+          "phrase": "salah satu",
+          "pos_df": 9,
+          "all_df": 13,
+          "lift": 5.81,
+          "score": 13.37
+        },
+        {
+          "phrase": "salah",
+          "pos_df": 9,
+          "all_df": 14,
+          "lift": 5.39,
+          "score": 12.42
+        },
+        {
+          "phrase": "silang",
+          "pos_df": 3,
+          "all_df": 3,
+          "lift": 8.39,
+          "score": 11.63
+        },
+        {
+          "phrase": "dapat",
+          "pos_df": 3,
+          "all_df": 3,
+          "lift": 8.39,
+          "score": 11.63
+        },
+        {
+          "phrase": "satu",
+          "pos_df": 10,
+          "all_df": 20,
+          "lift": 4.2,
+          "score": 10.06
+        },
+        {
+          "phrase": "area parkir",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "jenis",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "pelayanan cepat",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "bubuk",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa pulang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "merupakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "direkomendasikan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "teras",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "seberang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "menyediakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "memiliki",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "jam 9",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "cocok untuk wfc",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "nyaman luas",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "espresso",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "berbeda",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "terhadap",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "sekedar",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "sekedar nongki",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        }
+      ]
+    },
+    "bermain game": {
+      "pos_clauses": 100,
+      "keyword_stats": [
+        {
+          "keyword": "main game",
+          "review_hits": 1
+        },
+        {
+          "keyword": "gaming",
+          "review_hits": 0
+        },
+        {
+          "keyword": "gamer",
+          "review_hits": 0
+        },
+        {
+          "keyword": "game",
+          "review_hits": 3
+        },
+        {
+          "keyword": "ngegame",
+          "review_hits": 0
+        },
+        {
+          "keyword": "nge-game",
+          "review_hits": 0
+        },
+        {
+          "keyword": "nge game",
+          "review_hits": 0
+        },
+        {
+          "keyword": "mobile legends",
+          "review_hits": 0
+        },
+        {
+          "keyword": "mobile legend",
+          "review_hits": 0
+        },
+        {
+          "keyword": "mlbb",
+          "review_hits": 0
+        },
+        {
+          "keyword": "main ml",
+          "review_hits": 0
+        },
+        {
+          "keyword": "main ml",
+          "review_hits": 0
+        },
+        {
+          "keyword": "pubg",
+          "review_hits": 0
+        },
+        {
+          "keyword": "valorant",
+          "review_hits": 0
+        },
+        {
+          "keyword": "free fire",
+          "review_hits": 0
+        },
+        {
+          "keyword": "main ff",
+          "review_hits": 0
+        },
+        {
+          "keyword": "honor of kings",
+          "review_hits": 0
+        },
+        {
+          "keyword": "mabar",
+          "review_hits": 2
+        },
+        {
+          "keyword": "ngemabar",
+          "review_hits": 0
+        },
+        {
+          "keyword": "gas game",
+          "review_hits": 0
+        },
+        {
+          "keyword": "turnamen",
+          "review_hits": 0
+        },
+        {
+          "keyword": "push rank",
+          "review_hits": 0
+        },
+        {
+          "keyword": "ngerank",
+          "review_hits": 0
+        },
+        {
+          "keyword": "bermain game",
+          "review_hits": 1
+        },
+        {
+          "keyword": "mainbareng",
+          "review_hits": 0
+        },
+        {
+          "keyword": "playstation",
+          "review_hits": 0
+        },
+        {
+          "keyword": "ps5",
+          "review_hits": 0
+        },
+        {
+          "keyword": "esport",
+          "review_hits": 0
+        }
+      ],
+      "candidates": [
+        {
+          "phrase": "dapat",
+          "pos_df": 3,
+          "all_df": 3,
+          "lift": 8.39,
+          "score": 11.63
+        },
+        {
+          "phrase": "silang",
+          "pos_df": 3,
+          "all_df": 3,
+          "lift": 8.39,
+          "score": 11.63
+        },
+        {
+          "phrase": "salah satu",
+          "pos_df": 8,
+          "all_df": 13,
+          "lift": 5.16,
+          "score": 11.34
+        },
+        {
+          "phrase": "salah",
+          "pos_df": 8,
+          "all_df": 14,
+          "lift": 4.79,
+          "score": 10.53
+        },
+        {
+          "phrase": "parkir",
+          "pos_df": 7,
+          "all_df": 13,
+          "lift": 4.52,
+          "score": 9.39
+        },
+        {
+          "phrase": "bubuk",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa pulang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "jenis",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "arennya",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "pembayaran",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "menarik",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "merupakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "menyediakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "area parkir",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "ownernya",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "memiliki",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "teras",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "seberang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "jam 9",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "roastery",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "espresso",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "berbeda",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "terhadap",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "nyaman luas",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        }
+      ]
+    },
+    "meeting_sosialisasi": {
+      "pos_clauses": 100,
+      "keyword_stats": [
+        {
+          "keyword": "meeting",
+          "review_hits": 5
+        },
+        {
+          "keyword": "rapat",
+          "review_hits": 1
+        },
+        {
+          "keyword": "diskusi",
+          "review_hits": 0
+        },
+        {
+          "keyword": "arisan",
+          "review_hits": 0
+        },
+        {
+          "keyword": "sosialisasi",
+          "review_hits": 0
+        },
+        {
+          "keyword": "networking",
+          "review_hits": 0
+        },
+        {
+          "keyword": "catch up",
+          "review_hits": 0
+        },
+        {
+          "keyword": "untuk meeting",
+          "review_hits": 1
+        },
+        {
+          "keyword": "buat rapat",
+          "review_hits": 0
+        },
+        {
+          "keyword": "untuk rapat",
+          "review_hits": 1
+        },
+        {
+          "keyword": "pertemuan bisnis",
+          "review_hits": 0
+        },
+        {
+          "keyword": "pertemuan kerja",
+          "review_hits": 0
+        },
+        {
+          "keyword": "meeting kantor",
+          "review_hits": 0
+        },
+        {
+          "keyword": "kumpul kerja",
+          "review_hits": 0
+        },
+        {
+          "keyword": "kumpul kantor",
+          "review_hits": 0
+        },
+        {
+          "keyword": "kumpul tim",
+          "review_hits": 0
+        }
+      ],
+      "candidates": [
+        {
+          "phrase": "salah satu",
+          "pos_df": 9,
+          "all_df": 13,
+          "lift": 5.81,
+          "score": 13.37
+        },
+        {
+          "phrase": "salah",
+          "pos_df": 9,
+          "all_df": 14,
+          "lift": 5.39,
+          "score": 12.42
+        },
+        {
+          "phrase": "ruangan",
+          "pos_df": 7,
+          "all_df": 10,
+          "lift": 5.87,
+          "score": 12.21
+        },
+        {
+          "phrase": "silang",
+          "pos_df": 3,
+          "all_df": 3,
+          "lift": 8.39,
+          "score": 11.63
+        },
+        {
+          "phrase": "dingin",
+          "pos_df": 3,
+          "all_df": 3,
+          "lift": 8.39,
+          "score": 11.63
+        },
+        {
+          "phrase": "area indoornya",
+          "pos_df": 3,
+          "all_df": 3,
+          "lift": 8.39,
+          "score": 11.63
+        },
+        {
+          "phrase": "satu",
+          "pos_df": 10,
+          "all_df": 20,
+          "lift": 4.2,
+          "score": 10.06
+        },
+        {
+          "phrase": "area",
+          "pos_df": 10,
+          "all_df": 20,
+          "lift": 4.2,
+          "score": 10.06
+        },
+        {
+          "phrase": "nyaman",
+          "pos_df": 16,
+          "all_df": 38,
+          "lift": 3.53,
+          "score": 10.01
+        },
+        {
+          "phrase": "merupakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "tamu",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "bubuk",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa pulang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "direkomendasikan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "jenis",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "menyediakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "2 lantai",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "terasa seperti",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "teras",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "seberang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "area parkir",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "sekedar",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "sekedar nongki",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "terhadap",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        }
+      ]
+    },
+    "keluarga": {
+      "pos_clauses": 100,
+      "keyword_stats": [
+        {
+          "keyword": "keluarga",
+          "review_hits": 5
+        },
+        {
+          "keyword": "family",
+          "review_hits": 2
+        },
+        {
+          "keyword": "anak-anak",
+          "review_hits": 0
+        },
+        {
+          "keyword": "ramah keluarga",
+          "review_hits": 0
+        },
+        {
+          "keyword": "cocok keluarga",
+          "review_hits": 0
+        },
+        {
+          "keyword": "bawa anak kecil",
+          "review_hits": 0
+        },
+        {
+          "keyword": "family friendly",
+          "review_hits": 0
+        },
+        {
+          "keyword": "berkumpul bersama",
+          "review_hits": 1
+        },
+        {
+          "keyword": "kumpul bersama",
+          "review_hits": 0
+        },
+        {
+          "keyword": "quality time",
+          "review_hits": 0
+        },
+        {
+          "keyword": "ramah anak",
+          "review_hits": 1
+        },
+        {
+          "keyword": "playground",
+          "review_hits": 1
+        },
+        {
+          "keyword": "area bermain",
+          "review_hits": 0
+        },
+        {
+          "keyword": "kursi bayi",
+          "review_hits": 0
+        },
+        {
+          "keyword": "menu anak",
+          "review_hits": 0
+        }
+      ],
+      "candidates": [
+        {
+          "phrase": "makanannya enak",
+          "pos_df": 5,
+          "all_df": 6,
+          "lift": 6.99,
+          "score": 12.53
+        },
+        {
+          "phrase": "makanan dan minuman",
+          "pos_df": 5,
+          "all_df": 6,
+          "lift": 6.99,
+          "score": 12.53
+        },
+        {
+          "phrase": "nyaman",
+          "pos_df": 18,
+          "all_df": 38,
+          "lift": 3.97,
+          "score": 11.7
+        },
+        {
+          "phrase": "silang",
+          "pos_df": 3,
+          "all_df": 3,
+          "lift": 8.39,
+          "score": 11.63
+        },
+        {
+          "phrase": "cepat",
+          "pos_df": 3,
+          "all_df": 3,
+          "lift": 8.39,
+          "score": 11.63
+        },
+        {
+          "phrase": "salah satu",
+          "pos_df": 8,
+          "all_df": 13,
+          "lift": 5.16,
+          "score": 11.34
+        },
+        {
+          "phrase": "salah",
+          "pos_df": 8,
+          "all_df": 14,
+          "lift": 4.79,
+          "score": 10.53
+        },
+        {
+          "phrase": "pelayanan",
+          "pos_df": 8,
+          "all_df": 15,
+          "lift": 4.47,
+          "score": 9.83
+        },
+        {
+          "phrase": "merupakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "bubuk",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa pulang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "enak harganya",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "jenis",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "sekedar",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "sekedar nongki",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "menyediakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "pelayanan cepat",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "terhadap",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "memiliki",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "berbeda",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "teras",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "seberang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "nyaman luas",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "jam 9",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        }
+      ]
+    },
+    "instagrammable": {
+      "pos_clauses": 100,
+      "keyword_stats": [
+        {
+          "keyword": "instagrammable",
+          "review_hits": 0
+        },
+        {
+          "keyword": "instagramable",
+          "review_hits": 1
+        },
+        {
+          "keyword": "instagenic",
+          "review_hits": 0
+        },
+        {
+          "keyword": "fotogenik",
+          "review_hits": 0
+        },
+        {
+          "keyword": "spot foto",
+          "review_hits": 3
+        },
+        {
+          "keyword": "photo spot",
+          "review_hits": 0
+        },
+        {
+          "keyword": "banyak spot foto",
+          "review_hits": 2
+        },
+        {
+          "keyword": "estetik",
+          "review_hits": 4
+        }
+      ],
+      "candidates": [
+        {
+          "phrase": "salah satu",
+          "pos_df": 10,
+          "all_df": 13,
+          "lift": 6.45,
+          "score": 15.48
+        },
+        {
+          "phrase": "salah",
+          "pos_df": 10,
+          "all_df": 14,
+          "lift": 5.99,
+          "score": 14.37
+        },
+        {
+          "phrase": "satu",
+          "pos_df": 12,
+          "all_df": 20,
+          "lift": 5.03,
+          "score": 12.91
+        },
+        {
+          "phrase": "silang",
+          "pos_df": 3,
+          "all_df": 3,
+          "lift": 8.39,
+          "score": 11.63
+        },
+        {
+          "phrase": "area indoornya",
+          "pos_df": 3,
+          "all_df": 3,
+          "lift": 8.39,
+          "score": 11.63
+        },
+        {
+          "phrase": "menarik",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "merupakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "direkomendasikan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "menyediakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "roastery",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "arennya",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "bubuk",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa pulang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "berbeda",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "jenis",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "nyaman luas",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "khasnya",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "sekedar",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "sekedar nongki",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "ownernya",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "memiliki",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "teras",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "seberang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "area parkir",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        }
+      ]
+    },
+    "ruangan_ac": {
+      "pos_clauses": 100,
+      "keyword_stats": [
+        {
+          "keyword": "ac",
+          "review_hits": 12
+        },
+        {
+          "keyword": "ber ac",
+          "review_hits": 1
+        },
+        {
+          "keyword": "ruangan ac",
+          "review_hits": 0
+        },
+        {
+          "keyword": "sejuk",
+          "review_hits": 0
+        },
+        {
+          "keyword": "indoor ac",
+          "review_hits": 1
+        },
+        {
+          "keyword": "ac dingin",
+          "review_hits": 0
+        },
+        {
+          "keyword": "ruangan dingin",
+          "review_hits": 0
+        },
+        {
+          "keyword": "ruangan sejuk",
+          "review_hits": 0
+        },
+        {
+          "keyword": "udara dingin",
+          "review_hits": 0
+        }
+      ],
+      "candidates": [
+        {
+          "phrase": "area indoornya",
+          "pos_df": 3,
+          "all_df": 3,
+          "lift": 8.39,
+          "score": 11.63
+        },
+        {
+          "phrase": "dingin",
+          "pos_df": 3,
+          "all_df": 3,
+          "lift": 8.39,
+          "score": 11.63
+        },
+        {
+          "phrase": "salah satu",
+          "pos_df": 8,
+          "all_df": 13,
+          "lift": 5.16,
+          "score": 11.34
+        },
+        {
+          "phrase": "salah",
+          "pos_df": 8,
+          "all_df": 14,
+          "lift": 4.79,
+          "score": 10.53
+        },
+        {
+          "phrase": "ruangan",
+          "pos_df": 6,
+          "all_df": 10,
+          "lift": 5.03,
+          "score": 9.8
+        },
+        {
+          "phrase": "bubuk",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa pulang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "direkomendasikan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "arennya",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "area parkir",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "menyediakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "merupakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "cappucino",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "hot cappucino",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "cold white series",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "cold",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "white series",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "cold white",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "menarik",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "segelas",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "teras",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "seberang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "kopinya enak",
+          "pos_df": 3,
+          "all_df": 4,
+          "lift": 6.29,
+          "score": 8.72
+        },
+        {
+          "phrase": "indoornya",
+          "pos_df": 3,
+          "all_df": 4,
+          "lift": 6.29,
+          "score": 8.72
+        }
+      ]
+    },
+    "suasana_tenang": {
+      "pos_clauses": 100,
+      "keyword_stats": [
+        {
+          "keyword": "tenang",
+          "review_hits": 12
+        },
+        {
+          "keyword": "sepi",
+          "review_hits": 7
+        },
+        {
+          "keyword": "sunyi",
+          "review_hits": 0
+        },
+        {
+          "keyword": "hening",
+          "review_hits": 0
+        },
+        {
+          "keyword": "tidak berisik",
+          "review_hits": 2
+        },
+        {
+          "keyword": "ga berisik",
+          "review_hits": 1
+        },
+        {
+          "keyword": "nggak ribut",
+          "review_hits": 0
+        },
+        {
+          "keyword": "suasana tenang",
+          "review_hits": 2
+        },
+        {
+          "keyword": "kondusif",
+          "review_hits": 1
+        },
+        {
+          "keyword": "damai",
+          "review_hits": 0
+        }
+      ],
+      "candidates": [
+        {
+          "phrase": "salah satu",
+          "pos_df": 8,
+          "all_df": 13,
+          "lift": 5.16,
+          "score": 11.34
+        },
+        {
+          "phrase": "nyaman",
+          "pos_df": 17,
+          "all_df": 38,
+          "lift": 3.75,
+          "score": 10.85
+        },
+        {
+          "phrase": "bersama",
+          "pos_df": 4,
+          "all_df": 5,
+          "lift": 6.71,
+          "score": 10.8
+        },
+        {
+          "phrase": "salah",
+          "pos_df": 8,
+          "all_df": 14,
+          "lift": 4.79,
+          "score": 10.53
+        },
+        {
+          "phrase": "bubuk",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa pulang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "merupakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "menyediakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "arennya",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "teras",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "seberang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "bersama teman",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "menarik",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "suasana nyaman",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "jenis",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "kopinya enak",
+          "pos_df": 3,
+          "all_df": 4,
+          "lift": 6.29,
+          "score": 8.72
+        },
+        {
+          "phrase": "kafe",
+          "pos_df": 3,
+          "all_df": 4,
+          "lift": 6.29,
+          "score": 8.72
+        },
+        {
+          "phrase": "kopinya",
+          "pos_df": 5,
+          "all_df": 9,
+          "lift": 4.66,
+          "score": 8.35
+        },
+        {
+          "phrase": "teman",
+          "pos_df": 5,
+          "all_df": 10,
+          "lift": 4.2,
+          "score": 7.52
+        },
+        {
+          "phrase": "ruangan",
+          "pos_df": 5,
+          "all_df": 10,
+          "lift": 4.2,
+          "score": 7.52
+        },
+        {
+          "phrase": "satu",
+          "pos_df": 8,
+          "all_df": 20,
+          "lift": 3.36,
+          "score": 7.37
+        },
+        {
+          "phrase": "teman teman",
+          "pos_df": 3,
+          "all_df": 5,
+          "lift": 5.03,
+          "score": 6.98
+        },
+        {
+          "phrase": "pontianak",
+          "pos_df": 9,
+          "all_df": 25,
+          "lift": 3.02,
+          "score": 6.95
+        },
+        {
+          "phrase": "pelayanan",
+          "pos_df": 6,
+          "all_df": 15,
+          "lift": 3.36,
+          "score": 6.53
+        }
+      ]
+    },
+    "area_outdoor": {
+      "pos_clauses": 100,
+      "keyword_stats": [
+        {
+          "keyword": "outdoor",
+          "review_hits": 27
+        },
+        {
+          "keyword": "area outdoor",
+          "review_hits": 4
+        },
+        {
+          "keyword": "outdoor seating",
+          "review_hits": 0
+        },
+        {
+          "keyword": "tempat outdoor",
+          "review_hits": 0
+        },
+        {
+          "keyword": "area terbuka",
+          "review_hits": 0
+        },
+        {
+          "keyword": "tempat terbuka",
+          "review_hits": 0
+        },
+        {
+          "keyword": "teras outdoor",
+          "review_hits": 0
+        },
+        {
+          "keyword": "taman outdoor",
+          "review_hits": 0
+        },
+        {
+          "keyword": "duduk di luar",
+          "review_hits": 0
+        },
+        {
+          "keyword": "kursi outdoor",
+          "review_hits": 0
+        },
+        {
+          "keyword": "al fresco",
+          "review_hits": 0
+        },
+        {
+          "keyword": "di luar ruangan",
+          "review_hits": 0
+        },
+        {
+          "keyword": "lesehan outdoor",
+          "review_hits": 0
+        },
+        {
+          "keyword": "rooftop",
+          "review_hits": 0
+        },
+        {
+          "keyword": "open space",
+          "review_hits": 0
+        },
+        {
+          "keyword": "taman",
+          "review_hits": 0
+        }
+      ],
+      "candidates": [
+        {
+          "phrase": "area",
+          "pos_df": 13,
+          "all_df": 20,
+          "lift": 5.45,
+          "score": 14.39
+        },
+        {
+          "phrase": "salah satu",
+          "pos_df": 9,
+          "all_df": 13,
+          "lift": 5.81,
+          "score": 13.37
+        },
+        {
+          "phrase": "salah",
+          "pos_df": 9,
+          "all_df": 14,
+          "lift": 5.39,
+          "score": 12.42
+        },
+        {
+          "phrase": "area indoornya",
+          "pos_df": 3,
+          "all_df": 3,
+          "lift": 8.39,
+          "score": 11.63
+        },
+        {
+          "phrase": "pontianak",
+          "pos_df": 12,
+          "all_df": 25,
+          "lift": 4.03,
+          "score": 10.33
+        },
+        {
+          "phrase": "area parkir",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "bubuk",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa pulang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "memiliki",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "teras",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "seberang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "merupakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "menyediakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "jenis",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "arennya",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "arabica",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "menarik",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "standar",
+          "pos_df": 4,
+          "all_df": 6,
+          "lift": 5.59,
+          "score": 9.0
+        },
+        {
+          "phrase": "kopinya enak",
+          "pos_df": 3,
+          "all_df": 4,
+          "lift": 6.29,
+          "score": 8.72
+        },
+        {
+          "phrase": "indoornya",
+          "pos_df": 3,
+          "all_df": 4,
+          "lift": 6.29,
+          "score": 8.72
+        },
+        {
+          "phrase": "satu",
+          "pos_df": 9,
+          "all_df": 20,
+          "lift": 3.78,
+          "score": 8.69
+        },
+        {
+          "phrase": "kopinya",
+          "pos_df": 5,
+          "all_df": 9,
+          "lift": 4.66,
+          "score": 8.35
+        },
+        {
+          "phrase": "cocok",
+          "pos_df": 11,
+          "all_df": 33,
+          "lift": 2.8,
+          "score": 6.95
+        },
+        {
+          "phrase": "silang",
+          "pos_df": 2,
+          "all_df": 3,
+          "lift": 5.59,
+          "score": 6.14
+        }
+      ]
+    },
+    "smoking_area": {
+      "pos_clauses": 100,
+      "keyword_stats": [
+        {
+          "keyword": "smoking area",
+          "review_hits": 3
+        },
+        {
+          "keyword": "area smoking",
+          "review_hits": 0
+        },
+        {
+          "keyword": "area merokok",
+          "review_hits": 0
+        },
+        {
+          "keyword": "tempat merokok",
+          "review_hits": 0
+        },
+        {
+          "keyword": "bisa merokok",
+          "review_hits": 0
+        },
+        {
+          "keyword": "boleh merokok",
+          "review_hits": 0
+        },
+        {
+          "keyword": "ruang merokok",
+          "review_hits": 0
+        },
+        {
+          "keyword": "smoking room",
+          "review_hits": 1
+        },
+        {
+          "keyword": "kawasan merokok",
+          "review_hits": 0
+        }
+      ],
+      "candidates": [
+        {
+          "phrase": "smoking",
+          "pos_df": 6,
+          "all_df": 7,
+          "lift": 7.19,
+          "score": 13.99
+        },
+        {
+          "phrase": "silang",
+          "pos_df": 3,
+          "all_df": 3,
+          "lift": 8.39,
+          "score": 11.63
+        },
+        {
+          "phrase": "area indoornya",
+          "pos_df": 3,
+          "all_df": 3,
+          "lift": 8.39,
+          "score": 11.63
+        },
+        {
+          "phrase": "non smoking",
+          "pos_df": 3,
+          "all_df": 3,
+          "lift": 8.39,
+          "score": 11.63
+        },
+        {
+          "phrase": "area",
+          "pos_df": 11,
+          "all_df": 20,
+          "lift": 4.61,
+          "score": 11.47
+        },
+        {
+          "phrase": "salah satu",
+          "pos_df": 8,
+          "all_df": 13,
+          "lift": 5.16,
+          "score": 11.34
+        },
+        {
+          "phrase": "salah",
+          "pos_df": 8,
+          "all_df": 14,
+          "lift": 4.79,
+          "score": 10.53
+        },
+        {
+          "phrase": "direkomendasikan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "bubuk",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa pulang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "nyaman bagi",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "arennya",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "area parkir",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "merupakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "menyediakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "teras",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "seberang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "menarik",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "jam 9",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "standar",
+          "pos_df": 4,
+          "all_df": 6,
+          "lift": 5.59,
+          "score": 9.0
+        },
+        {
+          "phrase": "kopinya enak",
+          "pos_df": 3,
+          "all_df": 4,
+          "lift": 6.29,
+          "score": 8.72
+        },
+        {
+          "phrase": "indoornya",
+          "pos_df": 3,
+          "all_df": 4,
+          "lift": 6.29,
+          "score": 8.72
+        },
+        {
+          "phrase": "kopinya",
+          "pos_df": 5,
+          "all_df": 9,
+          "lift": 4.66,
+          "score": 8.35
+        },
+        {
+          "phrase": "pontianak",
+          "pos_df": 10,
+          "all_df": 25,
+          "lift": 3.36,
+          "score": 8.05
+        }
+      ]
+    },
+    "wifi_kencang": {
+      "pos_clauses": 100,
+      "keyword_stats": [
+        {
+          "keyword": "wifi",
+          "review_hits": 12
+        },
+        {
+          "keyword": "wifi kencang",
+          "review_hits": 0
+        },
+        {
+          "keyword": "wifi cepat",
+          "review_hits": 0
+        },
+        {
+          "keyword": "wifi lancar",
+          "review_hits": 4
+        },
+        {
+          "keyword": "wifi stabil",
+          "review_hits": 0
+        },
+        {
+          "keyword": "internet cepat",
+          "review_hits": 0
+        },
+        {
+          "keyword": "internet lancar",
+          "review_hits": 1
+        },
+        {
+          "keyword": "koneksi stabil",
+          "review_hits": 0
+        },
+        {
+          "keyword": "sinyal kuat",
+          "review_hits": 0
+        },
+        {
+          "keyword": "jaringan lancar",
+          "review_hits": 0
+        },
+        {
+          "keyword": "kecepatan internet",
+          "review_hits": 0
+        }
+      ],
+      "candidates": [
+        {
+          "phrase": "salah satu",
+          "pos_df": 9,
+          "all_df": 13,
+          "lift": 5.81,
+          "score": 13.37
+        },
+        {
+          "phrase": "salah",
+          "pos_df": 9,
+          "all_df": 14,
+          "lift": 5.39,
+          "score": 12.42
+        },
+        {
+          "phrase": "silang",
+          "pos_df": 3,
+          "all_df": 3,
+          "lift": 8.39,
+          "score": 11.63
+        },
+        {
+          "phrase": "area indoornya",
+          "pos_df": 3,
+          "all_df": 3,
+          "lift": 8.39,
+          "score": 11.63
+        },
+        {
+          "phrase": "cepat",
+          "pos_df": 3,
+          "all_df": 3,
+          "lift": 8.39,
+          "score": 11.63
+        },
+        {
+          "phrase": "cocok",
+          "pos_df": 14,
+          "all_df": 33,
+          "lift": 3.56,
+          "score": 9.64
+        },
+        {
+          "phrase": "direkomendasikan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "bubuk",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa pulang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "area parkir",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "cocok untuk wfc",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "merupakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "menyediakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "arennya",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "menarik",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "jenis",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "pelayanan cepat",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "teras",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "seberang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "cepat dan ramah",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "jam 9",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "segelas",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "kopinya enak",
+          "pos_df": 3,
+          "all_df": 4,
+          "lift": 6.29,
+          "score": 8.72
+        },
+        {
+          "phrase": "indoornya",
+          "pos_df": 3,
+          "all_df": 4,
+          "lift": 6.29,
+          "score": 8.72
+        }
+      ]
+    },
+    "banyak_colokan_terminal": {
+      "pos_clauses": 100,
+      "keyword_stats": [
+        {
+          "keyword": "colokan",
+          "review_hits": 6
+        },
+        {
+          "keyword": "stop kontak",
+          "review_hits": 1
+        },
+        {
+          "keyword": "terminal listrik",
+          "review_hits": 0
+        },
+        {
+          "keyword": "banyak colokan",
+          "review_hits": 1
+        },
+        {
+          "keyword": "colokan di tiap meja",
+          "review_hits": 0
+        },
+        {
+          "keyword": "charge laptop",
+          "review_hits": 1
+        },
+        {
+          "keyword": "ngecas",
+          "review_hits": 0
+        },
+        {
+          "keyword": "charging",
+          "review_hits": 0
+        },
+        {
+          "keyword": "power outlet",
+          "review_hits": 0
+        }
+      ],
+      "candidates": [
+        {
+          "phrase": "salah satu",
+          "pos_df": 9,
+          "all_df": 13,
+          "lift": 5.81,
+          "score": 13.37
+        },
+        {
+          "phrase": "salah",
+          "pos_df": 9,
+          "all_df": 14,
+          "lift": 5.39,
+          "score": 12.42
+        },
+        {
+          "phrase": "dapat",
+          "pos_df": 3,
+          "all_df": 3,
+          "lift": 8.39,
+          "score": 11.63
+        },
+        {
+          "phrase": "silang",
+          "pos_df": 3,
+          "all_df": 3,
+          "lift": 8.39,
+          "score": 11.63
+        },
+        {
+          "phrase": "bubuk",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa pulang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "merupakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "menyediakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "teras",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "seberang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "jenis",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "area parkir",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "arennya",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "cappucino",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "hot cappucino",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "espresso",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "jam 9",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "pontianak",
+          "pos_df": 11,
+          "all_df": 25,
+          "lift": 3.69,
+          "score": 9.17
+        },
+        {
+          "phrase": "standar",
+          "pos_df": 4,
+          "all_df": 6,
+          "lift": 5.59,
+          "score": 9.0
+        },
+        {
+          "phrase": "kopinya enak",
+          "pos_df": 3,
+          "all_df": 4,
+          "lift": 6.29,
+          "score": 8.72
+        },
+        {
+          "phrase": "white",
+          "pos_df": 3,
+          "all_df": 4,
+          "lift": 6.29,
+          "score": 8.72
+        },
+        {
+          "phrase": "satu",
+          "pos_df": 9,
+          "all_df": 20,
+          "lift": 3.78,
+          "score": 8.69
+        },
+        {
+          "phrase": "kopinya",
+          "pos_df": 5,
+          "all_df": 9,
+          "lift": 4.66,
+          "score": 8.35
+        },
+        {
+          "phrase": "pelayanan",
+          "pos_df": 7,
+          "all_df": 15,
+          "lift": 3.92,
+          "score": 8.14
+        }
+      ]
+    },
+    "ruang_privat": {
+      "pos_clauses": 100,
+      "keyword_stats": [
+        {
+          "keyword": "ruang privat",
+          "review_hits": 0
+        },
+        {
+          "keyword": "private room",
+          "review_hits": 0
+        },
+        {
+          "keyword": "ruang meeting",
+          "review_hits": 0
+        },
+        {
+          "keyword": "meeting room",
+          "review_hits": 1
+        },
+        {
+          "keyword": "ruangan tertutup",
+          "review_hits": 0
+        },
+        {
+          "keyword": "vip room",
+          "review_hits": 1
+        },
+        {
+          "keyword": "ruang khusus",
+          "review_hits": 0
+        },
+        {
+          "keyword": "ruang diskusi",
+          "review_hits": 0
+        },
+        {
+          "keyword": "bisa reservasi ruangan",
+          "review_hits": 0
+        }
+      ],
+      "candidates": [
+        {
+          "phrase": "salah satu",
+          "pos_df": 10,
+          "all_df": 13,
+          "lift": 6.45,
+          "score": 15.48
+        },
+        {
+          "phrase": "salah",
+          "pos_df": 10,
+          "all_df": 14,
+          "lift": 5.99,
+          "score": 14.37
+        },
+        {
+          "phrase": "silang",
+          "pos_df": 3,
+          "all_df": 3,
+          "lift": 8.39,
+          "score": 11.63
+        },
+        {
+          "phrase": "cepat",
+          "pos_df": 3,
+          "all_df": 3,
+          "lift": 8.39,
+          "score": 11.63
+        },
+        {
+          "phrase": "area indoornya",
+          "pos_df": 3,
+          "all_df": 3,
+          "lift": 8.39,
+          "score": 11.63
+        },
+        {
+          "phrase": "bersama",
+          "pos_df": 4,
+          "all_df": 5,
+          "lift": 6.71,
+          "score": 10.8
+        },
+        {
+          "phrase": "pontianak",
+          "pos_df": 12,
+          "all_df": 25,
+          "lift": 4.03,
+          "score": 10.33
+        },
+        {
+          "phrase": "satu",
+          "pos_df": 10,
+          "all_df": 20,
+          "lift": 4.2,
+          "score": 10.06
+        },
+        {
+          "phrase": "ruangan",
+          "pos_df": 6,
+          "all_df": 10,
+          "lift": 5.03,
+          "score": 9.8
+        },
+        {
+          "phrase": "bubuk",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa pulang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "bersama teman",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "area parkir",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "private",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "private study",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "merupakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "menyediakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "jenis",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "cappucino",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "hot cappucino",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "pelayanan cepat",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "arennya",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "teras",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "seberang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        }
+      ]
+    },
+    "buka_sampai_malam_24_hours": {
+      "pos_clauses": 100,
+      "keyword_stats": [
+        {
+          "keyword": "24 jam",
+          "review_hits": 0
+        },
+        {
+          "keyword": "24 hours",
+          "review_hits": 0
+        },
+        {
+          "keyword": "buka 24 jam",
+          "review_hits": 0
+        },
+        {
+          "keyword": "open 24 hours",
+          "review_hits": 0
+        },
+        {
+          "keyword": "operasional 24 jam",
+          "review_hits": 0
+        },
+        {
+          "keyword": "buka sepanjang hari",
+          "review_hits": 0
+        },
+        {
+          "keyword": "buka nonstop",
+          "review_hits": 0
+        },
+        {
+          "keyword": "24/7",
+          "review_hits": 0
+        },
+        {
+          "keyword": "buka 24/7",
+          "review_hits": 0
+        },
+        {
+          "keyword": "never close",
+          "review_hits": 0
+        },
+        {
+          "keyword": "tutup never",
+          "review_hits": 0
+        },
+        {
+          "keyword": "jam operasional 24 jam",
+          "review_hits": 0
+        }
+      ],
+      "candidates": [
+        {
+          "phrase": "silang",
+          "pos_df": 3,
+          "all_df": 3,
+          "lift": 8.39,
+          "score": 11.63
+        },
+        {
+          "phrase": "salah satu",
+          "pos_df": 8,
+          "all_df": 13,
+          "lift": 5.16,
+          "score": 11.34
+        },
+        {
+          "phrase": "salah",
+          "pos_df": 8,
+          "all_df": 14,
+          "lift": 4.79,
+          "score": 10.53
+        },
+        {
+          "phrase": "direkomendasikan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "bubuk",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa pulang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "cappucino",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "hot cappucino",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "area parkir",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "merupakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "menyediakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "jam 9",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "arennya",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "teras",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "seberang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "menarik",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "konsep",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "jenis",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "standar",
+          "pos_df": 4,
+          "all_df": 6,
+          "lift": 5.59,
+          "score": 9.0
+        },
+        {
+          "phrase": "kopinya enak",
+          "pos_df": 3,
+          "all_df": 4,
+          "lift": 6.29,
+          "score": 8.72
+        },
+        {
+          "phrase": "kopinya",
+          "pos_df": 5,
+          "all_df": 9,
+          "lift": 4.66,
+          "score": 8.35
+        },
+        {
+          "phrase": "pontianak",
+          "pos_df": 10,
+          "all_df": 25,
+          "lift": 3.36,
+          "score": 8.05
+        },
+        {
+          "phrase": "satu",
+          "pos_df": 8,
+          "all_df": 20,
+          "lift": 3.36,
+          "score": 7.37
+        },
+        {
+          "phrase": "pulang",
+          "pos_df": 3,
+          "all_df": 5,
+          "lift": 5.03,
+          "score": 6.98
+        }
+      ]
+    },
+    "musholla": {
+      "pos_clauses": 100,
+      "keyword_stats": [
+        {
+          "keyword": "musholla",
+          "review_hits": 6
+        },
+        {
+          "keyword": "mushola",
+          "review_hits": 7
+        },
+        {
+          "keyword": "musola",
+          "review_hits": 0
+        },
+        {
+          "keyword": "tempat sholat",
+          "review_hits": 0
+        },
+        {
+          "keyword": "tempat solat",
+          "review_hits": 0
+        },
+        {
+          "keyword": "ruang sholat",
+          "review_hits": 0
+        },
+        {
+          "keyword": "bisa sholat",
+          "review_hits": 0
+        },
+        {
+          "keyword": "ada mukena",
+          "review_hits": 0
+        },
+        {
+          "keyword": "sajadah",
+          "review_hits": 0
+        }
+      ],
+      "candidates": [
+        {
+          "phrase": "salah satu",
+          "pos_df": 10,
+          "all_df": 13,
+          "lift": 6.45,
+          "score": 15.48
+        },
+        {
+          "phrase": "salah",
+          "pos_df": 10,
+          "all_df": 14,
+          "lift": 5.99,
+          "score": 14.37
+        },
+        {
+          "phrase": "satu",
+          "pos_df": 10,
+          "all_df": 20,
+          "lift": 4.2,
+          "score": 10.06
+        },
+        {
+          "phrase": "direkomendasikan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "bubuk",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa pulang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "arennya",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "menarik",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "arabica",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "merupakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "menyediakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "butu",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "teras",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "seberang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "pontianak",
+          "pos_df": 11,
+          "all_df": 25,
+          "lift": 3.69,
+          "score": 9.17
+        },
+        {
+          "phrase": "kopinya enak",
+          "pos_df": 3,
+          "all_df": 4,
+          "lift": 6.29,
+          "score": 8.72
+        },
+        {
+          "phrase": "kopinya",
+          "pos_df": 5,
+          "all_df": 9,
+          "lift": 4.66,
+          "score": 8.35
+        },
+        {
+          "phrase": "minum",
+          "pos_df": 4,
+          "all_df": 8,
+          "lift": 4.2,
+          "score": 6.75
+        },
+        {
+          "phrase": "favorit",
+          "pos_df": 2,
+          "all_df": 3,
+          "lift": 5.59,
+          "score": 6.14
+        },
+        {
+          "phrase": "silang",
+          "pos_df": 2,
+          "all_df": 3,
+          "lift": 5.59,
+          "score": 6.14
+        },
+        {
+          "phrase": "dapat",
+          "pos_df": 2,
+          "all_df": 3,
+          "lift": 5.59,
+          "score": 6.14
+        },
+        {
+          "phrase": "pecinta",
+          "pos_df": 2,
+          "all_df": 3,
+          "lift": 5.59,
+          "score": 6.14
+        },
+        {
+          "phrase": "beragam",
+          "pos_df": 2,
+          "all_df": 3,
+          "lift": 5.59,
+          "score": 6.14
+        },
+        {
+          "phrase": "bervariasi",
+          "pos_df": 2,
+          "all_df": 3,
+          "lift": 5.59,
+          "score": 6.14
+        }
+      ]
+    },
+    "parkir_luas": {
+      "pos_clauses": 100,
+      "keyword_stats": [
+        {
+          "keyword": "parkir",
+          "review_hits": 11
+        },
+        {
+          "keyword": "parkiran",
+          "review_hits": 6
+        },
+        {
+          "keyword": "parkir luas",
+          "review_hits": 2
+        },
+        {
+          "keyword": "parkir lega",
+          "review_hits": 0
+        },
+        {
+          "keyword": "lahan parkir",
+          "review_hits": 0
+        },
+        {
+          "keyword": "parkir mudah",
+          "review_hits": 0
+        },
+        {
+          "keyword": "tempat parkir",
+          "review_hits": 2
+        },
+        {
+          "keyword": "parkir motor",
+          "review_hits": 3
+        },
+        {
+          "keyword": "parkir mobil",
+          "review_hits": 1
+        }
+      ],
+      "candidates": [
+        {
+          "phrase": "luas",
+          "pos_df": 11,
+          "all_df": 17,
+          "lift": 5.43,
+          "score": 13.49
+        },
+        {
+          "phrase": "salah satu",
+          "pos_df": 8,
+          "all_df": 13,
+          "lift": 5.16,
+          "score": 11.34
+        },
+        {
+          "phrase": "salah",
+          "pos_df": 8,
+          "all_df": 14,
+          "lift": 4.79,
+          "score": 10.53
+        },
+        {
+          "phrase": "area parkir",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "memiliki",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "nyaman luas",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "bubuk",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa pulang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "teras",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "seberang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "merupakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "menyediakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "arennya",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "menarik",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "jenis",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "standar",
+          "pos_df": 4,
+          "all_df": 6,
+          "lift": 5.59,
+          "score": 9.0
+        },
+        {
+          "phrase": "kopinya enak",
+          "pos_df": 3,
+          "all_df": 4,
+          "lift": 6.29,
+          "score": 8.72
+        },
+        {
+          "phrase": "kopinya",
+          "pos_df": 5,
+          "all_df": 9,
+          "lift": 4.66,
+          "score": 8.35
+        },
+        {
+          "phrase": "pontianak",
+          "pos_df": 10,
+          "all_df": 25,
+          "lift": 3.36,
+          "score": 8.05
+        },
+        {
+          "phrase": "satu",
+          "pos_df": 8,
+          "all_df": 20,
+          "lift": 3.36,
+          "score": 7.37
+        },
+        {
+          "phrase": "jalan",
+          "pos_df": 3,
+          "all_df": 5,
+          "lift": 5.03,
+          "score": 6.98
+        },
+        {
+          "phrase": "mobil",
+          "pos_df": 4,
+          "all_df": 8,
+          "lift": 4.2,
+          "score": 6.75
+        },
+        {
+          "phrase": "silang",
+          "pos_df": 2,
+          "all_df": 3,
+          "lift": 5.59,
+          "score": 6.14
+        },
+        {
+          "phrase": "dapat",
+          "pos_df": 2,
+          "all_df": 3,
+          "lift": 5.59,
+          "score": 6.14
+        }
+      ]
+    },
+    "toilet_bersih": {
+      "pos_clauses": 100,
+      "keyword_stats": [
+        {
+          "keyword": "toilet",
+          "review_hits": 3
+        },
+        {
+          "keyword": "toilet bersih",
+          "review_hits": 1
+        },
+        {
+          "keyword": "kamar mandi",
+          "review_hits": 0
+        },
+        {
+          "keyword": "wc",
+          "review_hits": 5
+        },
+        {
+          "keyword": "restroom",
+          "review_hits": 0
+        },
+        {
+          "keyword": "toiletnya wangi",
+          "review_hits": 0
+        },
+        {
+          "keyword": "kamar mandi bersih",
+          "review_hits": 0
+        }
+      ],
+      "candidates": [
+        {
+          "phrase": "salah satu",
+          "pos_df": 9,
+          "all_df": 13,
+          "lift": 5.81,
+          "score": 13.37
+        },
+        {
+          "phrase": "salah",
+          "pos_df": 9,
+          "all_df": 14,
+          "lift": 5.39,
+          "score": 12.42
+        },
+        {
+          "phrase": "pontianak",
+          "pos_df": 13,
+          "all_df": 25,
+          "lift": 4.36,
+          "score": 11.51
+        },
+        {
+          "phrase": "kopinya",
+          "pos_df": 6,
+          "all_df": 9,
+          "lift": 5.59,
+          "score": 10.88
+        },
+        {
+          "phrase": "bersih",
+          "pos_df": 7,
+          "all_df": 13,
+          "lift": 4.52,
+          "score": 9.39
+        },
+        {
+          "phrase": "bubuk",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa pulang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "menyediakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "cappucino",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "arabica",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "hot cappucino",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "comfy",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "arennya",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "menarik",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "merupakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "teras",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "seberang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "jenis",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "standar",
+          "pos_df": 4,
+          "all_df": 6,
+          "lift": 5.59,
+          "score": 9.0
+        },
+        {
+          "phrase": "kopinya enak",
+          "pos_df": 3,
+          "all_df": 4,
+          "lift": 6.29,
+          "score": 8.72
+        },
+        {
+          "phrase": "satu",
+          "pos_df": 9,
+          "all_df": 20,
+          "lift": 3.78,
+          "score": 8.69
+        },
+        {
+          "phrase": "minum",
+          "pos_df": 4,
+          "all_df": 8,
+          "lift": 4.2,
+          "score": 6.75
+        },
+        {
+          "phrase": "pelayanan",
+          "pos_df": 6,
+          "all_df": 15,
+          "lift": 3.36,
+          "score": 6.53
+        },
+        {
+          "phrase": "favorit",
+          "pos_df": 2,
+          "all_df": 3,
+          "lift": 5.59,
+          "score": 6.14
+        }
+      ]
+    },
+    "makanan_berat": {
+      "pos_clauses": 100,
+      "keyword_stats": [
+        {
+          "keyword": "makanan berat",
+          "review_hits": 5
+        },
+        {
+          "keyword": "menu makanan berat",
+          "review_hits": 1
+        },
+        {
+          "keyword": "nasi",
+          "review_hits": 3
+        },
+        {
+          "keyword": "nasi goreng",
+          "review_hits": 3
+        },
+        {
+          "keyword": "makan siang",
+          "review_hits": 0
+        },
+        {
+          "keyword": "makan malam",
+          "review_hits": 0
+        },
+        {
+          "keyword": "kenyang",
+          "review_hits": 0
+        },
+        {
+          "keyword": "lauk",
+          "review_hits": 1
+        },
+        {
+          "keyword": "ayam goreng",
+          "review_hits": 0
+        },
+        {
+          "keyword": "steak",
+          "review_hits": 0
+        },
+        {
+          "keyword": "pasta",
+          "review_hits": 1
+        },
+        {
+          "keyword": "rice bowl",
+          "review_hits": 1
+        },
+        {
+          "keyword": "soto",
+          "review_hits": 0
+        },
+        {
+          "keyword": "bakso",
+          "review_hits": 0
+        },
+        {
+          "keyword": "mie ayam",
+          "review_hits": 0
+        },
+        {
+          "keyword": "menu lengkap",
+          "review_hits": 0
+        },
+        {
+          "keyword": "bisa makan berat",
+          "review_hits": 0
+        },
+        {
+          "keyword": "sarapan",
+          "review_hits": 0
+        },
+        {
+          "keyword": "brunch",
+          "review_hits": 0
+        }
+      ],
+      "candidates": [
+        {
+          "phrase": "makanan dan minuman",
+          "pos_df": 6,
+          "all_df": 6,
+          "lift": 8.39,
+          "score": 16.33
+        },
+        {
+          "phrase": "salah satu",
+          "pos_df": 10,
+          "all_df": 13,
+          "lift": 6.45,
+          "score": 15.48
+        },
+        {
+          "phrase": "salah",
+          "pos_df": 10,
+          "all_df": 14,
+          "lift": 5.99,
+          "score": 14.37
+        },
+        {
+          "phrase": "minuman",
+          "pos_df": 11,
+          "all_df": 19,
+          "lift": 4.86,
+          "score": 12.07
+        },
+        {
+          "phrase": "dapat",
+          "pos_df": 3,
+          "all_df": 3,
+          "lift": 8.39,
+          "score": 11.63
+        },
+        {
+          "phrase": "satu",
+          "pos_df": 10,
+          "all_df": 20,
+          "lift": 4.2,
+          "score": 10.06
+        },
+        {
+          "phrase": "enak harganya",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "bubuk",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa pulang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "merupakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "menyediakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "cappucino",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "hot cappucino",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "espresso",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "teras",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "seberang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "arennya",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "minuman dan makanannya",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "harganya terjangkau",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "area parkir",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "makanannya enak",
+          "pos_df": 4,
+          "all_df": 6,
+          "lift": 5.59,
+          "score": 9.0
+        },
+        {
+          "phrase": "kopinya enak",
+          "pos_df": 3,
+          "all_df": 4,
+          "lift": 6.29,
+          "score": 8.72
+        },
+        {
+          "phrase": "minuman enak",
+          "pos_df": 3,
+          "all_df": 4,
+          "lift": 6.29,
+          "score": 8.72
+        },
+        {
+          "phrase": "kopinya",
+          "pos_df": 5,
+          "all_df": 9,
+          "lift": 4.66,
+          "score": 8.35
+        }
+      ]
+    },
+    "dessert": {
+      "pos_clauses": 100,
+      "keyword_stats": [
+        {
+          "keyword": "dessert",
+          "review_hits": 0
+        },
+        {
+          "keyword": "cheesecake",
+          "review_hits": 1
+        },
+        {
+          "keyword": "kue",
+          "review_hits": 0
+        },
+        {
+          "keyword": "pastry",
+          "review_hits": 1
+        },
+        {
+          "keyword": "croissant",
+          "review_hits": 1
+        },
+        {
+          "keyword": "brownies",
+          "review_hits": 1
+        },
+        {
+          "keyword": "tiramisu",
+          "review_hits": 0
+        },
+        {
+          "keyword": "donat",
+          "review_hits": 0
+        },
+        {
+          "keyword": "waffle",
+          "review_hits": 0
+        },
+        {
+          "keyword": "pudding",
+          "review_hits": 0
+        },
+        {
+          "keyword": "es krim",
+          "review_hits": 0
+        },
+        {
+          "keyword": "manis",
+          "review_hits": 5
+        },
+        {
+          "keyword": "hidangan penutup",
+          "review_hits": 0
+        },
+        {
+          "keyword": "kue basah",
+          "review_hits": 0
+        },
+        {
+          "keyword": "kue kering",
+          "review_hits": 0
+        }
+      ],
+      "candidates": [
+        {
+          "phrase": "salah satu",
+          "pos_df": 9,
+          "all_df": 13,
+          "lift": 5.81,
+          "score": 13.37
+        },
+        {
+          "phrase": "salah",
+          "pos_df": 9,
+          "all_df": 14,
+          "lift": 5.39,
+          "score": 12.42
+        },
+        {
+          "phrase": "kopinya",
+          "pos_df": 6,
+          "all_df": 9,
+          "lift": 5.59,
+          "score": 10.88
+        },
+        {
+          "phrase": "pontianak",
+          "pos_df": 12,
+          "all_df": 25,
+          "lift": 4.03,
+          "score": 10.33
+        },
+        {
+          "phrase": "direkomendasikan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "bubuk",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa pulang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "dibawa",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "side",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "merupakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "menyediakan",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "arennya",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "segelas",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "arabica",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "teras",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "seberang",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "menarik",
+          "pos_df": 2,
+          "all_df": 2,
+          "lift": 8.39,
+          "score": 9.22
+        },
+        {
+          "phrase": "standar",
+          "pos_df": 4,
+          "all_df": 6,
+          "lift": 5.59,
+          "score": 9.0
+        },
+        {
+          "phrase": "kopinya enak",
+          "pos_df": 3,
+          "all_df": 4,
+          "lift": 6.29,
+          "score": 8.72
+        },
+        {
+          "phrase": "satu",
+          "pos_df": 9,
+          "all_df": 20,
+          "lift": 3.78,
+          "score": 8.69
+        },
+        {
+          "phrase": "cocok",
+          "pos_df": 11,
+          "all_df": 33,
+          "lift": 2.8,
+          "score": 6.95
+        },
+        {
+          "phrase": "minum",
+          "pos_df": 4,
+          "all_df": 8,
+          "lift": 4.2,
+          "score": 6.75
+        },
+        {
+          "phrase": "silang",
+          "pos_df": 2,
+          "all_df": 3,
+          "lift": 5.59,
+          "score": 6.14
+        },
+        {
+          "phrase": "favorit",
+          "pos_df": 2,
+          "all_df": 3,
+          "lift": 5.59,
+          "score": 6.14
+        },
+        {
+          "phrase": "bervariasi",
+          "pos_df": 2,
+          "all_df": 3,
+          "lift": 5.59,
+          "score": 6.14
+        }
+      ]
+    }
+  }
+}

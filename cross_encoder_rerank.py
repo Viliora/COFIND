@@ -9,12 +9,11 @@ from typing import Dict, List, Optional, Sequence
 
 from cross_encoder import cross_encoder_enabled, score_pairs
 from hybrid_retrieval import extract_activity_support_text, min_fit_score, review_text, text_rejects_requested_activity
-from llm_recommender import (
-    _blend_rerank_scores,
-    _matched_pills_from_stats,
-    _quote_candidates_for_prompt,
+from rerank_blend import (
+    blend_rerank_scores,
+    matched_pills_from_stats,
+    quote_candidates_for_prompt,
     rerank_candidate_pool,
-    rerank_weight,
 )
 
 logger = __import__('logging_config', fromlist=['get_logger']).get_logger('recommend')
@@ -34,7 +33,7 @@ def ce_rerank_enabled() -> bool:
 
 
 def ce_rerank_weight() -> float:
-    raw = (os.getenv('COFIND_CE_RERANK_WEIGHT') or os.getenv('COFIND_LLM_RERANK_WEIGHT') or '0.6').strip()
+    raw = (os.getenv('COFIND_CE_RERANK_WEIGHT') or '0.6').strip()
     try:
         return max(0.0, min(1.0, float(raw)))
     except ValueError:
@@ -123,7 +122,7 @@ def ce_rerank_candidates(
         if place_id in pool_place_ids and isinstance(fit, dict)
     }
     if reusable_fits:
-        return _blend_rerank_scores(
+        return blend_rerank_scores(
             pool,
             reusable_fits,
             telemetry={
@@ -154,7 +153,7 @@ def ce_rerank_candidates(
         place_id = str(candidate.get('place_id') or '')
         if not place_id or place_id in fits:
             continue
-        quotes = _quote_candidates_for_prompt(
+        quotes = quote_candidates_for_prompt(
             candidate.get('evidence') or {},
             limit=quotes_per_candidate,
             quote_chars=quote_chars,
@@ -177,7 +176,7 @@ def ce_rerank_candidates(
                 'evidence_quote': '',
                 'caveat_quote': '',
                 'selected': False,
-                'matched_pills': _matched_pills_from_stats(candidate, set(pills or [])),
+                'matched_pills': matched_pills_from_stats(candidate, set(pills or [])),
             }
             continue
 
@@ -189,7 +188,7 @@ def ce_rerank_candidates(
                 'evidence_quote': texts[0],
                 'caveat_quote': '',
                 'selected': True,
-                'matched_pills': _matched_pills_from_stats(candidate, set(pills or [])),
+                'matched_pills': matched_pills_from_stats(candidate, set(pills or [])),
             }
             continue
 
@@ -240,14 +239,18 @@ def ce_rerank_candidates(
             selected = True
             fit_score = max(fit_score, corpus_floor)
 
+        from llm_recommender import text_is_grounded
+
+        corpus = ' '.join(str(review_text(r) or '') for r in (candidate.get('profile') or {}).get('reviews') or [])
+        grounded = bool(best_text and text_is_grounded(best_text, corpus))
         fits[place_id] = {
             'fit_score': round(fit_score, 2),
             'reason': _short_reason(best_text),
             'evidence_quote': best_text,
-            'evidence_grounded': True,
+            'evidence_grounded': grounded,
             'caveat_quote': caveat_quote,
             'selected': selected,
-            'matched_pills': _matched_pills_from_stats(candidate, set(pills or [])),
+            'matched_pills': matched_pills_from_stats(candidate, set(pills or [])),
         }
 
     if not fits:
@@ -260,7 +263,7 @@ def ce_rerank_candidates(
             },
         }
 
-    return _blend_rerank_scores(
+    return blend_rerank_scores(
         pool,
         fits,
         telemetry={

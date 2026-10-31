@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "description": "Contoh struktur — salin ke eval_queries.json dan ganti dengan kutipan asli calon pengguna.",
+  "queries": [
+    {
+      "id": "user-001-pill",
+      "route": "pill",
+      "input": {
+        "pills": ["kerja", "wifi_kencang"]
+      },
+      "source": "wawancara 2026-03-01",
+      "verbatim": "Mau nongkrong sambil nugas, wifi harus kencang."
+    },
+    {
+      "id": "user-002-free-text",
+      "route": "free_text",
+      "input": {
+        "query_text": "tempat kerja tenang deket kampus",
+        "keywords_mock": ["tenang", "kerja", "kampus"],
+        "dense_query_mock": "coffee shop tenang untuk kerja dekat kampus"
+      },
+      "source": "think-aloud beta",
+      "verbatim": "tempat kerja tenang deket kampus"
+    }
+  ]
+}

@@ -20,21 +20,24 @@ def clause_triage_enabled() -> bool:
 
 
 def bi_encoder_scores(preference_line: str, clauses: Sequence[str]) -> Dict[str, float]:
-    from semantic_match import embed_texts
+    from semantic_match import _clean_clause, embed_texts
     import numpy as np
 
     pref = str(preference_line or '').strip()
     items = [str(c).strip() for c in clauses if str(c).strip()]
     if not pref or not items:
         return {}
-    vectors = embed_texts([pref, *items])
-    pref_vec = vectors.get(pref)
+    pref_key = _clean_clause(pref)
+    q_map = embed_texts([pref], role='query')
+    pref_vec = q_map.get(pref_key)
     if pref_vec is None:
         return {}
+    p_map = embed_texts(items, role='passage')
     pv = np.asarray(pref_vec, dtype=np.float32)
     out: Dict[str, float] = {}
     for clause in items:
-        vec = vectors.get(clause)
+        key = _clean_clause(clause)
+        vec = p_map.get(key)
         if vec is None:
             continue
         out[clause] = float(np.dot(pv, np.asarray(vec, dtype=np.float32)))
@@ -61,13 +64,13 @@ def apply_clause_triage(
     lo, hi = tau_low(), tau_high()
     for clause in pending:
         bi = bi_scores.get(clause)
-        if bi is not None and bi >= hi:
-            auto[clause] = {'relevant': True, 'sentiment': 'positif', 'source': 'triaged_accept'}
-            telemetry['triaged_accept'] = int(telemetry.get('triaged_accept') or 0) + 1
-            continue
         if bi is not None and bi < lo:
             auto[clause] = {'relevant': False, 'sentiment': 'netral', 'source': 'triaged_reject'}
             telemetry['triaged_reject'] = int(telemetry.get('triaged_reject') or 0) + 1
+            continue
+        if bi is not None and bi >= hi:
+            need_absa.append(clause)
+            telemetry['triaged_relevant_absa'] = int(telemetry.get('triaged_relevant_absa') or 0) + 1
             continue
         ambiguous.append(clause)
 
@@ -81,8 +84,8 @@ def apply_clause_triage(
     for clause in ambiguous:
         decision = triage_clause(bi_scores.get(clause), cross_scores.get(clause))
         if decision == 'accept':
-            auto[clause] = {'relevant': True, 'sentiment': 'positif', 'source': 'triaged_accept'}
-            telemetry['triaged_accept'] = int(telemetry.get('triaged_accept') or 0) + 1
+            need_absa.append(clause)
+            telemetry['triaged_relevant_absa'] = int(telemetry.get('triaged_relevant_absa') or 0) + 1
         elif decision == 'reject':
             auto[clause] = {'relevant': False, 'sentiment': 'netral', 'source': 'triaged_reject'}
             telemetry['triaged_reject'] = int(telemetry.get('triaged_reject') or 0) + 1

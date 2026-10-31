@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 """
-Snapshot top-k retrieval (Fase 2) untuk golden_queries.json — tanpa LLM rerank/sentiment.
+Snapshot top-k retrieval (Fase 2) untuk data/eval/eval_queries.json — tanpa CE rerank / ABSA.
 
 Usage:
   python scripts/eval/golden_retrieval_snapshot.py
-  python scripts/eval/golden_retrieval_snapshot.py --out data/eval/golden_retrieval_snapshot.json
+  python scripts/eval/golden_retrieval_snapshot.py --queries data/eval/eval_queries.json
 """
 from __future__ import annotations
 
@@ -16,8 +16,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-GOLDEN = ROOT / "tests" / "golden_queries.json"
-DEFAULT_OUT = ROOT / "data" / "eval" / "golden_retrieval_snapshot.json"
+DEFAULT_OUT = ROOT / "data" / "eval" / "retrieval_snapshot.json"
 
 
 def _git_head() -> str | None:
@@ -34,14 +33,19 @@ def _git_head() -> str | None:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--queries", type=Path, default=DEFAULT_EVAL_QUERIES)
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
     args = parser.parse_args()
 
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
+    _eval_dir = ROOT / "scripts" / "eval"
+    if str(_eval_dir) not in sys.path:
+        sys.path.insert(0, str(_eval_dir))
+    from eval_queries_io import DEFAULT_EVAL_QUERIES, load_eval_queries
 
-    os.environ["COFIND_LLM_RERANK"] = "false"
-    os.environ["COFIND_LLM_CLAUSE_SENTIMENT"] = "false"
+    os.environ["COFIND_CROSS_ENCODER"] = "false"
+    os.environ["COFIND_ABSA_ENABLED"] = "false"
     os.environ.setdefault("COFIND_SEMANTIC_GATE", "false")
 
     from dotenv import load_dotenv
@@ -54,7 +58,19 @@ def main() -> int:
     from recommendation.helpers import _build_profiles_for_recommendation, _load_all_place_ids
     from recommendation.pipeline import _split_preference_pills
 
-    golden = json.loads(GOLDEN.read_text(encoding="utf-8"))
+    try:
+        query_items = load_eval_queries(args.queries)
+    except FileNotFoundError as err:
+        print(err, file=sys.stderr)
+        return 1
+    if not query_items:
+        print(
+            f"Tidak ada query di {args.queries}. "
+            "Isi dari calon pengguna (lihat data/eval/eval_queries.example.json).",
+            file=sys.stderr,
+        )
+        return 1
+
     place_ids = _load_all_place_ids()
     if not place_ids:
         print("Tidak ada place_id — periksa DATABASE_URL.", file=sys.stderr)
@@ -68,7 +84,7 @@ def main() -> int:
     top_k = retrieval_top_k()
 
     rows = []
-    for item in golden.get("queries") or []:
+    for item in query_items:
         qid = item.get("id")
         route = item.get("route")
         inp = item.get("input") or {}
@@ -120,8 +136,8 @@ def main() -> int:
         "git_commit": _git_head(),
         "profile_count": len(profiles),
         "env_flags": {
-            "COFIND_LLM_RERANK": os.environ.get("COFIND_LLM_RERANK"),
-            "COFIND_LLM_CLAUSE_SENTIMENT": os.environ.get("COFIND_LLM_CLAUSE_SENTIMENT"),
+            "COFIND_CROSS_ENCODER": os.environ.get("COFIND_CROSS_ENCODER"),
+            "COFIND_ABSA_ENABLED": os.environ.get("COFIND_ABSA_ENABLED"),
             "COFIND_SEMANTIC_GATE": os.environ.get("COFIND_SEMANTIC_GATE"),
             "COFIND_BM25_BACKEND": os.environ.get("COFIND_BM25_BACKEND"),
         },

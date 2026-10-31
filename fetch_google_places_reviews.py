@@ -26,7 +26,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
 import sys
 import time
 from datetime import datetime, timezone
@@ -35,49 +34,19 @@ from typing import Any
 import requests
 from dotenv import load_dotenv
 
-load_dotenv()
-
-PLACES_TEXT_SEARCH_URL = "https://places.googleapis.com/v1/places:searchText"
-PLACES_DETAILS_URL = "https://places.googleapis.com/v1/places/{place_id}"
-LEGACY_TEXT_SEARCH_URL = "https://maps.googleapis.com/maps/api/place/textsearch/json"
-LEGACY_DETAILS_URL = "https://maps.googleapis.com/maps/api/place/details/json"
-
-_GOOGLE_PLACE_ID_RE = re.compile(r"^ChI[A-Za-z0-9_-]+$")
-_MAPS_KEY_ENV_ORDER = (
-    "GOOGLE_PLACES_API_KEY",
-    "GOOGLE_MAPS_API_KEY",
-    "VITE_GOOGLE_MAPS_API_KEY",
+from places_api_client import (
+    build_search_query,
+    legacy_place_details,
+    legacy_text_search_first as legacy_text_search,
+    normalize_reviews_legacy,
+    normalize_reviews_new,
+    pick_place_candidate,
+    places_get_details_new,
+    places_text_search_new,
+    resolve_api_key,
 )
 
-
-def _resolve_api_key() -> tuple[str, str]:
-    """Return (api_key, env_var_name). Hanya terima kunci Maps (AIza...)."""
-    invalid: list[str] = []
-    for env_name in _MAPS_KEY_ENV_ORDER:
-        key = (os.getenv(env_name) or "").strip()
-        if not key or key == "YOUR_API_KEY_HERE":
-            continue
-        if key.startswith("AIza"):
-            return key, env_name
-        invalid.append(env_name)
-    hint = ""
-    if invalid:
-        hint = (
-            f" ({', '.join(invalid)} ter-set tapi bukan kunci Maps AIza... — "
-            "salin kunci dari Google Cloud Console / Maps Platform.)"
-        )
-    raise SystemExit(
-        "Tidak ada kunci Maps valid. Set GOOGLE_PLACES_API_KEY=AIza... di .env"
-        + hint
-    )
-
-
-def _headers(field_mask: str, api_key: str) -> dict[str, str]:
-    return {
-        "Content-Type": "application/json",
-        "X-Goog-Api-Key": api_key,
-        "X-Goog-FieldMask": field_mask,
-    }
+load_dotenv()
 
 
 def fetch_coffee_shops_from_db(
@@ -112,208 +81,6 @@ def fetch_coffee_shops_from_db(
         return [dict_from_row(cur, row) or {} for row in rows]
     finally:
         conn.close()
-
-
-def build_search_query(name: str, address: str | None) -> str:
-    name = (name or "").strip()
-    address = (address or "").strip()
-    if not name:
-        return ""
-    if address:
-        # Potong alamat panjang agar query fokus ke nama + area
-        short_addr = address.split(",")[0].strip()
-        if short_addr and short_addr.lower() not in name.lower():
-            return f"{name} {short_addr}"
-    return name
-
-
-def legacy_text_search(
-    session: requests.Session,
-    api_key: str,
-    text_query: str,
-) -> dict[str, Any] | None:
-    if not text_query:
-        return None
-    resp = session.get(
-        LEGACY_TEXT_SEARCH_URL,
-        params={"query": text_query, "language": "id", "key": api_key},
-        timeout=30,
-    )
-    if resp.status_code != 200:
-        return {
-            "_error": True,
-            "status_code": resp.status_code,
-            "message": resp.text[:500],
-        }
-    data = resp.json()
-    status = data.get("status")
-    if status not in ("OK", "ZERO_RESULTS"):
-        return {
-            "_error": True,
-            "message": data.get("error_message") or status or resp.text[:500],
-        }
-    results = data.get("results") or []
-    if not results:
-        return None
-    hit = results[0]
-    return {
-        "place_id": hit.get("place_id"),
-        "name": hit.get("name"),
-        "formatted_address": hit.get("formatted_address"),
-    }
-
-
-def legacy_place_details(
-    session: requests.Session,
-    api_key: str,
-    google_place_id: str,
-) -> dict[str, Any]:
-    resp = session.get(
-        LEGACY_DETAILS_URL,
-        params={
-            "place_id": google_place_id,
-            "fields": "place_id,name,rating,user_ratings_total,reviews,formatted_address,url",
-            "reviews_sort": "most_relevant",
-            "language": "id",
-            "key": api_key,
-        },
-        timeout=30,
-    )
-    if resp.status_code != 200:
-        return {
-            "_error": True,
-            "status_code": resp.status_code,
-            "message": resp.text[:800],
-        }
-    data = resp.json()
-    if data.get("status") != "OK":
-        return {
-            "_error": True,
-            "message": data.get("error_message") or data.get("status"),
-        }
-    return data.get("result") or {}
-
-
-def places_text_search_new(
-    session: requests.Session,
-    api_key: str,
-    text_query: str,
-) -> dict[str, Any] | None:
-    if not text_query:
-        return None
-    body = {
-        "textQuery": text_query,
-        "languageCode": "id",
-        "regionCode": "ID",
-        "maxResultCount": 5,
-    }
-    resp = session.post(
-        PLACES_TEXT_SEARCH_URL,
-        headers=_headers(
-            "places.id,places.displayName,places.formattedAddress",
-            api_key,
-        ),
-        json=body,
-        timeout=30,
-    )
-    if resp.status_code != 200:
-        return {
-            "_error": True,
-            "status_code": resp.status_code,
-            "message": resp.text[:500],
-        }
-    data = resp.json()
-    places = data.get("places") or []
-    if not places:
-        return None
-    return places[0]
-
-
-def pick_place_candidate(
-    search_hit: dict[str, Any] | None,
-    db_place_id: str,
-) -> tuple[str | None, str | None]:
-    """Pilih place_id Google untuk Place Details."""
-    if search_hit and search_hit.get("_error"):
-        return None, "text_search_failed"
-    hit_id = (search_hit or {}).get("place_id") or (search_hit or {}).get("id") or ""
-    db_place_id = (db_place_id or "").strip()
-    if hit_id:
-        if db_place_id and _GOOGLE_PLACE_ID_RE.match(db_place_id):
-            if db_place_id == hit_id:
-                return hit_id, None
-            # Tetap pakai hasil search (berdasarkan nama); catat mismatch di output
-            return hit_id, "db_place_id_differs_from_search"
-        return hit_id, None
-    if db_place_id and _GOOGLE_PLACE_ID_RE.match(db_place_id):
-        return db_place_id, "text_search_empty_used_db_place_id"
-    return None, "no_google_place_id"
-
-
-def places_get_details_new(
-    session: requests.Session,
-    api_key: str,
-    google_place_id: str,
-) -> dict[str, Any]:
-    url = PLACES_DETAILS_URL.format(place_id=google_place_id)
-    field_mask = (
-        "id,displayName,formattedAddress,rating,userRatingCount,reviews,googleMapsUri"
-    )
-    resp = session.get(
-        url,
-        headers=_headers(field_mask, api_key),
-        params={"languageCode": "id"},
-        timeout=30,
-    )
-    if resp.status_code != 200:
-        return {
-            "_error": True,
-            "status_code": resp.status_code,
-            "message": resp.text[:800],
-        }
-    return resp.json()
-
-
-def normalize_reviews_new(place: dict[str, Any]) -> list[dict[str, Any]]:
-    out: list[dict[str, Any]] = []
-    for rev in place.get("reviews") or []:
-        text_obj = rev.get("text") or rev.get("originalText") or {}
-        author = rev.get("authorAttribution") or {}
-        out.append(
-            {
-                "rating": rev.get("rating"),
-                "text": text_obj.get("text") if isinstance(text_obj, dict) else text_obj,
-                "language_code": text_obj.get("languageCode")
-                if isinstance(text_obj, dict)
-                else None,
-                "publish_time": rev.get("publishTime"),
-                "relative_time": rev.get("relativePublishTimeDescription"),
-                "author_display_name": author.get("displayName"),
-                "author_uri": author.get("uri"),
-                "google_maps_uri": rev.get("googleMapsUri"),
-                "review_resource_name": rev.get("name"),
-            }
-        )
-    return out
-
-
-def normalize_reviews_legacy(place: dict[str, Any]) -> list[dict[str, Any]]:
-    out: list[dict[str, Any]] = []
-    for rev in place.get("reviews") or []:
-        out.append(
-            {
-                "rating": rev.get("rating"),
-                "text": rev.get("text"),
-                "language_code": None,
-                "publish_time": rev.get("time"),
-                "relative_time": rev.get("relative_time_description"),
-                "author_display_name": rev.get("author_name"),
-                "author_uri": rev.get("author_url"),
-                "google_maps_uri": None,
-                "review_resource_name": None,
-            }
-        )
-    return out
 
 
 def process_shop(
@@ -372,7 +139,6 @@ def process_shop(
     if api_mode == "new":
         display = details.get("displayName") or {}
         matched_name = display.get("text") if isinstance(display, dict) else display
-        normalize = normalize_reviews_new
         return {
             "db_place_id": db_place_id,
             "db_name": name,
@@ -387,7 +153,7 @@ def process_shop(
             "google_maps_uri": details.get("googleMapsUri"),
             "reviews_sort": "most_relevant",
             "reviews_count_returned": len(details.get("reviews") or []),
-            "reviews": normalize(details),
+            "reviews": normalize_reviews_new(details),
             "error": None,
         }
 
@@ -478,7 +244,7 @@ def main() -> int:
             print(text)
         return 0
 
-    api_key, key_source = _resolve_api_key()
+    api_key, key_source = resolve_api_key()
     print(
         f"Menggunakan kunci dari {key_source}, API={args.api}",
         file=sys.stderr,

@@ -51,28 +51,6 @@ def pills_with_review_keyword_hits(shop: dict, pills: Sequence[str]) -> Set[str]
     return out
 
 
-def pills_covered_by_metadata(
-    shop: dict,
-    pills: Sequence[str],
-    *,
-    facility_attribute_pills: Iterable[str],
-) -> Set[str]:
-    facility_set = set(facility_attribute_pills or [])
-    pill_set = set(pills or [])
-    evidence = shop.get('evidence') or {}
-    gate = evidence.get('metadata_gate') or {}
-    matched = [
-        str(p) for p in (gate.get('matched_attribute_pills') or [])
-        if p
-    ]
-    contradicted = {str(p) for p in (gate.get('contradicted_pills') or []) if p}
-    out: Set[str] = set()
-    for pill in matched:
-        if pill in pill_set and pill in facility_set and pill not in contradicted:
-            out.add(pill)
-    return out
-
-
 def pills_covered_by_opening_hours(shop: dict, pills: Sequence[str]) -> Set[str]:
     if 'buka_sampai_malam_24_hours' not in (pills or []):
         return set()

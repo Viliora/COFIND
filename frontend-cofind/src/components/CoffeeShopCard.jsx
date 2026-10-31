@@ -4,9 +4,12 @@ import { Link } from 'react-router-dom';
 import OptimizedImage from './OptimizedImage';
 import { getCoffeeShopImage } from '../utils/coffeeShopImages';
 import {
+  computeOpenNowFromShop,
+  formatOpenNowBadge,
   openingHoursForTodayFromShop,
   parseJsonField,
   priceLevelLabel,
+  shopHasOpeningHours,
 } from '../utils/googlePlacesDisplay';
 
 /** Grid katalog di samping Latest Reviews: 3 kolom agar kartu tidak terpotong aside */
@@ -27,8 +30,14 @@ const CoffeeShopCard = ({ shop, variant = 'default' }) => {
     const priceLabel = priceLevelLabel(
       shop.price_level ?? parseJsonField(shop.google_places_snapshot)?.price_level,
     );
-    const hoursToday = openingHoursForTodayFromShop(shop);
-    const openNow = parseJsonField(shop.google_places_snapshot)?.opening_hours?.open_now;
+    const hasHours = shopHasOpeningHours(shop);
+    const hoursToday = hasHours ? openingHoursForTodayFromShop(shop) : null;
+    const computedOpen = hasHours ? computeOpenNowFromShop(shop) : null;
+    const apiOpenNow = parseJsonField(shop.google_places_snapshot)?.opening_hours?.open_now;
+    const openNow = hasHours
+      ? (computedOpen !== null && computedOpen !== undefined ? computedOpen : apiOpenNow)
+      : undefined;
+    const openBadge = hasHours ? formatOpenNowBadge(openNow, hoursToday) : null;
 
     // Fungsi untuk mendapatkan warna placeholder berdasarkan nama shop
     const getPlaceholderColor = (shopName) => {
@@ -129,23 +138,24 @@ const CoffeeShopCard = ({ shop, variant = 'default' }) => {
                     </div>
                 </div>
 
-                {!isMini && (hoursToday || shop.opening_hours_display != null) && (
+                {!isMini && hasHours && (hoursToday || openBadge) && (
                     <div className="text-sm text-gray-600 dark:text-gray-400 mb-2 flex items-center gap-2 flex-wrap">
+                        {hoursToday && (
                         <span className="inline-flex items-center gap-1.5 min-w-0">
                             <span aria-hidden>🕐</span>
-                            <span className="truncate">
-                                {hoursToday || 'Jam operasional belum diisi'}
-                            </span>
+                            <span className="truncate">{hoursToday}</span>
                         </span>
-                        {openNow !== undefined && (
+                        )}
+                        {openBadge && openNow !== undefined && (
                             <span
-                                className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${
+                                title={openBadge.title}
+                                className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 max-w-[14rem] truncate ${
                                     openNow
                                         ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
                                         : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
                                 }`}
                             >
-                                {openNow ? 'Open' : 'Closed'}
+                                {openNow ? 'Buka' : 'Tutup'}
                             </span>
                         )}
                     </div>

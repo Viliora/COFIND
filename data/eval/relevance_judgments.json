@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "description": "Label relevansi manual query×toko. Grade 0–3. query_id harus ada di data/eval/eval_queries.json.",
+  "protocol": {
+    "annotators": 1,
+    "align_queries": "data/eval/eval_queries.json"
+  },
+  "judgments": []
+}

@@ -1,4 +1,29 @@
-"""Konfigurasi pill aktivitas dan fasilitas (sumber tunggal backend)."""
+"""Konfigurasi pill aktivitas dan fasilitas.
+
+Peran field (tests/test_pill_retrieval_text.py):
+  - label            teks UI/prompt saja; TIDAK masuk token sparse maupun teks dense.
+  - dense_query      teks query dense: satu konsep, gaya bahasa ulasan, <=150 char, tanpa
+                     negasi (embedding menangani negasi dengan buruk).
+  - definition /     konteks prompt LLM rerank/summary (+ kunci cache rerank).
+    negative_scope   negative_scope sengaja tidak pernah masuk dense.
+  - facility_fields  hanya pill atribut; penguat lemah (metadata prior). Bukti utama tetap
+                     kecocokan preferensi dengan ulasan. Key yang belum ada di data
+                     (mis. smoking_area) dibiarkan agar terpakai bila data menyusul.
+
+Kebijakan `review_keywords` (ditegakkan tests/test_pill_keyword_curation.py):
+- Sparse (BM25) = jangkar leksikal yang lemah ditangkap dense: slang, singkatan, nama
+    khas, ejaan informal ("wfc", "mabar", "nugas"). Parafrase/sentimen
+    ("tenang banget", "wifi kencang") adalah tugas dense, bukan daftar ini.
+- BM25 meratakan frasa jadi unigram, jadi tiap token harus jangkar. Hindari modifier
+    ("cepat", "luas", "bersih"), kata fungsi ("untuk", "bisa", "banyak"), dan kata umum
+    yang bertabrakan di ulasan nyata ("manis", "teras", "luar", "laptop").
+- Jangan menulis varian ejaan yang sudah dilipat slang normalizer (mushola/musola).
+- Pill aktivitas: review_keywords + frasa gerbang dari data/lexicon/activity_lexicon.json.
+- Maks 8 keyword (aktivitas) / 7 (atribut). Urutkan paling representatif lebih dulu:
+    recommendation/helpers.py memakai 8 pertama sebagai frasa acuan semantic gate.
+- Tambahan baru hanya dari ulasan nyata (scripts/eval/mine_pill_keyword_candidates.py,
+    scripts/eval/pill_keyword_drift_report.py), setelah dikurasi manual.
+"""
 from __future__ import annotations
 
 PILL_MAPPING = {
@@ -12,16 +37,8 @@ PILL_MAPPING = {
             'Bukan tempat nongkrong komunal yang riuh, kafe dengan live music keras, '
             'atau tempat yang hanya cocok untuk mengobrol santai tanpa konsentrasi.'
         ),
-        'facility_fields': {
-            'popular_for': ['good_for_working_on_laptop'],
-            'amenities': ['wifi', 'free_wifi'],
-            'crowd': ['mahasiswa'],
-        },
-        'review_keywords': [
-            'belajar', 'tugas', 'nugas', 'ngerjain tugas', 'kuliah', 'kampus', 'ujian',
-            'skripsi', 'buku', 'baca buku', 'fokus belajar', 'ruang belajar', 'temen belajar',
-            'anak kuliahan', 'mahasiswa', 'tugas sekolah',
-        ],
+        'dense_query': 'enak buat belajar dan nugas, ngerjain tugas kuliah atau skripsi',
+        'review_keywords': [],
     },
     'kerja': {
         'label': 'Kerja/WFC',
@@ -33,21 +50,8 @@ PILL_MAPPING = {
             'Bukan sekadar mampir minum kopi sebentar (grab-and-go), dan bukan kunjungan santai '
             'tanpa niat kerja remote atau menyelesaikan pekerjaan.'
         ),
-        'facility_fields': {
-            'popular_for': ['good_for_working_on_laptop'],
-            'amenities': ['wifi', 'free_wifi'],
-        },
-        'review_keywords': [
-            # 8 teratas juga dipakai sebagai frasa acuan gerbang makna
-            # (_semantic_reference_terms), jadi istilah paling representatif
-            # untuk "kerja dari kafe" ditaruh di depan.
-            'kerja', 'wfc', 'work from cafe', 'laptopan', 'laptop', 'wfh',
-            'kerja remote', 'ngantor',
-            'zoom', 'meeting online', 'video call', 'webinar', 'produktif',
-            'deadline', 'presentasi', 'dokumen', 'ngerjain kerjaan', 'kerjaan kantor',
-            'lembur', 'freelance', 'remote working', 'work from anywhere',
-            'bisnis', 'kantor',
-        ],
+        'dense_query': 'cocok buat kerja dan wfc, laptopan berjam-jam, kerja remote',
+        'review_keywords': [],
     },
     'bermain game': {
         'label': 'Nge-game',
@@ -59,16 +63,9 @@ PILL_MAPPING = {
             'Bukan kafe hening/perpustakaan yang melarang obrolan seru, dan bukan tempat yang '
             'membatasi waktu kunjungan singkat.'
         ),
-        'facility_fields': {
-            'popular_for': ['good_for_groups'],
-        },
-        'review_keywords': [
-            'main game', 'gaming', 'gamer', 'game', 'ngegame', 'nge-game', 'nge game',
-            'mobile legends', 'mobile legend', 'mlbb', 'main ml', 'main ML',
-            'pubg', 'valorant', 'free fire', 'main ff', 'honor of kings',
-            'mabar', 'ngemabar', 'gas game', 'turnamen', 'push rank', 'ngerank',
-            'bermain game', 'mainbareng', 'playstation', 'ps5', 'esport',
-        ],
+        'dense_query': 'seru buat main game dan mabar bareng teman, main mobile legends atau pubg',
+        # review_keywords aktivitas diisi dari activity_lexicon.json saat import.
+        'review_keywords': [],
     },
     'meeting_sosialisasi': {
         'label': 'Meeting/Pertemuan',
@@ -81,18 +78,11 @@ PILL_MAPPING = {
             'Bukan nongkrong santai perorangan, dan bukan tempat dengan kapasitas tempat duduk '
             'sangat sempit untuk kelompok.'
         ),
-        'facility_fields': {
-            'popular_for': ['good_for_groups'],
-            'crowd': ['berkelompok'],
-        },
+        'dense_query': 'nyaman buat meeting, rapat, atau pertemuan kelompok, mejanya muat banyak orang',
         # Hindari kata longgar seperti "kumpul"/"grup": "berkumpul dengan keluarga"
-        # bukan bukti meeting. Pakai frasa pertemuan/rapat yang lebih spesifik.
-        'review_keywords': [
-            'meeting', 'rapat', 'diskusi', 'arisan', 'sosialisasi', 'networking',
-            'catch up', 'untuk meeting', 'buat rapat', 'untuk rapat',
-            'pertemuan bisnis', 'pertemuan kerja', 'meeting kantor',
-            'kumpul kerja', 'kumpul kantor', 'kumpul tim',
-        ],
+        # bukan bukti meeting. Hindari frasa berawalan kata fungsi ("untuk rapat"):
+        # BM25 meratakannya jadi unigram "untuk"/"buat" yang menyentuh ~70% review.
+        'review_keywords': [],
     },
     'keluarga': {
         'label': 'Keluarga',
@@ -104,17 +94,8 @@ PILL_MAPPING = {
             'Bukan area bar/lounge yang tidak ramah anak, dan bukan tempat sempit yang berbahaya '
             'bagi anak kecil dan orang tua.'
         ),
-        'facility_fields': {
-            'children': ['good_for_kids', 'kids_menu', 'high_chairs'],
-            'popular_for': ['good_for_groups'],
-            'crowd': ['keluarga', 'ramah_keluarga', 'berkelompok'],
-        },
-        'review_keywords': [
-            'keluarga', 'family', 'anak-anak', 'ramah keluarga',
-            'cocok keluarga', 'bawa anak kecil', 'family friendly',
-            'berkumpul bersama', 'kumpul bersama', 'quality time',
-            'ramah anak', 'playground', 'area bermain', 'kursi bayi', 'menu anak',
-        ],
+        'dense_query': 'cocok buat bawa keluarga dan anak kecil, ramah anak, ada kursi bayi',
+        'review_keywords': [],
     },
     'instagrammable': {
         'label': 'Feeds Hunter',
@@ -126,128 +107,151 @@ PILL_MAPPING = {
             'Bukan tempat dengan visual kumuh, pencahayaan gelap/suram tanpa konsep estetik, '
             'atau kafe ruko polos tanpa elemen dekoratif visual.'
         ),
-        'facility_fields': {
-            'atmosphere': ['trendi', 'artistic'],
-        },
-        'review_keywords': [
-            'instagrammable', 'instagramable', 'instagenic', 'fotogenik',
-            'spot foto', 'photo spot', 'banyak spot foto', 'estetik',
-        ],
+        # Label branding "Feeds Hunter": datang untuk berfoto demi feed media sosial
+        # karena tempatnya estetik.
+        'dense_query': 'tempatnya estetik, banyak spot foto bagus buat feed instagram dan konten sosmed',
+        'review_keywords': [],
+    },
+    'nongkrong_hangout': {
+        'label': 'Nongkrong/Hangout',
+        'definition': (
+            'Kunjungan santai untuk ngobrol lama, nongkrong atau nongki bersama teman, tanpa '
+            'agenda rapat formal, skripsi, atau kerja laptop berjam-jam.'
+        ),
+        'negative_scope': (
+            'Bukan rapat kerja formal atau meeting presentasi, bukan fokus belajar/skripsi, '
+            'dan bukan kunjungan keluarga lintas usia dengan anak kecil sebagai fokus utama.'
+        ),
+        'dense_query': (
+            'cocok nongkrong dan nongki santai bareng teman, hangout lama ngobrol sambil ngopi'
+        ),
+        # "nongki" dilipat slang normalizer ke "nongkrong"; frasa "nongki" tetap di
+        'review_keywords': [],
     },
     # --- Preferensi lapis 2: atribut fasilitas ---------------------------------
     # Struktur identik dengan pill aktivitas, jadi seluruh pipeline (BM25,
     # evidence, rerank) otomatis mengenalinya tanpa cabang khusus.
     'ruangan_ac': {
+        # Label "Ruangan sejuk": sejuk karena AC maupun alami (adem), bukan hanya AC.
+        'dense_query': 'ruangannya sejuk dan adem, ada AC, udaranya segar',
+        # "nyaman" ada di semua toko, bukan bukti sejuk.
         'facility_fields': {
-            'atmosphere': ['nyaman', 'sejuk'],
+            'atmosphere': ['sejuk'],
         },
         'review_keywords': [
-            # "dingin"/"adem" sengaja tidak berdiri sendiri: "kopi dingin" / "tempatnya adem"
-            # bukan bukti ruangan ber-AC.
-            'ac', 'ber ac', 'ruangan ac', 'sejuk', 'indoor ac',
-            'ac dingin', 'ruangan dingin', 'ruangan sejuk', 'udara dingin',
+            # "dingin" sengaja tidak masuk (juga lewat frasa "ac dingin"): BM25 meratakan
+            # frasa jadi unigram, dan "kopi dingin" bukan bukti ruangan sejuk.
+            'sejuk', 'adem', 'ac', 'ruangan ac',
         ],
     },
     'suasana_tenang': {
+        'dense_query': 'suasananya tenang, sepi, dan kalem, musiknya pelan',
+        # "santai" bukan "tenang" (kafe ramai pun bisa santai).
         'facility_fields': {
-            'atmosphere': ['tenang', 'santai'],
+            'atmosphere': ['tenang'],
         },
+        # Tidak memasukkan "tidak berisik"/"nggak ribut": unigram "berisik"/"ribut" akan
+        # menarik toko yang ulasannya justru mengeluh berisik.
         'review_keywords': [
-            'tenang', 'sepi', 'sunyi', 'hening', 'tidak berisik', 'ga berisik',
-            'nggak ribut', 'suasana tenang', 'kondusif', 'damai',
+            'tenang', 'ketenangan', 'sepi', 'kondusif',
         ],
     },
     'area_outdoor': {
+        'dense_query': 'ada area outdoor buat duduk di luar, semi outdoor atau rooftop',
         'facility_fields': {
             'service_options': ['outdoor_seating'],
         },
+        # "teras"/"luar"/"taman"/"terbuka" sengaja tidak masuk: ulasan nyata memakai
+        # "teras rumah" untuk parkir motor dan "luar biasa" untuk pelayanan.
         'review_keywords': [
-            'outdoor', 'area outdoor', 'outdoor seating', 'tempat outdoor',
-            'area terbuka', 'tempat terbuka', 'teras outdoor', 'taman outdoor',
-            'duduk di luar', 'kursi outdoor', 'al fresco',
-            'di luar ruangan', 'lesehan outdoor', 'rooftop', 'open space',
-            'taman',
+            'outdoor', 'semi outdoor', 'rooftop',
         ],
     },
     'smoking_area': {
+        'dense_query': 'ada smoking area, boleh merokok di ruangan khusus perokok',
         'facility_fields': {
             'amenities': ['smoking_area'],
         },
         'review_keywords': [
-            'smoking area', 'area smoking', 'area merokok', 'tempat merokok',
-            'bisa merokok', 'boleh merokok', 'ruang merokok', 'smoking room',
-            'kawasan merokok',
+            'smoking area', 'smoking room', 'merokok', 'rokok',
         ],
     },
     'wifi_kencang': {
+        'dense_query': 'wifinya kencang dan stabil, internetnya lancar',
         'facility_fields': {
             'amenities': ['wifi', 'free_wifi'],
         },
+        # Kualitas ("kencang"/"lancar"/"stabil") sengaja tidak masuk sparse: sebagai unigram
+        # ia cocok ke "pelayanan cepat" dsb. Kualitas dinilai dense + evidence.
         'review_keywords': [
-            'wifi', 'wifi kencang', 'wifi cepat', 'wifi lancar', 'wifi stabil',
-            'internet cepat', 'internet lancar', 'koneksi stabil', 'sinyal kuat',
-            'jaringan lancar', 'kecepatan internet',
+            'wifi', 'internet',
         ],
     },
     'banyak_colokan_terminal': {
+        # "terminal" hanya di dense: sebagai token sparse bisa cocok ke "dekat terminal" (lokasi).
+        'dense_query': 'banyak colokan dan terminal listrik di meja, gampang ngecas laptop dan hp',
         'facility_fields': {
             'popular_for': ['good_for_working_on_laptop'],
         },
         'review_keywords': [
-            'colokan', 'stop kontak', 'terminal listrik', 'banyak colokan',
-            'colokan di tiap meja', 'charge laptop', 'ngecas', 'charging',
-            'power outlet',
+            'colokan', 'stop kontak', 'ngecas', 'charger',
         ],
     },
     'ruang_privat': {
+        'dense_query': 'ada ruang privat, vip room, atau ruang meeting tertutup yang bisa dipesan',
+        # accepts_reservations = bisa reservasi meja, bukan bukti ruang privat.
         'facility_fields': {
             'offerings': ['private_dining_room'],
-            'planning': ['accepts_reservations'],
         },
         'review_keywords': [
-            'ruang privat', 'private room', 'ruang meeting', 'meeting room',
-            'ruangan tertutup', 'vip room', 'ruang khusus', 'ruang diskusi',
-            'bisa reservasi ruangan',
+            'ruang privat', 'private room', 'vip room', 'meeting room',
         ],
     },
     'buka_sampai_malam_24_hours': {
+        # Label "24 hours": buka 24 jam, bukan sekadar tutup larut.
+        'dense_query': 'buka 24 jam nonstop, bisa datang kapan saja termasuk tengah malam',
         'facility_fields': {
             'offerings': ['late_night_food'],
         },
+        # Varian "buka 24 jam"/"open 24 hours"/"operasional 24 jam" melipat ke token yang sama.
+        # "malam"/"buka" sengaja tidak masuk: terlalu umum ("malam minggu", "buka jam 9").
         'review_keywords': [
-            '24 jam', '24 hours', 'buka 24 jam', 'open 24 hours', 'operasional 24 jam',
-            'buka sepanjang hari', 'buka nonstop', '24/7', 'buka 24/7',
-            'never close', 'tutup never', 'jam operasional 24 jam',
+            '24 jam', '24 hours', '24/7', 'nonstop',
         ],
     },
     'musholla': {
+        'dense_query': 'ada musholla yang bersih buat sholat, tersedia mukena',
         'facility_fields': {
             'amenities': ['musholla', 'prayer_room'],
         },
+        # Variasi ejaan (mushola/musola/musolla, sholat/solat) sudah dilipat slang normalizer.
         'review_keywords': [
-            'musholla', 'mushola', 'musola', 'tempat sholat', 'tempat solat',
-            'ruang sholat', 'bisa sholat', 'ada mukena', 'sajadah',
+            'musholla', 'sholat', 'mukena',
         ],
     },
     'parkir_luas': {
+        'dense_query': 'parkirannya luas dan lega, gampang parkir motor dan mobil',
+        # parking_available / paid_parking_lot hanya berarti "ada parkir", bukan "luas".
         'facility_fields': {
-            'parking': ['lots_of_parking', 'parking_available', 'paid_parking_lot'],
+            'parking': ['lots_of_parking', 'plenty_of_parking'],
         },
+        # Hanya jangkar "parkir": "luas"/"mudah"/"lega" adalah kualitas (dense + evidence),
+        # dan "luas" sebagai unigram cocok ke "areanya luas".
         'review_keywords': [
-            'parkir', 'parkiran', 'parkir luas', 'parkir lega', 'lahan parkir',
-            'parkir mudah', 'tempat parkir', 'parkir motor', 'parkir mobil',
+            'parkir',
         ],
     },
     'toilet_bersih': {
+        'dense_query': 'toiletnya bersih, wangi, dan terawat',
         'facility_fields': {
             'amenities': ['toilet', 'gender_neutral_toilet'],
         },
         'review_keywords': [
-            'toilet', 'toilet bersih', 'kamar mandi', 'wc', 'restroom',
-            'toiletnya wangi', 'kamar mandi bersih',
+            'toilet', 'toiletnya', 'wc', 'kamar mandi', 'restroom',
         ],
     },
     'makanan_berat': {
+        'dense_query': 'menu lengkap, ada makanan berat seperti nasi atau pasta dan banyak pilihan minuman',
         # Menu lengkap = toko menyajikan makanan (bukan hanya kopi/minuman).
         # Sinyal utama ada di popular_for / dining_options (breakfast|brunch|
         # lunch|dinner), bukan hanya offerings.restaurant.
@@ -256,23 +260,22 @@ PILL_MAPPING = {
             'dining_options': ['breakfast', 'brunch', 'lunch', 'dinner'],
             'offerings': ['restaurant'],
         },
+        # Jangkar hidangan khas saja. "makan malam"/"kenyang"/"menu lengkap" tidak masuk
+        # (unigram malam/menu terlalu umum; "kenyang" = sentimen, ranah dense).
         'review_keywords': [
-            'makanan berat', 'menu makanan berat', 'nasi', 'nasi goreng',
-            'makan siang', 'makan malam', 'kenyang', 'lauk', 'ayam goreng',
-            'steak', 'pasta', 'rice bowl', 'soto', 'bakso', 'mie ayam',
-            'menu lengkap', 'bisa makan berat', 'sarapan', 'brunch',
+            'makanan berat', 'nasi', 'steak', 'pasta', 'mie ayam', 'rice bowl', 'sarapan',
         ],
     },
     'dessert': {
         'label': 'Dessert',
+        'dense_query': 'dessertnya enak, ada kue, cake, cheesecake, brownies, dan pastry',
         'facility_fields': {
             'highlights': ['good_desserts'],
             'dining_options': ['dessert'],
         },
+        # "manis" sengaja tidak masuk: ulasan nyata "kopi susunya manis banget" bukan dessert.
         'review_keywords': [
-            'dessert', 'cheesecake', 'kue', 'pastry', 'croissant', 'brownies',
-            'tiramisu', 'donat', 'waffle', 'pudding', 'es krim', 'manis',
-            'hidangan penutup', 'kue basah', 'kue kering',
+            'dessert', 'cheesecake', 'cake', 'brownies', 'croissant', 'pastry', 'kue',
         ],
     },
 }
@@ -315,4 +318,8 @@ for _pill_key, _pill_spec in PILL_MAPPING.items():
     )
 for _pill_key, _pill_label in _FACILITY_PILL_LABELS.items():
     PILL_LABELS.setdefault(_pill_key, _pill_label)
+
+from activity_lexicon import apply_activity_lexicon_to_mapping
+
+apply_activity_lexicon_to_mapping(PILL_MAPPING)
 

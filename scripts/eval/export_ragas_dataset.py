@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Export case RAGAS dari pipeline rekomendasi (Gemini-only, golden queries pill).
+Export case RAGAS dari pipeline rekomendasi (Gemini-only, query eval pill).
 
   python scripts/eval/export_ragas_dataset.py --dry-run
   python scripts/eval/export_ragas_dataset.py --limit 18
@@ -15,7 +15,6 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Set
 
 ROOT = Path(__file__).resolve().parents[2]
-GOLDEN = ROOT / "tests" / "golden_queries.json"
 DEFAULT_OUT = ROOT / "data" / "eval" / "ragas_cases.jsonl"
 
 MAX_CONTEXT_CHUNKS = 12
@@ -26,28 +25,10 @@ def _configure_gemini_only_env() -> None:
     """Matikan HF agar probe pipeline memakai Gemini."""
     os.environ["HF_API_TOKEN"] = ""
     os.environ["HF_TOKEN"] = ""
-    os.environ.setdefault("COFIND_LLM_RERANK", "true")
+    os.environ.setdefault("COFIND_CE_RERANK", "true")
     os.environ.setdefault("COFIND_LLM_GROUNDING_CHECK", "true")
     os.environ.setdefault("COFIND_MODAL_QUOTE_LLM", "false")
     os.environ.setdefault("COFIND_LLM_KEYWORD_EXPANSION", "false")
-
-
-def _load_golden_queries(
-    *,
-    limit: Optional[int],
-    ids: Optional[List[str]],
-    pill_only: bool,
-) -> List[Dict[str, Any]]:
-    data = json.loads(GOLDEN.read_text(encoding="utf-8"))
-    queries = data.get("queries") or []
-    if pill_only:
-        queries = [q for q in queries if q.get("route") == "pill"]
-    if ids:
-        id_set = set(ids)
-        queries = [q for q in queries if q.get("id") in id_set]
-    if limit is not None:
-        queries = queries[: max(0, limit)]
-    return queries
 
 
 def _quote_text(item: Any) -> str:
@@ -106,12 +87,13 @@ def _user_input_from_query(query: Dict[str, Any]) -> str:
 
 
 def _ground_truth_from_query(query: Dict[str, Any]) -> str:
-    expect = query.get("expect") or {}
-    notes = (expect.get("notes") or "").strip()
-    if notes:
-        return notes
+    verbatim = (query.get("verbatim") or "").strip()
+    if verbatim:
+        return verbatim
     pills = (query.get("input") or {}).get("pills") or []
-    return f"Rekomendasi relevan untuk pill: {', '.join(pills)}."
+    if pills:
+        return f"Rekomendasi relevan untuk pill: {', '.join(pills)}."
+    return str((query.get("input") or {}).get("query_text") or query.get("id") or "")
 
 
 def _run_pipeline(pills: List[str], auth_user: Dict[str, Any]) -> Dict[str, Any]:
@@ -160,7 +142,8 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
     parser.add_argument("--limit", type=int, default=None)
-    parser.add_argument("--ids", type=str, default=None, help="Comma-separated golden ids")
+    parser.add_argument("--queries", type=Path, default=None, help="eval_queries.json")
+    parser.add_argument("--ids", type=str, default=None, help="Comma-separated query ids")
     parser.add_argument("--dry-run", action="store_true", help="Hanya 1 query pertama")
     parser.add_argument("--include-free-text", action="store_true")
     args = parser.parse_args()
@@ -173,15 +156,26 @@ def main() -> int:
     load_dotenv(ROOT / ".env")
     _configure_gemini_only_env()
 
+    _eval_dir = ROOT / "scripts" / "eval"
+    if str(_eval_dir) not in sys.path:
+        sys.path.insert(0, str(_eval_dir))
+    from eval_queries_io import DEFAULT_EVAL_QUERIES, load_eval_queries
+
     id_list = [x.strip() for x in args.ids.split(",")] if args.ids else None
     limit = 1 if args.dry_run else args.limit
-    queries = _load_golden_queries(
-        limit=limit,
-        ids=id_list,
-        pill_only=not args.include_free_text,
-    )
+    queries_path = args.queries or DEFAULT_EVAL_QUERIES
+    try:
+        queries = load_eval_queries(
+            queries_path,
+            limit=limit,
+            ids=id_list,
+            pill_only=not args.include_free_text,
+        )
+    except FileNotFoundError as err:
+        print(err, file=sys.stderr)
+        return 1
     if not queries:
-        print("Tidak ada golden query.", file=sys.stderr)
+        print(f"Tidak ada query di {queries_path}.", file=sys.stderr)
         return 1
 
     args.out.parent.mkdir(parents=True, exist_ok=True)

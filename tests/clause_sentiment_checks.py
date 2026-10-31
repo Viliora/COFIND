@@ -8,7 +8,7 @@ import os
 def main() -> int:
     # Pastikan env kosong memakai default baru (aktif).
     for key in (
-        'COFIND_LLM_CLAUSE_SENTIMENT',
+        'COFIND_ABSA_ENABLED',
         'COFIND_CLAUSE_SENTIMENT_DEDUP',
     ):
         os.environ.pop(key, None)

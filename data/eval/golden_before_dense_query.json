@@ -1,0 +1,344 @@
+{
+  "git_commit": "3182b56067444a711a3cbc12d3a24265f5ad2e86",
+  "profile_count": 15,
+  "env_flags": {
+    "COFIND_LLM_RERANK": "false",
+    "COFIND_LLM_CLAUSE_SENTIMENT": "false",
+    "COFIND_SEMANTIC_GATE": "false",
+    "COFIND_BM25_BACKEND": "postgres"
+  },
+  "queries": [
+    {
+      "id": "gq-pill-kerja-wfc-01",
+      "route": "pill",
+      "top_k": 7,
+      "place_ids": [
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJhx6zl0BZHS4RGNla_oPoIJ0"
+      ],
+      "error": null,
+      "telemetry": {
+        "activity_gated": 11,
+        "bm25_backend": "postgres"
+      }
+    },
+    {
+      "id": "gq-pill-kerja-colokan-02",
+      "route": "pill",
+      "top_k": 7,
+      "place_ids": [
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJhx6zl0BZHS4RGNla_oPoIJ0"
+      ],
+      "error": null,
+      "telemetry": {
+        "activity_gated": 11,
+        "bm25_backend": "postgres"
+      }
+    },
+    {
+      "id": "gq-pill-belajar-03",
+      "route": "pill",
+      "top_k": 7,
+      "place_ids": [
+        "ChIJPa6swGtZHS4RrbIlRvgBgok",
+        "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw"
+      ],
+      "error": null,
+      "telemetry": {
+        "activity_gated": 10,
+        "bm25_backend": "postgres"
+      }
+    },
+    {
+      "id": "gq-pill-game-04",
+      "route": "pill",
+      "top_k": 7,
+      "place_ids": [
+        "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJV7mtlzNZHS4R0rK_eHkd0LU"
+      ],
+      "error": null,
+      "telemetry": {
+        "activity_gated": 4,
+        "bm25_backend": "postgres"
+      }
+    },
+    {
+      "id": "gq-pill-keluarga-05",
+      "route": "pill",
+      "top_k": 7,
+      "place_ids": [
+        "ChIJPa6swGtZHS4RrbIlRvgBgok",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJV7mtlzNZHS4R0rK_eHkd0LU"
+      ],
+      "error": null,
+      "telemetry": {
+        "activity_gated": 7,
+        "bm25_backend": "postgres"
+      }
+    },
+    {
+      "id": "gq-pill-meeting-06",
+      "route": "pill",
+      "top_k": 7,
+      "place_ids": [
+        "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+        "ChIJpXpEsPNZHS4Rciespc96M5o"
+      ],
+      "error": null,
+      "telemetry": {
+        "activity_gated": 4,
+        "bm25_backend": "postgres"
+      }
+    },
+    {
+      "id": "gq-pill-ig-07",
+      "route": "pill",
+      "top_k": 7,
+      "place_ids": [
+        "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM"
+      ],
+      "error": null,
+      "telemetry": {
+        "activity_gated": 3,
+        "bm25_backend": "postgres"
+      }
+    },
+    {
+      "id": "gq-pill-parkir-08",
+      "route": "pill",
+      "top_k": 7,
+      "place_ids": [
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+        "ChIJ6fOdOEBZHS4RcV3VfZzhYx0"
+      ],
+      "error": null,
+      "telemetry": {
+        "activity_gated": 0,
+        "bm25_backend": "postgres"
+      }
+    },
+    {
+      "id": "gq-pill-musholla-09",
+      "route": "pill",
+      "top_k": 7,
+      "place_ids": [
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJpXpEsPNZHS4Rciespc96M5o",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM"
+      ],
+      "error": null,
+      "telemetry": {
+        "activity_gated": 0,
+        "bm25_backend": "postgres"
+      }
+    },
+    {
+      "id": "gq-pill-24jam-10",
+      "route": "pill",
+      "top_k": 7,
+      "place_ids": [
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8"
+      ],
+      "error": null,
+      "telemetry": {
+        "activity_gated": 0,
+        "bm25_backend": "postgres"
+      }
+    },
+    {
+      "id": "gq-pill-multi-11",
+      "route": "pill",
+      "top_k": 7,
+      "place_ids": [
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJhx6zl0BZHS4RGNla_oPoIJ0"
+      ],
+      "error": null,
+      "telemetry": {
+        "activity_gated": 11,
+        "bm25_backend": "postgres"
+      }
+    },
+    {
+      "id": "gq-ft-wfc-12",
+      "route": "free_text",
+      "top_k": 7,
+      "place_ids": [
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJpXpEsPNZHS4Rciespc96M5o",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJDcJgropZHS4RKuh8s52jy9U"
+      ],
+      "error": null,
+      "telemetry": {
+        "activity_gated": null,
+        "bm25_backend": "postgres"
+      }
+    },
+    {
+      "id": "gq-ft-murah-musholla-13",
+      "route": "free_text",
+      "top_k": 7,
+      "place_ids": [
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+        "ChIJpXpEsPNZHS4Rciespc96M5o",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8"
+      ],
+      "error": null,
+      "telemetry": {
+        "activity_gated": null,
+        "bm25_backend": "postgres"
+      }
+    },
+    {
+      "id": "gq-ft-hidden-gem-14",
+      "route": "free_text",
+      "top_k": 7,
+      "place_ids": [
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+        "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJpXpEsPNZHS4Rciespc96M5o"
+      ],
+      "error": null,
+      "telemetry": {
+        "activity_gated": null,
+        "bm25_backend": "postgres"
+      }
+    },
+    {
+      "id": "gq-ft-game-15",
+      "route": "free_text",
+      "top_k": 7,
+      "place_ids": [
+        "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+        "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+        "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJDcJgropZHS4RKuh8s52jy9U"
+      ],
+      "error": null,
+      "telemetry": {
+        "activity_gated": null,
+        "bm25_backend": "postgres"
+      }
+    },
+    {
+      "id": "gq-ft-tenang-16",
+      "route": "free_text",
+      "top_k": 7,
+      "place_ids": [
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJPa6swGtZHS4RrbIlRvgBgok",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+        "ChIJpXpEsPNZHS4Rciespc96M5o"
+      ],
+      "error": null,
+      "telemetry": {
+        "activity_gated": null,
+        "bm25_backend": "postgres"
+      }
+    },
+    {
+      "id": "gq-ft-wifi-17",
+      "route": "free_text",
+      "top_k": 7,
+      "place_ids": [
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJpXpEsPNZHS4Rciespc96M5o",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+        "ChIJDcJgropZHS4RKuh8s52jy9U"
+      ],
+      "error": null,
+      "telemetry": {
+        "activity_gated": null,
+        "bm25_backend": "postgres"
+      }
+    },
+    {
+      "id": "gq-ft-umum-18",
+      "route": "free_text",
+      "top_k": 7,
+      "place_ids": [
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJpXpEsPNZHS4Rciespc96M5o",
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJhx6zl0BZHS4RGNla_oPoIJ0"
+      ],
+      "error": null,
+      "telemetry": {
+        "activity_gated": null,
+        "bm25_backend": "postgres"
+      }
+    }
+  ]
+}

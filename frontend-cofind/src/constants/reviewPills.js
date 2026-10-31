@@ -30,6 +30,11 @@ export const CONTEXT_PILL_OPTIONS = [
     value: 'instagrammable',
     desc: 'Estetika visual, pencahayaan bagus, dan spot foto untuk konten/feeds.',
   },
+  {
+    label: 'Nongkrong/Hangout',
+    value: 'nongkrong_hangout',
+    desc: 'Ngobrol lama, nongkrong atau nongki santai bareng teman tanpa agenda formal.',
+  },
 ];
 
 /**
@@ -123,6 +128,12 @@ export const CONTEXT_PILL_THEMES = {
       'border-0 bg-gradient-to-br from-fuchsia-200 via-pink-100 to-rose-200 text-fuchsia-950 dark:from-fuchsia-700/50 dark:via-pink-600/40 dark:to-rose-800/55 dark:text-fuchsia-50 shadow-md shadow-fuchsia-500/15 hover:shadow-lg hover:shadow-fuchsia-500/30',
     selected:
       'border-0 bg-gradient-to-r from-fuchsia-500 via-pink-500 to-rose-500 text-white shadow-lg shadow-fuchsia-600/40 dark:shadow-fuchsia-900/60 hover:shadow-xl hover:shadow-fuchsia-600/50 dark:hover:shadow-fuchsia-900/75',
+  },
+  nongkrong_hangout: {
+    idle:
+      'border-0 bg-gradient-to-br from-cyan-200 via-cyan-100 to-sky-200 text-cyan-950 dark:from-cyan-700/50 dark:via-cyan-600/40 dark:to-sky-800/55 dark:text-cyan-50 shadow-md shadow-cyan-500/15 hover:shadow-lg hover:shadow-cyan-500/30',
+    selected:
+      'border-0 bg-gradient-to-r from-cyan-500 via-sky-500 to-sky-600 text-white shadow-lg shadow-cyan-600/35 dark:shadow-cyan-900/60 hover:shadow-xl hover:shadow-cyan-600/45 dark:hover:shadow-cyan-900/70',
   },
 };
 

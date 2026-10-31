@@ -98,6 +98,14 @@ export function openingHoursLineForToday(display) {
     return text.replace(/\.$/, '');
   }
 
+  const singleDayLine = text.match(/^([^:]+):\s*(.+)$/);
+  if (singleDayLine && !text.includes('\n')) {
+    const dayLabel = normalizeWeekdayLabel(singleDayLine[1].trim());
+    if (dayLabel === today) {
+      return singleDayLine[2].trim();
+    }
+  }
+
   return text;
 }
 
@@ -212,6 +220,16 @@ export function resolveOpeningHoursSchedule(shop) {
   return { today, todayHours, allDays };
 }
 
+/** True jika toko punya jadwal jam (snapshot Google atau opening_hours_display). */
+export function shopHasOpeningHours(shop) {
+  const snap = parseJsonField(shop?.google_places_snapshot);
+  const weekdayText = snap?.opening_hours?.weekday_text;
+  if (Array.isArray(weekdayText) && weekdayText.some((line) => String(line || '').trim())) {
+    return true;
+  }
+  return Boolean(String(shop?.opening_hours_display || '').trim());
+}
+
 /** Jam operasional hari ini untuk kartu katalog (prioritas snapshot Google). */
 export function openingHoursForTodayFromShop(shop) {
   const snap = parseJsonField(shop?.google_places_snapshot);
@@ -221,6 +239,93 @@ export function openingHoursForTodayFromShop(shop) {
     if (fromSnap) return fromSnap;
   }
   return openingHoursLineForToday(shop?.opening_hours_display);
+}
+
+/** Normalisasi shop untuk helper jam (detail + snapshot). */
+export function shopForOpeningHours(detail, googleSnapshot) {
+  const snap = googleSnapshot ?? parseJsonField(detail?.google_places_snapshot);
+  return {
+    google_places_snapshot: snap ?? googleSnapshot,
+    opening_hours_display: detail?.opening_hours_display ?? '',
+  };
+}
+
+function parseTimeToMinutes(raw) {
+  let s = String(raw || '').trim().toLowerCase();
+  if (!s) return null;
+  s = s.replace(/\./g, ':').replace(/\s+/g, '');
+
+  const compact = s.match(/^(\d{3,4})$/);
+  if (compact) {
+    const digits = compact[1];
+    const h = parseInt(digits.length === 4 ? digits.slice(0, 2) : digits.slice(0, 1), 10);
+    const m = parseInt(digits.slice(-2), 10);
+    if (h >= 0 && h <= 23 && m >= 0 && m <= 59) return h * 60 + m;
+    return null;
+  }
+
+  const m = s.match(/^(\d{1,2})(?::(\d{2}))?(am|pm)?$/);
+  if (!m) return null;
+  let h = parseInt(m[1], 10);
+  const min = m[2] != null ? parseInt(m[2], 10) : 0;
+  const ampm = m[3];
+  if (ampm === 'pm' && h < 12) h += 12;
+  if (ampm === 'am' && h === 12) h = 0;
+  if (h < 0 || h > 23 || min < 0 || min > 59) return null;
+  return h * 60 + min;
+}
+
+function isClosedHoursText(hours) {
+  return /^(tutup|closed|libur)\b/i.test(String(hours || '').trim());
+}
+
+/**
+ * Hitung buka/tutup dari jadwal hari ini (timezone browser / Pontianak user).
+ * Mengembalikan null bila jadwal tidak bisa di-parse.
+ */
+export function computeOpenNowFromShop(shop, now = new Date()) {
+  const hoursLine = openingHoursForTodayFromShop(shop);
+  if (!hoursLine) return null;
+  if (/24\s*jam/i.test(hoursLine)) return true;
+  if (isClosedHoursText(hoursLine)) return false;
+
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  const chunks = String(hoursLine)
+    .split(/[,;&]/)
+    .map((c) => c.trim())
+    .filter(Boolean);
+
+  let parsedAny = false;
+  for (const chunk of chunks) {
+    const m = chunk.match(/(\d[\d.:]*\s*(?:am|pm)?)\s*[–—-]\s*(\d[\d.:]*\s*(?:am|pm)?)/i);
+    if (!m) continue;
+    const start = parseTimeToMinutes(m[1]);
+    const end = parseTimeToMinutes(m[2]);
+    if (start == null || end == null) continue;
+    parsedAny = true;
+    if (end > start) {
+      if (nowMins >= start && nowMins < end) return true;
+    } else if (nowMins >= start || nowMins < end) {
+      return true;
+    }
+  }
+  return parsedAny ? false : null;
+}
+
+/** Label badge buka/tutup + jam hari ini bila ada. */
+export function formatOpenNowBadge(openNow, todayHours) {
+  const hours = String(todayHours || '').trim();
+  if (openNow === undefined || openNow === null) return null;
+  if (openNow) {
+    return {
+      text: hours ? `Buka sekarang · ${hours}` : 'Buka sekarang',
+      title: hours ? `Jam operasional hari ini: ${hours}` : 'Sedang buka',
+    };
+  }
+  return {
+    text: hours ? `Tutup sekarang · ${hours}` : 'Tutup sekarang',
+    title: hours ? `Di luar jam operasional hari ini (${hours})` : 'Sedang tutup',
+  };
 }
 
 export function displayTypes(snapshot) {
@@ -259,7 +364,15 @@ export function resolveShopPlacesMeta(detail, googleSnapshot) {
   const businessStatusLabelResolved =
     snap.business_status_label || businessStatusLabel(businessStatus);
 
-  const openNow = snap.opening_hours?.open_now ?? detail?.opening_hours?.open_now;
+  const shopHours = shopForOpeningHours(detail, googleSnapshot);
+  const todayHours = openingHoursForTodayFromShop(shopHours);
+  const computedOpen = computeOpenNowFromShop(shopHours);
+  const apiOpenNow =
+    snap.opening_hours?.open_now ?? detail?.opening_hours?.open_now;
+  const openNow =
+    computedOpen !== null && computedOpen !== undefined
+      ? computedOpen
+      : apiOpenNow;
 
   const typeItems = displayTypes(snap);
   const types =
@@ -275,6 +388,7 @@ export function resolveShopPlacesMeta(detail, googleSnapshot) {
     priceLevelLabel: priceLevelLabelResolved,
     businessStatusLabel: businessStatusLabelResolved,
     openNow,
+    todayHours,
     typeItems: types.slice(0, 6),
     fetchedAt: snap.fetched_at || detail?.google_places_fetched_at || null,
   };

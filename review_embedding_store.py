@@ -12,7 +12,6 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 import numpy as np
 
 from db_backend import get_connection
-from hybrid_retrieval import drop_rejection_sentences
 from logging_config import get_logger
 from semantic_match import clean_clause_for_embedding, embed_texts, model_name
 
@@ -59,7 +58,7 @@ def use_pgvector_store() -> bool:
 
 
 def canonical_embedding_text(review_text: str) -> str:
-    return clean_clause_for_embedding(drop_rejection_sentences(review_text or ""))
+    return clean_clause_for_embedding(review_text or "")
 
 
 def source_text_hash(text: str) -> str:
@@ -97,7 +96,11 @@ def upsert_review_embedding(review_id: int, review_text: str) -> bool:
         delete_review_embedding(review_id)
         return False
     vectors = embed_texts([canon])
-    vec = vectors.get(canon)
+    # embed_texts re-_clean_clause input; ujung truncate bisa punya ./- yang di-strip.
+    lookup = clean_clause_for_embedding(canon)
+    vec = vectors.get(lookup)
+    if vec is None:
+        vec = vectors.get(canon)
     if vec is None:
         return False
     arr = np.asarray(vec, dtype=np.float32).reshape(-1)

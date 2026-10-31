@@ -2,7 +2,7 @@
 
 ## Overview
 
-Dense vectors for hybrid retrieval are stored in **`review_embeddings`** (Supabase pgvector, 384 dims, cosine).
+Dense vectors for hybrid retrieval are stored in **`review_embeddings`** (Supabase pgvector, 384 dims, cosine). Default encoder: **`intfloat/multilingual-e5-small`** (`COFIND_EMBEDDING_MODEL`); E5 uses automatic `query:` prefix in `semantic_match._embedding_encode_text`.
 
 - **Write:** `review_utils` CRUD calls `schedule_review_embedding_after_write` when `COFIND_EMBEDDING_STORE=pgvector` (sync or Celery if `COFIND_EMBEDDING_ASYNC=true`).
 - **Read (per-id):** `semantic_match.score_reviews_by_id` loads vectors from Postgres; encodes the query only (+ backfill missing rows).

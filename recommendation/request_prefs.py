@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from flask import request
 
-from free_text_intent import MAX_FREE_TEXT_CHARS as FREE_TEXT_MAX_CHARS
+from free_text_intent import normalize_free_text_query
 from pill_config import FACILITY_ATTRIBUTE_PILLS
 
 _MAX_ACTIVITY_PILLS = 1
@@ -26,7 +26,7 @@ def read_recommendation_preferences():
     data = request.get_json(silent=True) or {}
     raw_prefs = _as_pill_list(data.get('preferences'))
     raw_attrs = _as_pill_list(data.get('attributes'))
-    raw_query_text = str(data.get('query_text') or '').strip()[:FREE_TEXT_MAX_CHARS]
+    raw_query_text = normalize_free_text_query(data.get('query_text'))
 
     activities = [p for p in raw_prefs if p not in FACILITY_ATTRIBUTE_PILLS][:_MAX_ACTIVITY_PILLS]
     attributes = []

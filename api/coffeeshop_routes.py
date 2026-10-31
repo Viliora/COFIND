@@ -6,7 +6,7 @@ import time
 
 from flask import Blueprint, jsonify, request
 
-from coffee_shop_serialize import enrich_coffee_shop_row
+from coffee_shop_serialize import enrich_coffee_shop_row, fetch_catalog_stats
 from db_backend import dict_from_row, get_connection
 from llm_backend import LLM_BACKEND, llm_is_available
 from logging_config import get_logger
@@ -45,12 +45,14 @@ def get_coffeeshops():
         rows = cursor.fetchall()
         
         shops = [enrich_coffee_shop_row(dict_from_row(cursor, row)) for row in rows]
+        catalog_stats = fetch_catalog_stats(cursor)
         conn.close()
         
         return jsonify({
             'status': 'success',
             'data': shops,
-            'total': len(shops)
+            'total': len(shops),
+            'catalog_stats': catalog_stats,
         })
     except Exception as e:
         LOG_API.error(f"Failed to fetch coffeeshops: {str(e)}")
@@ -123,6 +125,20 @@ def get_coffeeshop_by_place_id(place_id):
             'status': 'error',
             'message': str(e)
         }), 500
+
+@bp.route('/api/coffeeshops/catalog-stats', methods=['GET'])
+def get_coffeeshops_catalog_stats():
+    """Agregat statistik katalog untuk beranda (tanpa memuat seluruh daftar toko)."""
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        catalog_stats = fetch_catalog_stats(cursor)
+        conn.close()
+        return jsonify({'status': 'success', 'catalog_stats': catalog_stats})
+    except Exception as e:
+        LOG_API.exception('get_coffeeshops_catalog_stats gagal')
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
 
 @bp.route('/api/coffeeshops/search', methods=['GET'])
 def search_coffeeshops():

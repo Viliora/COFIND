@@ -91,7 +91,6 @@ def full_pipeline_config() -> Dict[str, object]:
     from hybrid_retrieval import (
         ann_top_k,
         dense_use_ann_enabled,
-        metadata_gate_enabled,
         retrieval_top_k,
     )
     from llm_clause_sentiment import clause_sentiment_enabled, sentiment_config
@@ -116,7 +115,6 @@ def full_pipeline_config() -> Dict[str, object]:
     return {
         **core,
         'retrieval_top_k': retrieval_top_k(),
-        'metadata_gate': metadata_gate_enabled(),
         'clause_sentiment': clause,
         'semantic_gate': semantic,
         'dev_llm_strict': _flag('COFIND_DEV_LLM_STRICT', False),

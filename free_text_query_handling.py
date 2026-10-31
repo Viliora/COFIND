@@ -1,8 +1,12 @@
 """
 Penanganan kata kunci free text yang tidak standar (negatif, presuposis palsu, di luar domain).
 
-Dipakai setelah extract_search_intent: menggabungkan label dari LLM dengan heuristik
-deterministik supaya pipeline tetap punya jalur fallback bila LLM off/gagal.
+Dipakai setelah extract_search_intent: kelas query dari LLM bila intent sukses;
+heuristik deterministik hanya fallback bila LLM off/gagal/tidak dipanggil.
+
+Presupposition Verification & Query Relaxation (PVQR):
+  1. Verifikasi presuposis implisit query (domain, constraint fitur, grounding superlatif).
+  2. Bila gagal: abstention atau relaksasi query (reformulasi domain / drop constraint).
 """
 
 from __future__ import annotations
@@ -48,7 +52,25 @@ _NEGATIVE_SUPERLATIVE_RE = re.compile(
     re.IGNORECASE,
 )
 
-_GIBBERISH_RE = re.compile(r'^[a-z0-9\s]{1,50}$', re.IGNORECASE)
+_GIBBERISH_RE = re.compile(r'^[a-z0-9, ]{1,100}$', re.IGNORECASE)
+
+# Contoh reformulasi in-domain (Query Relaxation) bila verifikasi domain gagal.
+_DEFAULT_DOMAIN_RELAXED_SUGGESTIONS: List[str] = [
+    'wifi kencang buat kerja',
+    'tenang buat belajar',
+    'colokan banyak',
+]
+
+# Reformulasi preferensi positif bila abstention ranking negatif.
+_DEFAULT_POSITIVE_RELAXED_SUGGESTIONS: List[str] = [
+    'wifi kencang',
+    'tenang buat kerja',
+    'estetik buat foto',
+]
+
+PVQR_STRATEGY_DOMAIN_REFORMULATION = 'domain_reformulation'
+PVQR_STRATEGY_CONSTRAINT_DROPPING = 'constraint_dropping'
+PVQR_STRATEGY_ABSTENTION_REFORMULATION = 'abstention_with_reformulation'
 
 
 def _normalize_class(raw: object) -> str:
@@ -110,86 +132,145 @@ def _clean_keyword_list(items: object, *, limit: int = 8) -> List[str]:
     return out
 
 
+def query_handling_for_api(handling: Dict[str, object]) -> Dict[str, object]:
+    """Envelope API: kelas + metadata PVQR untuk client/telemetri."""
+    payload: Dict[str, object] = {
+        'class': handling.get('query_class'),
+        'source': handling.get('query_class_source'),
+    }
+    if handling.get('impossible_detail'):
+        payload['impossible_detail'] = handling.get('impossible_detail')
+    pv = handling.get('presupposition_verification')
+    if pv:
+        payload['presupposition_verification'] = pv
+    qr = handling.get('query_relaxation')
+    if qr:
+        payload['query_relaxation'] = qr
+    return payload
+
+
 def merge_query_classification(
     raw: str,
     *,
     llm_query_class: object = None,
+    llm_classification_trusted: bool = False,
     impossible_detail: object = None,
     alternative_keywords: object = None,
 ) -> Dict[str, object]:
     """
-    Gabungkan label LLM + heuristik menjadi keputusan routing pipeline.
+    Tentukan kelas routing: LLM (jika trusted), else heuristik.
 
     Return keys:
-      query_class, impossible_detail, alternative_keywords,
+      query_class, query_class_source ('llm' | 'heuristic'),
+      impossible_detail, alternative_keywords,
+      presupposition_verification, query_relaxation,
       summary_framing, response_message (opsional, untuk client)
     """
     raw = str(raw or '').strip()
-    heuristic = classify_query_heuristic(raw)
-    llm_class = _normalize_class(llm_query_class) if llm_query_class else QUERY_CLASS_STANDARD
     detail = str(impossible_detail or '').strip()
     alts = _clean_keyword_list(alternative_keywords)
 
-    if llm_class == QUERY_CLASS_OFF_DOMAIN and heuristic == QUERY_CLASS_NEGATIVE:
-        query_class = QUERY_CLASS_NEGATIVE
-    elif llm_class == QUERY_CLASS_STANDARD and heuristic == QUERY_CLASS_OFF_DOMAIN:
-        query_class = QUERY_CLASS_OFF_DOMAIN
-    elif llm_class in (QUERY_CLASS_FALSE_PRESUP, QUERY_CLASS_OFF_DOMAIN):
-        query_class = llm_class
-    elif heuristic == QUERY_CLASS_NEGATIVE:
-        query_class = QUERY_CLASS_NEGATIVE
+    if llm_classification_trusted:
+        query_class = _normalize_class(llm_query_class)
+        class_source = 'llm'
     else:
-        query_class = llm_class if llm_class != QUERY_CLASS_STANDARD else heuristic
+        query_class = classify_query_heuristic(raw)
+        class_source = 'heuristic'
 
     result: Dict[str, object] = {
         'query_class': query_class,
+        'query_class_source': class_source,
         'impossible_detail': detail or None,
         'alternative_keywords': alts,
+        'presupposition_verification': None,
+        'query_relaxation': None,
         'summary_framing': None,
         'response_message': None,
         'early_exit': False,
     }
 
     if query_class == QUERY_CLASS_OFF_DOMAIN:
+        relaxed = list(_DEFAULT_DOMAIN_RELAXED_SUGGESTIONS)
         result['early_exit'] = True
+        result['presupposition_verification'] = {
+            'verified': False,
+            'failed_presuppositions': ['domain:coffee_shop_recommendation_from_reviews'],
+            'rationale': (
+                'Query tidak memenuhi presuposis domain: niat pencarian coffee shop '
+                'yang dapat dipetakan ke preferensi/ulasan pada corpus Cofind.'
+            ),
+        }
+        result['query_relaxation'] = {
+            'strategy': PVQR_STRATEGY_DOMAIN_REFORMULATION,
+            'relaxed_query_suggestions': relaxed,
+            'applied': False,
+        }
+        examples = ', '.join(f'"{s}"' for s in relaxed[:3])
         result['response_message'] = (
-            'Maaf, permintaan itu di luar konteks pencarian coffee shop di Cofind. '
-            'Coba kata kunci singkat seperti "wifi kencang", "tenang buat kerja", '
-            '"colokan banyak", atau pilih pill preferensi di atas.'
+            'Presuposis domain tidak terverifikasi — permintaan di luar konteks pencarian '
+            'coffee shop berbasis ulasan Cofind. '
+            f'Relaksasi query: coba reformulasi in-domain, misalnya {examples}, '
+            'atau pilih pill preferensi di atas.'
         )
         return result
 
     if query_class == QUERY_CLASS_NEGATIVE:
-        result['summary_framing'] = (
-            'User mencari tempat dengan rating/ulasan terendah atau keluhan paling banyak '
-            '(bukan rekomendasi positif). Jawab jujur berdasarkan rating dan ulasan yang ada — '
-            'bukan klaim objektif "paling jelek di dunia". Sorot keluhan/kutipan negatif yang '
-            'tergrounding; bisa framing konstruktif: tempat yang sering dikeluhkan supaya bisa dihindari.'
-        )
+        relaxed = list(_DEFAULT_POSITIVE_RELAXED_SUGGESTIONS)
+        result['early_exit'] = True
+        result['presupposition_verification'] = {
+            'verified': False,
+            'failed_presuppositions': ['grounded_comparative_superlative_ranking'],
+            'rationale': (
+                'Superlatif komparatif negatif (mis. «paling jelek») mengasumsikan ranking '
+                'objektif yang dapat di-grounding penuh pada corpus ulasan terbatas; '
+                'asumsi ini tidak terverifikasi dan rentan bias seleksi/sampel.'
+            ),
+        }
+        result['query_relaxation'] = {
+            'strategy': PVQR_STRATEGY_ABSTENTION_REFORMULATION,
+            'relaxed_query_suggestions': relaxed,
+            'applied': False,
+        }
+        examples = ', '.join(f'"{s}"' for s in relaxed[:3])
         result['response_message'] = (
-            'Berdasarkan rating dan ulasan pengguna yang ada (bukan penilaian objektif absolut), '
-            'berikut tempat yang paling sering mendapat keluhan atau rating lebih rendah:'
+            'Abstention: permintaan ranking negatif tidak dijawab karena tidak ada bukti '
+            'grounded untuk superlatif komparatif pada dataset ulasan. '
+            f'Reformulasi (query relaxation) ke preferensi positif, misalnya {examples}, '
+            'atau gunakan pill preferensi.'
         )
         return result
 
     if query_class == QUERY_CLASS_FALSE_PRESUP:
         constraint = detail or raw
+        result['presupposition_verification'] = {
+            'verified': False,
+            'failed_presuppositions': [constraint],
+            'rationale': (
+                f'Presuposis «{constraint}» gagal verifikasi: tidak ada bukti fitur/konsep '
+                'tersebut pada ulasan atau metadata toko di corpus.'
+            ),
+        }
+        result['query_relaxation'] = {
+            'strategy': PVQR_STRATEGY_CONSTRAINT_DROPPING,
+            'relaxed_keywords': alts,
+            'applied': bool(alts),
+        }
         result['summary_framing'] = (
-            f'User meminta fitur/konsep yang tidak ada bukti di data ("{constraint}"). '
-            'Jangan mengarang bahwa toko punya fitur itu. Jelaskan jujur bahwa aspek tersebut '
-            'belum terbukti di ulasan, lalu sorot kelebihan tematik/konsep terdekat yang memang '
-            'muncul di kutipan.'
+            f'PVQR: presuposis «{constraint}» tidak terverifikasi. Jangan mengarang match literal. '
+            'Jelaskan hasil verifikasi, sorot rekomendasi dari query ter-relaksasi (constraint '
+            'dihapus) yang tetap tergrounding pada kutipan ulasan.'
         )
         if alts:
             alt_phrase = ', '.join(alts[:4])
             result['response_message'] = (
-                f'Tidak ada coffee shop dengan "{constraint}" di ulasan data kami. '
-                f'Berikut alternatif terdekat ({alt_phrase}) yang bisa kamu pertimbangkan:'
+                f'Verifikasi presuposis: asumsi «{constraint}» tidak ditemukan pada data ulasan. '
+                f'Relaksasi query (constraint dropping) → pencarian dialihkan ke: {alt_phrase}. '
+                'Berikut rekomendasi dari query ter-relaksasi:'
             )
         else:
             result['response_message'] = (
-                f'Tidak ada coffee shop dengan "{constraint}" di ulasan data kami. '
-                'Berikut pilihan tematik/konsep terdekat yang tersedia:'
+                f'Verifikasi presuposis: asumsi «{constraint}» tidak ditemukan pada data ulasan. '
+                'Relaksasi query terbatas; berikut pilihan tematik terdekat yang tersedia:'
             )
         return result
 
@@ -207,7 +288,7 @@ def apply_false_presupposition_retrieval(
     dense_query: str,
     alternative_keywords: Sequence[str],
 ) -> Dict[str, str]:
-    """Ganti token retrieval bila ada alternatif dari LLM; otherwise pertahankan intent."""
+    """Query Relaxation: ganti token retrieval ke relaxed_keywords bila tersedia."""
     alts = _clean_keyword_list(alternative_keywords)
     if alts:
         dense = 'coffee shop ' + ', '.join(alts[:6])
@@ -218,7 +299,10 @@ def apply_false_presupposition_retrieval(
 
 
 def weakness_hit_count(profile: dict) -> int:
-    """Perkiraan jumlah review dengan nada keluhan umum."""
+    """Perkiraan jumlah review dengan nada keluhan umum.
+
+    Hanya dipakai jalur ``negative_sentiment`` (free text), bukan penalti pill/ranking.
+    """
     from review_weakness import REVIEW_WEAKNESS_FRAGMENTS
 
     hits = 0

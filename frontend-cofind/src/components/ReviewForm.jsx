@@ -1,12 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/authContext';
 import { Link } from 'react-router-dom';
 
 import { API_BASE } from '../config/apiBase.js';
 import { authService } from '../services/authService';
-const MAX_PHOTOS = 1;
-/** Batas ukuran file gambar per foto (2 MiB, selaras dengan backend). */
-const MAX_REVIEW_IMAGE_BYTES = 2 * 1024 * 1024;
 
 const ReviewForm = ({
   placeId,
@@ -15,49 +12,14 @@ const ReviewForm = ({
 }) => {
   const { user, isAuthenticated } = useAuth();
   const [text, setText] = useState('');
-  const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
-  const fileInputRef = useRef(null);
 
   const resetForm = () => {
     setText('');
-    setPhotos([]);
     setError('');
-  };
-
-  const fileToBase64 = (file) =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-    });
-
-  const handleAddPhoto = async (e) => {
-    const files = e.target.files;
-    if (!files?.length || photos.length >= MAX_PHOTOS) return;
-    for (let i = 0; i < files.length && photos.length < MAX_PHOTOS; i++) {
-      const file = files[i];
-      if (!file.type.startsWith('image/')) continue;
-      if (file.size > MAX_REVIEW_IMAGE_BYTES) {
-        setError(`Ukuran gambar maksimal 2 MB per file. "${file.name}" dilewati.`);
-        continue;
-      }
-      try {
-        const image_data = await fileToBase64(file);
-        setPhotos((prev) => [...prev, { image_data }]);
-      } catch {
-        setError('Gagal membaca file.');
-      }
-    }
-    e.target.value = '';
-  };
-
-  const removePhoto = (index) => {
-    setPhotos((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e) => {
@@ -83,12 +45,11 @@ const ReviewForm = ({
         place_id: placeId,
         rating: 5,
         text: text.trim(),
-        photos: photos.map((p) => ({ image_data: p.image_data }))
       };
       const response = await fetch(`${API_BASE}/api/reviews`, {
         method: 'POST',
         headers: authService.getAuthHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
       const data = await response.json();
       if (!response.ok || data.status !== 'success') {
@@ -102,7 +63,7 @@ const ReviewForm = ({
         onReviewSubmitted({
           ...data.review,
           profiles: { username: user?.username, full_name: user?.full_name },
-          source: 'local'
+          source: 'local',
         });
       }
       setTimeout(() => {
@@ -137,7 +98,6 @@ const ReviewForm = ({
 
   return (
     <>
-      {/* Popup sukses saat review berhasil di input */}
       {showSuccessPopup && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 pointer-events-none">
           <div className="bg-white dark:bg-zinc-800 rounded-xl shadow-2xl border border-amber-200 dark:border-amber-700 px-6 py-4 flex items-center gap-3 animate-fadeIn max-w-sm">
@@ -152,72 +112,36 @@ const ReviewForm = ({
       )}
 
       <div className="bg-white dark:bg-zinc-800 rounded-2xl border border-gray-200 dark:border-zinc-700 shadow-sm">
-            <div className="p-5 sm:p-6">
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <textarea
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    rows={4}
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
-                    placeholder="Bagikan pengalaman Anda tentang tempat ini"
-                  />
-                </div>
-
-                <div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleAddPhoto}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={photos.length >= MAX_PHOTOS}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed border-gray-300 dark:border-zinc-600 text-gray-600 dark:text-gray-400 hover:border-amber-500 hover:text-amber-600 dark:hover:text-amber-400 transition-colors disabled:opacity-50"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 13v7a2 2 0 01-2 2H7a2 2 0 01-2-2v-7" />
-                    </svg>
-                    Tambahkan foto & video
-                    {photos.length > 0 && <span className="text-xs">({photos.length}/{MAX_PHOTOS})</span>}
-                  </button>
-                  {photos.length > 0 && (
-                    <div className="mt-2 space-y-2">
-                      {photos.map((p, i) => (
-                        <div key={i} className="flex gap-2 items-center p-2 bg-gray-50 dark:bg-zinc-900/50 rounded-lg">
-                          <img src={p.image_data} alt="" className="w-14 h-14 object-cover rounded flex-shrink-0" />
-                          <button type="button" onClick={() => removePhoto(i)} className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded ml-auto" aria-label="Hapus foto">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {error && (
-                  <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-                )}
-                {success && (
-                  <p className="text-sm text-green-600 dark:text-green-400 font-medium">{success}</p>
-                )}
-
-                <div className="flex justify-end gap-2 pt-2">
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="px-4 py-2 rounded-lg font-medium bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white transition-colors"
-                  >
-                    {loading ? 'Mengirim...' : 'Posting'}
-                  </button>
-                </div>
-              </form>
+        <div className="p-5 sm:p-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                rows={4}
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
+                placeholder="Bagikan pengalaman Anda tentang tempat ini"
+              />
             </div>
+
+            {error && (
+              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            )}
+            {success && (
+              <p className="text-sm text-green-600 dark:text-green-400 font-medium">{success}</p>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-4 py-2 rounded-lg font-medium bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white transition-colors"
+              >
+                {loading ? 'Mengirim...' : 'Posting'}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </>
   );

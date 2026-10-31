@@ -1,0 +1,533 @@
+{
+  "top_k": 7,
+  "profiles": 15,
+  "pills": [
+    {
+      "pill": "belajar",
+      "type": "activity",
+      "keyword_count": 16,
+      "has_definition": true,
+      "dense_query_chars": 207,
+      "overlap_full_dense": 1.0,
+      "overlap_full_bm25": 0.714,
+      "overlap_dense_bm25": 0.714,
+      "tier": "redundant_rrf",
+      "top_full": [
+        "ChIJPa6swGtZHS4RrbIlRvgBgok",
+        "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw"
+      ],
+      "top_dense_only": [
+        "ChIJPa6swGtZHS4RrbIlRvgBgok",
+        "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw"
+      ]
+    },
+    {
+      "pill": "bermain game",
+      "type": "activity",
+      "keyword_count": 28,
+      "has_definition": true,
+      "dense_query_chars": 152,
+      "overlap_full_dense": 1.0,
+      "overlap_full_bm25": 1.0,
+      "overlap_dense_bm25": 1.0,
+      "tier": "redundant_rrf",
+      "top_full": [
+        "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJV7mtlzNZHS4R0rK_eHkd0LU"
+      ],
+      "top_dense_only": [
+        "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJV7mtlzNZHS4R0rK_eHkd0LU"
+      ]
+    },
+    {
+      "pill": "instagrammable",
+      "type": "activity",
+      "keyword_count": 8,
+      "has_definition": true,
+      "dense_query_chars": 208,
+      "overlap_full_dense": 1.0,
+      "overlap_full_bm25": 1.0,
+      "overlap_dense_bm25": 1.0,
+      "tier": "redundant_rrf",
+      "top_full": [
+        "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM"
+      ],
+      "top_dense_only": [
+        "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM"
+      ]
+    },
+    {
+      "pill": "keluarga",
+      "type": "activity",
+      "keyword_count": 15,
+      "has_definition": true,
+      "dense_query_chars": 210,
+      "overlap_full_dense": 1.0,
+      "overlap_full_bm25": 1.0,
+      "overlap_dense_bm25": 1.0,
+      "tier": "redundant_rrf",
+      "top_full": [
+        "ChIJPa6swGtZHS4RrbIlRvgBgok",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+        "ChIJV7mtlzNZHS4R0rK_eHkd0LU"
+      ],
+      "top_dense_only": [
+        "ChIJPa6swGtZHS4RrbIlRvgBgok",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+        "ChIJV7mtlzNZHS4R0rK_eHkd0LU"
+      ]
+    },
+    {
+      "pill": "kerja",
+      "type": "activity",
+      "keyword_count": 24,
+      "has_definition": true,
+      "dense_query_chars": 198,
+      "overlap_full_dense": 1.0,
+      "overlap_full_bm25": 0.857,
+      "overlap_dense_bm25": 0.857,
+      "tier": "redundant_rrf",
+      "top_full": [
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJPa6swGtZHS4RrbIlRvgBgok",
+        "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJhx6zl0BZHS4RGNla_oPoIJ0"
+      ],
+      "top_dense_only": [
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJPa6swGtZHS4RrbIlRvgBgok",
+        "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJhx6zl0BZHS4RGNla_oPoIJ0"
+      ]
+    },
+    {
+      "pill": "meeting_sosialisasi",
+      "type": "activity",
+      "keyword_count": 16,
+      "has_definition": true,
+      "dense_query_chars": 233,
+      "overlap_full_dense": 1.0,
+      "overlap_full_bm25": 1.0,
+      "overlap_dense_bm25": 1.0,
+      "tier": "redundant_rrf",
+      "top_full": [
+        "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+        "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+        "ChIJpXpEsPNZHS4Rciespc96M5o"
+      ],
+      "top_dense_only": [
+        "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+        "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+        "ChIJpXpEsPNZHS4Rciespc96M5o"
+      ]
+    },
+    {
+      "pill": "area_outdoor",
+      "type": "attribute",
+      "keyword_count": 16,
+      "has_definition": false,
+      "dense_query_chars": 46,
+      "overlap_full_dense": 1.0,
+      "overlap_full_bm25": 0.0,
+      "overlap_dense_bm25": 0.0,
+      "tier": "redundant_rrf_short_dense",
+      "top_full": [
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJpXpEsPNZHS4Rciespc96M5o",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJPa6swGtZHS4RrbIlRvgBgok"
+      ],
+      "top_dense_only": [
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJpXpEsPNZHS4Rciespc96M5o",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJPa6swGtZHS4RrbIlRvgBgok"
+      ]
+    },
+    {
+      "pill": "banyak_colokan_terminal",
+      "type": "attribute",
+      "keyword_count": 9,
+      "has_definition": false,
+      "dense_query_chars": 59,
+      "overlap_full_dense": 1.0,
+      "overlap_full_bm25": 0.0,
+      "overlap_dense_bm25": 0.0,
+      "tier": "redundant_rrf_short_dense",
+      "top_full": [
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJ6fOdOEBZHS4RcV3VfZzhYx0"
+      ],
+      "top_dense_only": [
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJ6fOdOEBZHS4RcV3VfZzhYx0"
+      ]
+    },
+    {
+      "pill": "buka_sampai_malam_24_hours",
+      "type": "attribute",
+      "keyword_count": 12,
+      "has_definition": false,
+      "dense_query_chars": 42,
+      "overlap_full_dense": 1.0,
+      "overlap_full_bm25": 0.0,
+      "overlap_dense_bm25": 0.0,
+      "tier": "redundant_rrf_short_dense",
+      "top_full": [
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8"
+      ],
+      "top_dense_only": [
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8"
+      ]
+    },
+    {
+      "pill": "dessert",
+      "type": "attribute",
+      "keyword_count": 15,
+      "has_definition": false,
+      "dense_query_chars": 41,
+      "overlap_full_dense": 1.0,
+      "overlap_full_bm25": 0.0,
+      "overlap_dense_bm25": 0.0,
+      "tier": "redundant_rrf_short_dense",
+      "top_full": [
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw"
+      ],
+      "top_dense_only": [
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw"
+      ]
+    },
+    {
+      "pill": "makanan_berat",
+      "type": "attribute",
+      "keyword_count": 19,
+      "has_definition": false,
+      "dense_query_chars": 66,
+      "overlap_full_dense": 1.0,
+      "overlap_full_bm25": 0.0,
+      "overlap_dense_bm25": 0.0,
+      "tier": "redundant_rrf_short_dense",
+      "top_full": [
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJPa6swGtZHS4RrbIlRvgBgok"
+      ],
+      "top_dense_only": [
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJPa6swGtZHS4RrbIlRvgBgok"
+      ]
+    },
+    {
+      "pill": "musholla",
+      "type": "attribute",
+      "keyword_count": 9,
+      "has_definition": false,
+      "dense_query_chars": 46,
+      "overlap_full_dense": 1.0,
+      "overlap_full_bm25": 0.0,
+      "overlap_dense_bm25": 0.0,
+      "tier": "redundant_rrf_short_dense",
+      "top_full": [
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJpXpEsPNZHS4Rciespc96M5o",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM"
+      ],
+      "top_dense_only": [
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJpXpEsPNZHS4Rciespc96M5o",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM"
+      ]
+    },
+    {
+      "pill": "parkir_luas",
+      "type": "attribute",
+      "keyword_count": 9,
+      "has_definition": false,
+      "dense_query_chars": 45,
+      "overlap_full_dense": 1.0,
+      "overlap_full_bm25": 0.0,
+      "overlap_dense_bm25": 0.0,
+      "tier": "redundant_rrf_short_dense",
+      "top_full": [
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8"
+      ],
+      "top_dense_only": [
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8"
+      ]
+    },
+    {
+      "pill": "ruang_privat",
+      "type": "attribute",
+      "keyword_count": 9,
+      "has_definition": false,
+      "dense_query_chars": 56,
+      "overlap_full_dense": 1.0,
+      "overlap_full_bm25": 0.0,
+      "overlap_dense_bm25": 0.0,
+      "tier": "redundant_rrf_short_dense",
+      "top_full": [
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ"
+      ],
+      "top_dense_only": [
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ"
+      ]
+    },
+    {
+      "pill": "ruangan_ac",
+      "type": "attribute",
+      "keyword_count": 9,
+      "has_definition": false,
+      "dense_query_chars": 47,
+      "overlap_full_dense": 1.0,
+      "overlap_full_bm25": 0.0,
+      "overlap_dense_bm25": 0.0,
+      "tier": "redundant_rrf_short_dense",
+      "top_full": [
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJPa6swGtZHS4RrbIlRvgBgok",
+        "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4"
+      ],
+      "top_dense_only": [
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJPa6swGtZHS4RrbIlRvgBgok",
+        "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4"
+      ]
+    },
+    {
+      "pill": "smoking_area",
+      "type": "attribute",
+      "keyword_count": 9,
+      "has_definition": false,
+      "dense_query_chars": 46,
+      "overlap_full_dense": 1.0,
+      "overlap_full_bm25": 0.0,
+      "overlap_dense_bm25": 0.0,
+      "tier": "redundant_rrf_short_dense",
+      "top_full": [
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw"
+      ],
+      "top_dense_only": [
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw"
+      ]
+    },
+    {
+      "pill": "suasana_tenang",
+      "type": "attribute",
+      "keyword_count": 10,
+      "has_definition": false,
+      "dense_query_chars": 48,
+      "overlap_full_dense": 1.0,
+      "overlap_full_bm25": 0.0,
+      "overlap_dense_bm25": 0.0,
+      "tier": "redundant_rrf_short_dense",
+      "top_full": [
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJpXpEsPNZHS4Rciespc96M5o"
+      ],
+      "top_dense_only": [
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJpXpEsPNZHS4Rciespc96M5o"
+      ]
+    },
+    {
+      "pill": "toilet_bersih",
+      "type": "attribute",
+      "keyword_count": 7,
+      "has_definition": false,
+      "dense_query_chars": 47,
+      "overlap_full_dense": 1.0,
+      "overlap_full_bm25": 0.0,
+      "overlap_dense_bm25": 0.0,
+      "tier": "redundant_rrf_short_dense",
+      "top_full": [
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJhx6zl0BZHS4RGNla_oPoIJ0"
+      ],
+      "top_dense_only": [
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJhx6zl0BZHS4RGNla_oPoIJ0"
+      ]
+    },
+    {
+      "pill": "wifi_kencang",
+      "type": "attribute",
+      "keyword_count": 11,
+      "has_definition": false,
+      "dense_query_chars": 46,
+      "overlap_full_dense": 1.0,
+      "overlap_full_bm25": 0.0,
+      "overlap_dense_bm25": 0.0,
+      "tier": "redundant_rrf_short_dense",
+      "top_full": [
+        "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJpXpEsPNZHS4Rciespc96M5o"
+      ],
+      "top_dense_only": [
+        "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+        "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+        "ChIJpXpEsPNZHS4Rciespc96M5o"
+      ]
+    }
+  ]
+}

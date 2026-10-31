@@ -31,6 +31,7 @@ function normalizeUserId(userId) {
  * @param {object} payload
  * @param {string|number} payload.userId
  * @param {Array} payload.recommendations
+ * @param {Array} [payload.otherOptions]
  * @param {string[]} [payload.confirmedPills]
  * @param {string[]} [payload.confirmedAttributes]
  * @param {string} [payload.confirmedSearchKeyword]
@@ -47,6 +48,7 @@ export function saveLastRecommendationSession(payload) {
     const session = {
       userId,
       recommendations,
+      otherOptions: Array.isArray(payload.otherOptions) ? payload.otherOptions : [],
       confirmedPills: Array.isArray(payload.confirmedPills) ? payload.confirmedPills : [],
       confirmedAttributes: Array.isArray(payload.confirmedAttributes)
         ? payload.confirmedAttributes
@@ -110,6 +112,11 @@ export function clearLastRecommendationSession() {
 export function applyLastRecommendationSession(session, setters) {
   if (!session?.recommendations?.length) return false;
   setters.setLlmRecommendations(session.recommendations);
+  if (setters.setLlmOtherOptions) {
+    setters.setLlmOtherOptions(
+      Array.isArray(session.otherOptions) ? session.otherOptions : [],
+    );
+  }
   setters.setConfirmedPills(session.confirmedPills || []);
   setters.setConfirmedAttributes(session.confirmedAttributes || []);
   setters.setConfirmedSearchKeyword(session.confirmedSearchKeyword || '');

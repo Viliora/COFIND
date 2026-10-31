@@ -19,6 +19,7 @@ except Exception:
     repair_json = None
 
 from llm_backend import (
+    GEMINI_MODEL,
     GEMINI_SUMMARY_MAX_TOKENS,
     HF_MODEL,
     LLM_BACKEND,
@@ -85,19 +86,16 @@ from recommendation_coverage import (
     supplemental_coverage_lines,
 )
 from pill_aspect_sentiment import aggregate_reviews_sentiment
-from review_weakness import review_has_weakness_near_preference_keywords as _weakness_near_keywords
 from cross_encoder_rerank import ce_rerank_enabled
 from llm_recommender import (
     build_user_taste_profile,
     format_activity_context_block,
     format_user_taste_prompt_block,
     grounding_check_enabled as llm_grounding_check_enabled,
-    llm_rerank_candidates,
-    rerank_candidate_pool as llm_rerank_pool,
-    rerank_enabled as llm_rerank_enabled,
     shop_corpus_text,
     ungrounded_quotes,
 )
+from rerank_blend import rerank_candidate_pool
 from metadata_prior import _NEGATION_PREFIXES, _phrase_unnegated
 from semantic_match import (
     begin_encode_budget as begin_semantic_encode_budget,
@@ -205,8 +203,9 @@ def _startup_db_migrations_with_retry(*, rounds: int = 4) -> None:
     from google_reviews_snapshot_import import ensure_reviews_unified_schema
     from review_embedding_store import ensure_review_embedding_vector_dim
     from shop_search_store import ensure_coffee_shop_search_columns
+    from review_activity_index import ensure_review_activity_index_table
 
-    fb_ok = fts_ok = places_ok = False
+    fb_ok = fts_ok = places_ok = activity_idx_ok = False
     for attempt in range(max(1, rounds)):
         if not fb_ok:
             try:
@@ -229,6 +228,11 @@ def _startup_db_migrations_with_retry(*, rounds: int = 4) -> None:
                     _places_conn.close()
             except Exception as err:
                 LOG_STARTUP.warning(f"Inisialisasi kolom Google Places gagal: {err}")
+        if not activity_idx_ok:
+            try:
+                activity_idx_ok = bool(ensure_review_activity_index_table())
+            except Exception as err:
+                LOG_STARTUP.warning(f"Inisialisasi review_activity_hits gagal: {err}")
         try:
             ensure_review_embedding_vector_dim()
         except Exception as err:
@@ -263,8 +267,10 @@ try:
 except Exception as _startup_db_err:
     LOG_STARTUP.warning(f"Startup migrasi DB: {_startup_db_err}")
 
-# Konfigurasi LLM: lihat llm_backend.py (HF_LLM_BACKEND, HF_MODEL, HF_API_TOKEN, dll.)
-LOG_STARTUP.info(f"LLM backend aktif: {LLM_BACKEND} | model={HF_MODEL}")
+# Konfigurasi LLM: lihat llm_backend.py (GEMINI_*, HF_MODEL, HF_API_TOKEN, dll.)
+LOG_STARTUP.info(
+    f"LLM backend aktif: {LLM_BACKEND} | gemini={GEMINI_MODEL} hf={HF_MODEL}"
+)
 LOG_STARTUP.info("Database backend: postgresql (Supabase)")
 
 # CORS: frontend Vercel + local Vite. Override lewat CORS_ORIGINS (comma-separated).
@@ -576,23 +582,6 @@ from recommendation.helpers import RATING_VOTE_WEIGHTS  # noqa: F401 — compat 
 # (bisa self-claim owner) dan dipotong jika ulasan menentang klaim itu.
 # Rating Google hanya untuk fallback tampilan nama/rating.
 # ============================================================================
-
-# Pemetaan pill -> kategori rating review (makanan/layanan/suasana) sebagai
-# sinyal tambahan. Tidak semua pill punya kategori rating yang cocok.
-PILL_TO_REVIEW_CATEGORY = {
-    'belajar': 'rating_suasana',
-    'kerja': 'rating_suasana',
-    'bermain game': 'rating_suasana',
-    'meeting_sosialisasi': 'rating_suasana',
-    'keluarga': 'rating_suasana',
-    'instagrammable': 'rating_suasana',
-}
-
-# Batas minimal review agar sebuah toko ikut ranking berbasis review.
-REVIEW_BASED_MIN_REVIEWS = 1
-
-
-
 
 
 

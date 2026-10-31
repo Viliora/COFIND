@@ -69,15 +69,17 @@ flowchart TD
 1. `rrf_norm = rrf_score / max(rrf_scores)` (`hybrid_retrieval.py:1161–1171`).
 2. Blend kualitas: `total = 0.9 * rrf_norm + 0.1 * quality_s` jika quality ada; else `total = rrf_norm` (`hybrid_retrieval.py:1181–1186`).
 3. **Gerbang aktivitas (pill):** toko tanpa `shop_has_activity_signal` dibuang sebelum masuk `scored` (`hybrid_retrieval.py:1173–1178`, `900–927`).
-4. **Metadata (pill + gate nyala):** `fuse_metadata_score(total, gate, review_signal=rrf_norm)` (`hybrid_retrieval.py:1159–1198`, `metadata_prior.py:287–311`).
+4. ~~Metadata fusi~~ **Dihapus dari pipeline produksi** (2025 refactor skripsi). Modul `metadata_prior.py` tetap untuk admin/badge.
 
 **Yang tidak memengaruhi RRF hidup:** `_blend_weights()` dan env `COFIND_HYBRID_BM25/DENSE/QUALITY_WEIGHT` hanya didefinisi; **tidak dipanggil** di jalur `_hybrid_retrieve_rrf_core` (`hybrid_retrieval.py:982–992`, `194–202` vs `1048–1256`).
 
 ---
 
-### 3. Metadata prior (`metadata_prior.py`)
+### 3. Metadata prior (`metadata_prior.py`) — offline / admin
 
-**Tujuan:** prior lemah dari klaim fasilitas resmi; kontradiksi ulasan memotong prior dan menambah penalti (`metadata_prior.py:1–9`, `287–298`).
+**Status:** tidak terintegrasi ke `_hybrid_retrieve_rrf_core` atau evidence rekomendasi. Referensi historis di bawah.
+
+**Tujuan (modul):** prior lemah dari klaim fasilitas resmi; kontradiksi ulasan memotong prior dan menambah penalti (`metadata_prior.py:1–9`, `287–298`).
 
 | Langkah | Logika | Sitasi |
 |---------|--------|--------|
@@ -87,7 +89,7 @@ flowchart TD
 | Jam 24/7 | `hours_indicate_24_7` pada display jam | `metadata_prior.py:239–250` |
 | Kontradiksi | Kutipan via `collect_contradiction_quotes`; skala 0.6 / 1.0 × rasio pill | `metadata_prior.py:253–267` |
 | Fusi | `prior_boost = COFIND_METADATA_PRIOR_WEIGHT × prior × (1−contradiction) × review_signal`; `penalty = COFIND_METADATA_PENALTY_WEIGHT × contradiction`; `fused = base + boost − penalty` | `metadata_prior.py:57–62`, `300–306` |
-| Integrasi | Hanya bila `metadata_gate_enabled()` **dan** ada `pill_list` + mapping di `_hybrid_retrieve_rrf_core` | `hybrid_retrieval.py:1159–1198` |
+| Integrasi (legacy) | ~~Hybrid retrieval~~ | **Tidak dipakai** di pipeline saat ini |
 
 **Free text:** `retrieve_top_k_by_text` tidak mengirim `pills` → metadata gate tidak jalan di Fase 2 (`hybrid_retrieval.py:1406–1423`).
 
@@ -95,8 +97,9 @@ flowchart TD
 
 ### 4. Fase 3 & skor akhir (di luar RRF)
 
-- **Campuran rerank:** `final = w × (fit_score/10) + (1−w) × hybrid_score`, `w = COFIND_LLM_RERANK_WEIGHT` default 0.6 (`llm_recommender.py:94`, `1091–1111`).
-- **`COFIND_LLM_MIN_FIT`:** dipakai sebagai `corpus_floor = min(min_fit_score(), 4.0)` saat aktivitas terbukti di post-process LLM, **bukan** filter hard di `_select_top_shops` (`llm_recommender.py:1034–1041`; seleksi: `app.py:5392–5412`).
+- **Campuran rerank:** cross-encoder Jina via `ce_rerank_candidates`, blend `COFIND_CE_RERANK_WEIGHT` (default 0.6) di `cross_encoder_rerank.py` / `rerank_blend.py`.
+- **Summary LLM:** `llm_recommender.py` (grounding kutipan, bukan rerank LLM).
+- **`COFIND_LLM_MIN_FIT`:** floor skor corpus pada jalur grounding/rerank blend.
 - **Seleksi akhir:** bukti aktivitas + urutan `_shop_relevance_sort_key`; free text dengan matcher kosong → `activity_tokens` kosong → `_shop_has_activity_evidence` dapat mengembalikan true tanpa token (`app.py:4934–4935`, `5624–5629`, `5767–5773`).
 
 ---

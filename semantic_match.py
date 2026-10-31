@@ -9,7 +9,7 @@ dengan pill "wifi kencang".
 Modul ini menambahkan jaring kedua: kalimat/klausa yang GAGAL pencocokan kata
 dibandingkan maknanya dengan frasa acuan pill memakai sentence embedding
 (cosine similarity). Perannya hanya penyaring murah — keputusan sentimen kutipan
-bisa diisi llm_clause_sentiment.py bila COFIND_LLM_CLAUSE_SENTIMENT=true.
+bisa diisi llm_clause_sentiment.py bila COFIND_ABSA_ENABLED=true.
 
 Vektor yang sudah dihitung disimpan di vector_cache (memori → Redis → file),
 jadi review yang sama tidak pernah di-encode dua kali.
@@ -17,7 +17,7 @@ jadi review yang sama tidak pernah di-encode dua kali.
 Env:
   COFIND_SEMANTIC_GATE             aktifkan gerbang makna (default: true)
   COFIND_EMBEDDING_MODEL           model sentence-transformers
-                                   (default: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2)
+                                   (default: intfloat/multilingual-e5-small)
   COFIND_SEMANTIC_THRESHOLD        ambang cosine similarity 0..1 (default: 0.55)
   COFIND_SEMANTIC_MAX_CLAUSES      batas klausa yang di-encode per toko (default: 80)
   COFIND_SEMANTIC_BATCH_SIZE       batch encode (default: 32)
@@ -37,12 +37,12 @@ from typing import Dict, List, Optional, Sequence, Tuple
 from logging_config import get_logger
 from vector_cache import PersistentCache, decode_vector, digest_key, encode_vector
 
-DEFAULT_MODEL = 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2'
+DEFAULT_MODEL = 'intfloat/multilingual-e5-small'
 
 logger = get_logger('semantic')
 
 _MIN_CLAUSE_TOKENS = 2
-_MAX_CLAUSE_CHARS = 320
+_MAX_CLAUSE_CHARS = 350
 # Pemisahan pada koma hanya untuk potongan yang cukup panjang; frasa pendek
 # seperti "adem, nyaman" justru lebih jelas bila dibiarkan utuh.
 _COMMA_SPLIT_MIN_TOKENS = 4
@@ -309,18 +309,19 @@ def _uses_e5_prefix() -> bool:
     return 'e5' in name or 'multilingual-e5' in name
 
 
-def _embedding_encode_text(text: str) -> str:
-    """Model E5 mengharapkan prefix query:/passage: (symmetric → query untuk klausa/frasa pill)."""
+def _embedding_encode_text(text: str, *, role: str = 'passage') -> str:
+    """E5: query untuk kueri, passage untuk dokumen/klausa ulasan."""
     if _uses_e5_prefix():
-        return f'query: {text}'
+        prefix = 'query' if role == 'query' else 'passage'
+        return f'{prefix}: {text}'
     return text
 
 
-def _cache_key(text: str) -> str:
-    return digest_key(model_name(), 'v1', text.lower())
+def _cache_key(text: str, *, role: str = 'passage') -> str:
+    return digest_key(model_name(), 'v2', role, text.lower())
 
 
-def embed_texts(texts: Sequence[str]) -> Dict[str, object]:
+def embed_texts(texts: Sequence[str], *, role: str = 'passage') -> Dict[str, object]:
     """
     Vektor ter-normalisasi (cosine = dot product) per teks unik.
     Teks yang sudah pernah dihitung diambil dari cache, sisanya di-encode batch.
@@ -346,7 +347,7 @@ def embed_texts(texts: Sequence[str]) -> Dict[str, object]:
     import numpy as np
 
     vectors: Dict[str, object] = {}
-    cache_keys = {text: _cache_key(text) for text in unique}
+    cache_keys = {text: _cache_key(text, role=role) for text in unique}
     cached = _cache.get_many(cache_keys.values())
     missing: List[str] = []
     for text in unique:
@@ -365,7 +366,7 @@ def embed_texts(texts: Sequence[str]) -> Dict[str, object]:
         batch = encode_batch_size()
         # Encoding diserialisasi agar dua request paralel tidak berebut CPU.
         with _encode_lock:
-            encode_inputs = [_embedding_encode_text(t) for t in missing]
+            encode_inputs = [_embedding_encode_text(t, role=role) for t in missing]
             encoded = model.encode(
                 encode_inputs,
                 batch_size=batch,
@@ -440,7 +441,7 @@ def similarity_matrix(clause_matrix, reference_matrix):
 def _embed_query_vector(query_text: str):
     import numpy as np
 
-    vectors = embed_texts([query_text])
+    vectors = embed_texts([query_text], role='query')
     key = _clean_clause(query_text)
     vec = vectors.get(key)
     if vec is None:
@@ -449,7 +450,7 @@ def _embed_query_vector(query_text: str):
 
 
 def embed_query_vector(query_text: str):
-    """Vektor query untuk ANN pgvector (normalized MiniLM)."""
+    """Vektor query untuk ANN pgvector (L2-normalized, cosine = dot product)."""
     return _embed_query_vector(query_text)
 
 
@@ -547,18 +548,19 @@ def score_documents(query_text: str, documents: Sequence[str]) -> Tuple[List[flo
     import numpy as np
 
     cleaned_docs = [_clean_clause(doc) for doc in documents]
-    vectors = embed_texts([query_text, *[d for d in cleaned_docs if d]])
     query_key = _clean_clause(query_text)
-    query_vec = vectors.get(query_key)
+    query_vec = embed_texts([query_text], role='query').get(query_key)
     if query_vec is None:
         telemetry['skipped'] = 'query_encode_failed'
         return [0.0] * len(documents), telemetry
+    doc_keys = [d for d in cleaned_docs if d]
+    passage_vectors = embed_texts(doc_keys, role='passage') if doc_keys else {}
 
     q = np.asarray(query_vec, dtype=np.float32)
     scores: List[float] = []
     encoded = 0
     for doc in cleaned_docs:
-        vec = vectors.get(doc) if doc else None
+        vec = passage_vectors.get(doc) if doc else None
         if vec is None:
             scores.append(0.0)
             continue

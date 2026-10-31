@@ -283,29 +283,3 @@ def evaluate_metadata_gate(
         'quotes': quotes,
     }
 
-
-def fuse_metadata_score(
-    base_score: float,
-    gate: Dict[str, object],
-    *,
-    review_signal: float,
-) -> Dict[str, float]:
-    """
-    Skor akhir = retrieval + prior lemah - penalti kontradiksi.
-
-    Prior hanya aktif jika ada sinyal ulasan (review_signal > 0), jadi klaim
-    owner tidak bisa mengangkat toko tanpa bukti review. Kontradiksi memotong
-    prior dulu, lalu menambah penalti yang boleh lebih besar dari prior.
-    """
-    prior = float(gate.get('prior') or 0.0)
-    contradiction = float(gate.get('contradiction') or 0.0)
-    signal = max(0.0, min(1.0, float(review_signal or 0.0)))
-    effective_prior = prior * (1.0 - contradiction)
-    prior_boost = metadata_prior_weight() * effective_prior * signal
-    penalty = metadata_penalty_weight() * contradiction
-    fused = max(0.0, float(base_score or 0.0) + prior_boost - penalty)
-    return {
-        'prior_boost': round(prior_boost, 4),
-        'penalty': round(penalty, 4),
-        'fused_score': round(fused, 4),
-    }

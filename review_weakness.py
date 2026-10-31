@@ -8,68 +8,35 @@ terhadap klaim/badge aspek tersebut.
 
 from __future__ import annotations
 
-import re
 from typing import Iterable, Sequence
 
+from activity_lexicon import rejection_phrases
+from id_token_match import (
+    BASE_NEGATIVE_KEYWORD_FRAGMENTS,
+    split_tokens_with_spans,
+    token_matches_keyword_token,
+)
 from metadata_prior import _NEGATION_PREFIXES
 from slang_normalize import normalize_text_with_slang
 
 PREFERENCE_WEAKNESS_TOKEN_WINDOW = 6
 
-_NEGATIVE_KEYWORD_FRAGMENTS = frozenset({
-    'buruk', 'jelek', 'kotor', 'jorok', 'berisik', 'bising', 'mahal',
-    'pelit', 'lambat', 'lemot', 'kecewa', 'zonk', 'parah', 'sampah',
-    'ga enak', 'nggak enak', 'tidak enak', 'gak enak', 'bau', 'sumpek',
-})
+_REJECTION_AS_FRAGMENTS = frozenset(rejection_phrases())
 
-REVIEW_WEAKNESS_FRAGMENTS = _NEGATIVE_KEYWORD_FRAGMENTS | frozenset({
+REVIEW_WEAKNESS_FRAGMENTS = BASE_NEGATIVE_KEYWORD_FRAGMENTS | _REJECTION_AS_FRAGMENTS | frozenset({
     'kurang', 'ramai', 'penuh', 'sempit', 'panas', 'gelap', 'lama',
     'antri', 'antre', 'noise', 'ribut', 'crowded', 'overpriced',
     'wifi lelet', 'wifi lemot', 'colokan kurang', 'parkir susah',
     'susah', 'sulit', 'ribet', 'minim', 'kekurangan',
-    'kurang disarankan', 'kurang cocok', 'kurang direkomendasikan',
-    'tidak disarankan', 'tidak cocok', 'tidak direkomendasikan',
-    'ga cocok', 'gak cocok', 'nggak cocok', 'enggak cocok',
-    'tidak recommended', 'kurang recommended',
 })
 
 _REVIEW_WEAKNESS_FRAGMENTS_SORTED = tuple(
     sorted(REVIEW_WEAKNESS_FRAGMENTS, key=len, reverse=True),
 )
 
-_ID_AFFIX_SUFFIXES = ('nya', 'lah', 'kah', 'pun', 'ku', 'mu', 'kan', 'an', 'i')
-_ID_AFFIX_PREFIXES = ('ber', 'me', 'di', 'ter', 'se', 'pe', 'per', 'ke', 'nge', 'ng')
-
 
 def normalize_keyword_phrase(value) -> str:
     return normalize_text_with_slang(value)
-
-
-def _strip_match_token(token: str) -> str:
-    return re.sub(r'^[^\w]+|[^\w]+$', '', str(token or '').lower(), flags=re.UNICODE)
-
-
-def _token_matches_keyword_token(token: str, keyword: str) -> bool:
-    tok = _strip_match_token(token)
-    kw = str(keyword or '').strip().lower()
-    if not tok or not kw:
-        return False
-    if '-' in tok:
-        return any(_token_matches_keyword_token(part, kw) for part in tok.split('-') if part)
-    if tok == kw:
-        return True
-    if len(kw) <= 3:
-        return False
-    for suf in _ID_AFFIX_SUFFIXES:
-        if tok == kw + suf:
-            return True
-    for pre in _ID_AFFIX_PREFIXES:
-        if tok == pre + kw:
-            return True
-        for suf in _ID_AFFIX_SUFFIXES:
-            if tok == pre + kw + suf:
-                return True
-    return False
 
 
 def find_keyword_token_spans(tokens: Sequence[str], keyword_variant: str):
@@ -79,7 +46,7 @@ def find_keyword_token_spans(tokens: Sequence[str], keyword_variant: str):
         return found
     n = len(kw_tokens)
     for i in range(0, len(tokens) - n + 1):
-        if all(_token_matches_keyword_token(tokens[i + j], kw_tokens[j]) for j in range(n)):
+        if all(token_matches_keyword_token(tokens[i + j], kw_tokens[j]) for j in range(n)):
             found.add((i, i + n - 1))
     return found
 
@@ -100,21 +67,7 @@ def text_matches_any_keyword(text: str, keywords: Iterable[str]) -> bool:
 
 
 def _split_tokens_with_spans(line: str):
-    if not line:
-        return [], []
-    tokens = []
-    spans = []
-    offset = 0
-    for chunk in line.split(' '):
-        if not chunk:
-            continue
-        idx = line.find(chunk, offset)
-        if idx < 0:
-            idx = line.index(chunk)
-        tokens.append(chunk)
-        spans.append((idx, idx + len(chunk)))
-        offset = idx + len(chunk) + 1
-    return tokens, spans
+    return split_tokens_with_spans(line)
 
 
 def _collect_preference_anchor_spans(tokens, spans, line, preference_keywords):

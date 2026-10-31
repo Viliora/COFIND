@@ -40,7 +40,7 @@ def api_latest_reviews():
 
 @bp.route('/api/reviews', methods=['POST'])
 def api_create_review():
-    """Create a new review (rating tempat + text + photos)."""
+    """Create a new review (rating tempat + text)."""
     try:
         auth_user, auth_error = require_authenticated_user()
         if auth_error:
@@ -54,15 +54,11 @@ def api_create_review():
         place_id = data.get('place_id')
         rating = data.get('rating')
         text = data.get('text', '')
-        photos = data.get('photos') or []
-        
+
         if not place_id or rating is None:
             return jsonify({'status': 'error', 'message': 'Missing required fields'}), 400
-        
-        result = create_review(
-            auth_user['id'], place_id, rating, text,
-            photos=photos,
-        )
+
+        result = create_review(auth_user['id'], place_id, rating, text)
         
         if result['success']:
             try:
@@ -121,7 +117,6 @@ def api_update_review(review_id):
             auth_user['id'],
             rating=data.get('rating'),
             text=data.get('text'),
-            photos=data.get('photos'),
         )
         
         if result['success']:
@@ -278,13 +273,18 @@ def api_get_shop_reviews(place_id):
             resp.headers['Cache-Control'] = 'no-store'
             return resp, 200
         else:
-            # Return empty array instead of error if no reviews found
+            LOG_API.warning(
+                "api_get_shop_reviews gagal untuk place_id=%s: %s",
+                place_id,
+                result.get('error'),
+            )
             return jsonify({
-                'status': 'success',
+                'status': 'error',
+                'message': result.get('error') or 'Gagal memuat ulasan',
                 'reviews': [],
                 'average_rating': 0,
-                'review_count': 0
-            }), 200
+                'review_count': 0,
+            }), 500
     except Exception as e:
         LOG_API.exception("api_get_shop_reviews gagal")
         return jsonify({'status': 'error', 'message': str(e)}), 500

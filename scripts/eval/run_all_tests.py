@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def main() -> int:
-    check_modules = sorted(p.stem for p in ROOT.glob("*_checks.py"))
+    check_modules = sorted(p.stem for p in (ROOT / "tests").glob("*_checks.py"))
     check_cmd = [sys.executable, "-m", "unittest", "-v", *check_modules]
     steps = [
         ("unittest checks", check_cmd),

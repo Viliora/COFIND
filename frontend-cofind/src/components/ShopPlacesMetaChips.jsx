@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatOpenNowBadge } from '../utils/googlePlacesDisplay';
 
 /**
  * Badge metadata toko di hero detail: rating, jumlah ulasan, status buka/tutup.
@@ -6,7 +7,8 @@ import React from 'react';
 export default function ShopPlacesMetaChips({ meta }) {
   if (!meta) return null;
 
-  const { rating, userRatingsTotal, openNow } = meta;
+  const { rating, userRatingsTotal, openNow, todayHours } = meta;
+  const openBadge = formatOpenNowBadge(openNow, todayHours);
 
   const hasAny =
     rating != null
@@ -27,15 +29,16 @@ export default function ShopPlacesMetaChips({ meta }) {
           {Number(userRatingsTotal).toLocaleString('id-ID')} ulasan
         </span>
       )}
-      {openNow !== undefined && (
+      {openBadge && (
         <span
-          className={`inline-flex items-center rounded-full px-3 py-1.5 border font-medium ${
+          title={openBadge.title}
+          className={`inline-flex items-center rounded-full px-3 py-1.5 border font-medium max-w-full truncate ${
             openNow
               ? 'bg-green-50 border-green-200 text-green-800 dark:bg-green-950/40 dark:border-green-800 dark:text-green-200'
               : 'bg-red-50 border-red-200 text-red-800 dark:bg-red-950/40 dark:border-red-800 dark:text-red-200'
           }`}
         >
-          {openNow ? 'Buka sekarang' : 'Tutup sekarang'}
+          {openBadge.text}
         </span>
       )}
     </div>

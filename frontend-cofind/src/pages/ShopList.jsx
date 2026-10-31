@@ -52,6 +52,8 @@ function sortShopsByGoogleMaps(shops) {
   });
 }
 
+const CATALOG_PAGE_SIZE = 10;
+
 function HorizontalCatalogScroller({ children, className = '' }) {
   const scrollerRef = useRef(null);
 
@@ -97,6 +99,8 @@ function HorizontalCatalogScroller({ children, className = '' }) {
 export default function ShopList() {
   const { loading: authLoading, user } = useAuth();
   const [coffeeShops, setCoffeeShops] = useState([]);
+  /** Agregat dari DB (catalog_stats di respons /api/coffeeshops). */
+  const [catalogStats, setCatalogStats] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -105,6 +109,7 @@ export default function ShopList() {
   const [selectedAttributes, setSelectedAttributes] = useState([]);
   const [confirmedAttributes, setConfirmedAttributes] = useState([]);
   const [llmRecommendations, setLlmRecommendations] = useState([]);
+  const [llmOtherOptions, setLlmOtherOptions] = useState([]);
   const [pillRecommendLoading, setPillRecommendLoading] = useState(false);
   const [pillRecommendProgress, setPillRecommendProgress] = useState(null);
   /** Timestamp ms saat overlay SSE dibuka (awal stream rekomendasi). */
@@ -122,6 +127,7 @@ export default function ShopList() {
   /** Pesan framing dari backend (negatif / abstention parsial), ditampilkan di modal. */
   const [recommendationResponseNotice, setRecommendationResponseNotice] = useState('');
   const hasLoadedRef = useRef(false);
+  const [catalogVisibleCount, setCatalogVisibleCount] = useState(CATALOG_PAGE_SIZE);
 
   // Lokasi saat ini & radius (peta di atas All Coffee Shops + modal rekomendasi)
   const [userLocation, setUserLocation] = useState(null);
@@ -130,8 +136,6 @@ export default function ShopList() {
   const [locationError, setLocationError] = useState(null);
   const [showLocationChoiceModal, setShowLocationChoiceModal] = useState(false);
   const [locationChoiceSubmitting, setLocationChoiceSubmitting] = useState(false);
-  const [showStatsInfoBubble, setShowStatsInfoBubble] = useState(false);
-
   // Title halaman
   useEffect(() => {
     document.title = 'Beranda - Cofind';
@@ -159,6 +163,7 @@ export default function ShopList() {
     setSelectedAttributes([]);
     setConfirmedAttributes([]);
     setLlmRecommendations([]);
+    setLlmOtherOptions([]);
     setPillRecommendError('');
     setShowRecommendationModal(false);
     setRecommendationNotification(null);
@@ -176,6 +181,7 @@ export default function ShopList() {
     if (!session) return;
     applyLastRecommendationSession(session, {
       setLlmRecommendations,
+      setLlmOtherOptions,
       setConfirmedPills,
       setConfirmedAttributes,
       setConfirmedSearchKeyword,
@@ -258,6 +264,11 @@ export default function ShopList() {
           console.log('[ShopList] ✅ Loaded from backend:', result.data.length, 'shops');
           ensureCoffeeShopImageMap(result.data);
           setCoffeeShops(result.data);
+          if (result.catalog_stats && typeof result.catalog_stats === 'object') {
+            setCatalogStats(result.catalog_stats);
+          } else {
+            setCatalogStats(null);
+          }
           setIsLoading(false);
           hasLoadedRef.current = true;
         } else {
@@ -269,6 +280,7 @@ export default function ShopList() {
         if (isMounted) {
           setError(err.message || 'Failed to load coffee shops');
           setCoffeeShops([]);
+          setCatalogStats(null);
           setIsLoading(false);
           hasLoadedRef.current = true;
         }
@@ -464,7 +476,11 @@ export default function ShopList() {
     });
   };
 
-  const MAX_SEARCH_KEYWORD_CHARS = 50;
+  const MAX_SEARCH_KEYWORD_CHARS = 100;
+  const sanitizeFreeTextQuery = (value) =>
+    String(value || '')
+      .replace(/[^A-Za-z0-9, ]/g, '')
+      .slice(0, MAX_SEARCH_KEYWORD_CHARS);
 
   // Pill dan free text saling eksklusif: isi salah satu saja per request.
   const openLoginModalForFreeText = () => {
@@ -475,7 +491,7 @@ export default function ShopList() {
 
   const handleSearchKeywordChange = (value) => {
     if (!user) return;
-    const next = String(value || '').slice(0, MAX_SEARCH_KEYWORD_CHARS);
+    const next = sanitizeFreeTextQuery(value);
     setSearchKeyword(next);
     if (next.trim() && (selectedPills.length > 0 || selectedAttributes.length > 0)) {
       setSelectedPills([]);
@@ -571,6 +587,7 @@ export default function ShopList() {
     setPillRecommendProgress(null);
     setPillRecommendError('');
     setLlmRecommendations([]);
+    setLlmOtherOptions([]);
     setShowRecommendationModal(false);
     try {
       const { statusCode, body: data } = await streamRecommendations({
@@ -591,6 +608,7 @@ export default function ShopList() {
 
       if (data.status === 'success' && Array.isArray(data.recommendations)) {
         setLlmRecommendations(data.recommendations);
+        setLlmOtherOptions(Array.isArray(data.other_options) ? data.other_options : []);
         setRecommendationResponseNotice(
           data.recommendations.length > 0 && data?.message
             ? String(data.message)
@@ -610,6 +628,7 @@ export default function ShopList() {
           saveLastRecommendationSession({
             userId: user.id,
             recommendations: data.recommendations,
+            otherOptions: Array.isArray(data.other_options) ? data.other_options : [],
             confirmedPills: hasPills ? [...pillValues] : [],
             confirmedAttributes: hasPills ? [...attributeValues] : [],
             confirmedSearchKeyword: hasQueryText ? trimmedQueryText : '',
@@ -623,6 +642,7 @@ export default function ShopList() {
       } else {
         setPillRecommendError(data?.message || 'Rekomendasi AI belum bisa ditampilkan.');
         setLlmRecommendations([]);
+        setLlmOtherOptions([]);
         setShowRecommendationModal(false);
         if (data?.message) {
           setRecommendationNotification({
@@ -635,6 +655,7 @@ export default function ShopList() {
       console.error('[ShopList] recommend-by-preferences error:', err);
       setPillRecommendError(err.message || 'Gagal menghubungi layanan rekomendasi AI.');
       setLlmRecommendations([]);
+      setLlmOtherOptions([]);
       setShowRecommendationModal(false);
       setRecommendationNotification({
         type: 'error',
@@ -702,19 +723,37 @@ export default function ShopList() {
   // Katalog homepage tetap utuh; hasil AI ditampilkan lewat overlay terpisah
   const filteredShops = getFilteredShopsByCategory(coffeeShops);
 
-  // Statistics: dari data yang tampil (filteredShops) dan field yang dipakai aplikasi (total_reviews / user_ratings_total, rating)
+  const catalogShopsVisible = useMemo(
+    () => filteredShops.slice(0, catalogVisibleCount),
+    [filteredShops, catalogVisibleCount],
+  );
+
+  useEffect(() => {
+    setCatalogVisibleCount(CATALOG_PAGE_SIZE);
+  }, [coffeeShops.length]);
+
+  // Statistik beranda: agregat SQL dari DB (catalog_stats), fallback dari katalog yang dimuat
   const stats = useMemo(() => {
-    const list = filteredShops;
+    if (catalogStats) {
+      const avg = Number(catalogStats.avg_rating);
+      return {
+        total: Number(catalogStats.total_shops) || 0,
+        avgRating: Number.isFinite(avg) ? avg.toFixed(1) : '0',
+        topRated: Number(catalogStats.top_rated) || 0,
+        totalReviews: Number(catalogStats.total_cofind_reviews) || 0,
+      };
+    }
+    const list = coffeeShops;
+    const rated = list.filter((shop) => getGoogleRating(shop) > 0);
     const total = list.length;
-    const sumRating = list.reduce((sum, shop) => sum + getGoogleRating(shop), 0);
-    const avgRating = total > 0 ? (sumRating / total).toFixed(1) : '0';
+    const sumRating = rated.reduce((sum, shop) => sum + getGoogleRating(shop), 0);
+    const avgRating = rated.length > 0 ? (sumRating / rated.length).toFixed(1) : '0';
     const topRated = list.filter((shop) => {
       const r = getGoogleRating(shop);
       return r >= 4.5 && r <= 5;
     }).length;
-    const totalReviews = list.reduce((sum, shop) => sum + getGoogleReviewCount(shop), 0);
-    return { total, avgRating, topRated, totalReviews };
-  }, [filteredShops]);
+    return { total, avgRating, topRated, totalReviews: 0 };
+  }, [catalogStats, coffeeShops]);
 
   // Preload featured images setelah data dimuat
   useEffect(() => {
@@ -773,90 +812,35 @@ export default function ShopList() {
 
       <main className="w-full py-4 sm:py-6 md:py-8 px-4 sm:px-6">
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-6 lg:gap-8 items-start">
-        <div className="min-w-0 overflow-x-hidden"> 
+        <div className="min-w-0"> 
         {/* Statistics Cards - sesuai data yang tampil di aplikasi (filteredShops) */}
         {!error && !isLoading && coffeeShops.length > 0 && (
-          <div className="relative grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-            <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-4 sm:p-5 text-white shadow-lg hover:shadow-xl transition-shadow relative">
-              <button
-                type="button"
-                onClick={() => setShowStatsInfoBubble((v) => !v)}
-                className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white/25 hover:bg-white/40 flex items-center justify-center text-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-white/50"
-                aria-label="Informasi sumber data"
-              >
-                i
-              </button>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+            <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-4 sm:p-5 text-white shadow-lg hover:shadow-xl transition-shadow">
               <div className="text-2xl sm:text-3xl font-bold mb-1">{stats.total}</div>
               <div className="text-xs sm:text-sm opacity-90">Coffee Shops</div>
               <div className="text-xs mt-1 opacity-75">di Pontianak</div>
             </div>
 
-            <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-4 sm:p-5 text-white shadow-lg hover:shadow-xl transition-shadow relative">
-              <button
-                type="button"
-                onClick={() => setShowStatsInfoBubble((v) => !v)}
-                className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white/25 hover:bg-white/40 flex items-center justify-center text-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-white/50"
-                aria-label="Informasi sumber data"
-              >
-                i
-              </button>
+            <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-4 sm:p-5 text-white shadow-lg hover:shadow-xl transition-shadow">
               <div className="text-2xl sm:text-3xl font-bold mb-1 flex items-center">
                 ⭐ {stats.avgRating}
               </div>
               <div className="text-xs sm:text-sm opacity-90">Rata-rata Rating</div>
-              <div className="text-xs mt-1 opacity-75">tempat yang tampil</div>
+              <div className="text-xs mt-1 opacity-75">Google · tersimpan di DB</div>
             </div>
 
-            <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-4 sm:p-5 text-white shadow-lg hover:shadow-xl transition-shadow relative">
-              <button
-                type="button"
-                onClick={() => setShowStatsInfoBubble((v) => !v)}
-                className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white/25 hover:bg-white/40 flex items-center justify-center text-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-white/50"
-                aria-label="Informasi sumber data"
-              >
-                i
-              </button>
+            <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-4 sm:p-5 text-white shadow-lg hover:shadow-xl transition-shadow">
               <div className="text-2xl sm:text-3xl font-bold mb-1">{stats.topRated}</div>
               <div className="text-xs sm:text-sm opacity-90">Top Rated</div>
               <div className="text-xs mt-1 opacity-75">rating ≥ 4.5</div>
             </div>
 
-            <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl p-4 sm:p-5 text-white shadow-lg hover:shadow-xl transition-shadow relative">
-              <button
-                type="button"
-                onClick={() => setShowStatsInfoBubble((v) => !v)}
-                className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white/25 hover:bg-white/40 flex items-center justify-center text-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-white/50"
-                aria-label="Informasi sumber data"
-              >
-                i
-              </button>
+            <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl p-4 sm:p-5 text-white shadow-lg hover:shadow-xl transition-shadow">
               <div className="text-2xl sm:text-3xl font-bold mb-1">{stats.totalReviews.toLocaleString('id-ID')}</div>
-              <div className="text-xs sm:text-sm opacity-90">Total Ulasan</div>
-              <div className="text-xs mt-1 opacity-75">semua tempat yang tampil</div>
+              <div className="text-xs sm:text-sm opacity-90">Ulasan Cofind</div>
+              <div className="text-xs mt-1 opacity-75">dari pengguna · database</div>
             </div>
-
-            {/* Bubble pesan sumber data */}
-            {showStatsInfoBubble && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  aria-hidden="true"
-                  onClick={() => setShowStatsInfoBubble(false)}
-                />
-                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-3 z-20 w-[min(90vw,320px)] sm:w-80 px-4 py-3 bg-white dark:bg-zinc-800 rounded-xl shadow-xl border border-gray-200 dark:border-zinc-600 text-left">
-                  <p className="text-sm text-gray-700 dark:text-gray-300">
-                    Data dan informasi ini berdasarkan <span className="font-semibold">Places API</span> per tahun <span className="font-semibold">2025</span>.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setShowStatsInfoBubble(false)}
-                    className="mt-2 text-xs text-amber-600 dark:text-amber-500 hover:underline font-medium"
-                  >
-                    Tutup
-                  </button>
-                </div>
-              </>
-            )}
           </div>
         )}
 
@@ -896,14 +880,7 @@ export default function ShopList() {
                 </div>
               )}
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                Pilih satu pill atau isi kata kunci.
-                {!user && !authLoading ? (
-                  <span className="block mt-1 text-indigo-600 dark:text-indigo-300">
-                    Login diperlukan untuk menjalankan analisis rekomendasi.
-                  </span>
-                ) : (
-                  ' Pilih pill yang sesuai dengan preferensi coffee shop yang ingin anda kunjungi.'
-                )}
+                Pilih satu pill atau isi kata kunci. Pilih pill yang sesuai dengan preferensi coffee shop yang ingin anda kunjungi.
               </p>
             </div>
             <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
@@ -995,7 +972,7 @@ export default function ShopList() {
                   placeholder={
                     !user && !authLoading
                       ? 'Login untuk mencari dengan kata kunci…'
-                      : 'mis. wfc dengan ruangan nyaman'
+                      : 'mis. wfc ruangan nyaman'
                   }
                   title={
                     !user && !authLoading
@@ -1010,10 +987,10 @@ export default function ShopList() {
               </div>
               <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
                 {!user && !authLoading
-                  ? 'Ketuk kolom di atas untuk masuk — setelah login Anda bisa mengetik kata kunci (maks. 50 karakter).'
+                  ? 'Ketuk kolom di atas untuk masuk — setelah login Anda bisa mengetik kata kunci (maks. 100 karakter).'
                   : searchKeyword.trim()
                     ? 'Mode kata kunci aktif — pill preferensi dinonaktifkan. Hapus teks untuk kembali pilih pill.'
-                    : 'Maksimalkan output dengan fokus penggunaan kata kunci/keywords, misal: wfc, ruangan nyaman, ada musholla".'}
+                    : 'Huruf, angka, spasi, dan koma. Contoh: wifi kencang, tenang buat kerja'}
               </p>
             </div>
 
@@ -1278,16 +1255,36 @@ export default function ShopList() {
         )}
 
         {!error && filteredShops.length > 0 && (
-          <div className={SHOP_CATALOG_GRID_CLASS}>
-            {filteredShops.map((shop) => (
-              <div
-                key={shop.place_id}
-                className="block hover:shadow-2xl transition duration-300"
-              >
-                <CoffeeShopCard shop={shop} />
+          <>
+            <div className={SHOP_CATALOG_GRID_CLASS}>
+              {catalogShopsVisible.map((shop) => (
+                <div
+                  key={shop.place_id}
+                  className="block hover:shadow-2xl transition duration-300"
+                >
+                  <CoffeeShopCard shop={shop} />
+                </div>
+              ))}
+            </div>
+            {catalogVisibleCount < filteredShops.length && (
+              <div className="mt-8 flex flex-col items-center gap-2">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Menampilkan {catalogShopsVisible.length} dari {filteredShops.length} coffee shop
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCatalogVisibleCount((prev) =>
+                      Math.min(prev + CATALOG_PAGE_SIZE, filteredShops.length),
+                    );
+                  }}
+                  className="px-6 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm shadow-md transition-colors"
+                >
+                  See more
+                </button>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
 
         {!error && !isLoading && filteredShops.length === 0 && selectedPills.length === 0 && (
@@ -1458,6 +1455,7 @@ export default function ShopList() {
         isOpen={showRecommendationModal}
         onClose={() => setShowRecommendationModal(false)}
         recommendations={llmRecommendations}
+        otherOptions={llmOtherOptions}
         shopsByKey={shopsByKey}
         confirmedPills={confirmedPills}
         confirmedAttributes={confirmedAttributes}

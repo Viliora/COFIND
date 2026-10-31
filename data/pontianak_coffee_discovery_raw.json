@@ -1,0 +1,5312 @@
+{
+  "generated_at": "2026-10-29T17:58:56.290226+00:00",
+  "discovery_queries": [
+    "coffee shop Pontianak",
+    "specialty coffee Pontianak",
+    "coffee roastery Pontianak",
+    "café Pontianak Kalimantan Barat",
+    "kopi Pontianak",
+    "coffee shop Kota Pontianak",
+    "café Pontianak Selatan",
+    "coffee Pontianak Barat"
+  ],
+  "existing_place_ids": [
+    "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+    "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+    "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+    "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+    "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+    "ChIJDcJgropZHS4RKuh8s52jy9U",
+    "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+    "ChIJPa6swGtZHS4RrbIlRvgBgok",
+    "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+    "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+    "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+    "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+    "ChIJp8-aIJdZHS4RntlOSrphQj8",
+    "ChIJpXpEsPNZHS4Rciespc96M5o",
+    "ChIJyRLXBlJYHS4RWNj0yvAvSAQ"
+  ],
+  "pool": [
+    {
+      "place_id": "ChIJI_MGWABZHS4RGQqgB7wNr_o",
+      "name": "GOFFEE PONTIANAK",
+      "address": "Jl. S. Parman No.21, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0352812,
+      "longitude": 109.3374976,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.6,
+      "total_reviews": 387,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJd91VWHdZHS4Rfuf-W5GKrkU",
+      "name": "CW Space",
+      "address": "Seberang SPBU, Jl. MT Haryono, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat, Indonesia",
+      "latitude": -0.0448901,
+      "longitude": 109.3360999,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.5,
+      "total_reviews": 516,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJadxvpWNZHS4ReuOoPA-QLqU",
+      "name": "tumbuh",
+      "address": "Jl. Mujahidin No.20, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78121, Indonesia",
+      "latitude": -0.0436525,
+      "longitude": 109.3369072,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.6,
+      "total_reviews": 868,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJAc2rWgxZHS4Re-5WLXo_dro",
+      "name": "Anomali Coffee & Kitchen - Pontianak",
+      "address": "Jl. Mujahidin No.4, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78121, Indonesia",
+      "latitude": -0.041822,
+      "longitude": 109.3355648,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 285,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJSwuH4ctZHS4Rvzk-wpRXcL8",
+      "name": "POINT COFFEE",
+      "address": "X8HG+QFM, Jl. Khw. Hasyim No.118, Mariana, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78244, Indonesia",
+      "latitude": -0.0205681,
+      "longitude": 109.326132,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.9,
+      "total_reviews": 479,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJew-cPYFZHS4RuQsI4D8LScQ",
+      "name": "Paskamasala",
+      "address": "Gg. Sukarame No.10, Sungai Bangkong, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78116, Indonesia",
+      "latitude": -0.035586,
+      "longitude": 109.3262304,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 352,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJIRuUuwNZHS4RrhnXINPqQQ4",
+      "name": "Sidedoors Coffee Shop",
+      "address": "Jl. Prof. DR. Hamka No.1 A, Sungai Jawi, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78244, Indonesia",
+      "latitude": -0.0228826,
+      "longitude": 109.324515,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.8,
+      "total_reviews": 367,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJU9jIMQBZHS4RfquiXC07dGQ",
+      "name": "Tumbuh Pancasila",
+      "address": "X8CC+784, Jl. Gusti Hamzah, Sungai Bangkong, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78116, Sungai Bangkong, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0293195,
+      "longitude": 109.3208034,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 413,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJ2WpAPaBZHS4Ruwyw-b90j0A",
+      "name": "CWCoffee",
+      "address": "Bansir Darat, Kec. Pontianak Tenggara, Kota Pontianak, Kalimantan Barat, Indonesia",
+      "latitude": -0.0689143,
+      "longitude": 109.3426668,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 666,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJHdYrWU1ZHS4RuU_qB_QKTdI",
+      "name": "CW COFFEE TANJUNG SARI CWTS",
+      "address": "Jl. Tanjung Sari No.102a, Bansir Laut, Kec. Pontianak Tenggara, Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.05186499999999999,
+      "longitude": 109.3481129,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "restaurant",
+        "store"
+      ],
+      "rating": 4.4,
+      "total_reviews": 792,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJlTEux2RZHS4RX8AWGzvzh2c",
+      "name": "Mero Cafe",
+      "address": "Jl. Karel Satsuit Tubun No.10, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0380719,
+      "longitude": 109.3315245,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.9,
+      "total_reviews": 854,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJ5aEiIABZHS4RSbcl28VfGqc",
+      "name": "Point Coffee Tanray II No.375",
+      "address": "Jl. Tj. Raya II No.3 B, Banjar Serasan, Kec. Pontianak Tim., Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0501422,
+      "longitude": 109.3704455,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 5,
+      "total_reviews": 946,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJE00_-clZHS4RFk_TgdS9F_4",
+      "name": "POINT COFFEE",
+      "address": "Jl. Jenderal Ahmad Yani, Bansir Laut, Kec. Pontianak Tenggara, Kota Pontianak, Kalimantan Barat 78214, Indonesia",
+      "latitude": -0.0590462,
+      "longitude": 109.3520848,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 5,
+      "total_reviews": 1109,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJZYjkL_dZHS4RAinxDkBhZU4",
+      "name": "Kopi Kenangan - Ruko Sultan Abdurrahman Pontianak",
+      "address": "Jl. Slt. Abdurrahman No.29, Sungai Bangkong, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0387292,
+      "longitude": 109.3293309,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 370,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJC3_RpddZHS4RMiDp7-6TemY",
+      "name": "Rumah Kita Coffee & Eatery",
+      "address": "Jl. Karya Bhakti No.17A, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78121, Indonesia",
+      "latitude": -0.0460418,
+      "longitude": 109.3277088,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.8,
+      "total_reviews": 107,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJuXs4d51ZHS4R-WXLVHSAO2M",
+      "name": "Toko Diantara Kopi - Perdana",
+      "address": "Komp. Perdana Avenue (Middle building inside Perdana Avenue, Jl. Perdana, Parit Tokaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78115, Indonesia",
+      "latitude": -0.0559098,
+      "longitude": 109.341536,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.6,
+      "total_reviews": 237,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJ51ZLLwBZHS4RwKfvPXBceqE",
+      "name": "Akamreko Coffee & Space Pontianak",
+      "address": "Jl. Sulawesi No.52, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78112, Indonesia",
+      "latitude": -0.0437619,
+      "longitude": 109.3284883,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.5,
+      "total_reviews": 142,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJg-KVVABZHS4RLF9i_llA6T4",
+      "name": "Elsana Cabang Surya",
+      "address": "Jl. Surya, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0491602,
+      "longitude": 109.3287338,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.4,
+      "total_reviews": 640,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJ5db6f8ZZHS4RWfoW-8Z2Xx0",
+      "name": "Point Coffe Patimura",
+      "address": "Jl. Patimura, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78117, Indonesia",
+      "latitude": -0.0257568,
+      "longitude": 109.3380122,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 5,
+      "total_reviews": 339,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJt6FBRQBZHS4RbLugRwfK_fs",
+      "name": "Point Coffe IMAM BONJOL",
+      "address": "Jl. Imam Bonjol, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0402524,
+      "longitude": 109.3485284,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 5,
+      "total_reviews": 198,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJ0SixMwBZHS4RMybIfwXle-E",
+      "name": "Point Coffee Komyos Sudarso",
+      "address": "Jl. Komodor Yos Sudarso No.Kel, Sungai Jawi Luar, Kec. Pontianak Bar., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.007481700000000001,
+      "longitude": 109.2934413,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 5,
+      "total_reviews": 297,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJa57tZQBZHS4RS2rYcMMapd4",
+      "name": "Point Coffee Petani (T4LG)",
+      "address": "Jl. Danau Sentarum Jl. Petani, Sungai Jawi, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0459543,
+      "longitude": 109.3020802,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.9,
+      "total_reviews": 150,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJ5yMUMiRZHS4RvsfyPagITX4",
+      "name": "Point Coffee Ayani 1",
+      "address": "Jl. Jenderal Ahmad Yani No.6B, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78121, Indonesia",
+      "latitude": -0.0376209,
+      "longitude": 109.3350213,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.9,
+      "total_reviews": 190,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJQxaAaABZHS4RvT0Bx2Wgmuw",
+      "name": "Nordu Coffee Experience - kopinomordua",
+      "address": "Jl. S. Parman No.9, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78121, Indonesia",
+      "latitude": -0.0361929,
+      "longitude": 109.3363912,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.4,
+      "total_reviews": 98,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJf0A-EQBZHS4RQSh5k1CbyXg",
+      "name": "Get Coffee",
+      "address": "Jl. Ismail Marzuki, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78121, Indonesia",
+      "latitude": -0.0315957,
+      "longitude": 109.3388433,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.7,
+      "total_reviews": 153,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJ21ZGegBZHS4R7IwWnIZHkuc",
+      "name": "Point Coffe Komyos Sudarso B01 (TSPZ)",
+      "address": "Jl. Pembangunan Nipah Kuning, Sungai Beliung, Kec. Pontianak Bar., Kota Pontianak, Kalimantan Barat 78244, Indonesia",
+      "latitude": -0.0064037,
+      "longitude": 109.2890356,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 5,
+      "total_reviews": 110,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJ6ZJXx1FYHS4RtYkLPkckIzc",
+      "name": "Warung Kopi Asiang",
+      "address": "Jl. Merapi No.191-193, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.02899239999999999,
+      "longitude": 109.341018,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "restaurant",
+        "store"
+      ],
+      "rating": 4.6,
+      "total_reviews": 5818,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJ48kTQ0lZHS4RVa2LceBLdqA",
+      "name": "COMA COFFEE (Coma by Tahap)",
+      "address": "Depan Hotel Borneo, Jl. Merdeka, Tengah, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78111, Indonesia",
+      "latitude": -0.0230904,
+      "longitude": 109.3295281,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.5,
+      "total_reviews": 43,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+      "name": "Franco’s Cafe",
+      "address": "Komp. Pontianak Mall, Jl. Gusti Sulung Lelanang No.B8 Blok B8, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.03190420000000001,
+      "longitude": 109.335925,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 188,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+      "name": "NUTRICULA COFFEE",
+      "address": "X84J+VC6, Jl. Moh. Sohor No.3, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0428091,
+      "longitude": 109.3310384,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.8,
+      "total_reviews": 119,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJsRvRUgBZHS4RH4POl5N1OyQ",
+      "name": "Point Coffe H. Rais A Rahman",
+      "address": "Jl. H. Rais A. Rachman Gg. Bersama 3 No.Samping, Sungai Jawi Dalam, Kec. Pontianak Bar., Kota Pontianak, Kalimantan Barat 78244, Indonesia",
+      "latitude": -0.0223317,
+      "longitude": 109.3116115,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 5,
+      "total_reviews": 91,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJN85HBqJZHS4R7h6R0jSP2QE",
+      "name": "Segitiga Coffee",
+      "address": "Jl. Karya Baru, Parit Tokaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78115, Indonesia",
+      "latitude": -0.0526564,
+      "longitude": 109.3372246,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.6,
+      "total_reviews": 565,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJ98FvZm1ZHS4RQy-ELBGFEsA",
+      "name": "COOPER COFFEE & SPACE",
+      "address": "COOPER COFFEE & SPACE, Jl. Kesehatan ruko block 2 No.1&2, Kota Baru, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0539516,
+      "longitude": 109.318063,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.5,
+      "total_reviews": 193,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJIQUgvcNZHS4RgX-R1Y6mQAE",
+      "name": "Semera Coffee Pancasila",
+      "address": "Jl. Gusti Hamzah, Sungai Bangkong, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.029175,
+      "longitude": 109.3206059,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.4,
+      "total_reviews": 99,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+      "name": "CW Coffee",
+      "address": "Jl. Karel Satsuit Tubun No.2e, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78121, Indonesia",
+      "latitude": -0.0373279,
+      "longitude": 109.33153,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.6,
+      "total_reviews": 632,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJh_2PLTxZHS4RMPzh8QqZFvw",
+      "name": "Kafei Coffee & Brews",
+      "address": "Jalan. Gajah Mada no. 41, (seberang STBA, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78121, Indonesia",
+      "latitude": -0.0305834,
+      "longitude": 109.3395688,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.9,
+      "total_reviews": 95,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJlb_HIABZHS4Rmfh9fY-SA10",
+      "name": "Kopi Menteng",
+      "address": "X84R+584, Jl. Jenderal Ahmad Yani, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat, Indonesia",
+      "latitude": -0.0446217,
+      "longitude": 109.3408357,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 239,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+      "name": "Askara Coffee",
+      "address": "Jl. Wak Dalek No.7, Sungai Bangkong, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.033763,
+      "longitude": 109.3242781,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 149,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJM5X-4vlZHS4Rqyyi2I6Xh4U",
+      "name": "Toko Kami",
+      "address": "Jl. Kh.A.Dahlan Gg. Margosari No.3, Sungai Bangkong, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78121, Indonesia",
+      "latitude": -0.0323721,
+      "longitude": 109.3297732,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.9,
+      "total_reviews": 530,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJI0kmZwBZHS4RUuT1uM5LCgQ",
+      "name": "Pouring coffee",
+      "address": "Gg. Nur 3 No.2, Sungai Jawi, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78244, Indonesia",
+      "latitude": -0.025748,
+      "longitude": 109.3183062,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.8,
+      "total_reviews": 38,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJaZBTesBZHS4RUE3uY4eoR1c",
+      "name": "Coffee Shop Complex",
+      "address": "P Jl. Ketapang No.63, Bansir Laut, Kec. Pontianak Tenggara, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.05110000000000001,
+      "longitude": 109.3550032,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.7,
+      "total_reviews": 105,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJDT5JTEJZHS4RXhuATJTE5mY",
+      "name": "Haruna 2.0",
+      "address": "X88M+M2W, Jl. Teuku Umar No.6, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0332818,
+      "longitude": 109.3326116,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.9,
+      "total_reviews": 1983,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJOUoTEXdZHS4R0u1GA4PPRH8",
+      "name": "Chatting Cafe & Dimsum",
+      "address": "Jl. Sulawesi No.88, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78112, Indonesia",
+      "latitude": -0.04295,
+      "longitude": 109.327747,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.6,
+      "total_reviews": 1359,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJjRyv44NZHS4ROaeK1UfPAZw",
+      "name": "Namaku Coffee",
+      "address": "Jl. Diponegoro No.33 dan 35, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0272773,
+      "longitude": 109.3419346,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.8,
+      "total_reviews": 102,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJGbUmRbFZHS4RMGw-UANfiR0",
+      "name": "Matoea Coffee",
+      "address": "Gg.Suditrisno, Sungai Bangkong, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0408061,
+      "longitude": 109.3199696,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.6,
+      "total_reviews": 102,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJa78abABZHS4RFjHpRkfV954",
+      "name": "Monriri Cafe",
+      "address": "Jl. Veteran No.26, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0424213,
+      "longitude": 109.344699,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 352,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJn3ohCgBZHS4RVUgCBHe0LLM",
+      "name": "Tumbuh Antasari",
+      "address": "Jl. Antasari No.61, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0273961,
+      "longitude": 109.3400316,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.8,
+      "total_reviews": 184,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJ8_09GMdbHS4RzO9jCRtxIj8",
+      "name": "Nete Coffee Shop",
+      "address": "Jl. Sungai Raya Dalam No.118 AB, Bangka Belitung Darat, Kec. Pontianak Tenggara, Kota Pontianak, Kalimantan Barat 78124, Indonesia",
+      "latitude": -0.0849439,
+      "longitude": 109.3514336,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.3,
+      "total_reviews": 65,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJ-9K9j3dZHS4RXtZOUAx7dGM",
+      "name": "Fase Coffee Shop",
+      "address": "Jl. Nusa Indah 2 No.BB9, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0253817,
+      "longitude": 109.3390036,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.4,
+      "total_reviews": 93,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJnW8_O2hZHS4RVnsNstrDREo",
+      "name": "Point Cafe - Gajah Mada 70",
+      "address": "Indomaret Gajah Mada 70, Jl. Gajah Mada No.1, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78391, Indonesia",
+      "latitude": -0.0332933,
+      "longitude": 109.3406771,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.9,
+      "total_reviews": 1126,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJb1WNEopZHS4RRwC8vbKpp1E",
+      "name": "Coffee Street Pontianak",
+      "address": "Jl. Gajah Mada No.1, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.029625,
+      "longitude": 109.3393449,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.5,
+      "total_reviews": 62,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJZzV6fk5YHS4RqoWA6godmYE",
+      "name": "Warung Kopi Suka Hati",
+      "address": "Sekip Darat Jl. Tanjung Pura No.17, Benua Melayu Laut, Kec. Pontianak Bar., Kota Pontianak, Kalimantan Barat 78117, Indonesia",
+      "latitude": -0.026732,
+      "longitude": 109.3427454,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "restaurant",
+        "store"
+      ],
+      "rating": 4.6,
+      "total_reviews": 1690,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJ20a5VptZHS4R02kjupEARao",
+      "name": "RBK CAFE",
+      "address": "Jl. Reformasi, Bansir Laut, Kec. Pontianak Tenggara, Kota Pontianak, Kalimantan Barat 78115, Indonesia",
+      "latitude": -0.0652828,
+      "longitude": 109.3396987,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.4,
+      "total_reviews": 249,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJZ_KoYa9ZHS4RrnN4RRwuebA",
+      "name": "Oldcity coffee",
+      "address": "Jl. A. R. Hakim, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0267423,
+      "longitude": 109.3383984,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 5,
+      "total_reviews": 22,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJr4_HKwBZHS4RBCXLBxrMmag",
+      "name": "Kopi Kutunggu Coldbrew Lab Nusa Indah",
+      "address": "Jl. Nusa Indah 1 No.95-113, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0244269,
+      "longitude": 109.3397322,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.8,
+      "total_reviews": 26,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJ4cMQNwVZHS4R4t_ZFdW0vOE",
+      "name": "Awal Temu Coffee",
+      "address": "Gg.Suditrisno No.7, Sungai Bangkong, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0404234,
+      "longitude": 109.3203169,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.9,
+      "total_reviews": 39,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJpwUhh9NZHS4RoiFLFiwdd4k",
+      "name": "Elsana Jend Urip",
+      "address": "Jl. Jendral Urip No.83B, Tengah, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78111, Indonesia",
+      "latitude": -0.0257725,
+      "longitude": 109.3325126,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.9,
+      "total_reviews": 354,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJE8-LfABZHS4R_MsSOwiHNL8",
+      "name": "Seremoni Coffee",
+      "address": "Jl. Beringin No.38 A, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78117, Indonesia",
+      "latitude": -0.0308529,
+      "longitude": 109.3338673,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.8,
+      "total_reviews": 92,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJiT6iMABZHS4R0XGMBDKt5zg",
+      "name": "Point Coffe Wr Supratman Pontianak",
+      "address": "Jl. WR Supratman No.3b, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0352322,
+      "longitude": 109.3395528,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.9,
+      "total_reviews": 122,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJWfoJ5pVZHS4RwOqVk4ETSs8",
+      "name": "Aoi Matcha & Coffee, Podomoro",
+      "address": "dekat simpang Lampu Merah Pancasila, Gg. Podomoro Dalam, Sungai Bangkong, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0325606,
+      "longitude": 109.3232065,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.6,
+      "total_reviews": 131,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJ3fYHBgZZHS4RhafWOx5UvCM",
+      "name": "101 Coffee House - Roastery",
+      "address": "Jl. Puskesmas Pal 4, Gg. Selat Makassar Jl. Ujung Pandang No.1, Sungai Jawi, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.027903,
+      "longitude": 109.3011759,
+      "types": [
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 5,
+      "total_reviews": 1,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJpbiGx4dZHS4Rc84XoUadcuA",
+      "name": "101 Coffee House",
+      "address": "Jl. Ujung Pandang No.1, Sungai Jawi, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78114, Indonesia",
+      "latitude": -0.0387926,
+      "longitude": 109.2921719,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 77,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJQ93mFABZHS4RpieD7jWG6Fw",
+      "name": "NUPA COFFE STREET",
+      "address": "Jl. Nusa Indah 2 No.24, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.02573,
+      "longitude": 109.338224,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 5,
+      "total_reviews": 13,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJB_ZvUHNZHS4RR3dKL7z4rc0",
+      "name": "Point Coffee Fresh Gusti Situt Mahmud",
+      "address": "X8JW+PCC, Jl. Gusti Situt Mahmud, Siantan Hulu, Kec. Pontianak Utara, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0181864,
+      "longitude": 109.3460459,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.9,
+      "total_reviews": 355,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJ6bXmYQBZHS4RPuri0sjIXYQ",
+      "name": "Enzo Coffee",
+      "address": "X8GR+QH5, Jl. Kapten Marsan, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0231247,
+      "longitude": 109.3414879,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 5,
+      "total_reviews": 10,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJ2S-azdFbHS4RqJsnlwFBCGo",
+      "name": "Reposidi coffee",
+      "address": "Jl. Padat Karya No.3, Bansir Darat, Kec. Pontianak Tenggara, Kota Pontianak, Kalimantan Barat 78116, Indonesia",
+      "latitude": -0.07302499999999999,
+      "longitude": 109.343119,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.8,
+      "total_reviews": 37,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJB_kHTgBZHS4RpYGXBi5Mr8k",
+      "name": "POINT COFFEE, TEUKU UMAR PTK",
+      "address": "Gg. Sa'aman No.17, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0317631,
+      "longitude": 109.334463,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 5,
+      "total_reviews": 112,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJfSXK9NtZHS4R7KQ60XR_99s",
+      "name": "Kopi Kenangan - Ruko Gajah Mada Pontianak",
+      "address": "Jl. Gajah Mada No.245, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78122, Indonesia",
+      "latitude": -0.0365537,
+      "longitude": 109.3420582,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.9,
+      "total_reviews": 629,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJnRfcyrRZHS4RYuyjApCss6U",
+      "name": "Roasterium",
+      "address": "Jl. Slt. Abdurrahman No.50, Akcaya, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0370933,
+      "longitude": 109.3310827,
+      "types": [
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.2,
+      "total_reviews": 33,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJZU5fhAdZHS4RL1ItbYHWrvA",
+      "name": "CW Coffee",
+      "address": "X8HH+5JM, Jl. Merdeka, Mariana, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78244, Indonesia",
+      "latitude": -0.0220273,
+      "longitude": 109.3290394,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.5,
+      "total_reviews": 373,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJy_2UFwBZHS4RnkfA9upfzr0",
+      "name": "BEAN BLISS COFFE",
+      "address": "Jl. Sepakat II, Bansir Darat, Kec. Pontianak Tenggara, Kota Pontianak, Kalimantan Barat, Indonesia",
+      "latitude": -0.0659572,
+      "longitude": 109.3460089,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.9,
+      "total_reviews": 25,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJzbcQ8-JZHS4RM8dhRMdKXXw",
+      "name": "GALS COFFEE",
+      "address": "Jl. Gajah Mada No.2, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.029608,
+      "longitude": 109.339411,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.2,
+      "total_reviews": 53,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJ5Xzzw5RZHS4RaiCHWj4nDcU",
+      "name": "Missibu Roaster",
+      "address": "Gg. Raya III, Sungai Raya, Kec. Sungai Raya, Kabupaten Kubu Raya, Kalimantan Barat 78117, Indonesia",
+      "latitude": -0.0662285,
+      "longitude": 109.3645975,
+      "types": [
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.9,
+      "total_reviews": 14,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJ5SOVegBZHS4Rpx4AlCf5_uQ",
+      "name": "Sediakala Coffee Nusa Indah",
+      "address": "X8GQ+462, Jl. Nusa Indah Baru, Tengah, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0247254,
+      "longitude": 109.3380647,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 3.8,
+      "total_reviews": 47,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJmbbei2dZHS4RhisiPqijq-M",
+      "name": "101 Coffee House Soedarso",
+      "address": "W9P7+J43, Bangka Belitung Laut, Kec. Pontianak Tenggara, Kota Pontianak, Kalimantan Barat 78111, Indonesia",
+      "latitude": -0.0634788,
+      "longitude": 109.3628011,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.5,
+      "total_reviews": 33,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJM69nIwBZHS4RqNlZDnb5Q0g",
+      "name": "AntarMuka.Coffee",
+      "address": "Jl. Nusa Indah 2 No.6, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0250555,
+      "longitude": 109.3401948,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 5,
+      "total_reviews": 13,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJFaYR93dZHS4RmZ8l6nk0Q3E",
+      "name": "Rentjana Roastery",
+      "address": "Gg. Gn. Malabar No.1, Sungai Jawi, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0235322,
+      "longitude": 109.3193562,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "restaurant",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 230,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJvW8IEbJZHS4RFYPm3QUMGrA",
+      "name": "La Gramma",
+      "address": "Jl. Gajah Mada, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78121, Indonesia",
+      "latitude": -0.0344415,
+      "longitude": 109.3411381,
+      "types": [
+        "bakery",
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.6,
+      "total_reviews": 479,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJoy_lbNpZHS4R703thlouzo8",
+      "name": "YessCafe",
+      "address": "Jl. Sultan Moh. No.56 BC, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0245181,
+      "longitude": 109.3438313,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.8,
+      "total_reviews": 119,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJhXumCgBZHS4RTxSJOuE73GQ",
+      "name": "Tanabar Coffee sulawesi",
+      "address": "Jl. Sulawesi No.1, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78112, Indonesia",
+      "latitude": -0.0415866,
+      "longitude": 109.3269394,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.2,
+      "total_reviews": 46,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJvX3EPABZHS4RBH-MEHhYU7Q",
+      "name": "Arkadia Coffee Pontianak",
+      "address": "Jl. Suprapto IV No.9b, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78121, Indonesia",
+      "latitude": -0.0416223,
+      "longitude": 109.3411721,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 3.9,
+      "total_reviews": 117,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJFcgPZCJZHS4RyYWf3mRQA7I",
+      "name": "Sarjana Coffee",
+      "address": "Jl. Nusa Indah III No.99, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78117, Indonesia",
+      "latitude": -0.025734,
+      "longitude": 109.339335,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 5,
+      "total_reviews": 13,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJFayCZgBZHS4RX7_v7zBxs9M",
+      "name": "Alexandra Coffee",
+      "address": "Jl. Surya No.14, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0482333,
+      "longitude": 109.3319709,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 11,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJBaVJ3jtZHS4RbL8Ya8XBzGg",
+      "name": "Feeling Coffee Agus Salim",
+      "address": "Jl. H. Agus Salim No.38, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78116, Indonesia",
+      "latitude": -0.0278279,
+      "longitude": 109.342239,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 41,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJ2bmXfABZHS4RViKTqagFQq0",
+      "name": "TOMORO COFFEE - Ruko Patimura Pontianak",
+      "address": "Jl. Patimura, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78117, Indonesia",
+      "latitude": -0.0291299,
+      "longitude": 109.3387036,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 169,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJ86JcchJZHS4ROKWj6t-l144",
+      "name": "Fore Coffee - Gajah Mada, Pontianak",
+      "address": "X88R+R88, Jl. Gajah Mada No.70, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78123, Indonesia",
+      "latitude": -0.0328674,
+      "longitude": 109.3407792,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.5,
+      "total_reviews": 116,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJUZ5QRwBZHS4R5g1QmBLE6aU",
+      "name": "bow's coffee and space",
+      "address": "Jl. Nusa Indah III, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0259703,
+      "longitude": 109.3396483,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 5,
+      "total_reviews": 3,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJgVCLqoNZHS4RAVvLWpo-ueQ",
+      "name": "MENANTI COFFEE",
+      "address": "Jl. DR. Setia Budi No.22, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0313964,
+      "longitude": 109.3445253,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.9,
+      "total_reviews": 27,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJQaiE-XBZHS4RziD64BSUOBM",
+      "name": "Toko Diantara Kopi - Pattimura, 23",
+      "address": "Jl. Patimura No.23, RW.25, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0253761,
+      "longitude": 109.3378463,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.6,
+      "total_reviews": 694,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJ0a7wAQBZHS4RGE9Q6BFz_CA",
+      "name": "1/4 Roastery & Slow Bar",
+      "address": "Gg. Siliwangi No.2B, Sungai Bangkong, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0394681,
+      "longitude": 109.3165999,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 5,
+      "total_reviews": 43,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee roastery Pontianak"
+    },
+    {
+      "place_id": "ChIJH0wBaupZHS4RsHaUoPOeqvY",
+      "name": "GAYO KEDAI KOPI ROASTER PONTIANAK",
+      "address": "Jl. Sulawesi, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0425786,
+      "longitude": 109.327203,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.1,
+      "total_reviews": 346,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee roastery Pontianak"
+    },
+    {
+      "place_id": "ChIJN30c9glZHS4R7_vK6lJ9Bzc",
+      "name": "Asiang Roastery and Merchandise Store",
+      "address": "sebrang Lab Cecilia, Jl. Merapi, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78122, Indonesia",
+      "latitude": -0.0294803,
+      "longitude": 109.3412011,
+      "types": [
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 5,
+      "total_reviews": 94,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee roastery Pontianak"
+    },
+    {
+      "place_id": "ChIJU_cNzCNZHS4RD-_wVs_SAOA",
+      "name": "Rumah Kopi Purnama",
+      "address": "Gg. Purnama Dalam No.21, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0535335,
+      "longitude": 109.3274052,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 5,
+      "total_reviews": 92,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee roastery Pontianak"
+    },
+    {
+      "place_id": "ChIJjWW1krVXHS4Ros5L9M-QzBM",
+      "name": "Trans Kopi",
+      "address": "samping Indomaret pertama, Jl. Raya Desa Kapur, Kapur, Kec. Sungai Raya, Kabupaten Kubu Raya, Kalimantan Barat 78236, Indonesia",
+      "latitude": -0.06420569999999999,
+      "longitude": 109.3820757,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 5,
+      "total_reviews": 3,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee roastery Pontianak"
+    },
+    {
+      "place_id": "ChIJWwMqj7JZHS4RQyEyPD-rxmE",
+      "name": "Coffee Shop New Kota Kita",
+      "address": "Komp. Ruko Pontanik Square, Jl. Budi Karya, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78122, Indonesia",
+      "latitude": -0.0436749,
+      "longitude": 109.3472396,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.3,
+      "total_reviews": 208,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee roastery Pontianak"
+    },
+    {
+      "place_id": "ChIJFxHLllNYHS4RE6hIlKn3uIA",
+      "name": "Expresso Beano",
+      "address": "Jl. Jend Sudirman, Benua Melayu Darat, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78122, Indonesia",
+      "latitude": -0.0240066,
+      "longitude": 109.3379026,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.5,
+      "total_reviews": 439,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee roastery Pontianak"
+    },
+    {
+      "place_id": "ChIJm6bozVVYHS4RW2xlf2RLHQU",
+      "name": "Sidedoors Coffee Shop",
+      "address": "Jl. Beringin, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0313353,
+      "longitude": 109.3333062,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.8,
+      "total_reviews": 48,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee roastery Pontianak"
+    },
+    {
+      "place_id": "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+      "name": "CW Coffee",
+      "address": "Jl. Hijas No.38-40, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78122, Indonesia",
+      "latitude": -0.0361616,
+      "longitude": 109.3456124,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.4,
+      "total_reviews": 822,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee roastery Pontianak"
+    },
+    {
+      "place_id": "ChIJdz4EebJZHS4RRnHstmaXqnQ",
+      "name": "Warung Kopi Winny",
+      "address": "Jl. Gajah Mada No.159, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78122, Indonesia",
+      "latitude": -0.0378661,
+      "longitude": 109.3429317,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "restaurant",
+        "store"
+      ],
+      "rating": 4.3,
+      "total_reviews": 1463,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee roastery Pontianak"
+    },
+    {
+      "place_id": "ChIJqWD6eABZHS4Rc1Qh-0TLklE",
+      "name": "KONGSHI KOPI TIAM",
+      "address": "Jl. Diponegoro No.95, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0273505,
+      "longitude": 109.3422621,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.4,
+      "total_reviews": 77,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee roastery Pontianak"
+    },
+    {
+      "place_id": "ChIJf8Fk_k9YHS4Rvj7KYH6TTvA",
+      "name": "Warung Kopi Djaja",
+      "address": "Jl. Tanjung Pura No.19, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0266817,
+      "longitude": 109.3428409,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.6,
+      "total_reviews": 202,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee roastery Pontianak"
+    },
+    {
+      "place_id": "ChIJo6a2k7JZHS4RJpgppqant_s",
+      "name": "Warung Kopi Utama Rasa",
+      "address": "Jl. Hijas No.193, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78391, Indonesia",
+      "latitude": -0.03670900000000001,
+      "longitude": 109.343858,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.4,
+      "total_reviews": 505,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee roastery Pontianak"
+    },
+    {
+      "place_id": "ChIJk-ElTIVZHS4RuiX2Qw3goxc",
+      "name": "3S COFFEE",
+      "address": "Ps. Kapuas Indah, Jl. Kapten Marsan LT.2, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0231971,
+      "longitude": 109.3419985,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.9,
+      "total_reviews": 36,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee roastery Pontianak"
+    },
+    {
+      "place_id": "ChIJVy7Gq1FYHS4RKbQohi4F6So",
+      "name": "Panorama Coffee",
+      "address": "Jl. Diponegoro No.149, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0287931,
+      "longitude": 109.3398715,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.5,
+      "total_reviews": 416,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee roastery Pontianak"
+    },
+    {
+      "place_id": "ChIJfWPGdYFZHS4RYfv8vJ8RB6Y",
+      "name": "Stelsel Kopi Tiam",
+      "address": "Jl. Nusa Indah 1 No.98, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78116, Indonesia",
+      "latitude": -0.0251606,
+      "longitude": 109.3382093,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.6,
+      "total_reviews": 167,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee roastery Pontianak"
+    },
+    {
+      "place_id": "ChIJQ6EE2k1YHS4RBb9P6IbdfTQ",
+      "name": "Super Coffee Shop",
+      "address": "Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.031139,
+      "longitude": 109.345032,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.4,
+      "total_reviews": 167,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee roastery Pontianak"
+    },
+    {
+      "place_id": "ChIJ2UJikRVZHS4RrrDuYmym3O0",
+      "name": "District 505",
+      "address": "Jl. Nusa Indah III, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78391, Indonesia",
+      "latitude": -0.0252353,
+      "longitude": 109.3391943,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 34,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee roastery Pontianak"
+    },
+    {
+      "place_id": "ChIJoYtSFQBZHS4RG7ehEfJOCo4",
+      "name": "Highway Coffee",
+      "address": "X8FQ+8QH, Jl. Ir. H. Juanda, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0266884,
+      "longitude": 109.339482,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 5,
+      "total_reviews": 1,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee roastery Pontianak"
+    },
+    {
+      "place_id": "ChIJOzD9SABZHS4R90aDY2k0wb8",
+      "name": "Bukka Coffee Shop",
+      "address": "X8FQ+VHV, Jl. Nusa Indah 2, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0252567,
+      "longitude": 109.3389351,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 7,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee roastery Pontianak"
+    },
+    {
+      "place_id": "ChIJ0fEkrbRZHS4RqzLcOZJ3BvQ",
+      "name": "Dhani COFFEE SHOP",
+      "address": "X87X+WHF, Jl. Tanjung Pura, Benua Melayu Laut, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0351932,
+      "longitude": 109.3489069,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.3,
+      "total_reviews": 274,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee roastery Pontianak"
+    },
+    {
+      "place_id": "ChIJI3-tvlJYHS4RoxIyHxRP4Mg",
+      "name": "Gladden Cafe & Resto",
+      "address": "Hotel Gajah Mada Pontianak, JL. Gajah Mada No. 177-183, Parit Tokaya, 78121, Benua Melayu Darat, South Pontianak, Pontianak, West Kalimantan 78243, Indonesia",
+      "latitude": -0.0343498,
+      "longitude": 109.3416246,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "restaurant"
+      ],
+      "rating": 4.2,
+      "total_reviews": 66,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee roastery Pontianak"
+    },
+    {
+      "place_id": "ChIJI2teQfZYHS4RIvt8narJbiA",
+      "name": "Borneo Sky Cafe",
+      "address": "Jl. Merdeka No.428, Tengah, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78112, Indonesia",
+      "latitude": -0.0233179,
+      "longitude": 109.3288792,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "restaurant"
+      ],
+      "rating": 4.5,
+      "total_reviews": 328,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Kalimantan Barat"
+    },
+    {
+      "place_id": "ChIJpRwrM4lZHS4R4PgwW1ScZOA",
+      "name": "No. 3 Cafe Arts and Lounge",
+      "address": "Jl. Suprapto IV No.3, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0410743,
+      "longitude": 109.3406682,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.4,
+      "total_reviews": 625,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Kalimantan Barat"
+    },
+    {
+      "place_id": "ChIJl_qOcVNYHS4RU247-ciLWWU",
+      "name": "D'grounds Cafe & Resto",
+      "address": "Jl. WR Supratman No.9, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0331332,
+      "longitude": 109.3377281,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.5,
+      "total_reviews": 322,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Kalimantan Barat"
+    },
+    {
+      "place_id": "ChIJl_N1TQBZHS4RxXxEX3Hc958",
+      "name": "Tropic di Merdeka",
+      "address": "Jl. Hos Cokroaminoto No.326, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78117, Indonesia",
+      "latitude": -0.0289948,
+      "longitude": 109.3342987,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.4,
+      "total_reviews": 325,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Kalimantan Barat"
+    },
+    {
+      "place_id": "ChIJQ4OzAWRZHS4R3TyjZjTTKpo",
+      "name": "Chatting Cafe & Dimsum 2.0",
+      "address": "Jl. S. Parman Dalam No.8, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0368628,
+      "longitude": 109.3356836,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.8,
+      "total_reviews": 3756,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Kalimantan Barat"
+    },
+    {
+      "place_id": "ChIJd9DbjwxbHS4RLy5zPi_HFzo",
+      "name": "D'SKY Cafe & Eatery",
+      "address": "Jl. S. Parman No.1, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0365035,
+      "longitude": 109.3354798,
+      "types": [
+        "establishment",
+        "food",
+        "point_of_interest",
+        "restaurant"
+      ],
+      "rating": 4,
+      "total_reviews": 533,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Kalimantan Barat"
+    },
+    {
+      "place_id": "ChIJKfRKnx1ZHS4RNGR9M2f-b_Y",
+      "name": "Bermuda Coffee Irian",
+      "address": "Jl. Irian No.5b, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0398643,
+      "longitude": 109.3285443,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.6,
+      "total_reviews": 211,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Kalimantan Barat"
+    },
+    {
+      "place_id": "ChIJ5ZqQxv5ZHS4R6Cp5kFFlFes",
+      "name": "RHYTHM COFFEE",
+      "address": "Jl. Merdeka No.482, Mariana, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78112, Indonesia",
+      "latitude": -0.0212107,
+      "longitude": 109.3289652,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.7,
+      "total_reviews": 91,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Kalimantan Barat"
+    },
+    {
+      "place_id": "ChIJU8vmtHdZHS4R3tULLGrKYC8",
+      "name": "KLUWI CAFE",
+      "address": "JL. St Abdurachman, Sei Bangkong Bl E/211, Sungai Bangkong, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78116, Indonesia",
+      "latitude": -0.0500024,
+      "longitude": 109.3449269,
+      "types": [
+        "bar",
+        "establishment",
+        "point_of_interest"
+      ],
+      "rating": 3.8,
+      "total_reviews": 776,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Kalimantan Barat"
+    },
+    {
+      "place_id": "ChIJ-ZufmAFZHS4RCM9xUBjpYYY",
+      "name": "Detik Coffee & Space",
+      "address": "Jl. Putri Candramidi, Sungai Bangkong, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78116, Indonesia",
+      "latitude": -0.037058,
+      "longitude": 109.3262968,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.4,
+      "total_reviews": 291,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Kalimantan Barat"
+    },
+    {
+      "place_id": "ChIJZbmvWQBZHS4Rbvx1pKGUF3g",
+      "name": "Chatting Cafe Ampera",
+      "address": "X74V+579, Jl. Ampera, Sungai Jawi, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78114, Indonesia",
+      "latitude": -0.0445956,
+      "longitude": 109.2932275,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.8,
+      "total_reviews": 4421,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Kalimantan Barat"
+    },
+    {
+      "place_id": "ChIJLSuywgRZHS4RQs-ILvnmLa4",
+      "name": "Daily Mix Cafe & Eatery",
+      "address": "Jl. Khw. Hasyim No.164b, Sungai Jawi Dalam, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78117, Indonesia",
+      "latitude": -0.0245909,
+      "longitude": 109.3258956,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "restaurant",
+        "store"
+      ],
+      "rating": 4.5,
+      "total_reviews": 168,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Kalimantan Barat"
+    },
+    {
+      "place_id": "ChIJ-YStbABZHS4RpzRgK-hgEos",
+      "name": "Macna.idn",
+      "address": "Jl. Jenderal Ahmad Yani No.16, Bangka Belitung Laut, Kec. Pontianak Tenggara, Kota Pontianak, Kalimantan Barat 78112, Indonesia",
+      "latitude": -0.0638436,
+      "longitude": 109.356843,
+      "types": [
+        "establishment",
+        "food",
+        "point_of_interest",
+        "restaurant"
+      ],
+      "rating": 4.9,
+      "total_reviews": 762,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Kalimantan Barat"
+    },
+    {
+      "place_id": "ChIJS_g9VrpZHS4RJzOgIzNqPoc",
+      "name": "Upsolute Coffee Pontianak",
+      "address": "Jl. Hijas 2 No.4, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78112, Indonesia",
+      "latitude": -0.0363994,
+      "longitude": 109.3442162,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.4,
+      "total_reviews": 70,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Kalimantan Barat"
+    },
+    {
+      "place_id": "ChIJmQzQurxZHS4Rg1tWAwBIS-g",
+      "name": "Toss Cafe Siantan",
+      "address": "X9J2+G2W, Jl. Gusti Situt Mahmud, Siantan Hulu, Kec. Pontianak Utara, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0185264,
+      "longitude": 109.3500556,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.8,
+      "total_reviews": 399,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Kalimantan Barat"
+    },
+    {
+      "place_id": "ChIJYwsrUFxZHS4RAdAKsdX7StI",
+      "name": "Kopi Satu Hati - Gedung Parkir Kota Pontianak",
+      "address": "Jl. Letjend Suprapto No.2, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0384169,
+      "longitude": 109.3428223,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.6,
+      "total_reviews": 241,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Kalimantan Barat"
+    },
+    {
+      "place_id": "ChIJJYT322JZHS4Rpu02ZMGunCw",
+      "name": "ELIO COFFEE & EATERY",
+      "address": "di Rumah Jepin, Jl. Kh.A.Dahlan, Sungai Bangkong, Kec. Pontianak Bar., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0348346,
+      "longitude": 109.3323215,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.9,
+      "total_reviews": 16,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Kalimantan Barat"
+    },
+    {
+      "place_id": "ChIJ8Vc1IgBZHS4RZExuus-mWhE",
+      "name": "Mafiola Cafe and Lounge",
+      "address": "Jl. Karimata No.63, RW.50, Sungai Bangkong, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.030553,
+      "longitude": 109.325976,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.9,
+      "total_reviews": 21,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Kalimantan Barat"
+    },
+    {
+      "place_id": "ChIJW63sGzRZHS4R5XwTgklEIlE",
+      "name": "Semera coffee",
+      "address": "Dansen, Sungai Bangkong, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78112, Indonesia",
+      "latitude": -0.0552998,
+      "longitude": 109.3033612,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.2,
+      "total_reviews": 107,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Kalimantan Barat"
+    },
+    {
+      "place_id": "ChIJ48UobTlZHS4Rsku05Lovku4",
+      "name": "Monkee cafe bar & resto",
+      "address": "Jl. Kh.A.Dahlan No.3, RW.5, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78117, Indonesia",
+      "latitude": -0.0349455,
+      "longitude": 109.3328573,
+      "types": [
+        "bar",
+        "establishment",
+        "point_of_interest"
+      ],
+      "rating": 4.2,
+      "total_reviews": 156,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Kalimantan Barat"
+    },
+    {
+      "place_id": "ChIJMeY_AQBZHS4Rs2xQ1LwnTfg",
+      "name": "Cattu Coffee - M Sohor",
+      "address": "Jl. Moh. Sohor No.46B No.46c-46d, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.04596919999999999,
+      "longitude": 109.3327984,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.1,
+      "total_reviews": 175,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Kalimantan Barat"
+    },
+    {
+      "place_id": "ChIJOXt6qu9ZHS4RKjm2K4xuq2c",
+      "name": "Toss Cafe",
+      "address": "Jl. Teuku Umar, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0330881,
+      "longitude": 109.3330313,
+      "types": [
+        "establishment",
+        "food",
+        "point_of_interest",
+        "restaurant"
+      ],
+      "rating": 4.4,
+      "total_reviews": 1113,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Kalimantan Barat"
+    },
+    {
+      "place_id": "ChIJcVF-19lZHS4REnZGgWi31uo",
+      "name": "Pojok Kopi Pontianak",
+      "address": "Jl. Perdana No.168, Bansir Laut, Kec. Pontianak Tenggara, Kota Pontianak, Kalimantan Barat 78115, Indonesia",
+      "latitude": -0.0619953,
+      "longitude": 109.3373401,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.4,
+      "total_reviews": 53,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "kopi Pontianak"
+    },
+    {
+      "place_id": "ChIJ25hXQmlZHS4ReHyfmaEkqZc",
+      "name": "Kopi Asiang Ayani 2",
+      "address": "Sederet Showroom Wuling, Jl. Jenderal Ahmad Yani No.2, Sungai Raya, Kec. Sungai Raya, Kota Pontianak, Kalimantan Barat 78121, Indonesia",
+      "latitude": -0.0715563,
+      "longitude": 109.363455,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.6,
+      "total_reviews": 455,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "kopi Pontianak"
+    },
+    {
+      "place_id": "ChIJn5r81eZZHS4RxmOq7kye568",
+      "name": "Kopi Asiang Ayani 1",
+      "address": "Jl. Jenderal Ahmad Yani No.3, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78122, Indonesia",
+      "latitude": -0.0360881,
+      "longitude": 109.333771,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.6,
+      "total_reviews": 944,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "kopi Pontianak"
+    },
+    {
+      "place_id": "ChIJnbtAXcBZHS4Rl6zrlDA46ik",
+      "name": "Aming Coffee Veteran",
+      "address": "Jl. Veteran No.C/3, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0452783,
+      "longitude": 109.3434438,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.6,
+      "total_reviews": 504,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "kopi Pontianak"
+    },
+    {
+      "place_id": "ChIJEUbMbgpZHS4RbYjPSkhpork",
+      "name": "Warung Kopi 7CO",
+      "address": "Jl. Putri Candramidi No.1, Sungai Bangkong, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78116, Indonesia",
+      "latitude": -0.0393617,
+      "longitude": 109.3281205,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.4,
+      "total_reviews": 725,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "kopi Pontianak"
+    },
+    {
+      "place_id": "ChIJwz0pLf9ZHS4RebNmya1ZSzE",
+      "name": "Lim Kok Tong",
+      "address": "Jl. WR Supratman No.9, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0354033,
+      "longitude": 109.3391469,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 248,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "kopi Pontianak"
+    },
+    {
+      "place_id": "ChIJDaPckbJZHS4RFexDTmhsVfE",
+      "name": "Warung Kopi Sumber Segar",
+      "address": "Jl. Hijas No.207, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78122, Indonesia",
+      "latitude": -0.0368503,
+      "longitude": 109.3437095,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "meal_takeaway",
+        "point_of_interest",
+        "restaurant",
+        "store"
+      ],
+      "rating": 4.4,
+      "total_reviews": 546,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "kopi Pontianak"
+    },
+    {
+      "place_id": "ChIJhfrayZxZHS4Rdx8pieA5ubc",
+      "name": "Kopi Es Berjaya",
+      "address": "Jl. Sulawesi No.1, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0411785,
+      "longitude": 109.326712,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.9,
+      "total_reviews": 397,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "kopi Pontianak"
+    },
+    {
+      "place_id": "ChIJu5LXpX1ZHS4RzLxhvDamqWk",
+      "name": "RUMANGSA KOPI",
+      "address": "Komplek Untan, Jl. Karangan No.1, Bansir Laut, Kec. Pontianak Tenggara, Kota Pontianak, Kalimantan Barat 78124, Indonesia",
+      "latitude": -0.0488894,
+      "longitude": 109.3519479,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 230,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "kopi Pontianak"
+    },
+    {
+      "place_id": "ChIJ8dcIZwRZHS4RcAbeV7-773w",
+      "name": "Deal Kopi",
+      "address": "Jl. Uray Bawadi No.17a, Sungai Bangkong, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78116, Indonesia",
+      "latitude": -0.0405518,
+      "longitude": 109.3225631,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.5,
+      "total_reviews": 1083,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "kopi Pontianak"
+    },
+    {
+      "place_id": "ChIJPwstQgBZHS4Rv_hJKQKItB8",
+      "name": "GARIS COFFE PONTIANAK",
+      "address": "Jl. D.I.Panjaitan No.B5, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78116, Indonesia",
+      "latitude": -0.035432,
+      "longitude": 109.3347188,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.3,
+      "total_reviews": 169,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "kopi Pontianak"
+    },
+    {
+      "place_id": "ChIJxV-nW_1YHS4RoQyAMWM0dxE",
+      "name": "Pondok Kopi Alianyang",
+      "address": "Jl. Alianyang No.125, Sungai Bangkong, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0350246,
+      "longitude": 109.3198657,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.4,
+      "total_reviews": 397,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "kopi Pontianak"
+    },
+    {
+      "place_id": "ChIJu_BAbk1YHS4R36_QSCFZMrQ",
+      "name": "Central Kopi",
+      "address": "X88V+QXF, Jl. Ketapang, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.03305,
+      "longitude": 109.3449355,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.2,
+      "total_reviews": 485,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "kopi Pontianak"
+    },
+    {
+      "place_id": "ChIJ9eH0B4ZZHS4Rtp3lDHVlS0E",
+      "name": "Warkop Upgreat",
+      "address": "Jl. Letjend Suprapto No.15, RT.03/RW/RW.RT. 03, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0409665,
+      "longitude": 109.3394244,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.3,
+      "total_reviews": 2325,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "kopi Pontianak"
+    },
+    {
+      "place_id": "ChIJBwlVr1JYHS4RL3z3c-LEgA4",
+      "name": "Goeboek Kopi",
+      "address": "Jl. Ketapang, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78122, Indonesia",
+      "latitude": -0.034669,
+      "longitude": 109.342248,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.2,
+      "total_reviews": 589,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "kopi Pontianak"
+    },
+    {
+      "place_id": "ChIJOYC947pZHS4RJWzaIPSENgo",
+      "name": "KopiKoe & Dimsum Pot 02",
+      "address": "Jl. Nusa Indah Baru No.A 9/10, Tengah, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0244366,
+      "longitude": 109.3383931,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.3,
+      "total_reviews": 345,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "kopi Pontianak"
+    },
+    {
+      "place_id": "ChIJ9VMeu1tZHS4R-lMz1UmI1wM",
+      "name": "Kopi Asenk",
+      "address": "Jl. Suez Permai No.31, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78121, Indonesia",
+      "latitude": -0.0387178,
+      "longitude": 109.3442464,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.8,
+      "total_reviews": 24,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "kopi Pontianak"
+    },
+    {
+      "place_id": "ChIJLZ5ciVFYHS4RtwlU0WQ3RPY",
+      "name": "Kopi Santai",
+      "address": "no 238c, Jl. Siam No.238, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.030664,
+      "longitude": 109.340622,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.3,
+      "total_reviews": 87,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "kopi Pontianak"
+    },
+    {
+      "place_id": "ChIJ7fq5LQBZHS4R-87_ESAY2lM",
+      "name": "Satu Rasa Kopi",
+      "address": "Jl. Antasari, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78117, Indonesia",
+      "latitude": -0.0272056,
+      "longitude": 109.3402717,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 3.4,
+      "total_reviews": 25,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "kopi Pontianak"
+    },
+    {
+      "place_id": "ChIJN_UaJQBZHS4RGiSMboEUkFk",
+      "name": "Minimal Kopi Pontianak",
+      "address": "Jl. Ampera, Sungai Jawi, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78114, Indonesia",
+      "latitude": -0.0420443,
+      "longitude": 109.2906273,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.8,
+      "total_reviews": 12,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "kopi Pontianak"
+    },
+    {
+      "place_id": "ChIJWUSI1k1YHS4Rzpjt86wl910",
+      "name": "Toko Kopi Obor",
+      "address": "Jl. Tanjung Pura No. 21 Benua Melayu Darat Pontianak Selatan, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78123, Indonesia",
+      "latitude": -0.026682,
+      "longitude": 109.342777,
+      "types": [
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.8,
+      "total_reviews": 25,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "kopi Pontianak"
+    },
+    {
+      "place_id": "ChIJQcKMkbJZHS4RAQsKIlULLgU",
+      "name": "Warung Kopi Ahie",
+      "address": "Jl. Hijas No.205, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78122, Indonesia",
+      "latitude": -0.036792,
+      "longitude": 109.343715,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.2,
+      "total_reviews": 116,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "kopi Pontianak"
+    },
+    {
+      "place_id": "ChIJ0cFRZgBZHS4R1swOkZD5BCk",
+      "name": "BU Kopi",
+      "address": "BU Kopi, Jl. Sisingamangaraja No.30-32, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78117, Indonesia",
+      "latitude": -0.0267474,
+      "longitude": 109.341034,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 5,
+      "total_reviews": 15,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "kopi Pontianak"
+    },
+    {
+      "place_id": "ChIJo8q4Fa5ZHS4RS8mg9icLEdA",
+      "name": "Central Kopi & Billiar Setia Budi",
+      "address": "Jl. DR. Setia Budi No.72, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78122, Indonesia",
+      "latitude": -0.0321223,
+      "longitude": 109.3426798,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.3,
+      "total_reviews": 33,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "kopi Pontianak"
+    },
+    {
+      "place_id": "ChIJa7_66LJZHS4RMXqhK8lrrWw",
+      "name": "Warung Kopi Prosper",
+      "address": "Jl. Hijas No.229, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0370837,
+      "longitude": 109.3432083,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.4,
+      "total_reviews": 308,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "kopi Pontianak"
+    },
+    {
+      "place_id": "ChIJgYcJlvhZHS4ROfUMxCSNtYI",
+      "name": "OP!! KOPI (Warung Kopi Waru)",
+      "address": "Jl. WR Supratman No.2, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0321449,
+      "longitude": 109.3368167,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.4,
+      "total_reviews": 374,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "kopi Pontianak"
+    },
+    {
+      "place_id": "ChIJsbGp5cBZHS4REl8gFZA4EcA",
+      "name": "Kopi Boss",
+      "address": "Jl. Gajah Mada Jl. Ketapang No.139, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0341814,
+      "longitude": 109.3424576,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.4,
+      "total_reviews": 16,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "kopi Pontianak"
+    },
+    {
+      "place_id": "ChIJHf4y8wZZHS4RlnTxLBev1Tk",
+      "name": "Kopitiam Pontianak",
+      "address": "Jl. Slt. Abdurrahman, Akcaya, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0416225,
+      "longitude": 109.3265085,
+      "types": [
+        "establishment",
+        "food",
+        "point_of_interest",
+        "restaurant"
+      ],
+      "rating": 4.3,
+      "total_reviews": 418,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "kopi Pontianak"
+    },
+    {
+      "place_id": "ChIJ0T1jK2tZHS4RbcmKLU1uE-s",
+      "name": "Loka Artha Kopi Tiam",
+      "address": "JL. Nusa Indah I, 56, Sekip Darat, Pontianak Barat, Pontianak, Darat Sekip, Pontianak Kota, Pontianak, West Kalimantan 78243, Indonesia",
+      "latitude": -0.0250807,
+      "longitude": 109.3383947,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.4,
+      "total_reviews": 62,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "kopi Pontianak"
+    },
+    {
+      "place_id": "ChIJda_YpeNZHS4RD0EWyJ_yyGg",
+      "name": "Tentang Kopi",
+      "address": "X846+PMV, Jl. Danau Sentarum, Sungai Bangkong, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0431333,
+      "longitude": 109.3116799,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4,
+      "total_reviews": 15,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "kopi Pontianak"
+    },
+    {
+      "place_id": "ChIJa8u_GbNZHS4RoJs4EWx3puI",
+      "name": "Kopi Sedap Nikmat",
+      "address": "X8GQ+FG8, Jl. Jend Sudirman, Tengah, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0238397,
+      "longitude": 109.3388405,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.4,
+      "total_reviews": 120,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "kopi Pontianak"
+    },
+    {
+      "place_id": "ChIJz86NiexZHS4Rvfragb9paEE",
+      "name": "Haruna Perdana",
+      "address": "Jl. Mitra Perdana No.1, Parit Tokaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78115, Indonesia",
+      "latitude": -0.0579953,
+      "longitude": 109.3407933,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.8,
+      "total_reviews": 1736,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Kota Pontianak"
+    },
+    {
+      "place_id": "ChIJB6bDAQBZHS4RZ2nnHC6epaw",
+      "name": "Kayasa Coffee & Kitchen",
+      "address": "Jl. Letnan Jendral Sutoyo, Parit Tokaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78121, Indonesia",
+      "latitude": -0.05009839999999999,
+      "longitude": 109.3401042,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 73,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Kota Pontianak"
+    },
+    {
+      "place_id": "ChIJab9iZ7xZHS4RLvSMRkEKzUs",
+      "name": "CW Coffee",
+      "address": "JNE, Jl. Gusti Hamzah No.6F, Seberang, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78244, Indonesia",
+      "latitude": -0.0231895,
+      "longitude": 109.3181695,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.5,
+      "total_reviews": 806,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Kota Pontianak"
+    },
+    {
+      "place_id": "ChIJifFYzLhZHS4Rto76xfTHUuE",
+      "name": "Aphen Pattimura",
+      "address": "Depan Jco, Matahari Mall, Jl. Patimura, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0246696,
+      "longitude": 109.3374868,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 130,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Kota Pontianak"
+    },
+    {
+      "place_id": "ChIJP464wpdZHS4RCIOBcClLxUQ",
+      "name": "Sahabi Coffee and Eatery",
+      "address": "W9V2+4VF, Bansir Laut, Kec. Pontianak Tenggara, Kota Pontianak, Kalimantan Barat 78115, Indonesia",
+      "latitude": -0.0571418,
+      "longitude": 109.3524032,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 59,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Kota Pontianak"
+    },
+    {
+      "place_id": "ChIJIVdKRARZHS4RaV0Z5rOGlC4",
+      "name": "AREA Coffee Shop",
+      "address": "X85F+J5C, Jl. Uray Bawadi, Sungai Bangkong, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0409418,
+      "longitude": 109.3229055,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.4,
+      "total_reviews": 353,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Kota Pontianak"
+    },
+    {
+      "place_id": "ChIJN-RasRJZHS4RdzHvKl-XML0",
+      "name": "Lopika Heritage",
+      "address": "Jl. MT Haryono No.25, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78121, Indonesia",
+      "latitude": -0.0467449,
+      "longitude": 109.3338037,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4,
+      "total_reviews": 270,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Kota Pontianak"
+    },
+    {
+      "place_id": "ChIJl68KXstZHS4RM5ldvDjAHM8",
+      "name": "Sediakala Coffee",
+      "address": "Jl. Sulawesi, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0434088,
+      "longitude": 109.3278441,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.4,
+      "total_reviews": 232,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Kota Pontianak"
+    },
+    {
+      "place_id": "ChIJCzPS4zlZHS4RW4VztUIAgS8",
+      "name": "Cia Yo Coffee",
+      "address": "W8Q4+QHV, Jl. Perdamaian, Kota Baru, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78114, Indonesia",
+      "latitude": -0.05480939999999999,
+      "longitude": 109.3033653,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.4,
+      "total_reviews": 280,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Kota Pontianak"
+    },
+    {
+      "place_id": "ChIJB0eOMJtZHS4Rhzu98Dx0To0",
+      "name": "First Things First",
+      "address": "Jl. Dr. Wahidin. S No.2, Sungai Bangkong, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78118, Indonesia",
+      "latitude": -0.0406499,
+      "longitude": 109.3127833,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 146,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Kota Pontianak"
+    },
+    {
+      "place_id": "ChIJCWHWSQBZHS4RaPw60U6fO5k",
+      "name": "ELAIA COFFEE & EATERY",
+      "address": "Jl. MT Haryono No.1 AB, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0468608,
+      "longitude": 109.3333754,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "restaurant"
+      ],
+      "rating": 4.2,
+      "total_reviews": 559,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Selatan"
+    },
+    {
+      "place_id": "ChIJJRmiFABbHS4ReH8OpH_MU9M",
+      "name": "1918 Coffee & Space - Sepakat II",
+      "address": "W8HR+35R, Jl. Sepakat II, Bansir Darat, Kec. Pontianak Tenggara, Kota Pontianak, Kalimantan Barat 78116, Indonesia",
+      "latitude": -0.0722526,
+      "longitude": 109.3403887,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.1,
+      "total_reviews": 190,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Selatan"
+    },
+    {
+      "place_id": "ChIJSeOcoa9ZHS4RbRLG86wWBVE",
+      "name": "POINT COFFEE",
+      "address": "W8XJ+87F, Jl. Purnama 1, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78115, Indonesia",
+      "latitude": -0.0517112,
+      "longitude": 109.33071,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.9,
+      "total_reviews": 314,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Selatan"
+    },
+    {
+      "place_id": "ChIJwy2ZYOZZHS4R0I1J3JwEIcc",
+      "name": "Cétho",
+      "address": "Gg. Purnama 8 No.4, Parit Tokaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78121, Indonesia",
+      "latitude": -0.051821,
+      "longitude": 109.332147,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 119,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Selatan"
+    },
+    {
+      "place_id": "ChIJu8H0Ph9ZHS4RNBFGOL1fgZo",
+      "name": "CWCoffee - Tani Makmur",
+      "address": "Jl. Tani Makmur No.2, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0510343,
+      "longitude": 109.3168174,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 897,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Selatan"
+    },
+    {
+      "place_id": "ChIJuR55IcdZHS4RqYXSO3jvKWo",
+      "name": "EKOFFIE CAFE & EATRY",
+      "address": "W8WP+PF9, Jl. Karya Baru Komplek. Taman Spain No.mor. 1, Parit Tokaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78121, Indonesia",
+      "latitude": -0.0532547,
+      "longitude": 109.3362208,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.5,
+      "total_reviews": 64,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Selatan"
+    },
+    {
+      "place_id": "ChIJG3MYE_tZHS4R1pkS-QCxNSE",
+      "name": "Poesis Coffee",
+      "address": "Jl. Akcaya II, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78116, Indonesia",
+      "latitude": -0.0489622,
+      "longitude": 109.3350013,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 5,
+      "total_reviews": 36,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Selatan"
+    },
+    {
+      "place_id": "ChIJTcymqzZZHS4RQc7dVDDm5RM",
+      "name": "Weng Coffee M. Sohor",
+      "address": "X83J+HF5, Jl. Moh. Sohor, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.04584299999999999,
+      "longitude": 109.3321076,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.1,
+      "total_reviews": 214,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Selatan"
+    },
+    {
+      "place_id": "ChIJdwYADTpZHS4Ri1BzcIdma5c",
+      "name": "Everyone Fruit Bar",
+      "address": "Jl. Karna Sosial No.11, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.048104,
+      "longitude": 109.3238566,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.6,
+      "total_reviews": 218,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Selatan"
+    },
+    {
+      "place_id": "ChIJn8iFSM9ZHS4RjkLscIaAY7Q",
+      "name": "Kafe Giat Coffee",
+      "address": "Jl. Purnama II No.20, Parit Tokaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78121, Indonesia",
+      "latitude": -0.0597772,
+      "longitude": 109.3229046,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.5,
+      "total_reviews": 52,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Selatan"
+    },
+    {
+      "place_id": "ChIJhWOPSQBZHS4RdIvDJlmHq6w",
+      "name": "Tropic di Kobar",
+      "address": "Jl. Prof. M.Yamin, Kota Baru, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78121, Indonesia",
+      "latitude": -0.061497,
+      "longitude": 109.3058585,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.2,
+      "total_reviews": 76,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Selatan"
+    },
+    {
+      "place_id": "ChIJ0XDyOixZHS4R_7NfKDJ3tBs",
+      "name": "Bright Coffee",
+      "address": "W8V8+35X, Jl. Kesehatan, Kota Baru, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78115, Indonesia",
+      "latitude": -0.0573221,
+      "longitude": 109.315597,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.6,
+      "total_reviews": 51,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Selatan"
+    },
+    {
+      "place_id": "ChIJhU6w_i9ZHS4RVkMRHhGyAOg",
+      "name": "Bara Coffee",
+      "address": "Jl. Wono Baru, Kota Baru, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78115, Indonesia",
+      "latitude": -0.0562324,
+      "longitude": 109.3215847,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "restaurant",
+        "store"
+      ],
+      "rating": 4.5,
+      "total_reviews": 141,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Selatan"
+    },
+    {
+      "place_id": "ChIJpeyzZQBZHS4RxeETIFi61AA",
+      "name": "Tropic di Sepakat II",
+      "address": "Jl. Sepakat II No.157, Bansir Darat, Kec. Pontianak Tenggara, Kota Pontianak, Kalimantan Barat 78112, Indonesia",
+      "latitude": -0.0686189,
+      "longitude": 109.3434061,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 3.4,
+      "total_reviews": 83,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Selatan"
+    },
+    {
+      "place_id": "ChIJvVqVVchZHS4ROBvAzPhyyMU",
+      "name": "SEMESTA KOPI TIAM",
+      "address": "Jl. Karna Sosial Gg. Wonoyoso 2 No.3, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78121, Indonesia",
+      "latitude": -0.04893070000000001,
+      "longitude": 109.3237406,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 94,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Selatan"
+    },
+    {
+      "place_id": "ChIJSXIUubBZHS4R7L9auj08vo4",
+      "name": "NHZ Café",
+      "address": "Jl. Budi Karya No.C5, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78112, Indonesia",
+      "latitude": -0.0431142,
+      "longitude": 109.3475773,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.4,
+      "total_reviews": 227,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Selatan"
+    },
+    {
+      "place_id": "ChIJVxhNO95ZHS4RuQ7iQA9wyRQ",
+      "name": "ExpressCoffe",
+      "address": "Jl. Karya Baru II No.36, Parit Tokaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78115, Indonesia",
+      "latitude": -0.05581460000000001,
+      "longitude": 109.3387688,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.1,
+      "total_reviews": 42,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Selatan"
+    },
+    {
+      "place_id": "ChIJ9TDXGwBZHS4RdQjXu9WT8mk",
+      "name": "Point Coffee Purnama56",
+      "address": "W8VF+4VW, Jl. Purnama 1, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78122, Indonesia",
+      "latitude": -0.0571455,
+      "longitude": 109.3247034,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 5,
+      "total_reviews": 93,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Selatan"
+    },
+    {
+      "place_id": "ChIJfR3hXQBZHS4RJYAhtU-skKI",
+      "name": "Koding Coffee",
+      "address": "Jl. Kesehatan No.61, Kota Baru, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78115, Indonesia",
+      "latitude": -0.0575495,
+      "longitude": 109.3151319,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 5,
+      "total_reviews": 30,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Selatan"
+    },
+    {
+      "place_id": "ChIJ27oIJQBZHS4RNNzeB6FKIqs",
+      "name": "Meramoe",
+      "address": "Jl. Moh. Sohor No.20, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0492695,
+      "longitude": 109.3353109,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.5,
+      "total_reviews": 99,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Selatan"
+    },
+    {
+      "place_id": "ChIJEzruZOBZHS4REEakO0fOjh4",
+      "name": "Lopika Coffee",
+      "address": "Jl. Akcaya II No.9, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78121, Indonesia",
+      "latitude": -0.0442896,
+      "longitude": 109.3345906,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 3.9,
+      "total_reviews": 135,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Selatan"
+    },
+    {
+      "place_id": "ChIJE3RQYM5ZHS4RoufMurxipuc",
+      "name": "FOS Coffee",
+      "address": "Jl. Veteran No.B2, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78121, Indonesia",
+      "latitude": -0.0418777,
+      "longitude": 109.3450439,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.1,
+      "total_reviews": 56,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Selatan"
+    },
+    {
+      "place_id": "ChIJE868SQBZHS4RSUJEfADhOmc",
+      "name": "Nong Thai cafe",
+      "address": "Jl. M Sohor, Gg. Sederhana Ruko No.8, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78121, Indonesia",
+      "latitude": -0.0454686,
+      "longitude": 109.3314744,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.4,
+      "total_reviews": 114,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Selatan"
+    },
+    {
+      "place_id": "ChIJa8iTQOpZHS4RdVFAK__JB-c",
+      "name": "lokale Select Purnama",
+      "address": "W8XJ+52X, Jl. Purnama 1, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78115, Indonesia",
+      "latitude": -0.0519906,
+      "longitude": 109.330099,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.2,
+      "total_reviews": 346,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Selatan"
+    },
+    {
+      "place_id": "ChIJwSVoRttZHS4RSOXLi1GlciU",
+      "name": "Safira Cafe",
+      "address": "Jl. Mujahidin No.14, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78121, Indonesia",
+      "latitude": -0.0430777,
+      "longitude": 109.3363805,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.3,
+      "total_reviews": 139,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Selatan"
+    },
+    {
+      "place_id": "ChIJCW38I6NZHS4RVYtgQydi5rU",
+      "name": "Blingkaan Cafe",
+      "address": "Jl. S. Parman No.7, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0365102,
+      "longitude": 109.3361085,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.3,
+      "total_reviews": 505,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Selatan"
+    },
+    {
+      "place_id": "ChIJVVWB4AlZHS4RWRrIz6ypAuM",
+      "name": "Bucs Coffee",
+      "address": "Jl. Komp. Sumatra Indah No.22 A, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.04713179999999999,
+      "longitude": 109.3305892,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.4,
+      "total_reviews": 41,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Selatan"
+    },
+    {
+      "place_id": "ChIJvff5gLJZHS4R0q0bP18Ox94",
+      "name": "The Queen Cafe",
+      "address": "Jl. Gajah Mada No.141-143, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78122, Indonesia",
+      "latitude": -0.037336,
+      "longitude": 109.3428707,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.1,
+      "total_reviews": 213,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "café Pontianak Selatan"
+    },
+    {
+      "place_id": "ChIJf1TV-jtZHS4RGH-JdlKF88w",
+      "name": "CW Coffee",
+      "address": "Jl. Husein Hamzah No.39, Pal Lima, Kec. Pontianak Bar., Kota Pontianak, Kalimantan Barat 78114, Indonesia",
+      "latitude": -0.0344486,
+      "longitude": 109.2897898,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.6,
+      "total_reviews": 219,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee Pontianak Barat"
+    },
+    {
+      "place_id": "ChIJuRi629BZHS4ROKQCQ8ThFl0",
+      "name": "CW Coffee",
+      "address": "Jl. Komodor Yos Sudarso No.1A, Sungai Beliung, Kec. Pontianak Bar., Kota Pontianak, Kalimantan Barat 78244, Indonesia",
+      "latitude": -0.0056224,
+      "longitude": 109.3005571,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.4,
+      "total_reviews": 308,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee Pontianak Barat"
+    },
+    {
+      "place_id": "ChIJ1aedPgBZHS4RUXLeJlQatF0",
+      "name": "Lavena coffee & bakehouse",
+      "address": "Gg. Serumpun 2 No.A1, Sungai Jawi Dalam, Kec. Pontianak Bar., Kota Pontianak, Kalimantan Barat 78118, Indonesia",
+      "latitude": -0.0195979,
+      "longitude": 109.3051099,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 59,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee Pontianak Barat"
+    },
+    {
+      "place_id": "ChIJP_7KaHGn4jERFB4U1XWyTTI",
+      "name": "POINT COFFEE",
+      "address": "2837+H7J, Jl. Khatulistiwa, Batu Layang, Kec. Pontianak Utara, Kota Pontianak, Kalimantan Barat 78244, Indonesia",
+      "latitude": 0.0038978,
+      "longitude": 109.3131213,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 5,
+      "total_reviews": 288,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee Pontianak Barat"
+    },
+    {
+      "place_id": "ChIJ5VrvJQBZHS4ReHXko-Kf_ZU",
+      "name": "Sagarmatha Coffee Bar",
+      "address": "Jl. H. Rais A. Rachman Gg. Selamat 3 No.36b, Sungai Jawi Dalam, Kec. Pontianak Bar., Kota Pontianak, Kalimantan Barat 78244, Indonesia",
+      "latitude": -0.0172094,
+      "longitude": 109.3220369,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.6,
+      "total_reviews": 52,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee Pontianak Barat"
+    },
+    {
+      "place_id": "ChIJe68XVgBZHS4RVzhjWdDXSs8",
+      "name": "Weng Coffee Nature",
+      "address": "Jl. Re.Martadinata No.26A, Sungai Jawi Dalam, Kec. Pontianak Bar., Kota Pontianak, Kalimantan Barat 78244, Indonesia",
+      "latitude": -0.0167229,
+      "longitude": 109.3141617,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.4,
+      "total_reviews": 41,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee Pontianak Barat"
+    },
+    {
+      "place_id": "ChIJz54pUiZZHS4RGyvVgAhEcN8",
+      "name": "Coffee Mertua",
+      "address": "Gg. Thayibah No.1c, Pal Lima, Kec. Pontianak Bar., Kota Pontianak, Kalimantan Barat 78244, Indonesia",
+      "latitude": -0.0237484,
+      "longitude": 109.2972163,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.3,
+      "total_reviews": 37,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee Pontianak Barat"
+    },
+    {
+      "place_id": "ChIJ6eubZ91ZHS4ROhmkvGIIkQY",
+      "name": "Ocean Coffee & Food",
+      "address": "Jl. Dr. Wahidin. S No.4, Sungai Jawi Dalam, Kec. Pontianak Bar., Kota Pontianak, Kalimantan Barat 78244, Indonesia",
+      "latitude": -0.0254806,
+      "longitude": 109.3035009,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.3,
+      "total_reviews": 270,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee Pontianak Barat"
+    },
+    {
+      "place_id": "ChIJdW3MLpFYHS4R-lLCmlertLo",
+      "name": "KOPI HITAM Re Martadinata",
+      "address": "Jl. Re.Martadinata No.21 A, Sungai Jawi Luar, Kec. Pontianak Bar., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0112622,
+      "longitude": 109.3133185,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.4,
+      "total_reviews": 112,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee Pontianak Barat"
+    },
+    {
+      "place_id": "ChIJ6Wus6wBZHS4RdmAw7Ke2J_Y",
+      "name": "Qahwa Cafe",
+      "address": "X8PC+H57, Sungai Jawi Luar, Kec. Pontianak Bar., Kota Pontianak, Kalimantan Barat 78244, Indonesia",
+      "latitude": -0.01362,
+      "longitude": 109.320353,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.8,
+      "total_reviews": 20,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee Pontianak Barat"
+    },
+    {
+      "place_id": "ChIJVWgyadNZHS4RjggupOYhhFc",
+      "name": "Kopi Wak Leman",
+      "address": "Jl. H. Haruna No.16 a, Sungai Jawi Luar, Kec. Pontianak Bar., Kota Pontianak, Kalimantan Barat 78244, Indonesia",
+      "latitude": -0.014654,
+      "longitude": 109.3198175,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.5,
+      "total_reviews": 104,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee Pontianak Barat"
+    },
+    {
+      "place_id": "ChIJt9vGrvpYHS4RqkY4m_ny1dU",
+      "name": "Blok M Coffee",
+      "address": "Jl. Gusti Hamzah Kelurahan No.mor 7A, Sungai Jawi Dalam, Kec. Pontianak Bar., Kota Pontianak, Kalimantan Barat 78244, Indonesia",
+      "latitude": -0.0224872,
+      "longitude": 109.3182817,
+      "types": [
+        "bakery",
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "restaurant",
+        "store"
+      ],
+      "rating": 4.4,
+      "total_reviews": 203,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee Pontianak Barat"
+    },
+    {
+      "place_id": "ChIJm4_MvWBZHS4Raa0lrxQcqsA",
+      "name": "Dialogika Coffee",
+      "address": "Jl. Dr. Sutomo Gg. Karya 2A No.14, Sungai Bangkong, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78111, Indonesia",
+      "latitude": -0.0455962,
+      "longitude": 109.3180989,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.8,
+      "total_reviews": 33,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee Pontianak Barat"
+    },
+    {
+      "place_id": "ChIJCbmQz-xZHS4R_tFyJqkEZfQ",
+      "name": "SX Coffee & Eatery",
+      "address": "X8Q5+4JW, Jl. Tebu, Sungai Beliung, Kec. Pontianak Bar., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0121436,
+      "longitude": 109.3090754,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.9,
+      "total_reviews": 7,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee Pontianak Barat"
+    },
+    {
+      "place_id": "ChIJzzq3OwBZHS4R0ajEmZluLB0",
+      "name": "Naga333",
+      "address": "Gg. Jeruju 1 No.4, Sungai Beliung, Kec. Pontianak Bar., Kota Pontianak, Kalimantan Barat 78244, Indonesia",
+      "latitude": -0.005118699999999999,
+      "longitude": 109.3065913,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 5,
+      "total_reviews": 14,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee Pontianak Barat"
+    },
+    {
+      "place_id": "ChIJr-dnNBRZHS4RhAZZ5iPLIVE",
+      "name": "Kalem coffee",
+      "address": "Jl. Karet, Sungai Beliung, Kec. Pontianak Bar., Kota Pontianak, Kalimantan Barat 78117, Indonesia",
+      "latitude": -0.0100435,
+      "longitude": 109.2969333,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.4,
+      "total_reviews": 21,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee Pontianak Barat"
+    },
+    {
+      "place_id": "ChIJR__FYZRZHS4R11M4BuNbwRs",
+      "name": "Seoul Alley Pontianak",
+      "address": "Komp. Ruko Marta Indah, Jl. Re.Martadinata No.1 Blk C, Sungai Jawi Luar, Kec. Pontianak Bar., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.007749199999999999,
+      "longitude": 109.314644,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 19,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee Pontianak Barat"
+    },
+    {
+      "place_id": "ChIJL1asd5lYHS4RVAOKVb1mCac",
+      "name": "Cafe Ente",
+      "address": "Sungai Jawi Luar, Kec. Pontianak Bar., Kota Pontianak, Kalimantan Barat 78244, Indonesia",
+      "latitude": -0.0064123,
+      "longitude": 109.3120226,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.1,
+      "total_reviews": 678,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee Pontianak Barat"
+    },
+    {
+      "place_id": "ChIJbVPnVN1ZHS4Rp1UkqzxNGRQ",
+      "name": "dejavukoffie",
+      "address": "Jl. Apel Gg. Sahang No.11, Sungai Jawi Luar, Kec. Pontianak Bar., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0131686,
+      "longitude": 109.3186993,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 5,
+      "total_reviews": 32,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee Pontianak Barat"
+    },
+    {
+      "place_id": "ChIJeUKJ5a5ZHS4REwOap4lFK8k",
+      "name": "Coffee Selamat",
+      "address": "Gg. Selamat 1 No.14, Sungai Jawi Dalam, Kec. Pontianak Bar., Kota Pontianak, Kalimantan Barat 78244, Indonesia",
+      "latitude": -0.0180192,
+      "longitude": 109.3214197,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.3,
+      "total_reviews": 9,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee Pontianak Barat"
+    },
+    {
+      "place_id": "ChIJhfCR79FZHS4RG9f_8rByKv0",
+      "name": "RUSH COFFEE, Komyos Sudarso",
+      "address": "Jl. Komodor Yos Sudarso No.141 i, Sungai Jawi Luar, Kec. Pontianak Bar., Kota Pontianak, Kalimantan Barat 78244, Indonesia",
+      "latitude": -0.0126687,
+      "longitude": 109.3261451,
+      "types": [
+        "establishment",
+        "point_of_interest"
+      ],
+      "rating": 5,
+      "total_reviews": 12,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee Pontianak Barat"
+    },
+    {
+      "place_id": "ChIJxVw6NJVYHS4RGAiHMEVunbk",
+      "name": "COFFEE REFRESH @ Stasiun Gamers",
+      "address": "Jalan Tebu, Sungai Jawi Dalam, Pontianak, ( Warung Cofee REFRESH ), Sungai Jawi Dalam, Kec. Pontianak Bar., Kota Pontianak, Kalimantan Barat 78244, Indonesia",
+      "latitude": -0.0173616,
+      "longitude": 109.3086849,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.3,
+      "total_reviews": 237,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee Pontianak Barat"
+    },
+    {
+      "place_id": "ChIJ0_1lFDdZHS4RhXs3lliCNPA",
+      "name": "VH COFFEE",
+      "address": "X8V7+F67, Jl. Komodor Yos Sudarso, Sungai Jawi Luar, Kec. Pontianak Bar., Kota Pontianak, Kalimantan Barat 78244, Indonesia",
+      "latitude": -0.0063471,
+      "longitude": 109.313049,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.1,
+      "total_reviews": 13,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee Pontianak Barat"
+    },
+    {
+      "place_id": "ChIJU0KVPIxZHS4RqLZ9zZV0w-E",
+      "name": "Cozy Coffee",
+      "address": "X8PG+QG6, Sungai Jawi Luar, Kec. Pontianak Bar., Kota Pontianak, Kalimantan Barat 78244, Indonesia",
+      "latitude": -0.0130773,
+      "longitude": 109.3262782,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.3,
+      "total_reviews": 74,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee Pontianak Barat"
+    },
+    {
+      "place_id": "ChIJG-V37U9ZHS4Ra4Q_n-69LlA",
+      "name": "Kopi Bandar Jl. Apel",
+      "address": "X8P9+WQG, Jl. Apel, Sungai Jawi Luar, Kec. Pontianak Bar., Kota Pontianak, Kalimantan Barat 78244, Indonesia",
+      "latitude": -0.0126829,
+      "longitude": 109.319444,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 5,
+      "total_reviews": 10,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee Pontianak Barat"
+    },
+    {
+      "place_id": "ChIJocIgBgBZHS4RgsT366XpyjQ",
+      "name": "GK Space Pontianak",
+      "address": "X8H9+VRQ, Jl. H. Rais A. Rachman, Sungai Jawi Dalam, Kec. Pontianak Bar., Kota Pontianak, Kalimantan Barat 78116, Indonesia",
+      "latitude": -0.0202527,
+      "longitude": 109.319582,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 3.9,
+      "total_reviews": 23,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee Pontianak Barat"
+    }
+  ],
+  "near_miss": [
+    {
+      "place_id": "ChIJI_MGWABZHS4RGQqgB7wNr_o",
+      "name": "GOFFEE PONTIANAK",
+      "address": "Jl. S. Parman No.21, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0352812,
+      "longitude": 109.3374976,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.6,
+      "total_reviews": 387,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJd91VWHdZHS4Rfuf-W5GKrkU",
+      "name": "CW Space",
+      "address": "Seberang SPBU, Jl. MT Haryono, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat, Indonesia",
+      "latitude": -0.0448901,
+      "longitude": 109.3360999,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.5,
+      "total_reviews": 516,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJadxvpWNZHS4ReuOoPA-QLqU",
+      "name": "tumbuh",
+      "address": "Jl. Mujahidin No.20, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78121, Indonesia",
+      "latitude": -0.0436525,
+      "longitude": 109.3369072,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.6,
+      "total_reviews": 868,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJAc2rWgxZHS4Re-5WLXo_dro",
+      "name": "Anomali Coffee & Kitchen - Pontianak",
+      "address": "Jl. Mujahidin No.4, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78121, Indonesia",
+      "latitude": -0.041822,
+      "longitude": 109.3355648,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 285,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJSwuH4ctZHS4Rvzk-wpRXcL8",
+      "name": "POINT COFFEE",
+      "address": "X8HG+QFM, Jl. Khw. Hasyim No.118, Mariana, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78244, Indonesia",
+      "latitude": -0.0205681,
+      "longitude": 109.326132,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.9,
+      "total_reviews": 479,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJew-cPYFZHS4RuQsI4D8LScQ",
+      "name": "Paskamasala",
+      "address": "Gg. Sukarame No.10, Sungai Bangkong, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78116, Indonesia",
+      "latitude": -0.035586,
+      "longitude": 109.3262304,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 352,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJIRuUuwNZHS4RrhnXINPqQQ4",
+      "name": "Sidedoors Coffee Shop",
+      "address": "Jl. Prof. DR. Hamka No.1 A, Sungai Jawi, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78244, Indonesia",
+      "latitude": -0.0228826,
+      "longitude": 109.324515,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.8,
+      "total_reviews": 367,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJU9jIMQBZHS4RfquiXC07dGQ",
+      "name": "Tumbuh Pancasila",
+      "address": "X8CC+784, Jl. Gusti Hamzah, Sungai Bangkong, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78116, Sungai Bangkong, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0293195,
+      "longitude": 109.3208034,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 413,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJ2WpAPaBZHS4Ruwyw-b90j0A",
+      "name": "CWCoffee",
+      "address": "Bansir Darat, Kec. Pontianak Tenggara, Kota Pontianak, Kalimantan Barat, Indonesia",
+      "latitude": -0.0689143,
+      "longitude": 109.3426668,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 666,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJHdYrWU1ZHS4RuU_qB_QKTdI",
+      "name": "CW COFFEE TANJUNG SARI CWTS",
+      "address": "Jl. Tanjung Sari No.102a, Bansir Laut, Kec. Pontianak Tenggara, Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.05186499999999999,
+      "longitude": 109.3481129,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "restaurant",
+        "store"
+      ],
+      "rating": 4.4,
+      "total_reviews": 792,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJlTEux2RZHS4RX8AWGzvzh2c",
+      "name": "Mero Cafe",
+      "address": "Jl. Karel Satsuit Tubun No.10, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0380719,
+      "longitude": 109.3315245,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.9,
+      "total_reviews": 854,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJ5aEiIABZHS4RSbcl28VfGqc",
+      "name": "Point Coffee Tanray II No.375",
+      "address": "Jl. Tj. Raya II No.3 B, Banjar Serasan, Kec. Pontianak Tim., Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0501422,
+      "longitude": 109.3704455,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 5,
+      "total_reviews": 946,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJE00_-clZHS4RFk_TgdS9F_4",
+      "name": "POINT COFFEE",
+      "address": "Jl. Jenderal Ahmad Yani, Bansir Laut, Kec. Pontianak Tenggara, Kota Pontianak, Kalimantan Barat 78214, Indonesia",
+      "latitude": -0.0590462,
+      "longitude": 109.3520848,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 5,
+      "total_reviews": 1109,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJZYjkL_dZHS4RAinxDkBhZU4",
+      "name": "Kopi Kenangan - Ruko Sultan Abdurrahman Pontianak",
+      "address": "Jl. Slt. Abdurrahman No.29, Sungai Bangkong, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0387292,
+      "longitude": 109.3293309,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 370,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJuXs4d51ZHS4R-WXLVHSAO2M",
+      "name": "Toko Diantara Kopi - Perdana",
+      "address": "Komp. Perdana Avenue (Middle building inside Perdana Avenue, Jl. Perdana, Parit Tokaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78115, Indonesia",
+      "latitude": -0.0559098,
+      "longitude": 109.341536,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.6,
+      "total_reviews": 237,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJ51ZLLwBZHS4RwKfvPXBceqE",
+      "name": "Akamreko Coffee & Space Pontianak",
+      "address": "Jl. Sulawesi No.52, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78112, Indonesia",
+      "latitude": -0.0437619,
+      "longitude": 109.3284883,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.5,
+      "total_reviews": 142,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJg-KVVABZHS4RLF9i_llA6T4",
+      "name": "Elsana Cabang Surya",
+      "address": "Jl. Surya, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0491602,
+      "longitude": 109.3287338,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.4,
+      "total_reviews": 640,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJ5db6f8ZZHS4RWfoW-8Z2Xx0",
+      "name": "Point Coffe Patimura",
+      "address": "Jl. Patimura, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78117, Indonesia",
+      "latitude": -0.0257568,
+      "longitude": 109.3380122,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 5,
+      "total_reviews": 339,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJt6FBRQBZHS4RbLugRwfK_fs",
+      "name": "Point Coffe IMAM BONJOL",
+      "address": "Jl. Imam Bonjol, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0402524,
+      "longitude": 109.3485284,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 5,
+      "total_reviews": 198,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJ0SixMwBZHS4RMybIfwXle-E",
+      "name": "Point Coffee Komyos Sudarso",
+      "address": "Jl. Komodor Yos Sudarso No.Kel, Sungai Jawi Luar, Kec. Pontianak Bar., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.007481700000000001,
+      "longitude": 109.2934413,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 5,
+      "total_reviews": 297,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJa57tZQBZHS4RS2rYcMMapd4",
+      "name": "Point Coffee Petani (T4LG)",
+      "address": "Jl. Danau Sentarum Jl. Petani, Sungai Jawi, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0459543,
+      "longitude": 109.3020802,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.9,
+      "total_reviews": 150,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJ5yMUMiRZHS4RvsfyPagITX4",
+      "name": "Point Coffee Ayani 1",
+      "address": "Jl. Jenderal Ahmad Yani No.6B, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78121, Indonesia",
+      "latitude": -0.0376209,
+      "longitude": 109.3350213,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.9,
+      "total_reviews": 190,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJQxaAaABZHS4RvT0Bx2Wgmuw",
+      "name": "Nordu Coffee Experience - kopinomordua",
+      "address": "Jl. S. Parman No.9, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78121, Indonesia",
+      "latitude": -0.0361929,
+      "longitude": 109.3363912,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.4,
+      "total_reviews": 98,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJ6ZJXx1FYHS4RtYkLPkckIzc",
+      "name": "Warung Kopi Asiang",
+      "address": "Jl. Merapi No.191-193, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.02899239999999999,
+      "longitude": 109.341018,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "restaurant",
+        "store"
+      ],
+      "rating": 4.6,
+      "total_reviews": 5818,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJN85HBqJZHS4R7h6R0jSP2QE",
+      "name": "Segitiga Coffee",
+      "address": "Jl. Karya Baru, Parit Tokaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78115, Indonesia",
+      "latitude": -0.0526564,
+      "longitude": 109.3372246,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.6,
+      "total_reviews": 565,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJ98FvZm1ZHS4RQy-ELBGFEsA",
+      "name": "COOPER COFFEE & SPACE",
+      "address": "COOPER COFFEE & SPACE, Jl. Kesehatan ruko block 2 No.1&2, Kota Baru, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0539516,
+      "longitude": 109.318063,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.5,
+      "total_reviews": 193,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJIQUgvcNZHS4RgX-R1Y6mQAE",
+      "name": "Semera Coffee Pancasila",
+      "address": "Jl. Gusti Hamzah, Sungai Bangkong, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.029175,
+      "longitude": 109.3206059,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.4,
+      "total_reviews": 99,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+      "name": "CW Coffee",
+      "address": "Jl. Karel Satsuit Tubun No.2e, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78121, Indonesia",
+      "latitude": -0.0373279,
+      "longitude": 109.33153,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.6,
+      "total_reviews": 632,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJlb_HIABZHS4Rmfh9fY-SA10",
+      "name": "Kopi Menteng",
+      "address": "X84R+584, Jl. Jenderal Ahmad Yani, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat, Indonesia",
+      "latitude": -0.0446217,
+      "longitude": 109.3408357,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 239,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJM5X-4vlZHS4Rqyyi2I6Xh4U",
+      "name": "Toko Kami",
+      "address": "Jl. Kh.A.Dahlan Gg. Margosari No.3, Sungai Bangkong, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78121, Indonesia",
+      "latitude": -0.0323721,
+      "longitude": 109.3297732,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.9,
+      "total_reviews": 530,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJDT5JTEJZHS4RXhuATJTE5mY",
+      "name": "Haruna 2.0",
+      "address": "X88M+M2W, Jl. Teuku Umar No.6, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0332818,
+      "longitude": 109.3326116,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.9,
+      "total_reviews": 1983,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJOUoTEXdZHS4R0u1GA4PPRH8",
+      "name": "Chatting Cafe & Dimsum",
+      "address": "Jl. Sulawesi No.88, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78112, Indonesia",
+      "latitude": -0.04295,
+      "longitude": 109.327747,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest"
+      ],
+      "rating": 4.6,
+      "total_reviews": 1359,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJa78abABZHS4RFjHpRkfV954",
+      "name": "Monriri Cafe",
+      "address": "Jl. Veteran No.26, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0424213,
+      "longitude": 109.344699,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 352,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJn3ohCgBZHS4RVUgCBHe0LLM",
+      "name": "Tumbuh Antasari",
+      "address": "Jl. Antasari No.61, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0273961,
+      "longitude": 109.3400316,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.8,
+      "total_reviews": 184,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJ8_09GMdbHS4RzO9jCRtxIj8",
+      "name": "Nete Coffee Shop",
+      "address": "Jl. Sungai Raya Dalam No.118 AB, Bangka Belitung Darat, Kec. Pontianak Tenggara, Kota Pontianak, Kalimantan Barat 78124, Indonesia",
+      "latitude": -0.0849439,
+      "longitude": 109.3514336,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.3,
+      "total_reviews": 65,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJ-9K9j3dZHS4RXtZOUAx7dGM",
+      "name": "Fase Coffee Shop",
+      "address": "Jl. Nusa Indah 2 No.BB9, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0253817,
+      "longitude": 109.3390036,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.4,
+      "total_reviews": 93,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJnW8_O2hZHS4RVnsNstrDREo",
+      "name": "Point Cafe - Gajah Mada 70",
+      "address": "Indomaret Gajah Mada 70, Jl. Gajah Mada No.1, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78391, Indonesia",
+      "latitude": -0.0332933,
+      "longitude": 109.3406771,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.9,
+      "total_reviews": 1126,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJZzV6fk5YHS4RqoWA6godmYE",
+      "name": "Warung Kopi Suka Hati",
+      "address": "Sekip Darat Jl. Tanjung Pura No.17, Benua Melayu Laut, Kec. Pontianak Bar., Kota Pontianak, Kalimantan Barat 78117, Indonesia",
+      "latitude": -0.026732,
+      "longitude": 109.3427454,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "restaurant",
+        "store"
+      ],
+      "rating": 4.6,
+      "total_reviews": 1690,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJ20a5VptZHS4R02kjupEARao",
+      "name": "RBK CAFE",
+      "address": "Jl. Reformasi, Bansir Laut, Kec. Pontianak Tenggara, Kota Pontianak, Kalimantan Barat 78115, Indonesia",
+      "latitude": -0.0652828,
+      "longitude": 109.3396987,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.4,
+      "total_reviews": 249,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee shop Pontianak"
+    },
+    {
+      "place_id": "ChIJpwUhh9NZHS4RoiFLFiwdd4k",
+      "name": "Elsana Jend Urip",
+      "address": "Jl. Jendral Urip No.83B, Tengah, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78111, Indonesia",
+      "latitude": -0.0257725,
+      "longitude": 109.3325126,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.9,
+      "total_reviews": 354,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJiT6iMABZHS4R0XGMBDKt5zg",
+      "name": "Point Coffe Wr Supratman Pontianak",
+      "address": "Jl. WR Supratman No.3b, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0352322,
+      "longitude": 109.3395528,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.9,
+      "total_reviews": 122,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJB_ZvUHNZHS4RR3dKL7z4rc0",
+      "name": "Point Coffee Fresh Gusti Situt Mahmud",
+      "address": "X8JW+PCC, Jl. Gusti Situt Mahmud, Siantan Hulu, Kec. Pontianak Utara, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0181864,
+      "longitude": 109.3460459,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.9,
+      "total_reviews": 355,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJfSXK9NtZHS4R7KQ60XR_99s",
+      "name": "Kopi Kenangan - Ruko Gajah Mada Pontianak",
+      "address": "Jl. Gajah Mada No.245, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78122, Indonesia",
+      "latitude": -0.0365537,
+      "longitude": 109.3420582,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.9,
+      "total_reviews": 629,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJZU5fhAdZHS4RL1ItbYHWrvA",
+      "name": "CW Coffee",
+      "address": "X8HH+5JM, Jl. Merdeka, Mariana, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78244, Indonesia",
+      "latitude": -0.0220273,
+      "longitude": 109.3290394,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.5,
+      "total_reviews": 373,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJzbcQ8-JZHS4RM8dhRMdKXXw",
+      "name": "GALS COFFEE",
+      "address": "Jl. Gajah Mada No.2, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.029608,
+      "longitude": 109.339411,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.2,
+      "total_reviews": 53,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJFaYR93dZHS4RmZ8l6nk0Q3E",
+      "name": "Rentjana Roastery",
+      "address": "Gg. Gn. Malabar No.1, Sungai Jawi, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0235322,
+      "longitude": 109.3193562,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "restaurant",
+        "store"
+      ],
+      "rating": 4.7,
+      "total_reviews": 230,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJvW8IEbJZHS4RFYPm3QUMGrA",
+      "name": "La Gramma",
+      "address": "Jl. Gajah Mada, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78121, Indonesia",
+      "latitude": -0.0344415,
+      "longitude": 109.3411381,
+      "types": [
+        "bakery",
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.6,
+      "total_reviews": 479,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJvX3EPABZHS4RBH-MEHhYU7Q",
+      "name": "Arkadia Coffee Pontianak",
+      "address": "Jl. Suprapto IV No.9b, Benua Melayu Darat, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78121, Indonesia",
+      "latitude": -0.0416223,
+      "longitude": 109.3411721,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 3.9,
+      "total_reviews": 117,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJQaiE-XBZHS4RziD64BSUOBM",
+      "name": "Toko Diantara Kopi - Pattimura, 23",
+      "address": "Jl. Patimura No.23, RW.25, Darat Sekip, Kec. Pontianak Kota, Kota Pontianak, Kalimantan Barat 78243, Indonesia",
+      "latitude": -0.0253761,
+      "longitude": 109.3378463,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.6,
+      "total_reviews": 694,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "specialty coffee Pontianak"
+    },
+    {
+      "place_id": "ChIJH0wBaupZHS4RsHaUoPOeqvY",
+      "name": "GAYO KEDAI KOPI ROASTER PONTIANAK",
+      "address": "Jl. Sulawesi, Akcaya, Kec. Pontianak Sel., Kota Pontianak, Kalimantan Barat 78113, Indonesia",
+      "latitude": -0.0425786,
+      "longitude": 109.327203,
+      "types": [
+        "cafe",
+        "establishment",
+        "food",
+        "point_of_interest",
+        "store"
+      ],
+      "rating": 4.1,
+      "total_reviews": 346,
+      "business_status": "OPERATIONAL",
+      "source": "text_search",
+      "discovery_query": "coffee roastery Pontianak"
+    }
+  ],
+  "selection_summary": {
+    "pool_size": 172,
+    "min_reviews": 50,
+    "selected_count": 35,
+    "target": 35,
+    "shortfall": 0,
+    "by_tier": {
+      "hidden_gem": 7,
+      "modern_specialty": 13,
+      "research_diverse": 15
+    },
+    "brand_counts": {
+      "rumah kopi": 1,
+      "point coffee": 2,
+      "asiang": 1,
+      "kafei coffee": 1,
+      "point": 2,
+      "seremoni coffee": 1,
+      "namaku coffee": 1,
+      "rumah": 1,
+      "sahabi coffee": 1,
+      "lavena coffee": 1,
+      "nutricula coffee": 1,
+      "yesscafe": 1,
+      "kayasa coffee": 1,
+      "101 coffee": 1,
+      "rhythm coffee": 1,
+      "semesta kopi": 1,
+      "bright coffee": 1,
+      "sagarmatha coffee": 1,
+      "coffee": 2,
+      "askara coffee": 1,
+      "matoea coffee": 1,
+      "kafe": 1,
+      "get coffee": 1,
+      "ekoffie cafe": 1,
+      "tomoro coffee": 1,
+      "aoi": 1,
+      "franco": 1,
+      "pojok kopi": 1,
+      "kopi": 1,
+      "loka": 1,
+      "fore coffee": 1,
+      "stelsel kopi": 1
+    }
+  }
+}

@@ -1,8 +1,8 @@
 """
 Deteksi intent & ekstraksi keyword dari free text user (opsional, pelengkap pill).
 
-Konteks: ShopList menyediakan kotak kata kunci bebas (maks 50 karakter,
-divalidasi di app.py) sebagai alternatif saat preferensi user tidak ada di
+Konteks: ShopList menyediakan kotak kata kunci bebas (maks 100 karakter,
+alfanumerik, spasi, dan koma) sebagai alternatif saat preferensi user tidak ada di
 pill yang disediakan. Pill dan free text saling eksklusif di satu request
 (lihat _read_recommendation_preferences di app.py) — modul ini hanya aktif
 saat user memilih jalur free text.
@@ -30,9 +30,26 @@ from logging_config import get_logger
 
 logger = get_logger('recommend')
 
-MAX_FREE_TEXT_CHARS = 50
+MAX_FREE_TEXT_CHARS = 100
+
+# ASCII alfanumerik, spasi, dan koma.
+FREE_TEXT_ALLOWED_RE = re.compile(r'^[A-Za-z0-9, ]*$')
+FREE_TEXT_STRIP_DISALLOWED_RE = re.compile(r'[^A-Za-z0-9, ]')
 
 _TOKEN_RE = re.compile(r'[a-z0-9]+', re.IGNORECASE)
+
+
+def normalize_free_text_query(raw: object) -> str:
+    """Potong ke MAX_FREE_TEXT_CHARS; buang karakter di luar alfanumerik/spasi/koma."""
+    text = FREE_TEXT_STRIP_DISALLOWED_RE.sub('', str(raw or '')).strip()
+    return text[:MAX_FREE_TEXT_CHARS]
+
+
+def is_valid_free_text_query(raw: object) -> bool:
+    text = str(raw or '')
+    if len(text) > MAX_FREE_TEXT_CHARS:
+        return False
+    return bool(FREE_TEXT_ALLOWED_RE.match(text))
 
 
 def _env_flag(name: str, default: bool) -> bool:
@@ -95,7 +112,7 @@ def extract_search_intent(
     Tidak pernah raise — kegagalan apa pun berujung ke fallback keyword mentah
     supaya pipeline rekomendasi tidak pernah gagal total karena tahap ini.
     """
-    raw = str(text or '').strip()[:MAX_FREE_TEXT_CHARS]
+    raw = normalize_free_text_query(text)
     if not raw:
         return _empty_result(raw, backend='empty')
     if not free_text_intent_enabled():
@@ -113,7 +130,7 @@ def extract_search_intent(
 
     prompt = (
         'Anda mendeteksi intent pencarian coffee shop dari kata kunci singkat yang '
-        'diisi pengguna (bahasa Indonesia, maksimal 50 karakter, BUKAN kalimat panjang).\n\n'
+        'diisi pengguna (alfanumerik, spasi, koma; maksimal 100 karakter, BUKAN kalimat panjang).\n\n'
         f'Kata kunci pengguna: "{raw}"\n\n'
         'Referensi pill sistem (opsional, hanya hint — routing TIDAK wajib cocok pill):\n'
         f'{pill_catalog}\n\n'
@@ -136,10 +153,10 @@ def extract_search_intent(
         '"terburuk") — tetap ekstrak keywords, jangan tolak.\n'
         '  • false_presupposition: user mengasumsikan fitur/konsep yang tidak realistis '
         'untuk coffee shop di dataset (mis. dinosaurus, kolam renang olimpik) — isi '
-        'impossible_detail singkat + alternative_keywords tematik terdekat (unik, estetik, '
-        'game, keluarga, dll.) tanpa mengarang fitur impossible.\n'
+        'impossible_detail singkat + alternative_keywords sebagai Query Relaxation '
+        '(constraint dropping: unik, estetik, game, keluarga, dll.) tanpa mengarang fitur impossible.\n'
         '  • off_domain: teks acak, spam, atau bukan pencarian coffee shop/wisata kafe — '
-        'keywords boleh [] dan dense_query kosong.\n'
+        'Presupposition Verification gagal (domain); keywords boleh [] dan dense_query kosong.\n'
         '- impossible_detail: string singkat constraint yang tidak ada bukti, atau null.\n'
         '- alternative_keywords: 1-6 token alternatif pencarian (hanya untuk false_presupposition).\n'
         '- Jangan mengarang id pill di luar daftar.'

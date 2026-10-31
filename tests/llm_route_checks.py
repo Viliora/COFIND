@@ -1,4 +1,4 @@
-"""Unit test: probe route rekomendasi + anti-spam log HF fallback."""
+"""Unit test: probe route rekomendasi + anti-spam log LLM fallback."""
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -29,15 +29,18 @@ class LlmRouteProbeTests(unittest.TestCase):
                     with patch.object(
                         llm_backend,
                         "_probe_provider_once",
-                        side_effect=[(False, "Error code: 402"), (False, "invalid key")],
+                        side_effect=[
+                            (False, "Error code: 429 quota"),
+                            (False, "Error code: 402 payment"),
+                        ],
                     ):
                         route = probe_llm_for_recommendation_run()
             self.assertEqual(route.mode, "off")
-            self.assertIn("gemini", route.reason)
+            self.assertIn("gemini_and_hf", route.reason)
         finally:
             reset_llm_run_route(token)
 
-    def test_probe_hf_fail_gemini_ok(self):
+    def test_probe_gemini_fail_hf_ok(self):
         token = begin_llm_run_route()
         try:
             with patch.object(llm_backend, "hf_client", MagicMock()):
@@ -45,7 +48,23 @@ class LlmRouteProbeTests(unittest.TestCase):
                     with patch.object(
                         llm_backend,
                         "_probe_provider_once",
-                        side_effect=[(False, "Error code: 402 payment"), (True, None)],
+                        side_effect=[(False, "quota exceeded"), (True, None)],
+                    ):
+                        route = probe_llm_for_recommendation_run()
+            self.assertEqual(route.mode, "hf")
+            self.assertIn("hf", route.reason)
+        finally:
+            reset_llm_run_route(token)
+
+    def test_probe_gemini_ok(self):
+        token = begin_llm_run_route()
+        try:
+            with patch.object(llm_backend, "hf_client", MagicMock()):
+                with patch.object(llm_backend, "gemini_client", MagicMock()):
+                    with patch.object(
+                        llm_backend,
+                        "_probe_provider_once",
+                        return_value=(True, None),
                     ):
                         route = probe_llm_for_recommendation_run()
             self.assertEqual(route.mode, "gemini")
@@ -87,7 +106,7 @@ class LlmRouteChatAntiSpamTests(unittest.TestCase):
         finally:
             reset_llm_run_route(token)
 
-    def test_unset_route_warns_each_hf_failure(self):
+    def test_unset_route_warns_once_on_gemini_then_hf(self):
         token = begin_llm_run_route()
         try:
             with patch.object(llm_backend, "hf_client", MagicMock()):
@@ -96,12 +115,12 @@ class LlmRouteChatAntiSpamTests(unittest.TestCase):
                         llm_backend,
                         "_create_chat_completion",
                         side_effect=[
-                            Exception("Error code: 402"),
+                            Exception("Error code: 429 rate limit"),
                             _mock_chat_response("ok"),
                         ],
-                    ):
+                    ) as create:
                         with patch.object(llm_backend.logger, "warning") as warn:
-                            _chat_with_fallback(
+                            content, *_rest = _chat_with_fallback(
                                 hf_model="test-model",
                                 messages=[{"role": "user", "content": "x"}],
                                 max_tokens=16,
@@ -109,7 +128,10 @@ class LlmRouteChatAntiSpamTests(unittest.TestCase):
                                 top_p=0.9,
                                 usage_stage="test",
                             )
+                            self.assertEqual(content, "ok")
                             self.assertEqual(warn.call_count, 1)
+                            providers = [c.kwargs.get("provider") for c in create.call_args_list]
+                            self.assertEqual(providers, ["gemini", "hf"])
         finally:
             reset_llm_run_route(token)
 
