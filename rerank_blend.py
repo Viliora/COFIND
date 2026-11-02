@@ -21,8 +21,16 @@ def _env_int(name: str, default: int, *, min_value: int, max_value: int) -> int:
 
 
 def rerank_candidate_pool() -> int:
-    """Jumlah kandidat dinilai cross-encoder (default 7)."""
-    return _env_int('COFIND_CE_RERANK_CANDIDATES', 20, min_value=2, max_value=50)
+    """Jumlah kandidat dinilai cross-encoder (default 7, env COFIND_CE_RERANK_CANDIDATES)."""
+    return _env_int('COFIND_CE_RERANK_CANDIDATES', 7, min_value=2, max_value=50)
+
+
+def effective_rerank_pool(*, candidate_count: int) -> int:
+    """Pool CE aktual: min(env pool, kandidat setelah retrieval)."""
+    n = int(candidate_count or 0)
+    if n <= 0:
+        return 0
+    return min(rerank_candidate_pool(), n)
 
 
 def blend_rerank_scores(

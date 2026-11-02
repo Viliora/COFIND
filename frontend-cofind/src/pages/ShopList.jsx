@@ -5,12 +5,10 @@ import HeroSwiper from '../components/HeroSwiper';
 import CoffeeShopMap from '../components/CoffeeShopMap';
 import RecommendationModal from '../components/RecommendationModal';
 import RecommendationProgressOverlay from '../components/RecommendationProgressOverlay';
-import FacilityAttributePicker from '../components/FacilityAttributePicker';
+import PreferencePillPicker from '../components/PreferencePillPicker';
 import { streamRecommendations } from '../services/recommendationStream';
 import {
   CONTEXT_PILL_OPTIONS,
-  CONTEXT_PILL_THEMES,
-  CONTEXT_PILL_THEME_DEFAULT,
   FACILITY_ATTRIBUTE_LABELS,
   FACILITY_ATTRIBUTE_OPTIONS,
 } from '../constants/reviewPills';
@@ -381,7 +379,15 @@ export default function ShopList() {
 
   const getFilteredShopsByCategory = (shops) => sortShopsByGoogleMaps(shops);
 
-  const recommendationFields = CONTEXT_PILL_OPTIONS;
+  const guardPillPreferenceAuth = () => {
+    if (authLoading) return false;
+    if (!user) {
+      setPillLoginModalContext('pill');
+      setShowPillLoginModal(true);
+      return false;
+    }
+    return true;
+  };
 
   // Jarak Haversine (km) antara dua koordinat
   const haversineKm = (lat1, lng1, lat2, lng2) => {
@@ -450,30 +456,6 @@ export default function ShopList() {
   // Ambil lokasi saat ini (Browser Geolocation API) — untuk peta / kontrol cepat
   const getCurrentLocation = () => {
     getCurrentLocationAsync().catch(() => {});
-  };
-
-  // Satu konteks aktivitas per waktu (pill tunggal)
-  const handlePillClick = (pillValue) => {
-    if (authLoading) return;
-    if (!user) {
-      setPillLoginModalContext('pill');
-      setShowPillLoginModal(true);
-      return;
-    }
-    if (pillRecommendLoading) return;
-    setPillRecommendError('');
-    // Pill dan free text saling eksklusif: pilih pill menghapus free text aktif.
-    if (searchKeyword.trim()) {
-      setSearchKeyword('');
-    }
-    setSelectedPills((prev) => {
-      if (prev.includes(pillValue)) {
-        // Atribut lapis 2 hanya relevan selama ada konteks aktivitas terpilih.
-        setSelectedAttributes([]);
-        return [];
-      }
-      return [pillValue];
-    });
   };
 
   const MAX_SEARCH_KEYWORD_CHARS = 100;
@@ -565,9 +547,10 @@ export default function ShopList() {
   const requestPillRecommendations = async (pillValues, attributeValues = [], queryText = '') => {
     if (!isPillPreferenceAvailable) return;
     const trimmedQueryText = String(queryText || '').trim();
-    const hasPills = Array.isArray(pillValues) && pillValues.length > 0;
+    const hasActivities = Array.isArray(pillValues) && pillValues.length > 0;
+    const hasAttributes = Array.isArray(attributeValues) && attributeValues.length > 0;
     const hasQueryText = trimmedQueryText.length > 0;
-    if (!hasPills && !hasQueryText) return;
+    if (!hasActivities && !hasAttributes && !hasQueryText) return;
     const token = authService.getToken();
     if (!token) {
       setPillRecommendError('Silakan login untuk mendapatkan rekomendasi konteks.');
@@ -577,8 +560,8 @@ export default function ShopList() {
       });
       return;
     }
-    setConfirmedPills(hasPills ? [...pillValues] : []);
-    setConfirmedAttributes(hasPills ? [...attributeValues] : []);
+    setConfirmedPills(hasActivities ? [...pillValues] : []);
+    setConfirmedAttributes(hasAttributes ? [...attributeValues] : []);
     setConfirmedSearchKeyword(hasQueryText ? trimmedQueryText : '');
     const runStartedAt = Date.now();
     setRecommendationRunStartedAt(runStartedAt);
@@ -593,8 +576,8 @@ export default function ShopList() {
       const { statusCode, body: data } = await streamRecommendations({
         apiBase: API_BASE,
         token,
-        preferences: hasPills ? pillValues : [],
-        attributes: hasPills ? attributeValues : [],
+        preferences: hasActivities ? pillValues : [],
+        attributes: hasAttributes ? attributeValues : [],
         queryText: hasQueryText ? trimmedQueryText : '',
         onProgress: setPillRecommendProgress,
       });
@@ -629,8 +612,8 @@ export default function ShopList() {
             userId: user.id,
             recommendations: data.recommendations,
             otherOptions: Array.isArray(data.other_options) ? data.other_options : [],
-            confirmedPills: hasPills ? [...pillValues] : [],
-            confirmedAttributes: hasPills ? [...attributeValues] : [],
+            confirmedPills: hasActivities ? [...pillValues] : [],
+            confirmedAttributes: hasAttributes ? [...attributeValues] : [],
             confirmedSearchKeyword: hasQueryText ? trimmedQueryText : '',
             totalDurationSeconds: totalSec,
           });
@@ -684,7 +667,10 @@ export default function ShopList() {
     setLocationError(null);
   };
 
-  const hasRecommendableInput = selectedPills.length > 0 || searchKeyword.trim().length > 0;
+  const hasRecommendableInput =
+    selectedPills.length > 0
+    || selectedAttributes.length > 0
+    || searchKeyword.trim().length > 0;
 
   const handleConfirmPills = () => {
     if (!isPillPreferenceAvailable || !hasRecommendableInput) return;
@@ -880,63 +866,32 @@ export default function ShopList() {
                 </div>
               )}
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                Pilih satu pill atau isi kata kunci. Pilih pill yang sesuai dengan preferensi coffee shop yang ingin anda kunjungi.
+                Tab Aktivitas dan Fasilitas — pilih salah satu atau keduanya, atau isi kata kunci di bawah.
               </p>
             </div>
-            <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
-              {recommendationFields.map((field) => {
-                const isSelected = selectedPills.includes(field.value);
-                const theme = CONTEXT_PILL_THEMES[field.value] || CONTEXT_PILL_THEME_DEFAULT;
-                const isFreeTextActive = searchKeyword.trim().length > 0;
-                const pillDisabled = authLoading || pillRecommendLoading || isFreeTextActive;
-                return (
-                  <button
-                    key={field.value}
-                    type="button"
-                    disabled={pillDisabled}
-                    onClick={() => handlePillClick(field.value)}
-                    title={
-                      !user && !authLoading
-                        ? 'Login untuk menggunakan fitur analisis LLM'
-                        : undefined
-                    }
-                    className={`
-                      px-3 sm:px-4 py-2 rounded-full text-sm font-semibold
-                      transition-shadow duration-200 ease-out
-                      focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900/20 dark:focus-visible:ring-offset-black/30
-                      disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none
-                      ${isSelected ? theme.selected : theme.idle}
-                    `}
-                  >
-                    {field.label}
-                    {isSelected && (
-                      <span className="ml-1.5 text-xs opacity-95" aria-hidden>
-                        ✓
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-            {user && selectedPills.length > 0 && (() => {
-              const selectedActivity = CONTEXT_PILL_OPTIONS.find(
-                (option) => selectedPills.includes(option.value),
-              );
-              if (!selectedActivity?.desc) return null;
-              return (
-                <p className="mt-2 text-xs sm:text-sm text-gray-600 dark:text-gray-300">
-                  💡 <span className="font-semibold">{selectedActivity.label}:</span>{' '}
-                  {selectedActivity.desc}
-                </p>
-              );
-            })()}
-            {isPillPreferenceAvailable && selectedPills.length > 0 && (
-              <FacilityAttributePicker
-              selected={selectedAttributes}
-              onChange={setSelectedAttributes}
-              disabled={authLoading || pillRecommendLoading}
+            <PreferencePillPicker
+              selectedActivities={selectedPills}
+              selectedFacilities={selectedAttributes}
+              onActivitiesChange={(next) => {
+                if (!guardPillPreferenceAuth()) return;
+                if (pillRecommendLoading) return;
+                setPillRecommendError('');
+                if (searchKeyword.trim()) setSearchKeyword('');
+                setSelectedPills(next);
+              }}
+              onFacilitiesChange={(next) => {
+                if (!guardPillPreferenceAuth()) return;
+                if (pillRecommendLoading) return;
+                setPillRecommendError('');
+                if (searchKeyword.trim()) setSearchKeyword('');
+                setSelectedAttributes(next);
+              }}
+              disabled={
+                authLoading
+                || pillRecommendLoading
+                || searchKeyword.trim().length > 0
+              }
             />
-            )}
 
             <div className="mt-3">
               <label
@@ -966,7 +921,8 @@ export default function ShopList() {
                   disabled={
                     authLoading
                     || pillRecommendLoading
-                    || (Boolean(user) && selectedPills.length > 0)
+                    || (Boolean(user)
+                      && (selectedPills.length > 0 || selectedAttributes.length > 0))
                   }
                   maxLength={MAX_SEARCH_KEYWORD_CHARS}
                   placeholder={

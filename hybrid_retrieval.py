@@ -11,7 +11,7 @@ PILL_MAPPING dipakai sebagai TEKS QUERY, bukan gerbang lolos/gugur:
 Review yang memparafrase preferensi tetap bisa unggul lewat cosine similarity.
 Env (RRF aktif):
   COFIND_RRF_K / COFIND_RRF_POOL_SIZE — konstanta RRF dan lebar pool per daftar
-  COFIND_RETRIEVAL_TOP_K           default 30 (potong ke MAX_REC setelah rerank)
+  COFIND_RETRIEVAL_TOP_K           default 7 (pool Fase 2; output user tetap ≤3 MAX_REC)
   COFIND_BM25_UNIT                 review | shop (default: review)
   COFIND_BM25_REVIEW_AGGREGATE     max | sum_top (default: sum_top)
   COFIND_BM25_REVIEW_TOP_N         untuk sum_top (default: 3)
@@ -106,7 +106,7 @@ def _env_float(name: str, default: float, *, min_value: float, max_value: float)
 
 
 def retrieval_top_k() -> int:
-    return _env_int('COFIND_RETRIEVAL_TOP_K', 30, min_value=3, max_value=50)
+    return _env_int('COFIND_RETRIEVAL_TOP_K', 7, min_value=3, max_value=50)
 
 
 def bm25_document_unit() -> str:
@@ -1312,10 +1312,10 @@ def retrieve_top_k(
     attribute_pills: Optional[Sequence[str]] = None,
 ) -> Dict[str, object]:
     """
-    Hybrid retrieval pill: BM25 + dense/ANN → RRF, lalu gerbang aktivitas
-    (jika ada pill aktivitas) dan metadata gate fasilitas.
+    Hybrid retrieval pill: BM25 + dense/ANN → RRF pada semua preferensi (aktivitas +
+    fasilitas) dengan query unified. Gerbang aktivitas terpisah dimatikan (off).
 
-    Return: candidates, query tokens/teks, token aktivitas, telemetry.
+    Return: candidates, query tokens/teks, telemetry.
     """
     limit = top_k if top_k is not None else retrieval_top_k()
     quality_by_place = quality_by_place or {}
@@ -1333,12 +1333,13 @@ def retrieve_top_k(
         'dense': {},
         'kept_with_signal': 0,
         'activity_gated': 0,
-        'activity_gate_on': activity_gate_mode() != 'off' and bool(activity_list),
-        'activity_gate_mode': activity_gate_mode(),
+        'activity_gate_on': False,
+        'activity_gate_mode': 'off',
         'activity_pass_lexical': 0,
         'activity_pass_dense_only': 0,
         'activity_rejected': 0,
         'activity_dense_min': activity_dense_min(),
+        'pill_retrieval_unified': True,
     }
 
     query_tokens = build_sparse_query_tokens(
@@ -1348,11 +1349,11 @@ def retrieve_top_k(
         activity_list, pill_labels=pill_labels, pill_mapping=pill_mapping,
     ) if activity_list else empty_activity_matcher()
     activity_tokens = list(activity_matcher.get('bm25_tokens') or [])
-    if not activity_tokens:
+    if not activity_tokens and activity_list:
         activity_tokens = activity_signal_tokens(
             build_sparse_query_tokens(
                 activity_list, pill_labels=pill_labels, pill_mapping=pill_mapping,
-            ) if activity_list else [],
+            ),
             activity_list,
         )
     activity_phrase_list = list(activity_matcher.get('phrases') or [])
@@ -1362,33 +1363,27 @@ def retrieve_top_k(
     query_text = build_dense_query_text(
         pills, pill_labels=pill_labels, pill_mapping=pill_mapping,
     )
-    activity_query_text = (
-        build_dense_query_text(
-            activity_list, pill_labels=pill_labels, pill_mapping=pill_mapping,
-        )
-        if activity_list else query_text
-    )
+    activity_query_text = query_text
     telemetry['query_tokens'] = len(query_tokens)
     telemetry['activity_tokens'] = len(activity_tokens)
-    telemetry['dense_query'] = activity_query_text
+    telemetry['attribute_tokens'] = len(attribute_tokens)
+    telemetry['dense_query'] = query_text
 
-    # BM25 untuk RRF: utamakan token aktivitas agar frasa khas (mabar, ML) masuk
-    # daftar peringkat sparse; query_tokens penuh tetap dipakai untuk dense.
-    bm25_tokens = activity_tokens if activity_list else (query_tokens or activity_tokens)
     from query_expansion import pill_query_expansion_tokens
 
+    bm25_tokens = query_tokens or attribute_tokens or activity_tokens
     bm25_expansion = pill_query_expansion_tokens(
-        activity_list or list(pills or []), original_tokens=bm25_tokens,
+        list(pills or []), original_tokens=bm25_tokens,
     )
     return _hybrid_retrieve_rrf_core(
         profiles,
         bm25_tokens=bm25_tokens,
-        dense_query_text=activity_query_text,
+        dense_query_text=query_text,
         quality_by_place=quality_by_place,
         top_k=limit,
         dense_query_tokens=query_tokens,
-        dense_primary_tokens=activity_tokens or query_tokens,
-        activity_matcher=activity_matcher if activity_list else None,
+        dense_primary_tokens=query_tokens,
+        activity_matcher=None,
         query_tokens_out=query_tokens,
         query_text_out=query_text,
         activity_tokens_out=activity_tokens,
@@ -1403,8 +1398,8 @@ def retrieve_top_k(
         activity_pills=activity_list,
         activity_tokens_for_gate=activity_tokens,
         activity_phrase_list=activity_phrase_list,
-        apply_activity_gate=bool(activity_list),
-        activity_gate_mode_param=activity_gate_mode(),
+        apply_activity_gate=False,
+        activity_gate_mode_param='off',
         bm25_expansion_tokens=bm25_expansion,
     )
 

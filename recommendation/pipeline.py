@@ -31,8 +31,8 @@ def recommendation_pipeline_events(prefs, _auth_user, query_text=''):
       Fase 2 — Hybrid retrieval (BM25 per-ulasan agregasi + dense max-pool → RRF
                pada place_id) + evidence keyword/semantic + ABSA kutipan.
                Ranking kandidat = skor RRF; bukan total_score legacy.
-               Top ~30 (COFIND_RETRIEVAL_TOP_K) ke rerank pool.
-      Fase 3 — Cross-encoder rerank (Jina): pilih 0–3 toko, kutipan pendukung/caveat.
+               Top COFIND_RETRIEVAL_TOP_K toko; aktivitas+fasilitas query unified (tanpa activity gate).
+      Fase 3 — Cross-encoder (COFIND_CE_RERANK_CANDIDATES): pilih 0–3 toko (MAX_REC).
 
       Feedback thumbs (helpful / not_helpful) disimpan via API feedback ke DB untuk
       analitik, evaluasi admin, dan UI modal — tidak mem-filter toko di Fase 1/2/3.
@@ -367,7 +367,8 @@ def recommendation_pipeline_events(prefs, _auth_user, query_text=''):
         if free_text_summary_framing:
             keyword_line = f'{keyword_line}\n\n[Framing respons]\n{free_text_summary_framing}'
         if scored_candidates and ce_rerank_enabled():
-            rerank_pool = scored_candidates[:rerank_candidate_pool()]
+            ce_pool = effective_rerank_pool(candidate_count=len(scored_candidates))
+            rerank_pool = scored_candidates[:ce_pool]
             rerank_user_id = _auth_user.get('id')
             cached_fits = _get_cached_rerank_fits(
                 rerank_pool,
@@ -382,7 +383,7 @@ def recommendation_pipeline_events(prefs, _auth_user, query_text=''):
                 user_taste_block=user_taste_block,
                 keyword_line=keyword_line,
                 cached_fits=cached_fits,
-                max_candidates=retrieval_top_k(),
+                max_candidates=ce_pool or None,
                 activity_pills=activity_pills,
                 activity_tokens=activity_tokens,
                 activity_matcher=activity_matcher,
@@ -407,7 +408,7 @@ def recommendation_pipeline_events(prefs, _auth_user, query_text=''):
 
         top_shops = _select_top_shops(
             ranked_candidates,
-            max_rec=max(MAX_REC, retrieval_top_k()),
+            max_rec=min(len(ranked_candidates), max(MAX_REC, retrieval_top_k())),
             activity_tokens=activity_tokens,
             activity_pills=activity_pills,
             activity_matcher=activity_matcher,
@@ -447,7 +448,9 @@ def recommendation_pipeline_events(prefs, _auth_user, query_text=''):
                     row.get('quote') if isinstance(row, dict) else row
                 ) not in caveat_keys
             ]
-            if not display:
+            if not display and attribute_pills:
+                display = _attribute_quote_rows(evidence, attribute_pills, limit=3)
+            if not display and activity_pills:
                 display = _activity_quotes_from_reviews(
                     shop, activity_matcher, activity_tokens, limit=3,
                 )

@@ -452,7 +452,9 @@ class TestRetrieveTopKEntrypointsMocked(unittest.TestCase):
             activity_pills=["kerja"],
             attribute_pills=[],
         )
-        self.assertTrue(result["telemetry"].get("activity_gate_on"))
+        self.assertFalse(result["telemetry"].get("activity_gate_on"))
+        self.assertEqual(result["telemetry"].get("activity_gate_mode"), "off")
+        self.assertTrue(result["telemetry"].get("pill_retrieval_unified"))
 
     @patch("hybrid_retrieval.score_shops_dense")
     @patch("hybrid_retrieval.score_shops_bm25")

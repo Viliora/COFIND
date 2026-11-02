@@ -84,7 +84,7 @@ from llm_recommender import (
     shop_corpus_text,
     ungrounded_quotes,
 )
-from rerank_blend import rerank_candidate_pool
+from rerank_blend import effective_rerank_pool, rerank_candidate_pool
 from metadata_prior import _NEGATION_PREFIXES, _phrase_unnegated
 from semantic_match import (
     begin_encode_budget as begin_semantic_encode_budget,
@@ -198,7 +198,7 @@ RATING_VOTE_WEIGHTS = {
 
 
 def _split_preference_pills(pills):
-    """Pisah pill aktivitas (lapis 1) vs atribut fasilitas (lapis 2)."""
+    """Kelompok UI/label: aktivitas vs fasilitas (skor retrieval unified)."""
     pills = list(pills or [])
     activity_pills = [p for p in pills if p not in FACILITY_ATTRIBUTE_PILLS]
     attribute_pills = [p for p in pills if p in FACILITY_ATTRIBUTE_PILLS]
@@ -3270,9 +3270,11 @@ def _select_top_shops(
     Kontradiksi eksplisit dibuang; gate hard retrieval sudah di Fase 2.
     """
     activity_pills = list(activity_pills or [])
+    matcher = activity_matcher if isinstance(activity_matcher, dict) else {}
+    require_activity_evidence = bool(activity_pills or matcher.get('pills'))
 
     def _eligible(shop):
-        if not activity_pills and not activity_matcher:
+        if not require_activity_evidence:
             return True
         if _shop_has_activity_contradiction(
             shop, activity_pills, activity_tokens, activity_matcher=activity_matcher,
