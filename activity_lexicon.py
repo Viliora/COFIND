@@ -54,6 +54,29 @@ def _frozenset_from_list(items: Optional[Sequence[str]]) -> FrozenSet[str]:
     return frozenset(str(x).strip() for x in (items or []) if str(x or "").strip())
 
 
+def _dedupe_terms(items: Optional[Sequence[str]]) -> List[str]:
+    seen: set[str] = set()
+    out: List[str] = []
+    for raw in items or []:
+        text = str(raw).strip()
+        if not text:
+            continue
+        key = text.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(text)
+    return out
+
+
+def _legacy_terms_from_spec(spec: dict[str, Any]) -> List[str]:
+    """Schema v1: gabung review_keywords, extra_phrases, whole_words."""
+    merged: List[str] = []
+    for key in ("review_keywords", "extra_phrases", "whole_words"):
+        merged.extend(str(x).strip() for x in (spec.get(key) or []) if str(x or "").strip())
+    return _dedupe_terms(merged)
+
+
 def generic_activity_stop() -> FrozenSet[str]:
     g = load_activity_lexicon().get("global") or {}
     return _frozenset_from_list(g.get("generic_activity_stop"))
@@ -64,11 +87,6 @@ def rejection_phrases() -> Tuple[str, ...]:
     return tuple(str(x).strip() for x in (g.get("rejection_phrases") or []) if str(x).strip())
 
 
-def acronym_context_tokens() -> FrozenSet[str]:
-    g = load_activity_lexicon().get("global") or {}
-    return _frozenset_from_list(g.get("acronym_context_tokens"))
-
-
 def pill_lexicon(pill: str) -> dict[str, Any]:
     pills = load_activity_lexicon().get("pills") or {}
     spec = pills.get(pill)
@@ -77,34 +95,24 @@ def pill_lexicon(pill: str) -> dict[str, Any]:
     return spec
 
 
-def activity_extra_phrases() -> Dict[str, Tuple[str, ...]]:
+def activity_terms(pill: str) -> List[str]:
+    """Jangkar leksikal tunggal: sparse BM25, matcher, activity_text_score."""
+    spec = pill_lexicon(pill)
+    if not spec:
+        return []
+    raw = spec.get("terms")
+    if isinstance(raw, list) and raw:
+        return _dedupe_terms(raw)
+    return _legacy_terms_from_spec(spec)
+
+
+def activity_terms_by_pill() -> Dict[str, Tuple[str, ...]]:
     out: Dict[str, Tuple[str, ...]] = {}
     pills = load_activity_lexicon().get("pills") or {}
-    for pill, spec in pills.items():
-        if isinstance(spec, dict):
-            phrases = tuple(str(p).strip() for p in (spec.get("extra_phrases") or []) if str(p).strip())
-            if phrases:
-                out[str(pill)] = phrases
-    return out
-
-
-def activity_whole_words() -> Dict[str, FrozenSet[str]]:
-    out: Dict[str, FrozenSet[str]] = {}
-    pills = load_activity_lexicon().get("pills") or {}
-    for pill, spec in pills.items():
-        if isinstance(spec, dict):
-            out[str(pill)] = _frozenset_from_list(spec.get("whole_words"))
-    return out
-
-
-def activity_short_acronyms() -> Dict[str, FrozenSet[str]]:
-    out: Dict[str, FrozenSet[str]] = {}
-    pills = load_activity_lexicon().get("pills") or {}
-    for pill, spec in pills.items():
-        if isinstance(spec, dict):
-            ac = _frozenset_from_list(spec.get("short_acronyms"))
-            if ac:
-                out[str(pill)] = ac
+    for pill in pills:
+        terms = activity_terms(str(pill))
+        if terms:
+            out[str(pill)] = tuple(terms)
     return out
 
 
@@ -121,19 +129,19 @@ def activity_stop_tokens_by_pill() -> Dict[str, FrozenSet[str]]:
 
 
 def review_keywords_for_activity_pill(pill: str) -> List[str]:
-    spec = pill_lexicon(pill)
-    return [str(k).strip() for k in (spec.get("review_keywords") or []) if str(k).strip()]
+    """Alias: isi review_keywords di PILL_MAPPING dari terms."""
+    return list(activity_terms(pill))
 
 
 def apply_activity_lexicon_to_mapping(pill_mapping: dict) -> None:
-    """Sinkronkan review_keywords pill aktivitas dari leksikon JSON."""
+    """Sinkronkan review_keywords pill aktivitas dari leksikon (semua terms)."""
     for pill in ACTIVITY_PILL_KEYS:
         entry = pill_mapping.get(pill)
         if not isinstance(entry, dict):
             continue
-        kws = review_keywords_for_activity_pill(pill)
-        if kws:
-            entry["review_keywords"] = kws
+        terms = activity_terms(pill)
+        if terms:
+            entry["review_keywords"] = terms
 
 
 def game_word_re() -> re.Pattern[str]:

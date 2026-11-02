@@ -28,9 +28,10 @@ def recommendation_pipeline_events(prefs, _auth_user, query_text=''):
 
       Fase 1 — Hard filter: wajib minimal 1 ulasan pipeline (Cofind + Google Places,
                get_reviews_for_recommendation_batch / REVIEW_BASED_MIN_REVIEWS=1).
-      Fase 2 — Hybrid retrieval + evidence + ABSA kutipan (BM25 + dense/ANN → RRF;
-               sentimen klausa damasukma/indobert-absa + triase e5/Jina).
-               Top ~7 ke rerank.
+      Fase 2 — Hybrid retrieval (BM25 per-ulasan agregasi + dense max-pool → RRF
+               pada place_id) + evidence keyword/semantic + ABSA kutipan.
+               Ranking kandidat = skor RRF; bukan total_score legacy.
+               Top ~30 (COFIND_RETRIEVAL_TOP_K) ke rerank pool.
       Fase 3 — Cross-encoder rerank (Jina): pilih 0–3 toko, kutipan pendukung/caveat.
 
       Feedback thumbs (helpful / not_helpful) disimpan via API feedback ke DB untuk
@@ -57,6 +58,7 @@ def recommendation_pipeline_events(prefs, _auth_user, query_text=''):
         llm_route_token = begin_llm_run_route()
 
         from free_text_intent import normalize_free_text_query
+        from query_expansion import free_text_expansion_tokens
 
         query_text = normalize_free_text_query(query_text)
         has_pills_input = bool(prefs)
@@ -78,6 +80,7 @@ def recommendation_pipeline_events(prefs, _auth_user, query_text=''):
             return
 
         free_text_keywords = []
+        free_text_expansion = []
         free_text_dense_query = ''
         free_text_telemetry = {}
         user_intent_line = ''
@@ -158,6 +161,11 @@ def recommendation_pipeline_events(prefs, _auth_user, query_text=''):
                 free_text_keywords = adjusted['keywords']
                 free_text_dense_query = adjusted['dense_query']
 
+            free_text_expansion = free_text_expansion_tokens(
+                intent_result, original_tokens=free_text_keywords,
+            )
+            free_text_telemetry['keyword_expansions'] = free_text_expansion
+
             if not free_text_keywords:
                 yield ('result', ({
                     'status': 'success',
@@ -227,19 +235,13 @@ def recommendation_pipeline_events(prefs, _auth_user, query_text=''):
         stage_t0 = time.perf_counter()
         yield _recommendation_progress('profiles', shops_with_reviews=len(profiles))
 
-        # --- Fase 2: Hybrid retrieval (BM25 + dense/ANN → RRF) ---
-        quality_by_place = {
-            str(profile.get('place_id')): _quality_score_for_profile(profile)
-            for profile in profiles
-            if profile.get('place_id')
-        }
+        # --- Fase 2: Hybrid retrieval (BM25 + dense/ANN → RRF murni; quality opsional via env) ---
         if has_pills_input:
             retrieval = retrieve_top_k(
                 profiles,
                 valid_pills,
                 pill_labels=PILL_LABELS,
                 pill_mapping=PILL_MAPPING,
-                quality_by_place=quality_by_place,
                 top_k=retrieval_top_k(),
                 activity_pills=activity_pills,
                 attribute_pills=attribute_pills,
@@ -249,8 +251,8 @@ def recommendation_pipeline_events(prefs, _auth_user, query_text=''):
                 profiles,
                 query_tokens=free_text_keywords,
                 dense_query_text=free_text_dense_query,
-                quality_by_place=quality_by_place,
                 top_k=retrieval_top_k(),
+                expansion_tokens=free_text_expansion,
             )
         retrieval_telemetry = dict(retrieval.get('telemetry') or {}, free_text=free_text_telemetry)
         query_tokens = retrieval.get('query_tokens') or []
@@ -269,10 +271,23 @@ def recommendation_pipeline_events(prefs, _auth_user, query_text=''):
         for item in retrieval.get('candidates') or []:
             profile = item.get('profile') or {}
             score_detail = dict(item.get('score_detail') or {})
-            keyword_detail = _score_shop_by_user_reviews(
+            keyword_detail = build_evidence_keyword_detail(
                 profile, valid_pills, search_keywords=query_tokens,
             )
-            score_detail['per_pill_stats'] = keyword_detail.get('per_pill_stats') or {}
+            score_detail.update({
+                k: keyword_detail.get(k)
+                for k in (
+                    'per_pill_stats',
+                    'expanded_keyword_matches',
+                    'search_keywords',
+                    'category_detail',
+                    'semantic_matches',
+                    'semantic_telemetry',
+                    'covered_pills',
+                    'uncovered_pills',
+                )
+                if keyword_detail.get(k) is not None
+            })
             retrieval_ev = _build_retrieval_evidence(
                 profile,
                 valid_pills,

@@ -1,0 +1,326 @@
+{
+  "schema_version": 1,
+  "description": "Query expansion BM25 per pill (sinonim, slang, singkatan, ejaan informal). Dibangkitkan LLM oleh scripts/build_pill_query_expansion.py lalu dikurasi manual. Terpisah dari terms aktivitas (activity_lexicon.json) dan review_keywords atribut (pill_config.py). Dibaca query_expansion.py bila COFIND_QUERY_EXPANSION=true.",
+  "global": {
+    "stop_terms": [
+      "tempat",
+      "kafe",
+      "cafe",
+      "coffee",
+      "shop",
+      "kopi",
+      "enak",
+      "bagus",
+      "mantap",
+      "banget",
+      "sangat",
+      "untuk",
+      "buat",
+      "yang",
+      "bisa",
+      "ada",
+      "dan",
+      "atau",
+      "nyaman"
+    ]
+  },
+  "pills": {
+    "belajar": {
+      "expansions": [
+        "study",
+        "studying",
+        "baca buku",
+        "skripsian",
+        "study date",
+        "mengerjakan tugas",
+        "bikin tugas"
+      ],
+      "source": "llm",
+      "model": "gemini-3.8-flash"
+    },
+    "kerja": {
+      "expansions": [
+        "wfa",
+        "work from cafe",
+        "remote work",
+        "work from anywhere",
+        "buka laptop",
+        "nugas kantor",
+        "remote working",
+        "coworking",
+        "meeting online"
+      ],
+      "source": "llm",
+      "model": "gemini-3.8-flash"
+    },
+    "bermain game": {
+      "expansions": [
+        "ngegame",
+        "gaming",
+        "main bareng",
+        "ff",
+        "free fire",
+        "moba",
+        "turney",
+        "turnamen",
+        "push rank"
+      ],
+      "source": "llm",
+      "model": "gemini-3.8-flash"
+    },
+    "meeting_sosialisasi": {
+      "expansions": [
+        "meeting room",
+        "ruang meeting",
+        "ngumpul",
+        "gathering",
+        "kumpul komunitas",
+        "brainstorming",
+        "presentasi",
+        "meet up",
+        "ruang rapat"
+      ],
+      "source": "llm",
+      "model": "gemini-3.8-flash"
+    },
+    "keluarga": {
+      "expansions": [
+        "kids friendly",
+        "kid friendly",
+        "child friendly",
+        "baby chair",
+        "high chair",
+        "bawa anak",
+        "bawa bocil",
+        "area bermain",
+        "family friendly",
+        "baby high chair"
+      ],
+      "source": "llm",
+      "model": "gemini-3.8-flash"
+    },
+    "instagrammable": {
+      "expansions": [
+        "aestetik",
+        "estetic",
+        "fotoable",
+        "photogenic",
+        "sudut foto",
+        "buat konten",
+        "banyak spot",
+        "instagenic",
+        "kece buat foto",
+        "cakep buat foto"
+      ],
+      "source": "llm",
+      "model": "gemini-3.8-flash"
+    },
+    "nongkrong_hangout": {
+      "expansions": [
+        "nongki",
+        "kongkow",
+        "chitchat",
+        "nongkrong santai",
+        "ngobrol santai",
+        "ngumpul bareng",
+        "chill bareng",
+        "kumpul teman",
+        "kongkow bareng",
+        "cangkruk"
+      ],
+      "source": "llm",
+      "model": "gemini-3.8-flash"
+    },
+    "ruangan_ac": {
+      "expansions": [
+        "ber ac",
+        "ac dingin",
+        "dingin",
+        "ac nya dingin",
+        "full ac",
+        "air conditioner",
+        "ber-ac",
+        "ngademin"
+      ],
+      "source": "llm",
+      "model": "gemini-3.8-flash"
+    },
+    "suasana_tenang": {
+      "expansions": [
+        "hening",
+        "chill",
+        "cozy",
+        "peaceful",
+        "quiet",
+        "adem ayem",
+        "gak berisik",
+        "tidak berisik",
+        "sunyi",
+        "calm"
+      ],
+      "source": "llm",
+      "model": "gemini-3.8-flash"
+    },
+    "area_outdoor": {
+      "expansions": [
+        "luar ruangan",
+        "area luar",
+        "open air",
+        "halaman",
+        "balkon",
+        "teras"
+      ],
+      "source": "llm",
+      "model": "gemini-3.8-flash"
+    },
+    "smoking_area": {
+      "expansions": [
+        "area merokok",
+        "ruang merokok",
+        "smooking area",
+        "bisa merokok",
+        "boleh merokok",
+        "asbak",
+        "smoking"
+      ],
+      "source": "llm",
+      "model": "gemini-3.8-flash"
+    },
+    "wifi_kencang": {
+      "expansions": [
+        "wi-fi",
+        "wifinya",
+        "koneksi",
+        "sinyal",
+        "speed internet",
+        "wifi ngebut",
+        "wifi cepat",
+        "internet kencang",
+        "internet cepat",
+        "hotspot"
+      ],
+      "source": "llm",
+      "model": "gemini-3.8-flash"
+    },
+    "banyak_colokan_terminal": {
+      "expansions": [
+        "stopkontak",
+        "colokan listrik",
+        "terminal listrik",
+        "ngecharge",
+        "casan",
+        "charging port",
+        "power outlet",
+        "lubang colokan",
+        "steker",
+        "outlet listrik"
+      ],
+      "source": "llm",
+      "model": "gemini-3.8-flash"
+    },
+    "ruang_privat": {
+      "expansions": [
+        "ruang rapat",
+        "ruang meeting",
+        "ruang vip",
+        "privat room",
+        "private space",
+        "ruangan privat",
+        "ruangan meeting",
+        "ruang khusus"
+      ],
+      "source": "llm",
+      "model": "gemini-3.8-flash"
+    },
+    "buka_sampai_malam_24_hours": {
+      "expansions": [
+        "buka 24 jam",
+        "buka terus",
+        "semalaman",
+        "buka seharian",
+        "gak pernah tutup",
+        "tidak pernah tutup",
+        "buka non stop",
+        "buka nonstop"
+      ],
+      "source": "llm",
+      "model": "gemini-3.8-flash"
+    },
+    "musholla": {
+      "expansions": [
+        "mushola",
+        "musola",
+        "sholat room",
+        "prayer room",
+        "tempat sholat",
+        "tempat ibadah",
+        "sajadah",
+        "sarung",
+        "wudhu",
+        "tempat wudhu"
+      ],
+      "source": "llm",
+      "model": "gemini-3.8-flash"
+    },
+    "parkir_luas": {
+      "expansions": [
+        "parking lot",
+        "parkiran",
+        "parkiran luas",
+        "lahan parkir",
+        "space parkir",
+        "area parkir",
+        "tempat parkir"
+      ],
+      "source": "llm",
+      "model": "gemini-3.8-flash"
+    },
+    "toilet_bersih": {
+      "expansions": [
+        "wc nya",
+        "wc-nya",
+        "km",
+        "kamar mandinya",
+        "toilet clean",
+        "restroomnya",
+        "washroom",
+        "tolet",
+        "lavatory"
+      ],
+      "source": "llm",
+      "model": "gemini-3.8-flash"
+    },
+    "makanan_berat": {
+      "expansions": [
+        "main course",
+        "heavy meal",
+        "nasi goreng",
+        "spaghetti",
+        "menu berat",
+        "kenyang",
+        "lunch",
+        "dinner",
+        "makan siang",
+        "makan malam"
+      ],
+      "source": "llm",
+      "model": "gemini-3.8-flash"
+    },
+    "dessert": {
+      "expansions": [
+        "dessertnya",
+        "pancake",
+        "waffle",
+        "makanan manis",
+        "sweet treats",
+        "cemilan manis",
+        "cuanki",
+        "pastries",
+        "croffle",
+        "cookies"
+      ],
+      "source": "llm",
+      "model": "gemini-3.8-flash"
+    }
+  }
+}

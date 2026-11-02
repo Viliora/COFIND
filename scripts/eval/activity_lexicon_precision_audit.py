@@ -3,7 +3,7 @@
 Audit presisi proxy per istilah leksikon aktivitas terhadap ulasan DB.
 
 Metode:
-  - Untuk setiap term (review_keywords, extra_phrases, whole_words), cari ulasan yang match.
+  - Untuk setiap term di activity_lexicon.json `terms`, cari ulasan yang match.
   - TP jika kalimat match lolos penolakan (_sentence_has_rejection_phrase) DAN
     activity_text_score dengan matcher mini term >= 0.6 (frasa) atau whole_word.
   - FP = match - TP.
@@ -146,16 +146,6 @@ def main() -> int:
         matcher = compile_activity_matcher(
             [pill], pill_labels=PILL_LABELS, pill_mapping=PILL_MAPPING,
         )
-        if kind == "whole_words":
-            mini = {
-                "pills": [pill],
-                "phrases": [term.lower()] if " " in term else [],
-                "words": frozenset({term.lower()}),
-                "acronyms": matcher.get("acronyms") or frozenset(),
-                "stop_tokens": matcher.get("stop_tokens") or frozenset(),
-                "bm25_tokens": [],
-            }
-            return activity_text_score(sentence, mini)
         return activity_text_score(sentence, matcher)
 
     rows: List[dict] = []
@@ -163,14 +153,8 @@ def main() -> int:
     for pill, spec in sorted(pills.items()):
         if not isinstance(spec, dict):
             continue
-        for kw in spec.get("review_keywords") or []:
-            rows.append(_audit_term(pill, str(kw), "review_keywords", reviews,
-                                    rejection_fn=_sentence_has_rejection_phrase, mini_score_fn=mini_score))
-        for ph in spec.get("extra_phrases") or []:
-            rows.append(_audit_term(pill, str(ph), "extra_phrases", reviews,
-                                    rejection_fn=_sentence_has_rejection_phrase, mini_score_fn=mini_score))
-        for ww in spec.get("whole_words") or []:
-            rows.append(_audit_term(pill, str(ww), "whole_words", reviews,
+        for term in spec.get("terms") or []:
+            rows.append(_audit_term(pill, str(term), "terms", reviews,
                                     rejection_fn=_sentence_has_rejection_phrase, mini_score_fn=mini_score))
 
     prune: List[Tuple[str, str, str]] = []

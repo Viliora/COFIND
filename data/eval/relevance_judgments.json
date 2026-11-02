@@ -1,9 +1,5973 @@
 {
   "schema_version": 1,
-  "description": "Label relevansi manual query×toko. Grade 0–3. query_id harus ada di data/eval/eval_queries.json.",
+  "description": "Label relevansi 0–3 per (query, toko). Grade dari rubrik otomatis v1 (build_eval_relevance_judgments.py); tinjau ulang untuk skripsi final.",
   "protocol": {
     "annotators": 1,
-    "align_queries": "data/eval/eval_queries.json"
+    "align_queries": "data/eval/eval_queries.json",
+    "rubric": "rubric_v1_auto — lihat docstring build_eval_relevance_judgments.py",
+    "relevant_threshold_recall": "grade >= 1"
   },
-  "judgments": []
+  "judgments": [
+    {
+      "query_id": "gq-pill-kerja-wfc-01",
+      "labels": [
+        {
+          "place_id": "ChIJ2bmXfABZHS4RViKTqagFQq0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ86JcchJZHS4ROKWj6t-l144",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJf0A-EQBZHS4RQSh5k1CbyXg",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJfWPGdYFZHS4RYfv8vJ8RB6Y",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        }
+      ]
+    },
+    {
+      "query_id": "gq-pill-kerja-colokan-02",
+      "labels": [
+        {
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ2bmXfABZHS4RViKTqagFQq0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJQRsGzyVZHS4R8dx2vktO02k",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJpW1EUQBZHS4RZ0ACF2qb67g",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJfWPGdYFZHS4RYfv8vJ8RB6Y",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        }
+      ]
+    },
+    {
+      "query_id": "gq-pill-belajar-03",
+      "labels": [
+        {
+          "place_id": "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ2bmXfABZHS4RViKTqagFQq0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJPa6swGtZHS4RrbIlRvgBgok",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJQRsGzyVZHS4R8dx2vktO02k",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJQTQMIqJZHS4RkEq6uGgYu3c",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJab9iZ7xZHS4RLvSMRkEKzUs",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJf0A-EQBZHS4RQSh5k1CbyXg",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJfWPGdYFZHS4RYfv8vJ8RB6Y",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJc2rVCdpZHS4Rt-_m1ezrp4Y",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        }
+      ]
+    },
+    {
+      "query_id": "gq-pill-game-04",
+      "labels": [
+        {
+          "place_id": "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        }
+      ]
+    },
+    {
+      "query_id": "gq-pill-keluarga-05",
+      "labels": [
+        {
+          "place_id": "ChIJQRsGzyVZHS4R8dx2vktO02k",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJp-W8A2FZHS4RlV9IFvidej4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ-9zLddBZHS4R-8L5Jj7n77M",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ17JgIllZHS4R-bKazckrgmk",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ21ZGegBZHS4R7IwWnIZHkuc",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ76gLEdVZHS4RcqGjn-J52PM",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ86JcchJZHS4ROKWj6t-l144",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJB_kHTgBZHS4RpYGXBi5Mr8k",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJHdYrWU1ZHS4RuU_qB_QKTdI",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJOeviAWhYHS4R03LHTCewhU4",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJPa6swGtZHS4RrbIlRvgBgok",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJQTQMIqJZHS4RkEq6uGgYu3c",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJXWJyFzZZHS4R79ouaF5kOF0",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJa8iTQOpZHS4RdVFAK__JB-c",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJab9iZ7xZHS4RLvSMRkEKzUs",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJadxvpWNZHS4ReuOoPA-QLqU",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJc2rVCdpZHS4Rt-_m1ezrp4Y",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJf0A-EQBZHS4RQSh5k1CbyXg",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJf1TV-jtZHS4RGH-JdlKF88w",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJmQzQurxZHS4Rg1tWAwBIS-g",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJuRi629BZHS4ROKQCQ8ThFl0",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        }
+      ]
+    },
+    {
+      "query_id": "gq-pill-meeting-06",
+      "labels": [
+        {
+          "place_id": "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ2bmXfABZHS4RViKTqagFQq0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ-9zLddBZHS4R-8L5Jj7n77M",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ17JgIllZHS4R-bKazckrgmk",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ76gLEdVZHS4RcqGjn-J52PM",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ86JcchJZHS4ROKWj6t-l144",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJB_kHTgBZHS4RpYGXBi5Mr8k",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJOeviAWhYHS4R03LHTCewhU4",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJPa6swGtZHS4RrbIlRvgBgok",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJQRsGzyVZHS4R8dx2vktO02k",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJQTQMIqJZHS4RkEq6uGgYu3c",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJa8iTQOpZHS4RdVFAK__JB-c",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJadxvpWNZHS4ReuOoPA-QLqU",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJc2rVCdpZHS4Rt-_m1ezrp4Y",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJf0A-EQBZHS4RQSh5k1CbyXg",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJmQzQurxZHS4Rg1tWAwBIS-g",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJoy_lbNpZHS4R703thlouzo8",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJpW1EUQBZHS4RZ0ACF2qb67g",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        }
+      ]
+    },
+    {
+      "query_id": "gq-pill-ig-07",
+      "labels": [
+        {
+          "place_id": "ChIJ2bmXfABZHS4RViKTqagFQq0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJWfoJ5pVZHS4RwOqVk4ETSs8",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJfWPGdYFZHS4RYfv8vJ8RB6Y",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ-9zLddBZHS4R-8L5Jj7n77M",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ17JgIllZHS4R-bKazckrgmk",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ21ZGegBZHS4R7IwWnIZHkuc",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ86JcchJZHS4ROKWj6t-l144",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJB_kHTgBZHS4RpYGXBi5Mr8k",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJOeviAWhYHS4R03LHTCewhU4",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJPa6swGtZHS4RrbIlRvgBgok",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJQRsGzyVZHS4R8dx2vktO02k",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJQTQMIqJZHS4RkEq6uGgYu3c",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJa8iTQOpZHS4RdVFAK__JB-c",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJab9iZ7xZHS4RLvSMRkEKzUs",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJadxvpWNZHS4ReuOoPA-QLqU",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJc2rVCdpZHS4Rt-_m1ezrp4Y",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJf0A-EQBZHS4RQSh5k1CbyXg",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJf1TV-jtZHS4RGH-JdlKF88w",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJp-W8A2FZHS4RlV9IFvidej4",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJpW1EUQBZHS4RZ0ACF2qb67g",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJuRi629BZHS4ROKQCQ8ThFl0",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        }
+      ]
+    },
+    {
+      "query_id": "gq-pill-parkir-08",
+      "labels": [
+        {
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJWfoJ5pVZHS4RwOqVk4ETSs8",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ2bmXfABZHS4RViKTqagFQq0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJHdYrWU1ZHS4RuU_qB_QKTdI",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJQRsGzyVZHS4R8dx2vktO02k",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJTcymqzZZHS4RQc7dVDDm5RM",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJa8iTQOpZHS4RdVFAK__JB-c",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJf0A-EQBZHS4RQSh5k1CbyXg",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        }
+      ]
+    },
+    {
+      "query_id": "gq-pill-musholla-09",
+      "labels": [
+        {
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJf0A-EQBZHS4RQSh5k1CbyXg",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJoy_lbNpZHS4R703thlouzo8",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        }
+      ]
+    },
+    {
+      "query_id": "gq-pill-24jam-10",
+      "labels": [
+        {
+          "place_id": "ChIJ86JcchJZHS4ROKWj6t-l144",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJPa6swGtZHS4RrbIlRvgBgok",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJIRKzS6lbHS4RcUszDziz-jw",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJa8iTQOpZHS4RdVFAK__JB-c",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        }
+      ]
+    },
+    {
+      "query_id": "gq-pill-multi-11",
+      "labels": [
+        {
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ2bmXfABZHS4RViKTqagFQq0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJf0A-EQBZHS4RQSh5k1CbyXg",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        }
+      ]
+    },
+    {
+      "query_id": "gq-ft-wfc-12",
+      "labels": [
+        {
+          "place_id": "ChIJ2bmXfABZHS4RViKTqagFQq0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJOeviAWhYHS4R03LHTCewhU4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJc2rVCdpZHS4Rt-_m1ezrp4Y",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJfWPGdYFZHS4RYfv8vJ8RB6Y",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ-9zLddBZHS4R-8L5Jj7n77M",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ21ZGegBZHS4R7IwWnIZHkuc",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ86JcchJZHS4ROKWj6t-l144",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJB_kHTgBZHS4RpYGXBi5Mr8k",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJPa6swGtZHS4RrbIlRvgBgok",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJQRsGzyVZHS4R8dx2vktO02k",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJWfoJ5pVZHS4RwOqVk4ETSs8",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJa8iTQOpZHS4RdVFAK__JB-c",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJab9iZ7xZHS4RLvSMRkEKzUs",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJf0A-EQBZHS4RQSh5k1CbyXg",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ-4iNNH1ZHS4RYvU4WkG0ik4",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ17JgIllZHS4R-bKazckrgmk",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ76gLEdVZHS4RcqGjn-J52PM",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJHdYrWU1ZHS4RuU_qB_QKTdI",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJIRKzS6lbHS4RcUszDziz-jw",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJQTQMIqJZHS4RkEq6uGgYu3c",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJTcymqzZZHS4RQc7dVDDm5RM",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJXWJyFzZZHS4R79ouaF5kOF0",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJadxvpWNZHS4ReuOoPA-QLqU",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJf1TV-jtZHS4RGH-JdlKF88w",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJmQzQurxZHS4Rg1tWAwBIS-g",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJoy_lbNpZHS4R703thlouzo8",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJp-W8A2FZHS4RlV9IFvidej4",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJpW1EUQBZHS4RZ0ACF2qb67g",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJuRi629BZHS4ROKQCQ8ThFl0",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        }
+      ]
+    },
+    {
+      "query_id": "gq-ft-murah-musholla-13",
+      "labels": [
+        {
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJWfoJ5pVZHS4RwOqVk4ETSs8",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJf0A-EQBZHS4RQSh5k1CbyXg",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJoy_lbNpZHS4R703thlouzo8",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJB_kHTgBZHS4RpYGXBi5Mr8k",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJOeviAWhYHS4R03LHTCewhU4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJf1TV-jtZHS4RGH-JdlKF88w",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJfWPGdYFZHS4RYfv8vJ8RB6Y",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ-4iNNH1ZHS4RYvU4WkG0ik4",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ-9zLddBZHS4R-8L5Jj7n77M",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ17JgIllZHS4R-bKazckrgmk",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ21ZGegBZHS4R7IwWnIZHkuc",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ2bmXfABZHS4RViKTqagFQq0",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ76gLEdVZHS4RcqGjn-J52PM",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ86JcchJZHS4ROKWj6t-l144",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJHdYrWU1ZHS4RuU_qB_QKTdI",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJIRKzS6lbHS4RcUszDziz-jw",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJPa6swGtZHS4RrbIlRvgBgok",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJQRsGzyVZHS4R8dx2vktO02k",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJQTQMIqJZHS4RkEq6uGgYu3c",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJTcymqzZZHS4RQc7dVDDm5RM",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJXWJyFzZZHS4R79ouaF5kOF0",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJa8iTQOpZHS4RdVFAK__JB-c",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJab9iZ7xZHS4RLvSMRkEKzUs",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJadxvpWNZHS4ReuOoPA-QLqU",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJc2rVCdpZHS4Rt-_m1ezrp4Y",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJmQzQurxZHS4Rg1tWAwBIS-g",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJp-W8A2FZHS4RlV9IFvidej4",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJpW1EUQBZHS4RZ0ACF2qb67g",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJuRi629BZHS4ROKQCQ8ThFl0",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        }
+      ]
+    },
+    {
+      "query_id": "gq-ft-hidden-gem-14",
+      "labels": [
+        {
+          "place_id": "ChIJ-4iNNH1ZHS4RYvU4WkG0ik4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ-9zLddBZHS4R-8L5Jj7n77M",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ17JgIllZHS4R-bKazckrgmk",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ21ZGegBZHS4R7IwWnIZHkuc",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ2bmXfABZHS4RViKTqagFQq0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ76gLEdVZHS4RcqGjn-J52PM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ86JcchJZHS4ROKWj6t-l144",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJB_kHTgBZHS4RpYGXBi5Mr8k",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJHdYrWU1ZHS4RuU_qB_QKTdI",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJIRKzS6lbHS4RcUszDziz-jw",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJOeviAWhYHS4R03LHTCewhU4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJPa6swGtZHS4RrbIlRvgBgok",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJQRsGzyVZHS4R8dx2vktO02k",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJQTQMIqJZHS4RkEq6uGgYu3c",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJTcymqzZZHS4RQc7dVDDm5RM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJWfoJ5pVZHS4RwOqVk4ETSs8",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJXWJyFzZZHS4R79ouaF5kOF0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJZU5fhAdZHS4RL1ItbYHWrvA",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJa8iTQOpZHS4RdVFAK__JB-c",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJab9iZ7xZHS4RLvSMRkEKzUs",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJadxvpWNZHS4ReuOoPA-QLqU",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJc2rVCdpZHS4Rt-_m1ezrp4Y",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJf0A-EQBZHS4RQSh5k1CbyXg",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJf1TV-jtZHS4RGH-JdlKF88w",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJfWPGdYFZHS4RYfv8vJ8RB6Y",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJmQzQurxZHS4Rg1tWAwBIS-g",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJoy_lbNpZHS4R703thlouzo8",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJp-W8A2FZHS4RlV9IFvidej4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJpW1EUQBZHS4RZ0ACF2qb67g",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJuRi629BZHS4ROKQCQ8ThFl0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        }
+      ]
+    },
+    {
+      "query_id": "gq-ft-game-15",
+      "labels": [
+        {
+          "place_id": "ChIJ-4iNNH1ZHS4RYvU4WkG0ik4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ-9zLddBZHS4R-8L5Jj7n77M",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ17JgIllZHS4R-bKazckrgmk",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ21ZGegBZHS4R7IwWnIZHkuc",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ2bmXfABZHS4RViKTqagFQq0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ76gLEdVZHS4RcqGjn-J52PM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ86JcchJZHS4ROKWj6t-l144",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJB_kHTgBZHS4RpYGXBi5Mr8k",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJHdYrWU1ZHS4RuU_qB_QKTdI",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJIRKzS6lbHS4RcUszDziz-jw",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJOeviAWhYHS4R03LHTCewhU4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJPa6swGtZHS4RrbIlRvgBgok",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJQRsGzyVZHS4R8dx2vktO02k",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJQTQMIqJZHS4RkEq6uGgYu3c",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJTcymqzZZHS4RQc7dVDDm5RM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJWfoJ5pVZHS4RwOqVk4ETSs8",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJXWJyFzZZHS4R79ouaF5kOF0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJZU5fhAdZHS4RL1ItbYHWrvA",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJa8iTQOpZHS4RdVFAK__JB-c",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJab9iZ7xZHS4RLvSMRkEKzUs",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJadxvpWNZHS4ReuOoPA-QLqU",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJc2rVCdpZHS4Rt-_m1ezrp4Y",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJf0A-EQBZHS4RQSh5k1CbyXg",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJf1TV-jtZHS4RGH-JdlKF88w",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJfWPGdYFZHS4RYfv8vJ8RB6Y",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJmQzQurxZHS4Rg1tWAwBIS-g",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJoy_lbNpZHS4R703thlouzo8",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJp-W8A2FZHS4RlV9IFvidej4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJpW1EUQBZHS4RZ0ACF2qb67g",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJuRi629BZHS4ROKQCQ8ThFl0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        }
+      ]
+    },
+    {
+      "query_id": "gq-ft-tenang-16",
+      "labels": [
+        {
+          "place_id": "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ86JcchJZHS4ROKWj6t-l144",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJIRKzS6lbHS4RcUszDziz-jw",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJOeviAWhYHS4R03LHTCewhU4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJf0A-EQBZHS4RQSh5k1CbyXg",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJfWPGdYFZHS4RYfv8vJ8RB6Y",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJQTQMIqJZHS4RkEq6uGgYu3c",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJWfoJ5pVZHS4RwOqVk4ETSs8",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJoy_lbNpZHS4R703thlouzo8",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJpW1EUQBZHS4RZ0ACF2qb67g",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ-4iNNH1ZHS4RYvU4WkG0ik4",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ-9zLddBZHS4R-8L5Jj7n77M",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ17JgIllZHS4R-bKazckrgmk",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ21ZGegBZHS4R7IwWnIZHkuc",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ2bmXfABZHS4RViKTqagFQq0",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ76gLEdVZHS4RcqGjn-J52PM",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJB_kHTgBZHS4RpYGXBi5Mr8k",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJHdYrWU1ZHS4RuU_qB_QKTdI",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJPa6swGtZHS4RrbIlRvgBgok",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJQRsGzyVZHS4R8dx2vktO02k",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJTcymqzZZHS4RQc7dVDDm5RM",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJXWJyFzZZHS4R79ouaF5kOF0",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJa8iTQOpZHS4RdVFAK__JB-c",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJab9iZ7xZHS4RLvSMRkEKzUs",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJadxvpWNZHS4ReuOoPA-QLqU",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJc2rVCdpZHS4Rt-_m1ezrp4Y",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJf1TV-jtZHS4RGH-JdlKF88w",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJmQzQurxZHS4Rg1tWAwBIS-g",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJp-W8A2FZHS4RlV9IFvidej4",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJuRi629BZHS4ROKQCQ8ThFl0",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        }
+      ]
+    },
+    {
+      "query_id": "gq-ft-wifi-17",
+      "labels": [
+        {
+          "place_id": "ChIJ21ZGegBZHS4R7IwWnIZHkuc",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ2bmXfABZHS4RViKTqagFQq0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ86JcchJZHS4ROKWj6t-l144",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJf0A-EQBZHS4RQSh5k1CbyXg",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ-4iNNH1ZHS4RYvU4WkG0ik4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ-9zLddBZHS4R-8L5Jj7n77M",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ17JgIllZHS4R-bKazckrgmk",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ76gLEdVZHS4RcqGjn-J52PM",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJB_kHTgBZHS4RpYGXBi5Mr8k",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJHdYrWU1ZHS4RuU_qB_QKTdI",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJIRKzS6lbHS4RcUszDziz-jw",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJOeviAWhYHS4R03LHTCewhU4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJPa6swGtZHS4RrbIlRvgBgok",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJQRsGzyVZHS4R8dx2vktO02k",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJQTQMIqJZHS4RkEq6uGgYu3c",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJTcymqzZZHS4RQc7dVDDm5RM",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJWfoJ5pVZHS4RwOqVk4ETSs8",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJXWJyFzZZHS4R79ouaF5kOF0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJZU5fhAdZHS4RL1ItbYHWrvA",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJa8iTQOpZHS4RdVFAK__JB-c",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJab9iZ7xZHS4RLvSMRkEKzUs",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJadxvpWNZHS4ReuOoPA-QLqU",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJc2rVCdpZHS4Rt-_m1ezrp4Y",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJf1TV-jtZHS4RGH-JdlKF88w",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJfWPGdYFZHS4RYfv8vJ8RB6Y",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJmQzQurxZHS4Rg1tWAwBIS-g",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJoy_lbNpZHS4R703thlouzo8",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJp-W8A2FZHS4RlV9IFvidej4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJpW1EUQBZHS4RZ0ACF2qb67g",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJuRi629BZHS4ROKQCQ8ThFl0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        }
+      ]
+    },
+    {
+      "query_id": "gq-ft-umum-18",
+      "labels": [
+        {
+          "place_id": "ChIJ21ZGegBZHS4R7IwWnIZHkuc",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJfWPGdYFZHS4RYfv8vJ8RB6Y",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ2bmXfABZHS4RViKTqagFQq0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ86JcchJZHS4ROKWj6t-l144",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJOeviAWhYHS4R03LHTCewhU4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJf0A-EQBZHS4RQSh5k1CbyXg",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJf1TV-jtZHS4RGH-JdlKF88w",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ-4iNNH1ZHS4RYvU4WkG0ik4",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ-9zLddBZHS4R-8L5Jj7n77M",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ17JgIllZHS4R-bKazckrgmk",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ76gLEdVZHS4RcqGjn-J52PM",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJB_kHTgBZHS4RpYGXBi5Mr8k",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJHdYrWU1ZHS4RuU_qB_QKTdI",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJIRKzS6lbHS4RcUszDziz-jw",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJPa6swGtZHS4RrbIlRvgBgok",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJQRsGzyVZHS4R8dx2vktO02k",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJQTQMIqJZHS4RkEq6uGgYu3c",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJTcymqzZZHS4RQc7dVDDm5RM",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJWfoJ5pVZHS4RwOqVk4ETSs8",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJXWJyFzZZHS4R79ouaF5kOF0",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJa8iTQOpZHS4RdVFAK__JB-c",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJab9iZ7xZHS4RLvSMRkEKzUs",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJadxvpWNZHS4ReuOoPA-QLqU",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJc2rVCdpZHS4Rt-_m1ezrp4Y",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJmQzQurxZHS4Rg1tWAwBIS-g",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJoy_lbNpZHS4R703thlouzo8",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJp-W8A2FZHS4RlV9IFvidej4",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJpW1EUQBZHS4RZ0ACF2qb67g",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJuRi629BZHS4ROKQCQ8ThFl0",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        }
+      ]
+    },
+    {
+      "query_id": "gq-pill-kerja-musholla-colokan-19",
+      "labels": [
+        {
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        }
+      ]
+    },
+    {
+      "query_id": "gq-pill-belajar-wifi-20",
+      "labels": [
+        {
+          "place_id": "ChIJ2bmXfABZHS4RViKTqagFQq0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJf0A-EQBZHS4RQSh5k1CbyXg",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJfWPGdYFZHS4RYfv8vJ8RB6Y",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ86JcchJZHS4ROKWj6t-l144",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        }
+      ]
+    },
+    {
+      "query_id": "gq-pill-nongkrong-21",
+      "labels": [
+        {
+          "place_id": "ChIJ2bmXfABZHS4RViKTqagFQq0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJB_kHTgBZHS4RpYGXBi5Mr8k",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJHdYrWU1ZHS4RuU_qB_QKTdI",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJPa6swGtZHS4RrbIlRvgBgok",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJTcymqzZZHS4RQc7dVDDm5RM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJWfoJ5pVZHS4RwOqVk4ETSs8",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJab9iZ7xZHS4RLvSMRkEKzUs",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJf0A-EQBZHS4RQSh5k1CbyXg",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJfWPGdYFZHS4RYfv8vJ8RB6Y",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJp-W8A2FZHS4RlV9IFvidej4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJpW1EUQBZHS4RZ0ACF2qb67g",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ-9zLddBZHS4R-8L5Jj7n77M",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ17JgIllZHS4R-bKazckrgmk",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ21ZGegBZHS4R7IwWnIZHkuc",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ76gLEdVZHS4RcqGjn-J52PM",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ86JcchJZHS4ROKWj6t-l144",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJOeviAWhYHS4R03LHTCewhU4",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJQRsGzyVZHS4R8dx2vktO02k",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJQTQMIqJZHS4RkEq6uGgYu3c",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJXWJyFzZZHS4R79ouaF5kOF0",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJa8iTQOpZHS4RdVFAK__JB-c",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJadxvpWNZHS4ReuOoPA-QLqU",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJc2rVCdpZHS4Rt-_m1ezrp4Y",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJmQzQurxZHS4Rg1tWAwBIS-g",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        }
+      ]
+    },
+    {
+      "query_id": "gq-pill-dessert-22",
+      "labels": [
+        {
+          "place_id": "ChIJ2bmXfABZHS4RViKTqagFQq0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJQRsGzyVZHS4R8dx2vktO02k",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ-4iNNH1ZHS4RYvU4WkG0ik4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJOeviAWhYHS4R03LHTCewhU4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJWfoJ5pVZHS4RwOqVk4ETSs8",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJa8iTQOpZHS4RdVFAK__JB-c",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        }
+      ]
+    },
+    {
+      "query_id": "gq-pill-toilet-23",
+      "labels": [
+        {
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJf0A-EQBZHS4RQSh5k1CbyXg",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJoy_lbNpZHS4R703thlouzo8",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        }
+      ]
+    },
+    {
+      "query_id": "gq-pill-smoking-24",
+      "labels": [
+        {
+          "place_id": "ChIJ-9zLddBZHS4R-8L5Jj7n77M",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ86JcchJZHS4ROKWj6t-l144",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ-4iNNH1ZHS4RYvU4WkG0ik4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ2bmXfABZHS4RViKTqagFQq0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJf0A-EQBZHS4RQSh5k1CbyXg",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        }
+      ]
+    },
+    {
+      "query_id": "gq-pill-outdoor-25",
+      "labels": [
+        {
+          "place_id": "ChIJ2bmXfABZHS4RViKTqagFQq0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ86JcchJZHS4ROKWj6t-l144",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJWfoJ5pVZHS4RwOqVk4ETSs8",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJf0A-EQBZHS4RQSh5k1CbyXg",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJfWPGdYFZHS4RYfv8vJ8RB6Y",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJPa6swGtZHS4RrbIlRvgBgok",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        }
+      ]
+    },
+    {
+      "query_id": "gq-pill-kerja-privat-26",
+      "labels": [
+        {
+          "place_id": "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ2bmXfABZHS4RViKTqagFQq0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ-9zLddBZHS4R-8L5Jj7n77M",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ86JcchJZHS4ROKWj6t-l144",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJf0A-EQBZHS4RQSh5k1CbyXg",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ-4iNNH1ZHS4RYvU4WkG0ik4",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJfWPGdYFZHS4RYfv8vJ8RB6Y",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        }
+      ]
+    },
+    {
+      "query_id": "gq-pill-menu-27",
+      "labels": [
+        {
+          "place_id": "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJOeviAWhYHS4R03LHTCewhU4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJPa6swGtZHS4RrbIlRvgBgok",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJWfoJ5pVZHS4RwOqVk4ETSs8",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJa8iTQOpZHS4RdVFAK__JB-c",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJf0A-EQBZHS4RQSh5k1CbyXg",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJfWPGdYFZHS4RYfv8vJ8RB6Y",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJoy_lbNpZHS4R703thlouzo8",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ-4iNNH1ZHS4RYvU4WkG0ik4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ76gLEdVZHS4RcqGjn-J52PM",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ86JcchJZHS4ROKWj6t-l144",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJIRKzS6lbHS4RcUszDziz-jw",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJQRsGzyVZHS4R8dx2vktO02k",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJc2rVCdpZHS4Rt-_m1ezrp4Y",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJf1TV-jtZHS4RGH-JdlKF88w",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJmQzQurxZHS4Rg1tWAwBIS-g",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJp-W8A2FZHS4RlV9IFvidej4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJpW1EUQBZHS4RZ0ACF2qb67g",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJuRi629BZHS4ROKQCQ8ThFl0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        }
+      ]
+    },
+    {
+      "query_id": "gq-pill-tenang-28",
+      "labels": [
+        {
+          "place_id": "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJf0A-EQBZHS4RQSh5k1CbyXg",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJ86JcchJZHS4ROKWj6t-l144",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJIRKzS6lbHS4RcUszDziz-jw",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        },
+        {
+          "place_id": "ChIJoy_lbNpZHS4R703thlouzo8",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "pill_min_component"
+        }
+      ]
+    },
+    {
+      "query_id": "gq-ft-musholla-wfc-29",
+      "labels": [
+        {
+          "place_id": "ChIJ2bmXfABZHS4RViKTqagFQq0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJQRsGzyVZHS4R8dx2vktO02k",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJf0A-EQBZHS4RQSh5k1CbyXg",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJoy_lbNpZHS4R703thlouzo8",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ-4iNNH1ZHS4RYvU4WkG0ik4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ-9zLddBZHS4R-8L5Jj7n77M",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ17JgIllZHS4R-bKazckrgmk",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ21ZGegBZHS4R7IwWnIZHkuc",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ76gLEdVZHS4RcqGjn-J52PM",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ86JcchJZHS4ROKWj6t-l144",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJB_kHTgBZHS4RpYGXBi5Mr8k",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJHdYrWU1ZHS4RuU_qB_QKTdI",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJIRKzS6lbHS4RcUszDziz-jw",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJOeviAWhYHS4R03LHTCewhU4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJPa6swGtZHS4RrbIlRvgBgok",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJQTQMIqJZHS4RkEq6uGgYu3c",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJTcymqzZZHS4RQc7dVDDm5RM",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJWfoJ5pVZHS4RwOqVk4ETSs8",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJXWJyFzZZHS4R79ouaF5kOF0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJZU5fhAdZHS4RL1ItbYHWrvA",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJa8iTQOpZHS4RdVFAK__JB-c",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJab9iZ7xZHS4RLvSMRkEKzUs",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJadxvpWNZHS4ReuOoPA-QLqU",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJc2rVCdpZHS4Rt-_m1ezrp4Y",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJf1TV-jtZHS4RGH-JdlKF88w",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJfWPGdYFZHS4RYfv8vJ8RB6Y",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJmQzQurxZHS4Rg1tWAwBIS-g",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJp-W8A2FZHS4RlV9IFvidej4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJpW1EUQBZHS4RZ0ACF2qb67g",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJuRi629BZHS4ROKQCQ8ThFl0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        }
+      ]
+    },
+    {
+      "query_id": "gq-ft-parkir-30",
+      "labels": [
+        {
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJWfoJ5pVZHS4RwOqVk4ETSs8",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJa8iTQOpZHS4RdVFAK__JB-c",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ2bmXfABZHS4RViKTqagFQq0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJHdYrWU1ZHS4RuU_qB_QKTdI",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJQRsGzyVZHS4R8dx2vktO02k",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJTcymqzZZHS4RQc7dVDDm5RM",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJf0A-EQBZHS4RQSh5k1CbyXg",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ-4iNNH1ZHS4RYvU4WkG0ik4",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ-9zLddBZHS4R-8L5Jj7n77M",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ17JgIllZHS4R-bKazckrgmk",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ21ZGegBZHS4R7IwWnIZHkuc",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ76gLEdVZHS4RcqGjn-J52PM",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ86JcchJZHS4ROKWj6t-l144",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJB_kHTgBZHS4RpYGXBi5Mr8k",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJIRKzS6lbHS4RcUszDziz-jw",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJOeviAWhYHS4R03LHTCewhU4",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJPa6swGtZHS4RrbIlRvgBgok",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJQTQMIqJZHS4RkEq6uGgYu3c",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJXWJyFzZZHS4R79ouaF5kOF0",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJab9iZ7xZHS4RLvSMRkEKzUs",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJadxvpWNZHS4ReuOoPA-QLqU",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJc2rVCdpZHS4Rt-_m1ezrp4Y",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJf1TV-jtZHS4RGH-JdlKF88w",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJfWPGdYFZHS4RYfv8vJ8RB6Y",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJmQzQurxZHS4Rg1tWAwBIS-g",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJoy_lbNpZHS4R703thlouzo8",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJp-W8A2FZHS4RlV9IFvidej4",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJpW1EUQBZHS4RZ0ACF2qb67g",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJuRi629BZHS4ROKQCQ8ThFl0",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        },
+        {
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "grade": 1,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_marginal"
+        }
+      ]
+    },
+    {
+      "query_id": "gq-ft-estetik-31",
+      "labels": [
+        {
+          "place_id": "ChIJ2bmXfABZHS4RViKTqagFQq0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJB_kHTgBZHS4RpYGXBi5Mr8k",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJWfoJ5pVZHS4RwOqVk4ETSs8",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJfWPGdYFZHS4RYfv8vJ8RB6Y",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ-4iNNH1ZHS4RYvU4WkG0ik4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ-9zLddBZHS4R-8L5Jj7n77M",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ17JgIllZHS4R-bKazckrgmk",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ21ZGegBZHS4R7IwWnIZHkuc",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ76gLEdVZHS4RcqGjn-J52PM",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ86JcchJZHS4ROKWj6t-l144",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJHdYrWU1ZHS4RuU_qB_QKTdI",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJIRKzS6lbHS4RcUszDziz-jw",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJOeviAWhYHS4R03LHTCewhU4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJPa6swGtZHS4RrbIlRvgBgok",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJQRsGzyVZHS4R8dx2vktO02k",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJQTQMIqJZHS4RkEq6uGgYu3c",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJTcymqzZZHS4RQc7dVDDm5RM",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJXWJyFzZZHS4R79ouaF5kOF0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJZU5fhAdZHS4RL1ItbYHWrvA",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJa8iTQOpZHS4RdVFAK__JB-c",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJab9iZ7xZHS4RLvSMRkEKzUs",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJadxvpWNZHS4ReuOoPA-QLqU",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJc2rVCdpZHS4Rt-_m1ezrp4Y",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJf0A-EQBZHS4RQSh5k1CbyXg",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJf1TV-jtZHS4RGH-JdlKF88w",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJmQzQurxZHS4Rg1tWAwBIS-g",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJoy_lbNpZHS4R703thlouzo8",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJp-W8A2FZHS4RlV9IFvidej4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJpW1EUQBZHS4RZ0ACF2qb67g",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJuRi629BZHS4ROKQCQ8ThFl0",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        },
+        {
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "grade": 2,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_quartile"
+        }
+      ]
+    },
+    {
+      "query_id": "gq-ft-meeting-32",
+      "labels": [
+        {
+          "place_id": "ChIJ-4iNNH1ZHS4RYvU4WkG0ik4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ-9zLddBZHS4R-8L5Jj7n77M",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ17JgIllZHS4R-bKazckrgmk",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ21ZGegBZHS4R7IwWnIZHkuc",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ2bmXfABZHS4RViKTqagFQq0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ76gLEdVZHS4RcqGjn-J52PM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ86JcchJZHS4ROKWj6t-l144",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJB_kHTgBZHS4RpYGXBi5Mr8k",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJHdYrWU1ZHS4RuU_qB_QKTdI",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJIRKzS6lbHS4RcUszDziz-jw",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJOeviAWhYHS4R03LHTCewhU4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJPa6swGtZHS4RrbIlRvgBgok",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJQRsGzyVZHS4R8dx2vktO02k",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJQTQMIqJZHS4RkEq6uGgYu3c",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJTcymqzZZHS4RQc7dVDDm5RM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJWfoJ5pVZHS4RwOqVk4ETSs8",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJXWJyFzZZHS4R79ouaF5kOF0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJZU5fhAdZHS4RL1ItbYHWrvA",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJa8iTQOpZHS4RdVFAK__JB-c",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJab9iZ7xZHS4RLvSMRkEKzUs",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJadxvpWNZHS4ReuOoPA-QLqU",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJc2rVCdpZHS4Rt-_m1ezrp4Y",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJf0A-EQBZHS4RQSh5k1CbyXg",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJf1TV-jtZHS4RGH-JdlKF88w",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJfWPGdYFZHS4RYfv8vJ8RB6Y",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJmQzQurxZHS4Rg1tWAwBIS-g",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJoy_lbNpZHS4R703thlouzo8",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJp-W8A2FZHS4RlV9IFvidej4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJpW1EUQBZHS4RZ0ACF2qb67g",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJuRi629BZHS4ROKQCQ8ThFl0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        }
+      ]
+    },
+    {
+      "query_id": "gq-ft-colokan-33",
+      "labels": [
+        {
+          "place_id": "ChIJ-4iNNH1ZHS4RYvU4WkG0ik4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ-9zLddBZHS4R-8L5Jj7n77M",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ17JgIllZHS4R-bKazckrgmk",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ21ZGegBZHS4R7IwWnIZHkuc",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ2bmXfABZHS4RViKTqagFQq0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ71m2hZZZHS4RrOgKJYP_7zw",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ76gLEdVZHS4RcqGjn-J52PM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ86JcchJZHS4ROKWj6t-l144",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJB_kHTgBZHS4RpYGXBi5Mr8k",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJDcJgropZHS4RKuh8s52jy9U",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJHdYrWU1ZHS4RuU_qB_QKTdI",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJIRKzS6lbHS4RcUszDziz-jw",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJOeviAWhYHS4R03LHTCewhU4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJPa6swGtZHS4RrbIlRvgBgok",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJQRsGzyVZHS4R8dx2vktO02k",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJQTQMIqJZHS4RkEq6uGgYu3c",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJTcymqzZZHS4RQc7dVDDm5RM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJWfoJ5pVZHS4RwOqVk4ETSs8",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJXWJyFzZZHS4R79ouaF5kOF0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJZU5fhAdZHS4RL1ItbYHWrvA",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJa8iTQOpZHS4RdVFAK__JB-c",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJab9iZ7xZHS4RLvSMRkEKzUs",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJadxvpWNZHS4ReuOoPA-QLqU",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJc2rVCdpZHS4Rt-_m1ezrp4Y",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJf0A-EQBZHS4RQSh5k1CbyXg",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJf1TV-jtZHS4RGH-JdlKF88w",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJfWPGdYFZHS4RYfv8vJ8RB6Y",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJmQzQurxZHS4Rg1tWAwBIS-g",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJoy_lbNpZHS4R703thlouzo8",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJp-W8A2FZHS4RlV9IFvidej4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJp8-aIJdZHS4RntlOSrphQj8",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJpW1EUQBZHS4RZ0ACF2qb67g",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJpXpEsPNZHS4Rciespc96M5o",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJuRi629BZHS4ROKQCQ8ThFl0",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        },
+        {
+          "place_id": "ChIJyRLXBlJYHS4RWNj0yvAvSAQ",
+          "grade": 3,
+          "annotator": "rubric_v1_auto",
+          "notes": "free_text_top_decile"
+        }
+      ]
+    }
+  ]
 }

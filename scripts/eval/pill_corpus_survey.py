@@ -4,7 +4,7 @@ Survei traceability: seberapa banyak ulasan di DB menyebut setiap pill (bukti le
 
 Metode aktivitas = sama dengan gerbang admisi pipeline:
   compile_activity_matcher + activity_text_score + extract_activity_support_text
-  (pill_config.review_keywords + hybrid_retrieval _ACTIVITY_EXTRA_PHRASES / WHOLE_WORDS).
+  (activity_lexicon.json terms via compile_activity_matcher).
 
 Metode atribut/fasilitas = pill_aspect_sentiment (keyword + bukan negasi eksplisit).
 

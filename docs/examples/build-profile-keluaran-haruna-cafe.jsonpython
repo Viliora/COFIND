@@ -1,0 +1,18 @@
+{
+  "place_id": "scripts/inspect_build_profile_tuple.py",
+  "tuple_summary": {
+    "type": "(profiles: list[dict], shops_without_reviews: list[str])",
+    "profiles_len": 0,
+    "shops_without_reviews": []
+  },
+  "return_build_profiles_for_recommendation": {
+    "profiles": [],
+    "shops_without_reviews": []
+  },
+  "pipeline_notes": {
+    "fase2_retrieval": "RRF murni bila COFIND_RETRIEVAL_QUALITY_WEIGHT=0",
+    "COFIND_RETRIEVAL_QUALITY_WEIGHT": 0.0,
+    "community_vote_in_ranking": false,
+    "shop_scoring_rating_component": "hanya bintang Google/Cofind (Bayesian), bukan vote"
+  }
+}

@@ -46,7 +46,6 @@ from recommendation.flags import recommendation_overall_experience_enabled
 from hybrid_retrieval import (
     retrieve_top_k,
     retrieve_top_k_by_text,
-    retrieve_top_k_by_negative_sentiment,
     retrieval_top_k,
     rank_reviews_for_query,
     build_sparse_query_tokens,
@@ -63,7 +62,6 @@ from hybrid_retrieval import (
 from free_text_intent import MAX_FREE_TEXT_CHARS as FREE_TEXT_MAX_CHARS, extract_search_intent
 from free_text_query_handling import (
     QUERY_CLASS_FALSE_PRESUP,
-    QUERY_CLASS_NEGATIVE,
     apply_false_presupposition_retrieval,
     merge_query_classification,
     query_handling_for_api,
@@ -71,7 +69,8 @@ from free_text_query_handling import (
 from recommendation_coverage import merge_pill_coverage, supplemental_coverage_lines
 from activity_lexicon import rejection_phrases
 from id_token_match import token_matches_keyword_token as _id_token_matches_keyword
-from rating_aggregate import bayesian_rating_unit_score, wilson_lower_bound
+from rating_aggregate import bayesian_rating_unit_score
+from recommendation.stats import build_evidence_keyword_detail, _score_shop_by_user_reviews
 from pill_aspect_sentiment import aggregate_reviews_sentiment
 from cross_encoder_rerank import (
     ce_rerank_candidates,
@@ -106,7 +105,6 @@ from llm_clause_sentiment import (
     quote_key as clause_quote_key,
     sentiment_config as clause_sentiment_config,
 )
-from pros_cons_utils import get_top_voted_pros_batch
 from db_backend import dict_from_row, get_connection
 from facilities_store import load_facilities_index
 from logging_config import get_logger
@@ -197,32 +195,6 @@ RATING_VOTE_WEIGHTS = {
     'dislike': 0.25,
     'hate': 0.0,
 }
-
-
-def _coverage_env_float(name: str, default: float, *, lo: float = 0.0, hi: float = 1.0) -> float:
-    raw = os.getenv(name)
-    if raw is None or str(raw).strip() == '':
-        return default
-    try:
-        val = float(raw)
-    except ValueError:
-        return default
-    return max(lo, min(hi, val))
-
-
-def coverage_bonus() -> float:
-    """Penalti skor bila cakupan pill rendah (.env COFIND_COVERAGE_BONUS, default 0.25)."""
-    return _coverage_env_float('COFIND_COVERAGE_BONUS', 0.25)
-
-
-def activity_coverage_share() -> float:
-    """Bobot lapis aktivitas vs atribut dalam multiplier cakupan (default 0.6)."""
-    return _coverage_env_float('COFIND_ACTIVITY_COVERAGE_SHARE', 0.6)
-
-
-def coverage_semantic_min() -> float:
-    """Ambang cosine semantic match untuk menghitung pill ter-cover (default 0.65)."""
-    return _coverage_env_float('COFIND_COVERAGE_SEMANTIC_MIN', 0.65)
 
 
 def _split_preference_pills(pills):
@@ -510,18 +482,9 @@ def _profile_from_shop_and_reviews(shop_data, reviews, facilities_index=None):
     facilities_tab = _format_facilities_tab_signals(facility_entry)
 
     user_ratings = []
-    makanan_ratings = []
-    layanan_ratings = []
-    suasana_ratings = []
     for r in reviews or []:
         if r.get('rating') is not None:
             user_ratings.append(float(r['rating']))
-        if r.get('rating_makanan') is not None:
-            makanan_ratings.append(float(r['rating_makanan']))
-        if r.get('rating_layanan') is not None:
-            layanan_ratings.append(float(r['rating_layanan']))
-        if r.get('rating_suasana') is not None:
-            suasana_ratings.append(float(r['rating_suasana']))
 
     return {
         'place_id': place_id,
@@ -529,11 +492,6 @@ def _profile_from_shop_and_reviews(shop_data, reviews, facilities_index=None):
         'reviews': reviews or [],
         'review_count': len(reviews or []),
         'avg_user_rating': (round(sum(user_ratings) / len(user_ratings), 2) if user_ratings else None),
-        'avg_category_ratings': {
-            'makanan': _avg_or_none(makanan_ratings),
-            'layanan': _avg_or_none(layanan_ratings),
-            'suasana': _avg_or_none(suasana_ratings),
-        },
         'facilities_tab': facilities_tab,
         'facilities_tab_text': facilities_tab.get('text') or '',
         'facilities_raw': facility_entry.get('facilities') or {},
@@ -604,17 +562,16 @@ def _build_profiles_for_recommendation(place_ids, facilities_index=None, exclude
     if profiles:
         community_ids = [p.get('place_id') for p in profiles if p.get('place_id')]
         vote_by_place = get_vote_summaries_batch(community_ids, include_review_stars=False)
-        pros_by_place = get_top_voted_pros_batch(community_ids, limit=3)
         for profile in profiles:
             pid = profile.get('place_id')
             vote = vote_by_place.get(pid) or {}
+            rating_counts = vote.get('rating_counts') or {}
             profile['community_signals'] = {
                 'vote': {
                     'total_votes': vote.get('total_votes') or 0,
-                    'rating_counts': vote.get('rating_counts') or {},
+                    'rating_counts': rating_counts,
                     'slider_averages': vote.get('slider_averages') or {},
                 },
-                'top_pros': pros_by_place.get(pid) or [],
             }
     return profiles, shops_without_reviews
 def _load_all_place_ids():
@@ -964,50 +921,49 @@ def _coffee_shop_rating_score(profile):
     except (TypeError, ValueError):
         pass
     return None
+def _vote_reaction_unit_score(rating_counts) -> Optional[float]:
+    """Skor 0..1 dari reaksi love/like/ok/dislike/hate (bobot RATING_VOTE_WEIGHTS)."""
+    counts = rating_counts or {}
+    total = sum(int(counts.get(label) or 0) for label in RATING_VOTE_WEIGHTS)
+    if total <= 0:
+        return None
+    weighted = sum(
+        float(RATING_VOTE_WEIGHTS[label]) * int(counts.get(label) or 0)
+        for label in RATING_VOTE_WEIGHTS
+    )
+    return round(weighted / total, 4)
+
+
+def _combined_shop_rating_signal(profile) -> Optional[float]:
+    """Skor 0..1 dari rating bintang toko (Bayesian); vote komunitas tidak dipakai."""
+    return _coffee_shop_rating_score(profile)
+
+
 def _quality_score_for_profile(profile):
-    """Gabungan Overall Experience dan rating toko (0..1). None jika keduanya kosong."""
-    experience = _overall_experience_score_from_signals((profile or {}).get('community_signals'))
-    rating = _coffee_shop_rating_score(profile)
-    if experience is None and rating is None:
-        return None
-    if experience is None:
-        return rating
-    if rating is None:
-        return experience
-    return round(0.5 * experience + 0.5 * rating, 4)
+    """Skor kualitas opsional (ablation); sama dengan rating bintang toko saja."""
+    return _coffee_shop_rating_score(profile)
+
+
+def _category_ratings_from_reviews(reviews):
+    """Ringkasan rating per kategori dari baris review (bukan field profil)."""
+    buckets = {'makanan': [], 'layanan': [], 'suasana': []}
+    field_map = {
+        'rating_makanan': 'makanan',
+        'rating_layanan': 'layanan',
+        'rating_suasana': 'suasana',
+    }
+    for review in reviews or []:
+        for field, key in field_map.items():
+            val = review.get(field)
+            if val is not None:
+                buckets[key].append(float(val))
+    return {key: _avg_or_none(vals) for key, vals in buckets.items()}
+
+
 def _community_score_from_signals(signals, pills):
-    """Skor 0..1 dari agregat vote/overall/best-for/pros. None jika tidak ada data.
-    Dipakai untuk konteks prompt/evidence, bukan bobot hybrid ranking utama.
-    """
-    data = signals or {}
-    vote = data.get('vote') or {}
-    rating_counts = vote.get('rating_counts') or {}
-    parts = []
-    weights = []
-
-    total_rating = sum(int(rating_counts.get(label) or 0) for label in RATING_VOTE_WEIGHTS)
-    if total_rating > 0:
-        love = int(rating_counts.get('love') or 0)
-        like = int(rating_counts.get('like') or 0)
-        positive_signal = love + 0.5 * like
-        parts.append(wilson_lower_bound(positive_signal, total_rating))
-        weights.append(0.40)
-
-    experience = _overall_experience_score_from_signals(signals)
-    if experience is not None:
-        parts.append(experience)
-        weights.append(0.25)
-
-    pros = data.get('top_pros') or []
-    if pros:
-        nets = [max(0, int(item.get('net') or 0)) for item in pros]
-        avg_net = sum(nets) / max(1, len(nets))
-        parts.append(min(1.0, avg_net / 8.0))
-        weights.append(0.35)
-
-    if not parts:
-        return None
-    return round(sum(score * weight for score, weight in zip(parts, weights)) / sum(weights), 4)
+    """Vote komunitas tidak memengaruhi ranking; selalu None."""
+    _ = signals, pills
+    return None
 def _community_prompt_lines(signals, pills=None, indent='  - '):
     """Baris fakta komunitas yang ringkas untuk prompt, tanpa mengubah gaya output."""
     data = signals or {}
@@ -1035,10 +991,6 @@ def _community_prompt_lines(signals, pills=None, indent='  - '):
         if slider_bits:
             lines.append(f'{indent}Pengalaman pengunjung: {", ".join(slider_bits)}')
 
-    pros = data.get('top_pros') or []
-    pro_texts = [str(item.get('text') or '').strip() for item in pros if str(item.get('text') or '').strip()]
-    if pro_texts:
-        lines.append(f'{indent}Keunggulan yang disetujui pengunjung: {"; ".join(pro_texts[:3])}')
     return lines
 def _shop_profile_lines_for_prompt(profile, evidence, pills=None):
     """Konteks profil toko dari database (rating pengguna, rating Google, rating kategori, sinyal komunitas)."""
@@ -1066,7 +1018,9 @@ def _shop_profile_lines_for_prompt(profile, evidence, pills=None):
             f'  - Rating Google: {google_rating:.1f}/5 dari {int(google_total)} ulasan'
         )
 
-    category_ratings = ev.get('category_ratings') or prof.get('avg_category_ratings') or {}
+    category_ratings = ev.get('category_ratings') or _category_ratings_from_reviews(
+        prof.get('reviews') or [],
+    )
     category_bits = [
         f'{label} {float(category_ratings[key]):.1f}/5'
         for key, label in (('suasana', 'suasana'), ('layanan', 'layanan'), ('makanan', 'makanan'))
@@ -1289,306 +1243,8 @@ def _review_rating_category_scores(reviews, pills):
     if not contributing:
         return 0.0, per_pill
     return sum(contributing) / len(contributing), per_pill
-def _score_shop_by_user_reviews(
-    profile,
-    pills,
-    search_keywords=None,
-    bm25_norm=None,
-    bm25_raw=None,
-):
-    """
-    Scoring hybrid rekomendasi:
-        70% BM25 relevansi query vs korpus review toko
-        20% Overall Experience (pelayanan, kebersihan, kenyamanan, harga)
-        10% rating coffee shop (coffee_shops.rating; fallback rata-rata review Cofind)
 
-    Jika Overall Experience atau rating toko belum ada, bobot yang tersedia
-    dinormalisasi ulang agar total tetap 1.0 (toko tanpa vote tidak dihukum 0).
 
-    Keyword match per-pill tetap dihitung untuk evidence/UI (sample quotes),
-    tetapi bobot utama ranking memakai skor BM25 yang dinormalisasi (0..1).
-    """
-    reviews = profile.get('reviews') or []
-    review_count = len(reviews)
-    search_keywords = _filter_overbroad_meeting_keywords(
-        _light_keyword_phrase_list(search_keywords or []),
-        pills,
-    )
-    if review_count == 0 or not pills:
-        return {
-            'total_score': 0.0,
-            'keyword_score': 0.0,
-            'bm25_score': 0.0,
-            'bm25_raw': 0.0,
-            'expanded_keyword_score': 0.0,
-            'semantic_score': 0.0,
-            'semantic_hits': 0,
-            'semantic_matches': [],
-            'semantic_telemetry': {},
-            'covered_pills': [],
-            'uncovered_pills': list(pills or []),
-            'activity_pills': [p for p in (pills or []) if p not in FACILITY_ATTRIBUTE_PILLS],
-            'attribute_pills': [p for p in (pills or []) if p in FACILITY_ATTRIBUTE_PILLS],
-            'activity_coverage': 0.0,
-            'attribute_coverage': 0.0,
-            'coverage_ratio': 0.0,
-            'coverage_multiplier': 1.0,
-            'category_score': 0.0,
-            'rating_score': 0.0,
-            'overall_experience_score': None,
-            'per_pill_stats': {},
-            'expanded_keyword_matches': [],
-            'search_keywords': search_keywords,
-            'category_detail': {},
-            'review_count': review_count,
-            'avg_user_rating': profile.get('avg_user_rating'),
-            'has_quote_evidence': False,
-            'community_score': None,
-            'score_weights': {'bm25': 0.70, 'overall_experience': 0.20, 'shop_rating': 0.10},
-        }
-
-    avg_user_rating = profile.get('avg_user_rating')
-    rating_score = _coffee_shop_rating_score(profile)
-    overall_experience_score = _overall_experience_score_from_signals(
-        profile.get('community_signals'),
-    )
-
-    per_pill_stats = {}
-    keyword_scores = []
-    # Index review yang sudah cocok secara leksikal. Dipakai gerbang makna agar
-    # hanya review yang GAGAL pencocokan kata yang perlu di-encode.
-    lexical_matched_ids = set()
-
-    for pill in pills:
-        keywords = _expand_pill_to_keywords(pill)
-        keyword_review_hits = 0
-        sample_quotes = []
-
-        for review_idx, review in enumerate(reviews):
-            text = (review.get('text') or '').strip()
-            matched_terms = []
-
-            if text:
-                matched_terms = [kw for kw in keywords if _matches_keyword_phrase(text, kw)]
-                if pill == 'keluarga' and not matched_terms:
-                    has_family_signal, _ = _has_semantic_family_signal(text)
-                    if has_family_signal:
-                        matched_terms = ['kebersamaan keluarga']
-                if matched_terms:
-                    keyword_review_hits += 1
-                    lexical_matched_ids.add(review_idx)
-
-            if matched_terms:
-                if text and len(text) >= 15 and len(sample_quotes) < 3:
-                    sample_quotes.append({
-                        'quote': _truncate_evidence_text(text, _PROMPT_EVIDENCE_CHAR_LIMIT),
-                        'rating': review.get('rating'),
-                        'username': review.get('username') or review.get('full_name'),
-                        'matched_terms': matched_terms,
-                        **_review_quote_detail_fields(review),
-                    })
-
-        kw_norm = min(1.0, keyword_review_hits / max(1, min(review_count, 5)))
-
-        per_pill_stats[pill] = {
-            'pill': pill,
-            'pill_label': PILL_LABELS.get(pill, pill),
-            'keyword_review_hits': keyword_review_hits,
-            'review_count': review_count,
-            'keyword_score': round(kw_norm, 4),
-            'sample_quotes': sample_quotes,
-        }
-        keyword_scores.append(kw_norm)
-
-    keyword_score_avg = sum(keyword_scores) / len(keyword_scores) if keyword_scores else 0.0
-    # Tetap dihitung untuk evidence/UI; tidak masuk bobot hybrid ranking.
-    category_score_avg, category_detail = _review_rating_category_scores(reviews, pills)
-
-    expanded_keyword_matches = _pick_keyword_matched_reviews(reviews, search_keywords, limit=3)
-
-    expanded_keyword_hits = 0
-    if search_keywords:
-        for review_idx, review in enumerate(reviews):
-            text = (review.get('text') or '').strip()
-            if text and any(_matches_keyword_phrase(text, kw) for kw in search_keywords):
-                expanded_keyword_hits += 1
-                lexical_matched_ids.add(review_idx)
-        expanded_keyword_score = min(1.0, expanded_keyword_hits / max(1, min(review_count, 5)))
-    else:
-        expanded_keyword_score = 0.0
-
-    # Gerbang makna: hanya review yang GAGAL pencocokan kata di atas yang di-encode,
-    # sehingga biaya embedding kecil dan tidak menduplikasi kerja keyword match.
-    semantic_matches = []
-    semantic_telemetry = {}
-    semantic_hits = 0
-    if semantic_gate_enabled():
-        unmatched_reviews = [
-            review for idx, review in enumerate(reviews)
-            if idx not in lexical_matched_ids and (review.get('text') or '').strip()
-        ]
-        if unmatched_reviews:
-            semantic_matches, semantic_telemetry = _pick_semantic_matched_reviews(
-                unmatched_reviews,
-                _semantic_reference_terms(pills, search_keywords),
-                limit=3,
-            )
-            semantic_hits = int((semantic_telemetry or {}).get('matched_reviews') or 0)
-    # Cakupan (berapa banyak review yang cocok maknanya) dikalikan tingkat keyakinan
-    # (rata-rata cosine similarity), jadi satu kecocokan tipis tidak menaikkan skor toko
-    # sekuat beberapa kecocokan yang meyakinkan.
-    semantic_coverage = min(1.0, semantic_hits / max(1, min(review_count, 5)))
-    semantic_confidence = float((semantic_telemetry or {}).get('mean_score') or 0.0)
-    semantic_score = semantic_coverage * semantic_confidence
-
-    # BM25 sebagai sinyal utama relevansi teks (fallback ke keyword hit jika BM25 belum dihitung)
-    try:
-        bm25_norm_val = float(bm25_norm) if bm25_norm is not None else None
-    except (TypeError, ValueError):
-        bm25_norm_val = None
-    try:
-        bm25_raw_val = float(bm25_raw) if bm25_raw is not None else 0.0
-    except (TypeError, ValueError):
-        bm25_raw_val = 0.0
-
-    if bm25_norm_val is None:
-        # Fallback lokal (tanpa indeks korpus): rata keyword pill + search_keywords
-        text_relevance = keyword_score_avg
-        if search_keywords:
-            text_relevance = (keyword_score_avg + expanded_keyword_score) / 2.0
-        bm25_norm_val = text_relevance
-        bm25_raw_val = text_relevance
-    else:
-        bm25_norm_val = max(0.0, min(1.0, bm25_norm_val))
-
-    # Relevansi teks = maksimum antara sinyal leksikal (BM25) dan sinyal makna.
-    # Sinyal makna dibatasi score_cap agar bukti kata eksplisit tetap lebih kuat
-    # daripada bukti yang hanya "mirip maknanya".
-    semantic_contribution = semantic_score * semantic_score_cap()
-    if semantic_contribution > bm25_norm_val:
-        bm25_norm_val = semantic_contribution
-
-    # Hybrid: 70% BM25 + 20% Overall Experience + 10% rating coffee shop.
-    # Komponen yang None tidak dihukum 0; bobot dinormalisasi ke bagian yang ada.
-    W_BM25, W_EXPERIENCE, W_RATING = 0.70, 0.20, 0.10
-    weighted_sum = bm25_norm_val * W_BM25
-    weight_total = W_BM25
-    if overall_experience_score is not None:
-        weighted_sum += overall_experience_score * W_EXPERIENCE
-        weight_total += W_EXPERIENCE
-    if rating_score is not None:
-        weighted_sum += rating_score * W_RATING
-        weight_total += W_RATING
-    total = weighted_sum / weight_total if weight_total > 0 else 0.0
-
-    community_score = _community_score_from_signals(profile.get('community_signals'), pills)
-
-    # Wajib ada bukti kutipan PENDUKUNG (keyword match TANPA keluhan pada aspek
-    # preferensi). Kutipan yang hanya mengeluh soal konteks yang sama tidak cukup
-    # untuk merekomendasikan toko.
-    pref_kws = _preference_keywords_for_evidence(pills, search_keywords)
-
-    def _is_supporting_quote(row):
-        text = str((row or {}).get('quote') or '')
-        return len(text.strip()) >= 10 and not _quote_is_caveat(text, pref_kws)
-
-    # Cakupan per pill: pill dianggap terpenuhi bila ada kutipan PENDUKUNG dari
-    # pencocokan kata, atau kecocokan makna yang frasa acuannya milik pill itu.
-    semantic_owners = _semantic_term_owner_pills(pills)
-    covered_pills = set()
-    for pill in pills:
-        quotes = (per_pill_stats.get(pill) or {}).get('sample_quotes') or []
-        if any(_is_supporting_quote(sq) for sq in quotes):
-            covered_pills.add(pill)
-    semantic_min = coverage_semantic_min()
-    for match in semantic_matches:
-        if not _is_supporting_quote(match):
-            continue
-        try:
-            match_confidence = float(match.get('semantic_score') or 0.0)
-        except (TypeError, ValueError):
-            match_confidence = 0.0
-        if match_confidence < semantic_min:
-            continue
-        for term in match.get('matched_terms') or []:
-            owner = semantic_owners.get(str(term or '').strip().lower())
-            if owner:
-                covered_pills.add(owner)
-
-    activity_pills = [p for p in pills if p not in FACILITY_ATTRIBUTE_PILLS]
-    attribute_pills = [p for p in pills if p in FACILITY_ATTRIBUTE_PILLS]
-
-    def _layer_ratio(layer):
-        if not layer:
-            return 1.0
-        return sum(1 for p in layer if p in covered_pills) / len(layer)
-
-    activity_coverage = _layer_ratio(activity_pills)
-    attribute_coverage = _layer_ratio(attribute_pills)
-    # Aktivitas menentukan, fasilitas menyempurnakan. Aktivitas tetap jadi
-    # gerbang (tanpa buktinya cakupan nol berapa pun fasilitas yang terbukti),
-    # tapi begitu terbukti toko langsung dapat `share` dan fasilitas mengisi
-    # sisanya. Perkalian polos dulu menghukum "aktivitas ✓ fasilitas ✗" sama
-    # berat dengan "aktivitas ✗ fasilitas ✓", padahal niat utama user ada di
-    # lapis aktivitas.
-    share = activity_coverage_share()
-    coverage_ratio = activity_coverage * (share + (1.0 - share) * attribute_coverage)
-    bonus = coverage_bonus()
-    # Skor tetap di rentang 0..1: cakupan penuh tidak mengubah skor, cakupan
-    # rendah menekan skor sebanyak `bonus`.
-    coverage_multiplier = 1.0 - bonus + bonus * coverage_ratio
-    total *= coverage_multiplier
-
-    has_quote_evidence = (
-        any(
-            _is_supporting_quote(sq)
-            for p in pills
-            for sq in ((per_pill_stats.get(p) or {}).get('sample_quotes') or [])
-        )
-        or any(_is_supporting_quote(m) for m in expanded_keyword_matches)
-        or any(_is_supporting_quote(m) for m in semantic_matches)
-    )
-    if not has_quote_evidence:
-        total = 0.0
-
-    return {
-        'total_score': round(total, 4),
-        'keyword_score': round(keyword_score_avg, 4),
-        'bm25_score': round(bm25_norm_val, 4),
-        'bm25_raw': round(bm25_raw_val, 4),
-        'expanded_keyword_score': round(expanded_keyword_score, 4),
-        'covered_pills': sorted(covered_pills),
-        'uncovered_pills': [p for p in pills if p not in covered_pills],
-        'activity_pills': activity_pills,
-        'attribute_pills': attribute_pills,
-        'activity_coverage': round(activity_coverage, 4),
-        'attribute_coverage': round(attribute_coverage, 4),
-        'coverage_ratio': round(coverage_ratio, 4),
-        'coverage_multiplier': round(coverage_multiplier, 4),
-        'activity_coverage_share': round(share, 4),
-        'semantic_score': round(semantic_score, 4),
-        'semantic_coverage': round(semantic_coverage, 4),
-        'semantic_confidence': round(semantic_confidence, 4),
-        'semantic_hits': semantic_hits,
-        'semantic_matches': semantic_matches,
-        'semantic_telemetry': semantic_telemetry,
-        'category_score': round(category_score_avg, 4),
-        'rating_score': round(rating_score, 4) if rating_score is not None else None,
-        'overall_experience_score': overall_experience_score,
-        'per_pill_stats': per_pill_stats,
-        'expanded_keyword_matches': expanded_keyword_matches,
-        'search_keywords': search_keywords,
-        'category_detail': category_detail,
-        'review_count': review_count,
-        'avg_user_rating': avg_user_rating,
-        'has_quote_evidence': has_quote_evidence,
-        'community_score': community_score,
-        'score_weights': {
-            'bm25': W_BM25,
-            'overall_experience': W_EXPERIENCE,
-            'shop_rating': W_RATING,
-        },
-    }
 def _build_review_based_evidence(profile, score_detail, pills, search_keywords=None):
     _merge_evidence_private_api()
     """
@@ -1738,9 +1394,7 @@ def _build_review_based_evidence(profile, score_detail, pills, search_keywords=N
         'semantic_matches': semantic_matches_out,
         'semantic_score': (score_detail or {}).get('semantic_score', 0.0),
         'pill_stats': pill_stats_out,
-        'category_ratings': profile.get('avg_category_ratings') or {
-            'makanan': None, 'layanan': None, 'suasana': None
-        },
+        'category_ratings': _category_ratings_from_reviews(profile.get('reviews') or []),
         'avg_user_rating': profile.get('avg_user_rating'),
         'review_count': profile.get('review_count', 0),
         'google_rating': profile.get('google_rating'),
@@ -2619,6 +2273,7 @@ def _parse_single_shop_summary(raw, shop):
             )
         except ValueError:
             parsed = None
+    # _parse_summary_json_local = json.loads + json_repair; repair LLM hanya sekali di atas.
     if isinstance(parsed, dict):
         nested = parsed.get('recommendations') or parsed.get('items') or parsed.get('shops')
         items = nested if isinstance(nested, list) else [parsed]
@@ -3432,7 +3087,8 @@ def _build_retrieval_evidence(
     ev.update({
         'review_quotes': review_quotes,
         'search_keyword_matches': search_keyword_matches,
-        'category_ratings': profile.get('avg_category_ratings') or ev['category_ratings'],
+        'category_ratings': _category_ratings_from_reviews(profile.get('reviews') or [])
+        or ev['category_ratings'],
         'avg_user_rating': profile.get('avg_user_rating'),
         'review_count': profile.get('review_count', 0),
         'google_rating': profile.get('google_rating'),
@@ -3587,15 +3243,21 @@ def _activity_quotes_from_reviews(shop, activity_matcher=None, activity_tokens=N
         if len(rows) >= limit:
             break
     return rows
+def _post_rerank_tie_break_activity() -> bool:
+    raw = (os.getenv('COFIND_POST_RERANK_TIE_BREAK') or '').strip().lower()
+    return raw in ('1', 'true', 'yes', 'on', 'activity')
+
+
 def _shop_relevance_sort_key(shop):
-    """Aktivitas dulu, lalu fasilitas sebagai penguat, lalu skor campuran."""
-    detail = shop.get('score_detail') if isinstance(shop.get('score_detail'), dict) else {}
+    """Urutan utama: final_score (CE blend) atau skor hybrid RRF."""
     final = float(shop.get('final_score') or shop.get('score') or 0.0)
+    if not _post_rerank_tie_break_activity():
+        return (-final,)
+    detail = shop.get('score_detail') if isinstance(shop.get('score_detail'), dict) else {}
     act = float(detail.get('activity_combo') or detail.get('activity_lex') or 0.0)
-    attr = float(detail.get('attribute_bm25') or 0.0)
-    attr_cov = float(detail.get('attribute_coverage') or 0.0)
-    act_hits = int(detail.get('activity_hits') or 0)
-    return (-final, -attr_cov, -attr, -act, -act_hits)
+    return (-final, -act)
+
+
 def _select_top_shops(
     ranked_candidates,
     max_rec=3,
@@ -3604,10 +3266,14 @@ def _select_top_shops(
     activity_matcher=None,
 ):
     """
-    Ambil toko yang punya bukti aktivitas. Fasilitas tambahan tidak wajib.
-    Urutan: aktivitas terkuat, lalu kecocokan fasilitas, lalu skor campuran.
+    Filter bukti aktivitas (pasca-rerank); urutan = final_score hybrid/CE.
+    Kontradiksi eksplisit dibuang; gate hard retrieval sudah di Fase 2.
     """
+    activity_pills = list(activity_pills or [])
+
     def _eligible(shop):
+        if not activity_pills and not activity_matcher:
+            return True
         if _shop_has_activity_contradiction(
             shop, activity_pills, activity_tokens, activity_matcher=activity_matcher,
         ):

@@ -6,6 +6,7 @@ import unittest
 
 os.environ.setdefault("COFIND_SEMANTIC_GATE", "false")
 
+from activity_lexicon import ACTIVITY_PILL_KEYS, activity_terms
 from hybrid_retrieval import tokenize_for_match
 from pill_config import FACILITY_ATTRIBUTE_PILLS, PILL_MAPPING
 
@@ -34,22 +35,39 @@ def _keywords(pill: str) -> list:
     return list((PILL_MAPPING.get(pill) or {}).get("review_keywords") or [])
 
 
+def _curation_scope(pill: str) -> list:
+    """Atribut: semua keyword. Aktivitas: 8 jangkar utama (urutan terms)."""
+    if pill in ACTIVITY_PILL_KEYS:
+        return list(activity_terms(pill)[:MAX_KEYWORDS_ACTIVITY])
+    return _keywords(pill)
+
+
 def _flat_tokens(pill: str) -> set:
     out = set()
-    for kw in _keywords(pill):
+    for kw in _curation_scope(pill):
         out.update(tokenize_for_match(kw))
     return out
 
 
 class PillKeywordCurationTests(unittest.TestCase):
     def test_keyword_count_capped(self):
-        for pill in PILL_MAPPING:
-            cap = MAX_KEYWORDS_ATTRIBUTE if pill in FACILITY_ATTRIBUTE_PILLS else MAX_KEYWORDS_ACTIVITY
-            self.assertLessEqual(len(_keywords(pill)), cap, f"{pill} melebihi {cap} keyword")
+        for pill in FACILITY_ATTRIBUTE_PILLS:
+            self.assertLessEqual(
+                len(_keywords(pill)),
+                MAX_KEYWORDS_ATTRIBUTE,
+                f"{pill} melebihi {MAX_KEYWORDS_ATTRIBUTE} keyword",
+            )
+        for pill in ACTIVITY_PILL_KEYS:
+            self.assertGreaterEqual(len(_keywords(pill)), 1, f"{pill} terms kosong")
+            self.assertLessEqual(
+                len(_keywords(pill)[:MAX_KEYWORDS_ACTIVITY]),
+                MAX_KEYWORDS_ACTIVITY,
+                f"{pill}: urutan {MAX_KEYWORDS_ACTIVITY} jangkar utama",
+            )
 
     def test_no_duplicate_after_normalization(self):
         """Varian ejaan yang dilipat slang normalizer = pekerjaan ganda untuk sparse."""
-        for pill in PILL_MAPPING:
+        for pill in FACILITY_ATTRIBUTE_PILLS:
             seen = {}
             for kw in _keywords(pill):
                 key = tuple(tokenize_for_match(kw))
@@ -57,19 +75,26 @@ class PillKeywordCurationTests(unittest.TestCase):
                 seen[key] = kw
 
     def test_no_drift_prone_unigrams(self):
-        for pill in PILL_MAPPING:
+        for pill in FACILITY_ATTRIBUTE_PILLS:
             bad = _flat_tokens(pill) & DRIFT_TOKENS
             self.assertFalse(bad, f"{pill}: token rawan drift {sorted(bad)}")
 
     def test_no_function_word_tokens(self):
-        for pill in PILL_MAPPING:
+        for pill in FACILITY_ATTRIBUTE_PILLS:
             bad = _flat_tokens(pill) & FUNCTION_TOKENS
             self.assertFalse(bad, f"{pill}: kata fungsi {sorted(bad)}")
 
     def test_no_junk_short_tokens(self):
-        for pill in PILL_MAPPING:
+        for pill in FACILITY_ATTRIBUTE_PILLS:
             bad = {t for t in _flat_tokens(pill) if len(t) < 3 and t not in SHORT_TOKEN_ALLOW}
             self.assertFalse(bad, f"{pill}: token pendek {sorted(bad)}")
+
+    def test_activity_primary_anchors_curation(self):
+        for pill in ACTIVITY_PILL_KEYS:
+            bad_drift = _flat_tokens(pill) & DRIFT_TOKENS
+            self.assertFalse(bad_drift, f"{pill}: drift jangkar utama {sorted(bad_drift)}")
+            bad_fn = _flat_tokens(pill) & FUNCTION_TOKENS
+            self.assertFalse(bad_fn, f"{pill}: kata fungsi jangkar utama {sorted(bad_fn)}")
 
     def test_distinctive_anchors_retained(self):
         # Bentuk kanonik setelah slang normalizer (wfc -> work from cafe, mabar -> main bareng,

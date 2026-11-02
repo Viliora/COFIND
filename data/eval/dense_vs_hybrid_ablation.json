@@ -1,0 +1,3944 @@
+{
+  "config": {
+    "judgments": "data/eval/relevance_judgments.json",
+    "eval_queries": "data/eval/eval_queries.json",
+    "query_count": 33,
+    "k_values": [
+      7,
+      30
+    ],
+    "retrieval_top_k": 30,
+    "miss_analysis_k": 7,
+    "relevant_threshold": "grade >= 1"
+  },
+  "dense_score_distribution": {
+    "n_scores": 1650,
+    "global_p5": 0.7914,
+    "global_p50": 0.8362,
+    "global_p95": 0.8728,
+    "activity_dense_min_env": "0.85",
+    "per_query": [
+      {
+        "query_id": "gq-pill-kerja-wfc-01",
+        "min": 0.0,
+        "p50": 0.8245,
+        "p95": 0.8493,
+        "max": 0.8602
+      },
+      {
+        "query_id": "gq-pill-kerja-colokan-02",
+        "min": 0.0,
+        "p50": 0.8245,
+        "p95": 0.8493,
+        "max": 0.8602
+      },
+      {
+        "query_id": "gq-pill-belajar-03",
+        "min": 0.0,
+        "p50": 0.8234,
+        "p95": 0.8462,
+        "max": 0.8611
+      },
+      {
+        "query_id": "gq-pill-game-04",
+        "min": 0.0,
+        "p50": 0.8198,
+        "p95": 0.8346,
+        "max": 0.8388
+      },
+      {
+        "query_id": "gq-pill-keluarga-05",
+        "min": 0.0,
+        "p50": 0.8581,
+        "p95": 0.8806,
+        "max": 0.8944
+      },
+      {
+        "query_id": "gq-pill-meeting-06",
+        "min": 0.0,
+        "p50": 0.8558,
+        "p95": 0.8765,
+        "max": 0.8916
+      },
+      {
+        "query_id": "gq-pill-ig-07",
+        "min": 0.0,
+        "p50": 0.8544,
+        "p95": 0.8717,
+        "max": 0.8817
+      },
+      {
+        "query_id": "gq-pill-parkir-08",
+        "min": 0.0,
+        "p50": 0.8575,
+        "p95": 0.8742,
+        "max": 0.8796
+      },
+      {
+        "query_id": "gq-pill-musholla-09",
+        "min": 0.0,
+        "p50": 0.8203,
+        "p95": 0.8394,
+        "max": 0.8538
+      },
+      {
+        "query_id": "gq-pill-24jam-10",
+        "min": 0.0,
+        "p50": 0.8483,
+        "p95": 0.8656,
+        "max": 0.9017
+      },
+      {
+        "query_id": "gq-pill-multi-11",
+        "min": 0.0,
+        "p50": 0.8245,
+        "p95": 0.8493,
+        "max": 0.8602
+      },
+      {
+        "query_id": "gq-ft-wfc-12",
+        "min": 0.0,
+        "p50": 0.7997,
+        "p95": 0.8188,
+        "max": 0.8329
+      },
+      {
+        "query_id": "gq-ft-murah-musholla-13",
+        "min": 0.0,
+        "p50": 0.829,
+        "p95": 0.8514,
+        "max": 0.8668
+      },
+      {
+        "query_id": "gq-ft-hidden-gem-14",
+        "min": 0.0,
+        "p50": 0.8276,
+        "p95": 0.8588,
+        "max": 0.8749
+      },
+      {
+        "query_id": "gq-ft-game-15",
+        "min": 0.0,
+        "p50": 0.7925,
+        "p95": 0.8135,
+        "max": 0.8294
+      },
+      {
+        "query_id": "gq-ft-tenang-16",
+        "min": 0.0,
+        "p50": 0.8356,
+        "p95": 0.8527,
+        "max": 0.8664
+      },
+      {
+        "query_id": "gq-ft-wifi-17",
+        "min": 0.0,
+        "p50": 0.8426,
+        "p95": 0.8607,
+        "max": 0.8697
+      },
+      {
+        "query_id": "gq-ft-umum-18",
+        "min": 0.0,
+        "p50": 0.8633,
+        "p95": 0.8826,
+        "max": 0.9036
+      },
+      {
+        "query_id": "gq-pill-kerja-musholla-colokan-19",
+        "min": 0.0,
+        "p50": 0.8245,
+        "p95": 0.8493,
+        "max": 0.8602
+      },
+      {
+        "query_id": "gq-pill-belajar-wifi-20",
+        "min": 0.0,
+        "p50": 0.8234,
+        "p95": 0.8462,
+        "max": 0.8611
+      },
+      {
+        "query_id": "gq-pill-nongkrong-21",
+        "min": 0.0,
+        "p50": 0.8549,
+        "p95": 0.8742,
+        "max": 0.8781
+      },
+      {
+        "query_id": "gq-pill-dessert-22",
+        "min": 0.0,
+        "p50": 0.8547,
+        "p95": 0.8823,
+        "max": 0.901
+      },
+      {
+        "query_id": "gq-pill-toilet-23",
+        "min": 0.0,
+        "p50": 0.8417,
+        "p95": 0.8746,
+        "max": 0.8896
+      },
+      {
+        "query_id": "gq-pill-smoking-24",
+        "min": 0.0,
+        "p50": 0.8447,
+        "p95": 0.8722,
+        "max": 0.9044
+      },
+      {
+        "query_id": "gq-pill-outdoor-25",
+        "min": 0.0,
+        "p50": 0.8398,
+        "p95": 0.8652,
+        "max": 0.8739
+      },
+      {
+        "query_id": "gq-pill-kerja-privat-26",
+        "min": 0.0,
+        "p50": 0.8245,
+        "p95": 0.8493,
+        "max": 0.8602
+      },
+      {
+        "query_id": "gq-pill-menu-27",
+        "min": 0.0,
+        "p50": 0.8606,
+        "p95": 0.8837,
+        "max": 0.8872
+      },
+      {
+        "query_id": "gq-pill-tenang-28",
+        "min": 0.0,
+        "p50": 0.8234,
+        "p95": 0.8462,
+        "max": 0.8611
+      },
+      {
+        "query_id": "gq-ft-musholla-wfc-29",
+        "min": 0.0,
+        "p50": 0.8433,
+        "p95": 0.8672,
+        "max": 0.8853
+      },
+      {
+        "query_id": "gq-ft-parkir-30",
+        "min": 0.0,
+        "p50": 0.8534,
+        "p95": 0.8745,
+        "max": 0.8833
+      },
+      {
+        "query_id": "gq-ft-estetik-31",
+        "min": 0.0,
+        "p50": 0.8322,
+        "p95": 0.8524,
+        "max": 0.8572
+      },
+      {
+        "query_id": "gq-ft-meeting-32",
+        "min": 0.0,
+        "p50": 0.8507,
+        "p95": 0.868,
+        "max": 0.8691
+      },
+      {
+        "query_id": "gq-ft-colokan-33",
+        "min": 0.0,
+        "p50": 0.8339,
+        "p95": 0.8478,
+        "max": 0.8574
+      }
+    ]
+  },
+  "dense_miss_analysis": [
+    {
+      "relevant_count": 12,
+      "missed_at_k": 8,
+      "missed_with_lexical_in_reviews": 8,
+      "missed_in_bm25_top_k": 4,
+      "missed_place_ids": [
+        "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+        "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+        "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+        "ChIJpXpEsPNZHS4Rciespc96M5o",
+        "ChIJ86JcchJZHS4ROKWj6t-l144",
+        "ChIJ2bmXfABZHS4RViKTqagFQq0",
+        "ChIJfWPGdYFZHS4RYfv8vJ8RB6Y",
+        "ChIJ81gXuG9ZHS4RSapv9vDcC4w"
+      ],
+      "query_id": "gq-pill-kerja-wfc-01",
+      "sparse_tokens_sample": [
+        "kerja",
+        "wfc",
+        "laptopan",
+        "wfh",
+        "ngantor",
+        "remote",
+        "work",
+        "from",
+        "kerjaan",
+        "kantor"
+      ]
+    },
+    {
+      "relevant_count": 12,
+      "missed_at_k": 9,
+      "missed_with_lexical_in_reviews": 9,
+      "missed_in_bm25_top_k": 4,
+      "missed_place_ids": [
+        "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+        "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+        "ChIJpXpEsPNZHS4Rciespc96M5o",
+        "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+        "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+        "ChIJ2bmXfABZHS4RViKTqagFQq0",
+        "ChIJfWPGdYFZHS4RYfv8vJ8RB6Y",
+        "ChIJpW1EUQBZHS4RZ0ACF2qb67g",
+        "ChIJ81gXuG9ZHS4RSapv9vDcC4w"
+      ],
+      "query_id": "gq-pill-kerja-colokan-02",
+      "sparse_tokens_sample": [
+        "kerja",
+        "wfc",
+        "laptopan",
+        "wfh",
+        "ngantor",
+        "remote",
+        "work",
+        "from",
+        "kerjaan",
+        "kantor"
+      ]
+    },
+    {
+      "relevant_count": 17,
+      "missed_at_k": 11,
+      "missed_with_lexical_in_reviews": 11,
+      "missed_in_bm25_top_k": 5,
+      "missed_place_ids": [
+        "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+        "ChIJab9iZ7xZHS4RLvSMRkEKzUs",
+        "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJ2bmXfABZHS4RViKTqagFQq0",
+        "ChIJPa6swGtZHS4RrbIlRvgBgok",
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJfWPGdYFZHS4RYfv8vJ8RB6Y",
+        "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+        "ChIJ81gXuG9ZHS4RSapv9vDcC4w"
+      ],
+      "query_id": "gq-pill-belajar-03",
+      "sparse_tokens_sample": [
+        "belajar",
+        "nugas",
+        "ngerjain",
+        "tugas",
+        "skripsi",
+        "mahasiswa",
+        "kuliah",
+        "baca",
+        "buku",
+        "fokus"
+      ]
+    },
+    {
+      "relevant_count": 3,
+      "missed_at_k": 1,
+      "missed_with_lexical_in_reviews": 0,
+      "missed_in_bm25_top_k": 0,
+      "missed_place_ids": [
+        "ChIJ71m2hZZZHS4RrOgKJYP_7zw"
+      ],
+      "query_id": "gq-pill-game-04",
+      "sparse_tokens_sample": [
+        "mabar",
+        "game",
+        "mlbb",
+        "legends",
+        "pubg",
+        "valorant",
+        "ngegame",
+        "legend",
+        "free",
+        "fire"
+      ]
+    },
+    {
+      "relevant_count": 35,
+      "missed_at_k": 28,
+      "missed_with_lexical_in_reviews": 18,
+      "missed_in_bm25_top_k": 3,
+      "missed_place_ids": [
+        "ChIJXWJyFzZZHS4R79ouaF5kOF0",
+        "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJuRi629BZHS4ROKQCQ8ThFl0",
+        "ChIJPa6swGtZHS4RrbIlRvgBgok",
+        "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+        "ChIJp-W8A2FZHS4RlV9IFvidej4",
+        "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+        "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+        "ChIJB_kHTgBZHS4RpYGXBi5Mr8k",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJDcJgropZHS4RKuh8s52jy9U"
+      ],
+      "query_id": "gq-pill-keluarga-05",
+      "sparse_tokens_sample": [
+        "keluarga",
+        "family",
+        "ramah",
+        "anak",
+        "playground",
+        "kursi",
+        "bayi",
+        "babychair",
+        "bawa",
+        "friendly"
+      ]
+    },
+    {
+      "relevant_count": 34,
+      "missed_at_k": 27,
+      "missed_with_lexical_in_reviews": 11,
+      "missed_in_bm25_top_k": 5,
+      "missed_place_ids": [
+        "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJPa6swGtZHS4RrbIlRvgBgok",
+        "ChIJmQzQurxZHS4Rg1tWAwBIS-g",
+        "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+        "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+        "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+        "ChIJoy_lbNpZHS4R703thlouzo8",
+        "ChIJB_kHTgBZHS4RpYGXBi5Mr8k",
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+        "ChIJ-9zLddBZHS4R-8L5Jj7n77M"
+      ],
+      "query_id": "gq-pill-meeting-06",
+      "sparse_tokens_sample": [
+        "meeting",
+        "pertemuan",
+        "rapat",
+        "diskusi",
+        "berdiskusi",
+        "arisan",
+        "bisnis",
+        "kumpul",
+        "tim",
+        "kerja"
+      ]
+    },
+    {
+      "relevant_count": 36,
+      "missed_at_k": 29,
+      "missed_with_lexical_in_reviews": 16,
+      "missed_in_bm25_top_k": 7,
+      "missed_place_ids": [
+        "ChIJuRi629BZHS4ROKQCQ8ThFl0",
+        "ChIJPa6swGtZHS4RrbIlRvgBgok",
+        "ChIJp-W8A2FZHS4RlV9IFvidej4",
+        "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+        "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+        "ChIJQTQMIqJZHS4RkEq6uGgYu3c",
+        "ChIJQRsGzyVZHS4R8dx2vktO02k",
+        "ChIJwWsbbkVZHS4RDUndPC0OSh4"
+      ],
+      "query_id": "gq-pill-ig-07",
+      "sparse_tokens_sample": [
+        "instagrammable",
+        "instagramable",
+        "spot",
+        "foto",
+        "estetik",
+        "aesthetic",
+        "fotogenik",
+        "selfie",
+        "photo",
+        "banyak"
+      ]
+    },
+    {
+      "relevant_count": 20,
+      "missed_at_k": 17,
+      "missed_with_lexical_in_reviews": 17,
+      "missed_in_bm25_top_k": 4,
+      "missed_place_ids": [
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+        "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+        "ChIJQRsGzyVZHS4R8dx2vktO02k",
+        "ChIJWfoJ5pVZHS4RwOqVk4ETSs8",
+        "ChIJ2bmXfABZHS4RViKTqagFQq0",
+        "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+        "ChIJHdYrWU1ZHS4RuU_qB_QKTdI",
+        "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+        "ChIJa8iTQOpZHS4RdVFAK__JB-c"
+      ],
+      "query_id": "gq-pill-parkir-08",
+      "sparse_tokens_sample": [
+        "parkir"
+      ]
+    },
+    {
+      "relevant_count": 8,
+      "missed_at_k": 6,
+      "missed_with_lexical_in_reviews": 6,
+      "missed_in_bm25_top_k": 4,
+      "missed_place_ids": [
+        "ChIJoy_lbNpZHS4R703thlouzo8",
+        "ChIJpXpEsPNZHS4Rciespc96M5o",
+        "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJf0A-EQBZHS4RQSh5k1CbyXg"
+      ],
+      "query_id": "gq-pill-musholla-09",
+      "sparse_tokens_sample": [
+        "musholla",
+        "salat",
+        "mukena"
+      ]
+    },
+    {
+      "relevant_count": 11,
+      "missed_at_k": 9,
+      "missed_with_lexical_in_reviews": 9,
+      "missed_in_bm25_top_k": 4,
+      "missed_place_ids": [
+        "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+        "ChIJpXpEsPNZHS4Rciespc96M5o",
+        "ChIJ86JcchJZHS4ROKWj6t-l144",
+        "ChIJa8iTQOpZHS4RdVFAK__JB-c",
+        "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+        "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+        "ChIJPa6swGtZHS4RrbIlRvgBgok",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM"
+      ],
+      "query_id": "gq-pill-24jam-10",
+      "sparse_tokens_sample": [
+        "24",
+        "jam",
+        "hours",
+        "nonstop"
+      ]
+    },
+    {
+      "relevant_count": 8,
+      "missed_at_k": 5,
+      "missed_with_lexical_in_reviews": 5,
+      "missed_in_bm25_top_k": 3,
+      "missed_place_ids": [
+        "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+        "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+        "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+        "ChIJpXpEsPNZHS4Rciespc96M5o",
+        "ChIJ2bmXfABZHS4RViKTqagFQq0"
+      ],
+      "query_id": "gq-pill-multi-11",
+      "sparse_tokens_sample": [
+        "kerja",
+        "wfc",
+        "laptopan",
+        "wfh",
+        "ngantor",
+        "remote",
+        "work",
+        "from",
+        "kerjaan",
+        "kantor"
+      ]
+    },
+    {
+      "relevant_count": 49,
+      "missed_at_k": 42,
+      "missed_with_lexical_in_reviews": 18,
+      "missed_in_bm25_top_k": 5,
+      "missed_place_ids": [
+        "ChIJXWJyFzZZHS4R79ouaF5kOF0",
+        "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJuRi629BZHS4ROKQCQ8ThFl0",
+        "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+        "ChIJmQzQurxZHS4Rg1tWAwBIS-g",
+        "ChIJp-W8A2FZHS4RlV9IFvidej4",
+        "ChIJoy_lbNpZHS4R703thlouzo8",
+        "ChIJB_kHTgBZHS4RpYGXBi5Mr8k",
+        "ChIJIRKzS6lbHS4RcUszDziz-jw",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJDcJgropZHS4RKuh8s52jy9U"
+      ],
+      "query_id": "gq-ft-wfc-12",
+      "sparse_tokens_sample": [
+        "cafe",
+        "wfc"
+      ]
+    },
+    {
+      "relevant_count": 49,
+      "missed_at_k": 42,
+      "missed_with_lexical_in_reviews": 26,
+      "missed_in_bm25_top_k": 3,
+      "missed_place_ids": [
+        "ChIJXWJyFzZZHS4R79ouaF5kOF0",
+        "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJuRi629BZHS4ROKQCQ8ThFl0",
+        "ChIJPa6swGtZHS4RrbIlRvgBgok",
+        "ChIJmQzQurxZHS4Rg1tWAwBIS-g",
+        "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+        "ChIJp-W8A2FZHS4RlV9IFvidej4",
+        "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+        "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+        "ChIJB_kHTgBZHS4RpYGXBi5Mr8k",
+        "ChIJIRKzS6lbHS4RcUszDziz-jw"
+      ],
+      "query_id": "gq-ft-murah-musholla-13",
+      "sparse_tokens_sample": [
+        "kopi",
+        "murah",
+        "musholla"
+      ]
+    },
+    {
+      "relevant_count": 50,
+      "missed_at_k": 43,
+      "missed_with_lexical_in_reviews": 1,
+      "missed_in_bm25_top_k": 4,
+      "missed_place_ids": [
+        "ChIJXWJyFzZZHS4R79ouaF5kOF0",
+        "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJuRi629BZHS4ROKQCQ8ThFl0",
+        "ChIJPa6swGtZHS4RrbIlRvgBgok",
+        "ChIJmQzQurxZHS4Rg1tWAwBIS-g",
+        "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+        "ChIJp-W8A2FZHS4RlV9IFvidej4",
+        "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+        "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+        "ChIJoy_lbNpZHS4R703thlouzo8",
+        "ChIJB_kHTgBZHS4RpYGXBi5Mr8k"
+      ],
+      "query_id": "gq-ft-hidden-gem-14",
+      "sparse_tokens_sample": [
+        "hidden",
+        "gem",
+        "ngopi"
+      ]
+    },
+    {
+      "relevant_count": 50,
+      "missed_at_k": 43,
+      "missed_with_lexical_in_reviews": 0,
+      "missed_in_bm25_top_k": 6,
+      "missed_place_ids": [
+        "ChIJXWJyFzZZHS4R79ouaF5kOF0",
+        "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJuRi629BZHS4ROKQCQ8ThFl0",
+        "ChIJPa6swGtZHS4RrbIlRvgBgok",
+        "ChIJmQzQurxZHS4Rg1tWAwBIS-g",
+        "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+        "ChIJp-W8A2FZHS4RlV9IFvidej4",
+        "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+        "ChIJoy_lbNpZHS4R703thlouzo8",
+        "ChIJB_kHTgBZHS4RpYGXBi5Mr8k",
+        "ChIJIRKzS6lbHS4RcUszDziz-jw"
+      ],
+      "query_id": "gq-ft-game-15",
+      "sparse_tokens_sample": [
+        "mabar",
+        "ml"
+      ]
+    },
+    {
+      "relevant_count": 49,
+      "missed_at_k": 42,
+      "missed_with_lexical_in_reviews": 11,
+      "missed_in_bm25_top_k": 6,
+      "missed_place_ids": [
+        "ChIJXWJyFzZZHS4R79ouaF5kOF0",
+        "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJuRi629BZHS4ROKQCQ8ThFl0",
+        "ChIJPa6swGtZHS4RrbIlRvgBgok",
+        "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+        "ChIJmQzQurxZHS4Rg1tWAwBIS-g",
+        "ChIJp-W8A2FZHS4RlV9IFvidej4",
+        "ChIJoy_lbNpZHS4R703thlouzo8",
+        "ChIJB_kHTgBZHS4RpYGXBi5Mr8k",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJDcJgropZHS4RKuh8s52jy9U"
+      ],
+      "query_id": "gq-ft-tenang-16",
+      "sparse_tokens_sample": [
+        "tenang",
+        "ngoding"
+      ]
+    },
+    {
+      "relevant_count": 50,
+      "missed_at_k": 43,
+      "missed_with_lexical_in_reviews": 9,
+      "missed_in_bm25_top_k": 6,
+      "missed_place_ids": [
+        "ChIJXWJyFzZZHS4R79ouaF5kOF0",
+        "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJuRi629BZHS4ROKQCQ8ThFl0",
+        "ChIJPa6swGtZHS4RrbIlRvgBgok",
+        "ChIJmQzQurxZHS4Rg1tWAwBIS-g",
+        "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+        "ChIJp-W8A2FZHS4RlV9IFvidej4",
+        "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+        "ChIJoy_lbNpZHS4R703thlouzo8",
+        "ChIJB_kHTgBZHS4RpYGXBi5Mr8k",
+        "ChIJIRKzS6lbHS4RcUszDziz-jw"
+      ],
+      "query_id": "gq-ft-wifi-17",
+      "sparse_tokens_sample": [
+        "wifi",
+        "kencang",
+        "colokan"
+      ]
+    },
+    {
+      "relevant_count": 49,
+      "missed_at_k": 42,
+      "missed_with_lexical_in_reviews": 34,
+      "missed_in_bm25_top_k": 4,
+      "missed_place_ids": [
+        "ChIJXWJyFzZZHS4R79ouaF5kOF0",
+        "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+        "ChIJuRi629BZHS4ROKQCQ8ThFl0",
+        "ChIJPa6swGtZHS4RrbIlRvgBgok",
+        "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+        "ChIJmQzQurxZHS4Rg1tWAwBIS-g",
+        "ChIJp-W8A2FZHS4RlV9IFvidej4",
+        "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+        "ChIJoy_lbNpZHS4R703thlouzo8",
+        "ChIJB_kHTgBZHS4RpYGXBi5Mr8k",
+        "ChIJIRKzS6lbHS4RcUszDziz-jw",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo"
+      ],
+      "query_id": "gq-ft-umum-18",
+      "sparse_tokens_sample": [
+        "kopi",
+        "enak"
+      ]
+    },
+    {
+      "relevant_count": 3,
+      "missed_at_k": 2,
+      "missed_with_lexical_in_reviews": 2,
+      "missed_in_bm25_top_k": 0,
+      "missed_place_ids": [
+        "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+        "ChIJpXpEsPNZHS4Rciespc96M5o"
+      ],
+      "query_id": "gq-pill-kerja-musholla-colokan-19",
+      "sparse_tokens_sample": [
+        "kerja",
+        "wfc",
+        "laptopan",
+        "wfh",
+        "ngantor",
+        "remote",
+        "work",
+        "from",
+        "kerjaan",
+        "kantor"
+      ]
+    },
+    {
+      "relevant_count": 10,
+      "missed_at_k": 8,
+      "missed_with_lexical_in_reviews": 7,
+      "missed_in_bm25_top_k": 2,
+      "missed_place_ids": [
+        "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+        "ChIJ86JcchJZHS4ROKWj6t-l144",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJ2bmXfABZHS4RViKTqagFQq0",
+        "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+        "ChIJfWPGdYFZHS4RYfv8vJ8RB6Y",
+        "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+        "ChIJ81gXuG9ZHS4RSapv9vDcC4w"
+      ],
+      "query_id": "gq-pill-belajar-wifi-20",
+      "sparse_tokens_sample": [
+        "belajar",
+        "nugas",
+        "ngerjain",
+        "tugas",
+        "skripsi",
+        "mahasiswa",
+        "kuliah",
+        "baca",
+        "buku",
+        "fokus"
+      ]
+    },
+    {
+      "relevant_count": 44,
+      "missed_at_k": 37,
+      "missed_with_lexical_in_reviews": 28,
+      "missed_in_bm25_top_k": 5,
+      "missed_place_ids": [
+        "ChIJXWJyFzZZHS4R79ouaF5kOF0",
+        "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJPa6swGtZHS4RrbIlRvgBgok",
+        "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+        "ChIJp-W8A2FZHS4RlV9IFvidej4",
+        "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+        "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+        "ChIJB_kHTgBZHS4RpYGXBi5Mr8k",
+        "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+        "ChIJ-9zLddBZHS4R-8L5Jj7n77M",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM"
+      ],
+      "query_id": "gq-pill-nongkrong-21",
+      "sparse_tokens_sample": [
+        "nongkrong",
+        "hangout",
+        "ngobrol",
+        "ngumpul",
+        "bareng",
+        "teman",
+        "lama",
+        "nongki",
+        "santai",
+        "kumpul"
+      ]
+    },
+    {
+      "relevant_count": 12,
+      "missed_at_k": 9,
+      "missed_with_lexical_in_reviews": 9,
+      "missed_in_bm25_top_k": 4,
+      "missed_place_ids": [
+        "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+        "ChIJ-4iNNH1ZHS4RYvU4WkG0ik4",
+        "ChIJpXpEsPNZHS4Rciespc96M5o",
+        "ChIJWfoJ5pVZHS4RwOqVk4ETSs8",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJOeviAWhYHS4R03LHTCewhU4",
+        "ChIJ2bmXfABZHS4RViKTqagFQq0",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A"
+      ],
+      "query_id": "gq-pill-dessert-22",
+      "sparse_tokens_sample": [
+        "dessert",
+        "cheesecake",
+        "cake",
+        "brownies",
+        "croissant",
+        "pastry",
+        "kue"
+      ]
+    },
+    {
+      "relevant_count": 6,
+      "missed_at_k": 3,
+      "missed_with_lexical_in_reviews": 3,
+      "missed_in_bm25_top_k": 0,
+      "missed_place_ids": [
+        "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+        "ChIJf0A-EQBZHS4RQSh5k1CbyXg",
+        "ChIJV7mtlzNZHS4R0rK_eHkd0LU"
+      ],
+      "query_id": "gq-pill-toilet-23",
+      "sparse_tokens_sample": [
+        "toilet",
+        "toiletnya",
+        "wc",
+        "kamar",
+        "mandi",
+        "restroom"
+      ]
+    },
+    {
+      "relevant_count": 18,
+      "missed_at_k": 11,
+      "missed_with_lexical_in_reviews": 11,
+      "missed_in_bm25_top_k": 2,
+      "missed_place_ids": [
+        "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+        "ChIJ-4iNNH1ZHS4RYvU4WkG0ik4",
+        "ChIJpXpEsPNZHS4Rciespc96M5o",
+        "ChIJ86JcchJZHS4ROKWj6t-l144",
+        "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJ2bmXfABZHS4RViKTqagFQq0",
+        "ChIJf0A-EQBZHS4RQSh5k1CbyXg",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+        "ChIJ81gXuG9ZHS4RSapv9vDcC4w"
+      ],
+      "query_id": "gq-pill-smoking-24",
+      "sparse_tokens_sample": [
+        "smoking",
+        "area",
+        "room",
+        "merokok",
+        "rokok"
+      ]
+    },
+    {
+      "relevant_count": 19,
+      "missed_at_k": 13,
+      "missed_with_lexical_in_reviews": 13,
+      "missed_in_bm25_top_k": 5,
+      "missed_place_ids": [
+        "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+        "ChIJWfoJ5pVZHS4RwOqVk4ETSs8",
+        "ChIJ2bmXfABZHS4RViKTqagFQq0",
+        "ChIJnZIEEABZHS4RBs_9Iy6wESM",
+        "ChIJV7mtlzNZHS4R0rK_eHkd0LU",
+        "ChIJpXpEsPNZHS4Rciespc96M5o",
+        "ChIJ86JcchJZHS4ROKWj6t-l144",
+        "ChIJ9RWUkaZZHS4RYeuZOYAMQ-4",
+        "ChIJf0A-EQBZHS4RQSh5k1CbyXg"
+      ],
+      "query_id": "gq-pill-outdoor-25",
+      "sparse_tokens_sample": [
+        "outdoor",
+        "semi",
+        "rooftop"
+      ]
+    },
+    {
+      "relevant_count": 15,
+      "missed_at_k": 12,
+      "missed_with_lexical_in_reviews": 11,
+      "missed_in_bm25_top_k": 3,
+      "missed_place_ids": [
+        "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+        "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+        "ChIJ-4iNNH1ZHS4RYvU4WkG0ik4",
+        "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+        "ChIJ86JcchJZHS4ROKWj6t-l144",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJ2bmXfABZHS4RViKTqagFQq0",
+        "ChIJ-9zLddBZHS4R-8L5Jj7n77M",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJfWPGdYFZHS4RYfv8vJ8RB6Y",
+        "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+        "ChIJ81gXuG9ZHS4RSapv9vDcC4w"
+      ],
+      "query_id": "gq-pill-kerja-privat-26",
+      "sparse_tokens_sample": [
+        "kerja",
+        "wfc",
+        "laptopan",
+        "wfh",
+        "ngantor",
+        "remote",
+        "work",
+        "from",
+        "kerjaan",
+        "kantor"
+      ]
+    },
+    {
+      "relevant_count": 34,
+      "missed_at_k": 27,
+      "missed_with_lexical_in_reviews": 27,
+      "missed_in_bm25_top_k": 6,
+      "missed_place_ids": [
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJuRi629BZHS4ROKQCQ8ThFl0",
+        "ChIJPa6swGtZHS4RrbIlRvgBgok",
+        "ChIJmQzQurxZHS4Rg1tWAwBIS-g",
+        "ChIJp-W8A2FZHS4RlV9IFvidej4",
+        "ChIJoy_lbNpZHS4R703thlouzo8",
+        "ChIJIRKzS6lbHS4RcUszDziz-jw",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+        "ChIJhx6zl0BZHS4RGNla_oPoIJ0"
+      ],
+      "query_id": "gq-pill-menu-27",
+      "sparse_tokens_sample": [
+        "makanan",
+        "berat",
+        "nasi",
+        "steak",
+        "pasta",
+        "mie",
+        "ayam",
+        "rice",
+        "bowl",
+        "sarapan"
+      ]
+    },
+    {
+      "relevant_count": 14,
+      "missed_at_k": 12,
+      "missed_with_lexical_in_reviews": 10,
+      "missed_in_bm25_top_k": 4,
+      "missed_place_ids": [
+        "ChIJKw9wJpxZHS4RZefJ0o8VSA0",
+        "ChIJ6fOdOEBZHS4RcV3VfZzhYx0",
+        "ChIJoy_lbNpZHS4R703thlouzo8",
+        "ChIJwWsbbkVZHS4RDUndPC0OSh4",
+        "ChIJ86JcchJZHS4ROKWj6t-l144",
+        "ChIJIRKzS6lbHS4RcUszDziz-jw",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo",
+        "ChIJDcJgropZHS4RKuh8s52jy9U",
+        "ChIJW0ypCwBZHS4RXZ7renLGdwo",
+        "ChIJG-xwV2ZZHS4R0WyGi5bbvoM",
+        "ChIJ2Xb_uKFZHS4R6PYxDLj5m_A",
+        "ChIJ81gXuG9ZHS4RSapv9vDcC4w"
+      ],
+      "query_id": "gq-pill-tenang-28",
+      "sparse_tokens_sample": [
+        "belajar",
+        "nugas",
+        "ngerjain",
+        "tugas",
+        "skripsi",
+        "mahasiswa",
+        "kuliah",
+        "baca",
+        "buku",
+        "fokus"
+      ]
+    },
+    {
+      "relevant_count": 50,
+      "missed_at_k": 43,
+      "missed_with_lexical_in_reviews": 5,
+      "missed_in_bm25_top_k": 4,
+      "missed_place_ids": [
+        "ChIJXWJyFzZZHS4R79ouaF5kOF0",
+        "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJuRi629BZHS4ROKQCQ8ThFl0",
+        "ChIJPa6swGtZHS4RrbIlRvgBgok",
+        "ChIJmQzQurxZHS4Rg1tWAwBIS-g",
+        "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+        "ChIJp-W8A2FZHS4RlV9IFvidej4",
+        "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+        "ChIJoy_lbNpZHS4R703thlouzo8",
+        "ChIJB_kHTgBZHS4RpYGXBi5Mr8k",
+        "ChIJIRKzS6lbHS4RcUszDziz-jw"
+      ],
+      "query_id": "gq-ft-musholla-wfc-29",
+      "sparse_tokens_sample": [
+        "musholla",
+        "terminal banyak",
+        "wfc"
+      ]
+    },
+    {
+      "relevant_count": 49,
+      "missed_at_k": 42,
+      "missed_with_lexical_in_reviews": 17,
+      "missed_in_bm25_top_k": 2,
+      "missed_place_ids": [
+        "ChIJXWJyFzZZHS4R79ouaF5kOF0",
+        "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJuRi629BZHS4ROKQCQ8ThFl0",
+        "ChIJPa6swGtZHS4RrbIlRvgBgok",
+        "ChIJmQzQurxZHS4Rg1tWAwBIS-g",
+        "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+        "ChIJp-W8A2FZHS4RlV9IFvidej4",
+        "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+        "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+        "ChIJoy_lbNpZHS4R703thlouzo8",
+        "ChIJB_kHTgBZHS4RpYGXBi5Mr8k"
+      ],
+      "query_id": "gq-ft-parkir-30",
+      "sparse_tokens_sample": [
+        "parkir",
+        "luas",
+        "mobil"
+      ]
+    },
+    {
+      "relevant_count": 50,
+      "missed_at_k": 43,
+      "missed_with_lexical_in_reviews": 4,
+      "missed_in_bm25_top_k": 3,
+      "missed_place_ids": [
+        "ChIJXWJyFzZZHS4R79ouaF5kOF0",
+        "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+        "ChIJuRi629BZHS4ROKQCQ8ThFl0",
+        "ChIJPa6swGtZHS4RrbIlRvgBgok",
+        "ChIJmQzQurxZHS4Rg1tWAwBIS-g",
+        "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+        "ChIJp-W8A2FZHS4RlV9IFvidej4",
+        "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+        "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+        "ChIJoy_lbNpZHS4R703thlouzo8",
+        "ChIJIRKzS6lbHS4RcUszDziz-jw",
+        "ChIJBYqZVwBZHS4Rk3hdsQzoQSo"
+      ],
+      "query_id": "gq-ft-estetik-31",
+      "sparse_tokens_sample": [
+        "estetik",
+        "foto"
+      ]
+    },
+    {
+      "relevant_count": 50,
+      "missed_at_k": 43,
+      "missed_with_lexical_in_reviews": 4,
+      "missed_in_bm25_top_k": 7,
+      "missed_place_ids": [
+        "ChIJXWJyFzZZHS4R79ouaF5kOF0",
+        "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+        "ChIJuRi629BZHS4ROKQCQ8ThFl0",
+        "ChIJPa6swGtZHS4RrbIlRvgBgok",
+        "ChIJmQzQurxZHS4Rg1tWAwBIS-g",
+        "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+        "ChIJp-W8A2FZHS4RlV9IFvidej4",
+        "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+        "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+        "ChIJoy_lbNpZHS4R703thlouzo8",
+        "ChIJB_kHTgBZHS4RpYGXBi5Mr8k",
+        "ChIJIRKzS6lbHS4RcUszDziz-jw"
+      ],
+      "query_id": "gq-ft-meeting-32",
+      "sparse_tokens_sample": [
+        "rapat",
+        "tim"
+      ]
+    },
+    {
+      "relevant_count": 50,
+      "missed_at_k": 43,
+      "missed_with_lexical_in_reviews": 4,
+      "missed_in_bm25_top_k": 7,
+      "missed_place_ids": [
+        "ChIJXWJyFzZZHS4R79ouaF5kOF0",
+        "ChIJa2Gs4aNZHS4R5ChZPy9N91M",
+        "ChIJp8-aIJdZHS4RntlOSrphQj8",
+        "ChIJuRi629BZHS4ROKQCQ8ThFl0",
+        "ChIJmQzQurxZHS4Rg1tWAwBIS-g",
+        "ChIJpVctpWBZHS4RdUbSlT-pSl8",
+        "ChIJp-W8A2FZHS4RlV9IFvidej4",
+        "ChIJ__9s37JZHS4RmZK5NTVbvvo",
+        "ChIJ81gXuG9ZHS4RSapv9vDcC4w",
+        "ChIJoy_lbNpZHS4R703thlouzo8",
+        "ChIJB_kHTgBZHS4RpYGXBi5Mr8k",
+        "ChIJIRKzS6lbHS4RcUszDziz-jw"
+      ],
+      "query_id": "gq-ft-colokan-33",
+      "sparse_tokens_sample": [
+        "colokan",
+        "ngecas",
+        "laptop"
+      ]
+    }
+  ],
+  "variants": {
+    "dense_only": {
+      "queries": 33,
+      "macro_recall@7": 0.2288,
+      "macro_ndcg@7": 0.6085,
+      "macro_recall@30": 0.6858,
+      "macro_ndcg@30": 0.6854
+    },
+    "bm25_only": {
+      "queries": 33,
+      "macro_recall@7": 0.2948,
+      "macro_ndcg@7": 0.8378,
+      "macro_recall@30": 0.7701,
+      "macro_ndcg@30": 0.8775
+    },
+    "hybrid_rrf": {
+      "queries": 33,
+      "macro_recall@7": 0.2834,
+      "macro_ndcg@7": 0.7847,
+      "macro_recall@30": 0.7854,
+      "macro_ndcg@30": 0.8686,
+      "gate_fnr_relevant": 0.0864,
+      "gate_rejected_relevant": 21,
+      "gate_relevant_total": 243
+    },
+    "dense_ce_rerank": {
+      "queries": 33,
+      "macro_recall@7": 0.2288,
+      "macro_ndcg@7": 0.6085,
+      "macro_recall@30": 0.6858,
+      "macro_ndcg@30": 0.6854
+    }
+  },
+  "per_query": {
+    "dense_only": [
+      {
+        "query_id": "gq-pill-kerja-wfc-01",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.3333,
+        "ndcg@7": 0.3246,
+        "recall@30": 0.75,
+        "ndcg@30": 0.4846
+      },
+      {
+        "query_id": "gq-pill-kerja-colokan-02",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.25,
+        "ndcg@7": 0.3494,
+        "recall@30": 0.75,
+        "ndcg@30": 0.4627
+      },
+      {
+        "query_id": "gq-pill-belajar-03",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.3529,
+        "ndcg@7": 0.5282,
+        "recall@30": 0.7647,
+        "ndcg@30": 0.6101
+      },
+      {
+        "query_id": "gq-pill-game-04",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.6667,
+        "ndcg@7": 0.4525,
+        "recall@30": 0.6667,
+        "ndcg@30": 0.4525
+      },
+      {
+        "query_id": "gq-pill-keluarga-05",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.2,
+        "ndcg@7": 0.5071,
+        "recall@30": 0.8571,
+        "ndcg@30": 0.7411
+      },
+      {
+        "query_id": "gq-pill-meeting-06",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.2059,
+        "ndcg@7": 0.2708,
+        "recall@30": 0.8824,
+        "ndcg@30": 0.4663
+      },
+      {
+        "query_id": "gq-pill-ig-07",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.1944,
+        "ndcg@7": 0.1429,
+        "recall@30": 0.8333,
+        "ndcg@30": 0.4937
+      },
+      {
+        "query_id": "gq-pill-parkir-08",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.15,
+        "ndcg@7": 0.3305,
+        "recall@30": 0.7,
+        "ndcg@30": 0.5604
+      },
+      {
+        "query_id": "gq-pill-musholla-09",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.25,
+        "ndcg@7": 0.2937,
+        "recall@30": 0.75,
+        "ndcg@30": 0.4321
+      },
+      {
+        "query_id": "gq-pill-24jam-10",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.1818,
+        "ndcg@7": 0.214,
+        "recall@30": 0.5455,
+        "ndcg@30": 0.3963
+      },
+      {
+        "query_id": "gq-pill-multi-11",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.375,
+        "ndcg@7": 0.3353,
+        "recall@30": 0.625,
+        "ndcg@30": 0.432
+      },
+      {
+        "query_id": "gq-ft-wfc-12",
+        "route": "free_text",
+        "ranked_count": 30,
+        "recall@7": 0.1429,
+        "ndcg@7": 0.9476,
+        "recall@30": 0.6122,
+        "ndcg@30": 0.9345
+      },
+      {
+        "query_id": "gq-ft-murah-musholla-13",
+        "route": "free_text",
+        "ranked_count": 30,
+        "recall@7": 0.1429,
+        "ndcg@7": 1.0,
+        "recall@30": 0.6122,
+        "ndcg@30": 0.9873
+      },
+      {
+        "query_id": "gq-ft-hidden-gem-14",
+        "route": "free_text",
+        "ranked_count": 30,
+        "recall@7": 0.14,
+        "ndcg@7": 1.0,
+        "recall@30": 0.6,
+        "ndcg@30": 1.0
+      },
+      {
+        "query_id": "gq-ft-game-15",
+        "route": "free_text",
+        "ranked_count": 30,
+        "recall@7": 0.14,
+        "ndcg@7": 1.0,
+        "recall@30": 0.6,
+        "ndcg@30": 1.0
+      },
+      {
+        "query_id": "gq-ft-tenang-16",
+        "route": "free_text",
+        "ranked_count": 30,
+        "recall@7": 0.1429,
+        "ndcg@7": 0.9476,
+        "recall@30": 0.6122,
+        "ndcg@30": 0.9312
+      },
+      {
+        "query_id": "gq-ft-wifi-17",
+        "route": "free_text",
+        "ranked_count": 30,
+        "recall@7": 0.14,
+        "ndcg@7": 0.9476,
+        "recall@30": 0.6,
+        "ndcg@30": 0.9823
+      },
+      {
+        "query_id": "gq-ft-umum-18",
+        "route": "free_text",
+        "ranked_count": 30,
+        "recall@7": 0.1429,
+        "ndcg@7": 1.0,
+        "recall@30": 0.6122,
+        "ndcg@30": 0.9711
+      },
+      {
+        "query_id": "gq-pill-kerja-musholla-colokan-19",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.3333,
+        "ndcg@7": 0.2272,
+        "recall@30": 0.6667,
+        "ndcg@30": 0.2455
+      },
+      {
+        "query_id": "gq-pill-belajar-wifi-20",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.2,
+        "ndcg@7": 0.1558,
+        "recall@30": 0.8,
+        "ndcg@30": 0.2863
+      },
+      {
+        "query_id": "gq-pill-nongkrong-21",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.1591,
+        "ndcg@7": 0.6889,
+        "recall@30": 0.6818,
+        "ndcg@30": 0.5828
+      },
+      {
+        "query_id": "gq-pill-dessert-22",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.25,
+        "ndcg@7": 0.5702,
+        "recall@30": 0.5,
+        "ndcg@30": 0.5677
+      },
+      {
+        "query_id": "gq-pill-toilet-23",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.5,
+        "ndcg@7": 0.4089,
+        "recall@30": 0.8333,
+        "ndcg@30": 0.5663
+      },
+      {
+        "query_id": "gq-pill-smoking-24",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.3889,
+        "ndcg@7": 0.9215,
+        "recall@30": 0.7222,
+        "ndcg@30": 0.8074
+      },
+      {
+        "query_id": "gq-pill-outdoor-25",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.3158,
+        "ndcg@7": 0.5295,
+        "recall@30": 0.8421,
+        "ndcg@30": 0.6988
+      },
+      {
+        "query_id": "gq-pill-kerja-privat-26",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.2,
+        "ndcg@7": 0.2737,
+        "recall@30": 0.6667,
+        "ndcg@30": 0.468
+      },
+      {
+        "query_id": "gq-pill-menu-27",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.2059,
+        "ndcg@7": 0.5976,
+        "recall@30": 0.6765,
+        "ndcg@30": 0.71
+      },
+      {
+        "query_id": "gq-pill-tenang-28",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.1429,
+        "ndcg@7": 0.1677,
+        "recall@30": 0.8571,
+        "ndcg@30": 0.4041
+      },
+      {
+        "query_id": "gq-ft-musholla-wfc-29",
+        "route": "free_text",
+        "ranked_count": 30,
+        "recall@7": 0.14,
+        "ndcg@7": 1.0,
+        "recall@30": 0.6,
+        "ndcg@30": 0.9598
+      },
+      {
+        "query_id": "gq-ft-parkir-30",
+        "route": "free_text",
+        "ranked_count": 30,
+        "recall@7": 0.1429,
+        "ndcg@7": 1.0,
+        "recall@30": 0.6122,
+        "ndcg@30": 0.9917
+      },
+      {
+        "query_id": "gq-ft-estetik-31",
+        "route": "free_text",
+        "ranked_count": 30,
+        "recall@7": 0.14,
+        "ndcg@7": 0.9476,
+        "recall@30": 0.6,
+        "ndcg@30": 0.9908
+      },
+      {
+        "query_id": "gq-ft-meeting-32",
+        "route": "free_text",
+        "ranked_count": 30,
+        "recall@7": 0.14,
+        "ndcg@7": 1.0,
+        "recall@30": 0.6,
+        "ndcg@30": 1.0
+      },
+      {
+        "query_id": "gq-ft-colokan-33",
+        "route": "free_text",
+        "ranked_count": 30,
+        "recall@7": 0.14,
+        "ndcg@7": 1.0,
+        "recall@30": 0.6,
+        "ndcg@30": 1.0
+      }
+    ],
+    "bm25_only": [
+      {
+        "query_id": "gq-pill-kerja-wfc-01",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.5833,
+        "ndcg@7": 0.8419,
+        "recall@30": 1.0,
+        "ndcg@30": 0.9293
+      },
+      {
+        "query_id": "gq-pill-kerja-colokan-02",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.4167,
+        "ndcg@7": 0.4598,
+        "recall@30": 0.9167,
+        "ndcg@30": 0.6562
+      },
+      {
+        "query_id": "gq-pill-belajar-03",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.4118,
+        "ndcg@7": 1.0,
+        "recall@30": 0.8824,
+        "ndcg@30": 0.9683
+      },
+      {
+        "query_id": "gq-pill-game-04",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.3333,
+        "ndcg@7": 0.4693,
+        "recall@30": 0.6667,
+        "ndcg@30": 0.6049
+      },
+      {
+        "query_id": "gq-pill-keluarga-05",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.1429,
+        "ndcg@7": 0.7215,
+        "recall@30": 0.5714,
+        "ndcg@30": 0.7674
+      },
+      {
+        "query_id": "gq-pill-meeting-06",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.2059,
+        "ndcg@7": 0.9849,
+        "recall@30": 0.6765,
+        "ndcg@30": 0.9262
+      },
+      {
+        "query_id": "gq-pill-ig-07",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.1944,
+        "ndcg@7": 0.8985,
+        "recall@30": 0.5833,
+        "ndcg@30": 0.9023
+      },
+      {
+        "query_id": "gq-pill-parkir-08",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.35,
+        "ndcg@7": 0.9355,
+        "recall@30": 0.95,
+        "ndcg@30": 0.9316
+      },
+      {
+        "query_id": "gq-pill-musholla-09",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.75,
+        "ndcg@7": 0.9086,
+        "recall@30": 1.0,
+        "ndcg@30": 0.9539
+      },
+      {
+        "query_id": "gq-pill-24jam-10",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.5455,
+        "ndcg@7": 0.8188,
+        "recall@30": 1.0,
+        "ndcg@30": 0.8621
+      },
+      {
+        "query_id": "gq-pill-multi-11",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.625,
+        "ndcg@7": 0.7226,
+        "recall@30": 1.0,
+        "ndcg@30": 0.8323
+      },
+      {
+        "query_id": "gq-ft-wfc-12",
+        "route": "free_text",
+        "ranked_count": 30,
+        "recall@7": 0.1429,
+        "ndcg@7": 0.9476,
+        "recall@30": 0.6122,
+        "ndcg@30": 0.8745
+      },
+      {
+        "query_id": "gq-ft-murah-musholla-13",
+        "route": "free_text",
+        "ranked_count": 30,
+        "recall@7": 0.1429,
+        "ndcg@7": 0.9476,
+        "recall@30": 0.6122,
+        "ndcg@30": 0.982
+      },
+      {
+        "query_id": "gq-ft-hidden-gem-14",
+        "route": "free_text",
+        "ranked_count": 30,
+        "recall@7": 0.14,
+        "ndcg@7": 1.0,
+        "recall@30": 0.6,
+        "ndcg@30": 1.0
+      },
+      {
+        "query_id": "gq-ft-game-15",
+        "route": "free_text",
+        "ranked_count": 30,
+        "recall@7": 0.14,
+        "ndcg@7": 1.0,
+        "recall@30": 0.6,
+        "ndcg@30": 1.0
+      },
+      {
+        "query_id": "gq-ft-tenang-16",
+        "route": "free_text",
+        "ranked_count": 30,
+        "recall@7": 0.1429,
+        "ndcg@7": 0.9476,
+        "recall@30": 0.6122,
+        "ndcg@30": 0.8572
+      },
+      {
+        "query_id": "gq-ft-wifi-17",
+        "route": "free_text",
+        "ranked_count": 30,
+        "recall@7": 0.14,
+        "ndcg@7": 0.9476,
+        "recall@30": 0.6,
+        "ndcg@30": 0.9391
+      },
+      {
+        "query_id": "gq-ft-umum-18",
+        "route": "free_text",
+        "ranked_count": 30,
+        "recall@7": 0.1429,
+        "ndcg@7": 0.9476,
+        "recall@30": 0.6122,
+        "ndcg@30": 0.9637
+      },
+      {
+        "query_id": "gq-pill-kerja-musholla-colokan-19",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.3333,
+        "ndcg@7": 0.3706,
+        "recall@30": 1.0,
+        "ndcg@30": 0.5579
+      },
+      {
+        "query_id": "gq-pill-belajar-wifi-20",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.3,
+        "ndcg@7": 0.4003,
+        "recall@30": 0.8,
+        "ndcg@30": 0.566
+      },
+      {
+        "query_id": "gq-pill-nongkrong-21",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.1591,
+        "ndcg@7": 1.0,
+        "recall@30": 0.6591,
+        "ndcg@30": 0.9554
+      },
+      {
+        "query_id": "gq-pill-dessert-22",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.5833,
+        "ndcg@7": 0.9704,
+        "recall@30": 0.9167,
+        "ndcg@30": 0.9209
+      },
+      {
+        "query_id": "gq-pill-toilet-23",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.5,
+        "ndcg@7": 0.6238,
+        "recall@30": 1.0,
+        "ndcg@30": 0.8948
+      },
+      {
+        "query_id": "gq-pill-smoking-24",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.3889,
+        "ndcg@7": 0.8429,
+        "recall@30": 0.9444,
+        "ndcg@30": 0.8937
+      },
+      {
+        "query_id": "gq-pill-outdoor-25",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.3158,
+        "ndcg@7": 0.8407,
+        "recall@30": 1.0,
+        "ndcg@30": 0.9525
+      },
+      {
+        "query_id": "gq-pill-kerja-privat-26",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.3333,
+        "ndcg@7": 0.5901,
+        "recall@30": 0.9333,
+        "ndcg@30": 0.7436
+      },
+      {
+        "query_id": "gq-pill-menu-27",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.2059,
+        "ndcg@7": 0.9009,
+        "recall@30": 0.7941,
+        "ndcg@30": 0.852
+      },
+      {
+        "query_id": "gq-pill-tenang-28",
+        "route": "pill",
+        "ranked_count": 30,
+        "recall@7": 0.3571,
+        "ndcg@7": 0.7115,
+        "recall@30": 0.8571,
+        "ndcg@30": 0.7843
+      },
+      {
+        "query_id": "gq-ft-musholla-wfc-29",
+        "route": "free_text",
+        "ranked_count": 30,
+        "recall@7": 0.14,
+        "ndcg@7": 1.0,
+        "recall@30": 0.6,
+        "ndcg@30": 0.9582
+      },
+      {
+        "query_id": "gq-ft-parkir-30",
+        "route": "free_text",
+        "ranked_count": 30,
+        "recall@7": 0.1429,
+        "ndcg@7": 0.9476,
+        "recall@30": 0.6122,
+        "ndcg@30": 0.9648
+      },
+      {
+        "query_id": "gq-ft-estetik-31",
+        "route": "free_text",
+        "ranked_count": 30,
+        "recall@7": 0.14,
+        "ndcg@7": 0.9476,
+        "recall@30": 0.6,
+        "ndcg@30": 0.9611
+      },
+      {
+        "query_id": "gq-ft-meeting-32",
+        "route": "free_text",
+        "ranked_count": 30,
+        "recall@7": 0.14,
+        "ndcg@7": 1.0,
+        "recall@30": 0.6,
+        "ndcg@30": 1.0
+      },
+      {
+        "query_id": "gq-ft-colokan-33",
+        "route": "free_text",
+        "ranked_count": 30,
+        "recall@7": 0.14,
+        "ndcg@7": 1.0,
+        "recall@30": 0.6,
+        "ndcg@30": 1.0
+      }
+    ],
+    "hybrid_rrf": [
+      {
+        "query_id": "gq-pill-kerja-wfc-01",
+        "route": "pill",
+        "ranked_count": 30,
+        "telemetry": {
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "kept_with_signal": 49,
+          "activity_gated": 49,
+          "activity_gate_on": true,
+          "activity_gate_mode": "rrf_list",
+          "activity_pass_lexical": 0,
+          "activity_pass_dense_only": 0,
+          "activity_rejected": 0,
+          "activity_dense_min": 0.85,
+          "query_tokens": 10,
+          "activity_tokens": 12,
+          "dense_query": "cocok buat kerja dan wfc, laptopan berjam-jam, kerja remote",
+          "mode": "hybrid_rrf",
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "bm25_query_expansion": [
+            "wfa",
+            "anywhere",
+            "buka",
+            "laptop",
+            "nugas",
+            "coworking",
+            "meeting",
+            "online"
+          ],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 8,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 34,
+          "dense_matched": 49,
+          "activity_lex_matched": 23,
+          "rrf_candidates": 49
+        },
+        "recall@7": 0.4167,
+        "ndcg@7": 0.6213,
+        "recall@30": 0.9167,
+        "ndcg@30": 0.8185,
+        "gate_fnr": 0.1667,
+        "gate_rejected_relevant": 2,
+        "gate_relevant_total": 12
+      },
+      {
+        "query_id": "gq-pill-kerja-colokan-02",
+        "route": "pill",
+        "ranked_count": 30,
+        "telemetry": {
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "kept_with_signal": 49,
+          "activity_gated": 49,
+          "activity_gate_on": true,
+          "activity_gate_mode": "rrf_list",
+          "activity_pass_lexical": 0,
+          "activity_pass_dense_only": 0,
+          "activity_rejected": 0,
+          "activity_dense_min": 0.85,
+          "query_tokens": 13,
+          "activity_tokens": 12,
+          "dense_query": "cocok buat kerja dan wfc, laptopan berjam-jam, kerja remote",
+          "mode": "hybrid_rrf",
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "bm25_query_expansion": [
+            "wfa",
+            "anywhere",
+            "buka",
+            "laptop",
+            "nugas",
+            "coworking",
+            "meeting",
+            "online"
+          ],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 8,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 34,
+          "dense_matched": 49,
+          "activity_lex_matched": 23,
+          "rrf_candidates": 49
+        },
+        "recall@7": 0.25,
+        "ndcg@7": 0.368,
+        "recall@30": 1.0,
+        "ndcg@30": 0.6135,
+        "gate_fnr": 0.1667,
+        "gate_rejected_relevant": 2,
+        "gate_relevant_total": 12
+      },
+      {
+        "query_id": "gq-pill-belajar-03",
+        "route": "pill",
+        "ranked_count": 30,
+        "telemetry": {
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "kept_with_signal": 49,
+          "activity_gated": 49,
+          "activity_gate_on": true,
+          "activity_gate_mode": "rrf_list",
+          "activity_pass_lexical": 0,
+          "activity_pass_dense_only": 0,
+          "activity_rejected": 0,
+          "activity_dense_min": 0.85,
+          "query_tokens": 7,
+          "activity_tokens": 13,
+          "dense_query": "enak buat belajar dan nugas, ngerjain tugas kuliah atau skripsi",
+          "mode": "hybrid_rrf",
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "bm25_query_expansion": [
+            "study",
+            "studying",
+            "skripsian",
+            "date",
+            "bikin"
+          ],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 5,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 23,
+          "dense_matched": 49,
+          "activity_lex_matched": 15,
+          "rrf_candidates": 49
+        },
+        "recall@7": 0.4118,
+        "ndcg@7": 1.0,
+        "recall@30": 1.0,
+        "ndcg@30": 0.9986,
+        "gate_fnr": 0.0,
+        "gate_rejected_relevant": 0,
+        "gate_relevant_total": 17
+      },
+      {
+        "query_id": "gq-pill-game-04",
+        "route": "pill",
+        "ranked_count": 30,
+        "telemetry": {
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "kept_with_signal": 49,
+          "activity_gated": 49,
+          "activity_gate_on": true,
+          "activity_gate_mode": "rrf_list",
+          "activity_pass_lexical": 0,
+          "activity_pass_dense_only": 0,
+          "activity_rejected": 0,
+          "activity_dense_min": 0.85,
+          "query_tokens": 8,
+          "activity_tokens": 27,
+          "dense_query": "seru buat main game dan mabar bareng teman, main mobile legends atau pubg",
+          "mode": "hybrid_rrf",
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "bm25_query_expansion": [
+            "moba",
+            "turney",
+            "push",
+            "rank"
+          ],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 4,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 2,
+          "dense_matched": 49,
+          "activity_lex_matched": 3,
+          "rrf_candidates": 49
+        },
+        "recall@7": 1.0,
+        "ndcg@7": 0.906,
+        "recall@30": 1.0,
+        "ndcg@30": 0.906,
+        "gate_fnr": 0.0,
+        "gate_rejected_relevant": 0,
+        "gate_relevant_total": 3
+      },
+      {
+        "query_id": "gq-pill-keluarga-05",
+        "route": "pill",
+        "ranked_count": 30,
+        "telemetry": {
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "kept_with_signal": 49,
+          "activity_gated": 49,
+          "activity_gate_on": true,
+          "activity_gate_mode": "rrf_list",
+          "activity_pass_lexical": 0,
+          "activity_pass_dense_only": 0,
+          "activity_rejected": 0,
+          "activity_dense_min": 0.85,
+          "query_tokens": 8,
+          "activity_tokens": 12,
+          "dense_query": "cocok buat bawa keluarga dan anak kecil, ramah anak, ada kursi bayi",
+          "mode": "hybrid_rrf",
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "bm25_query_expansion": [
+            "kids",
+            "kid",
+            "child",
+            "baby",
+            "chair",
+            "high",
+            "bocil",
+            "area"
+          ],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 8,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 33,
+          "dense_matched": 49,
+          "activity_lex_matched": 4,
+          "rrf_candidates": 49
+        },
+        "recall@7": 0.2,
+        "ndcg@7": 1.0,
+        "recall@30": 0.6571,
+        "ndcg@30": 0.9358,
+        "gate_fnr": 0.0,
+        "gate_rejected_relevant": 0,
+        "gate_relevant_total": 35
+      },
+      {
+        "query_id": "gq-pill-meeting-06",
+        "route": "pill",
+        "ranked_count": 30,
+        "telemetry": {
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "kept_with_signal": 49,
+          "activity_gated": 49,
+          "activity_gate_on": true,
+          "activity_gate_mode": "rrf_list",
+          "activity_pass_lexical": 0,
+          "activity_pass_dense_only": 0,
+          "activity_rejected": 0,
+          "activity_dense_min": 0.85,
+          "query_tokens": 6,
+          "activity_tokens": 12,
+          "dense_query": "nyaman buat meeting, rapat, atau pertemuan kelompok, mejanya muat banyak orang",
+          "mode": "hybrid_rrf",
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "bm25_query_expansion": [
+            "room",
+            "ruang",
+            "ngumpul",
+            "gathering",
+            "komunitas",
+            "brainstorming",
+            "presentasi",
+            "meet"
+          ],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 8,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 23,
+          "dense_matched": 49,
+          "activity_lex_matched": 5,
+          "rrf_candidates": 49
+        },
+        "recall@7": 0.2059,
+        "ndcg@7": 1.0,
+        "recall@30": 0.7353,
+        "ndcg@30": 0.9574,
+        "gate_fnr": 0.0,
+        "gate_rejected_relevant": 0,
+        "gate_relevant_total": 34
+      },
+      {
+        "query_id": "gq-pill-ig-07",
+        "route": "pill",
+        "ranked_count": 30,
+        "telemetry": {
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "kept_with_signal": 49,
+          "activity_gated": 49,
+          "activity_gate_on": true,
+          "activity_gate_mode": "rrf_list",
+          "activity_pass_lexical": 0,
+          "activity_pass_dense_only": 0,
+          "activity_rejected": 0,
+          "activity_dense_min": 0.85,
+          "query_tokens": 8,
+          "activity_tokens": 10,
+          "dense_query": "tempatnya estetik, banyak spot foto bagus buat feed instagram dan konten sosmed",
+          "mode": "hybrid_rrf",
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "bm25_query_expansion": [
+            "aestetik",
+            "estetic",
+            "fotoable",
+            "photogenic",
+            "sudut",
+            "konten",
+            "instagenic",
+            "kece"
+          ],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 8,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 23,
+          "dense_matched": 49,
+          "activity_lex_matched": 8,
+          "rrf_candidates": 49
+        },
+        "recall@7": 0.1944,
+        "ndcg@7": 1.0,
+        "recall@30": 0.6667,
+        "ndcg@30": 0.9587,
+        "gate_fnr": 0.0,
+        "gate_rejected_relevant": 0,
+        "gate_relevant_total": 36
+      },
+      {
+        "query_id": "gq-pill-parkir-08",
+        "route": "pill",
+        "ranked_count": 30,
+        "telemetry": {
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "kept_with_signal": 49,
+          "activity_gated": 0,
+          "activity_gate_on": false,
+          "activity_gate_mode": "rrf_list",
+          "activity_pass_lexical": 0,
+          "activity_pass_dense_only": 0,
+          "activity_rejected": 0,
+          "activity_dense_min": 0.85,
+          "query_tokens": 1,
+          "activity_tokens": 0,
+          "dense_query": "parkirannya luas dan lega, gampang parkir motor dan mobil",
+          "mode": "hybrid_rrf",
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "bm25_query_expansion": [
+            "parking",
+            "lot",
+            "luas",
+            "lahan",
+            "space",
+            "area"
+          ],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 6,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 25,
+          "dense_matched": 49,
+          "rrf_candidates": 49
+        },
+        "recall@7": 0.3,
+        "ndcg@7": 0.6224,
+        "recall@30": 0.95,
+        "ndcg@30": 0.8199
+      },
+      {
+        "query_id": "gq-pill-musholla-09",
+        "route": "pill",
+        "ranked_count": 30,
+        "telemetry": {
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "kept_with_signal": 49,
+          "activity_gated": 0,
+          "activity_gate_on": false,
+          "activity_gate_mode": "rrf_list",
+          "activity_pass_lexical": 0,
+          "activity_pass_dense_only": 0,
+          "activity_rejected": 0,
+          "activity_dense_min": 0.85,
+          "query_tokens": 3,
+          "activity_tokens": 0,
+          "dense_query": "ada musholla yang bersih buat sholat, tersedia mukena",
+          "mode": "hybrid_rrf",
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "bm25_query_expansion": [
+            "room",
+            "prayer",
+            "ibadah",
+            "sajadah",
+            "sarung",
+            "wudhu"
+          ],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 6,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 11,
+          "dense_matched": 49,
+          "rrf_candidates": 49
+        },
+        "recall@7": 0.5,
+        "ndcg@7": 0.4306,
+        "recall@30": 1.0,
+        "ndcg@30": 0.6964
+      },
+      {
+        "query_id": "gq-pill-24jam-10",
+        "route": "pill",
+        "ranked_count": 30,
+        "telemetry": {
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "kept_with_signal": 49,
+          "activity_gated": 0,
+          "activity_gate_on": false,
+          "activity_gate_mode": "rrf_list",
+          "activity_pass_lexical": 0,
+          "activity_pass_dense_only": 0,
+          "activity_rejected": 0,
+          "activity_dense_min": 0.85,
+          "query_tokens": 4,
+          "activity_tokens": 0,
+          "dense_query": "buka 24 jam nonstop, bisa datang kapan saja termasuk tengah malam",
+          "mode": "hybrid_rrf",
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "bm25_query_expansion": [
+            "buka",
+            "terus",
+            "semalaman",
+            "seharian",
+            "enggak",
+            "pernah",
+            "tutup",
+            "tidak"
+          ],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 8,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 38,
+          "dense_matched": 49,
+          "rrf_candidates": 49
+        },
+        "recall@7": 0.3636,
+        "ndcg@7": 0.4618,
+        "recall@30": 0.9091,
+        "ndcg@30": 0.7041
+      },
+      {
+        "query_id": "gq-pill-multi-11",
+        "route": "pill",
+        "ranked_count": 30,
+        "telemetry": {
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "kept_with_signal": 49,
+          "activity_gated": 49,
+          "activity_gate_on": true,
+          "activity_gate_mode": "rrf_list",
+          "activity_pass_lexical": 0,
+          "activity_pass_dense_only": 0,
+          "activity_rejected": 0,
+          "activity_dense_min": 0.85,
+          "query_tokens": 11,
+          "activity_tokens": 12,
+          "dense_query": "cocok buat kerja dan wfc, laptopan berjam-jam, kerja remote",
+          "mode": "hybrid_rrf",
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "bm25_query_expansion": [
+            "wfa",
+            "anywhere",
+            "buka",
+            "laptop",
+            "nugas",
+            "coworking",
+            "meeting",
+            "online"
+          ],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 8,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 34,
+          "dense_matched": 49,
+          "activity_lex_matched": 23,
+          "rrf_candidates": 49
+        },
+        "recall@7": 0.375,
+        "ndcg@7": 0.4689,
+        "recall@30": 0.875,
+        "ndcg@30": 0.6711,
+        "gate_fnr": 0.125,
+        "gate_rejected_relevant": 1,
+        "gate_relevant_total": 8
+      },
+      {
+        "query_id": "gq-ft-wfc-12",
+        "route": "free_text",
+        "ranked_count": 30,
+        "telemetry": {
+          "mode": "free_text_rrf",
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "activity_gate_mode": "off",
+          "bm25_query_expansion": [],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 0,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 22,
+          "dense_matched": 49,
+          "rrf_candidates": 49,
+          "kept_with_signal": 49
+        },
+        "recall@7": 0.1429,
+        "ndcg@7": 0.9392,
+        "recall@30": 0.6122,
+        "ndcg@30": 0.9696
+      },
+      {
+        "query_id": "gq-ft-murah-musholla-13",
+        "route": "free_text",
+        "ranked_count": 30,
+        "telemetry": {
+          "mode": "free_text_rrf",
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "activity_gate_mode": "off",
+          "bm25_query_expansion": [],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 0,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 31,
+          "dense_matched": 49,
+          "rrf_candidates": 49,
+          "kept_with_signal": 49
+        },
+        "recall@7": 0.1429,
+        "ndcg@7": 1.0,
+        "recall@30": 0.6122,
+        "ndcg@30": 0.9926
+      },
+      {
+        "query_id": "gq-ft-hidden-gem-14",
+        "route": "free_text",
+        "ranked_count": 30,
+        "telemetry": {
+          "mode": "free_text_rrf",
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "activity_gate_mode": "off",
+          "bm25_query_expansion": [],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 0,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 3,
+          "dense_matched": 49,
+          "rrf_candidates": 49,
+          "kept_with_signal": 49
+        },
+        "recall@7": 0.14,
+        "ndcg@7": 1.0,
+        "recall@30": 0.6,
+        "ndcg@30": 1.0
+      },
+      {
+        "query_id": "gq-ft-game-15",
+        "route": "free_text",
+        "ranked_count": 30,
+        "telemetry": {
+          "mode": "free_text_rrf",
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "activity_gate_mode": "off",
+          "bm25_query_expansion": [],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 0,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 1,
+          "dense_matched": 49,
+          "rrf_candidates": 49,
+          "kept_with_signal": 49
+        },
+        "recall@7": 0.14,
+        "ndcg@7": 1.0,
+        "recall@30": 0.6,
+        "ndcg@30": 1.0
+      },
+      {
+        "query_id": "gq-ft-tenang-16",
+        "route": "free_text",
+        "ranked_count": 30,
+        "telemetry": {
+          "mode": "free_text_rrf",
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "activity_gate_mode": "off",
+          "bm25_query_expansion": [],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 0,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 14,
+          "dense_matched": 49,
+          "rrf_candidates": 49,
+          "kept_with_signal": 49
+        },
+        "recall@7": 0.1429,
+        "ndcg@7": 0.9215,
+        "recall@30": 0.6122,
+        "ndcg@30": 0.9675
+      },
+      {
+        "query_id": "gq-ft-wifi-17",
+        "route": "free_text",
+        "ranked_count": 30,
+        "telemetry": {
+          "mode": "free_text_rrf",
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "activity_gate_mode": "off",
+          "bm25_query_expansion": [],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 0,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 11,
+          "dense_matched": 49,
+          "rrf_candidates": 49,
+          "kept_with_signal": 49
+        },
+        "recall@7": 0.14,
+        "ndcg@7": 0.9476,
+        "recall@30": 0.6,
+        "ndcg@30": 0.986
+      },
+      {
+        "query_id": "gq-ft-umum-18",
+        "route": "free_text",
+        "ranked_count": 30,
+        "telemetry": {
+          "mode": "free_text_rrf",
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "activity_gate_mode": "off",
+          "bm25_query_expansion": [],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 0,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 41,
+          "dense_matched": 49,
+          "rrf_candidates": 49,
+          "kept_with_signal": 49
+        },
+        "recall@7": 0.1429,
+        "ndcg@7": 0.944,
+        "recall@30": 0.6122,
+        "ndcg@30": 0.9842
+      },
+      {
+        "query_id": "gq-pill-kerja-musholla-colokan-19",
+        "route": "pill",
+        "ranked_count": 30,
+        "telemetry": {
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "kept_with_signal": 49,
+          "activity_gated": 49,
+          "activity_gate_on": true,
+          "activity_gate_mode": "rrf_list",
+          "activity_pass_lexical": 0,
+          "activity_pass_dense_only": 0,
+          "activity_rejected": 0,
+          "activity_dense_min": 0.85,
+          "query_tokens": 16,
+          "activity_tokens": 12,
+          "dense_query": "cocok buat kerja dan wfc, laptopan berjam-jam, kerja remote",
+          "mode": "hybrid_rrf",
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "bm25_query_expansion": [
+            "wfa",
+            "anywhere",
+            "buka",
+            "laptop",
+            "nugas",
+            "coworking",
+            "meeting",
+            "online"
+          ],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 8,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 34,
+          "dense_matched": 49,
+          "activity_lex_matched": 23,
+          "rrf_candidates": 49
+        },
+        "recall@7": 0.3333,
+        "ndcg@7": 0.2092,
+        "recall@30": 1.0,
+        "ndcg@30": 0.3566,
+        "gate_fnr": 0.3333,
+        "gate_rejected_relevant": 1,
+        "gate_relevant_total": 3
+      },
+      {
+        "query_id": "gq-pill-belajar-wifi-20",
+        "route": "pill",
+        "ranked_count": 30,
+        "telemetry": {
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "kept_with_signal": 49,
+          "activity_gated": 49,
+          "activity_gate_on": true,
+          "activity_gate_mode": "rrf_list",
+          "activity_pass_lexical": 0,
+          "activity_pass_dense_only": 0,
+          "activity_rejected": 0,
+          "activity_dense_min": 0.85,
+          "query_tokens": 9,
+          "activity_tokens": 13,
+          "dense_query": "enak buat belajar dan nugas, ngerjain tugas kuliah atau skripsi",
+          "mode": "hybrid_rrf",
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "bm25_query_expansion": [
+            "study",
+            "studying",
+            "skripsian",
+            "date",
+            "bikin"
+          ],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 5,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 23,
+          "dense_matched": 49,
+          "activity_lex_matched": 15,
+          "rrf_candidates": 49
+        },
+        "recall@7": 0.2,
+        "ndcg@7": 0.2397,
+        "recall@30": 0.8,
+        "ndcg@30": 0.5356,
+        "gate_fnr": 0.4,
+        "gate_rejected_relevant": 4,
+        "gate_relevant_total": 10
+      },
+      {
+        "query_id": "gq-pill-nongkrong-21",
+        "route": "pill",
+        "ranked_count": 30,
+        "telemetry": {
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "kept_with_signal": 49,
+          "activity_gated": 49,
+          "activity_gate_on": true,
+          "activity_gate_mode": "rrf_list",
+          "activity_pass_lexical": 0,
+          "activity_pass_dense_only": 0,
+          "activity_rejected": 0,
+          "activity_dense_min": 0.85,
+          "query_tokens": 7,
+          "activity_tokens": 11,
+          "dense_query": "cocok nongkrong dan nongki santai bareng teman, hangout lama ngobrol sambil ngopi",
+          "mode": "hybrid_rrf",
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "bm25_query_expansion": [
+            "kongkow",
+            "chitchat",
+            "chill",
+            "cangkruk"
+          ],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 4,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 33,
+          "dense_matched": 49,
+          "activity_lex_matched": 24,
+          "rrf_candidates": 49
+        },
+        "recall@7": 0.1591,
+        "ndcg@7": 1.0,
+        "recall@30": 0.6818,
+        "ndcg@30": 1.0,
+        "gate_fnr": 0.0,
+        "gate_rejected_relevant": 0,
+        "gate_relevant_total": 44
+      },
+      {
+        "query_id": "gq-pill-dessert-22",
+        "route": "pill",
+        "ranked_count": 30,
+        "telemetry": {
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "kept_with_signal": 49,
+          "activity_gated": 0,
+          "activity_gate_on": false,
+          "activity_gate_mode": "rrf_list",
+          "activity_pass_lexical": 0,
+          "activity_pass_dense_only": 0,
+          "activity_rejected": 0,
+          "activity_dense_min": 0.85,
+          "query_tokens": 7,
+          "activity_tokens": 0,
+          "dense_query": "dessertnya enak, ada kue, cake, cheesecake, brownies, dan pastry",
+          "mode": "hybrid_rrf",
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "bm25_query_expansion": [
+            "dessertnya",
+            "pancake",
+            "waffle",
+            "makanan",
+            "manis",
+            "sweet",
+            "treats",
+            "cemilan"
+          ],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 8,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 31,
+          "dense_matched": 49,
+          "rrf_candidates": 49
+        },
+        "recall@7": 0.5,
+        "ndcg@7": 0.8457,
+        "recall@30": 0.9167,
+        "ndcg@30": 0.8744
+      },
+      {
+        "query_id": "gq-pill-toilet-23",
+        "route": "pill",
+        "ranked_count": 30,
+        "telemetry": {
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "kept_with_signal": 49,
+          "activity_gated": 0,
+          "activity_gate_on": false,
+          "activity_gate_mode": "rrf_list",
+          "activity_pass_lexical": 0,
+          "activity_pass_dense_only": 0,
+          "activity_rejected": 0,
+          "activity_dense_min": 0.85,
+          "query_tokens": 6,
+          "activity_tokens": 0,
+          "dense_query": "toiletnya bersih, wangi, dan terawat",
+          "mode": "hybrid_rrf",
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "bm25_query_expansion": [
+            "nya",
+            "kamu",
+            "mandinya",
+            "clean",
+            "restroomnya",
+            "washroom",
+            "tolet",
+            "lavatory"
+          ],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 8,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 39,
+          "dense_matched": 49,
+          "rrf_candidates": 49
+        },
+        "recall@7": 0.6667,
+        "ndcg@7": 0.7409,
+        "recall@30": 1.0,
+        "ndcg@30": 0.8953
+      },
+      {
+        "query_id": "gq-pill-smoking-24",
+        "route": "pill",
+        "ranked_count": 30,
+        "telemetry": {
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "kept_with_signal": 49,
+          "activity_gated": 0,
+          "activity_gate_on": false,
+          "activity_gate_mode": "rrf_list",
+          "activity_pass_lexical": 0,
+          "activity_pass_dense_only": 0,
+          "activity_rejected": 0,
+          "activity_dense_min": 0.85,
+          "query_tokens": 5,
+          "activity_tokens": 0,
+          "dense_query": "ada smoking area, boleh merokok di ruangan khusus perokok",
+          "mode": "hybrid_rrf",
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "bm25_query_expansion": [
+            "ruang",
+            "smooking",
+            "boleh",
+            "asbak"
+          ],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 4,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 19,
+          "dense_matched": 49,
+          "rrf_candidates": 49
+        },
+        "recall@7": 0.3889,
+        "ndcg@7": 0.8429,
+        "recall@30": 1.0,
+        "ndcg@30": 0.9055
+      },
+      {
+        "query_id": "gq-pill-outdoor-25",
+        "route": "pill",
+        "ranked_count": 30,
+        "telemetry": {
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "kept_with_signal": 49,
+          "activity_gated": 0,
+          "activity_gate_on": false,
+          "activity_gate_mode": "rrf_list",
+          "activity_pass_lexical": 0,
+          "activity_pass_dense_only": 0,
+          "activity_rejected": 0,
+          "activity_dense_min": 0.85,
+          "query_tokens": 3,
+          "activity_tokens": 0,
+          "dense_query": "ada area outdoor buat duduk di luar, semi outdoor atau rooftop",
+          "mode": "hybrid_rrf",
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "bm25_query_expansion": [
+            "luar",
+            "ruangan",
+            "area",
+            "open",
+            "air",
+            "halaman",
+            "balkon",
+            "teras"
+          ],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 8,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 25,
+          "dense_matched": 49,
+          "rrf_candidates": 49
+        },
+        "recall@7": 0.3684,
+        "ndcg@7": 0.7092,
+        "recall@30": 1.0,
+        "ndcg@30": 0.8922
+      },
+      {
+        "query_id": "gq-pill-kerja-privat-26",
+        "route": "pill",
+        "ranked_count": 30,
+        "telemetry": {
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "kept_with_signal": 49,
+          "activity_gated": 49,
+          "activity_gate_on": true,
+          "activity_gate_mode": "rrf_list",
+          "activity_pass_lexical": 0,
+          "activity_pass_dense_only": 0,
+          "activity_rejected": 0,
+          "activity_dense_min": 0.85,
+          "query_tokens": 14,
+          "activity_tokens": 12,
+          "dense_query": "cocok buat kerja dan wfc, laptopan berjam-jam, kerja remote",
+          "mode": "hybrid_rrf",
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "bm25_query_expansion": [
+            "wfa",
+            "anywhere",
+            "buka",
+            "laptop",
+            "nugas",
+            "coworking",
+            "meeting",
+            "online"
+          ],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 8,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 34,
+          "dense_matched": 49,
+          "activity_lex_matched": 23,
+          "rrf_candidates": 49
+        },
+        "recall@7": 0.3333,
+        "ndcg@7": 0.5202,
+        "recall@30": 0.8667,
+        "ndcg@30": 0.7084,
+        "gate_fnr": 0.2667,
+        "gate_rejected_relevant": 4,
+        "gate_relevant_total": 15
+      },
+      {
+        "query_id": "gq-pill-menu-27",
+        "route": "pill",
+        "ranked_count": 30,
+        "telemetry": {
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "kept_with_signal": 49,
+          "activity_gated": 0,
+          "activity_gate_on": false,
+          "activity_gate_mode": "rrf_list",
+          "activity_pass_lexical": 0,
+          "activity_pass_dense_only": 0,
+          "activity_rejected": 0,
+          "activity_dense_min": 0.85,
+          "query_tokens": 10,
+          "activity_tokens": 0,
+          "dense_query": "menu lengkap, ada makanan berat seperti nasi atau pasta dan banyak pilihan minuman",
+          "mode": "hybrid_rrf",
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "bm25_query_expansion": [
+            "main",
+            "course",
+            "heavy",
+            "meal",
+            "goreng",
+            "spaghetti",
+            "menu",
+            "kenyang"
+          ],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 8,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 38,
+          "dense_matched": 49,
+          "rrf_candidates": 49
+        },
+        "recall@7": 0.2059,
+        "ndcg@7": 0.8716,
+        "recall@30": 0.8235,
+        "ndcg@30": 0.8853
+      },
+      {
+        "query_id": "gq-pill-tenang-28",
+        "route": "pill",
+        "ranked_count": 30,
+        "telemetry": {
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "kept_with_signal": 49,
+          "activity_gated": 49,
+          "activity_gate_on": true,
+          "activity_gate_mode": "rrf_list",
+          "activity_pass_lexical": 0,
+          "activity_pass_dense_only": 0,
+          "activity_rejected": 0,
+          "activity_dense_min": 0.85,
+          "query_tokens": 11,
+          "activity_tokens": 13,
+          "dense_query": "enak buat belajar dan nugas, ngerjain tugas kuliah atau skripsi",
+          "mode": "hybrid_rrf",
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "bm25_query_expansion": [
+            "study",
+            "studying",
+            "skripsian",
+            "date",
+            "bikin"
+          ],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 5,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 23,
+          "dense_matched": 49,
+          "activity_lex_matched": 15,
+          "rrf_candidates": 49
+        },
+        "recall@7": 0.2857,
+        "ndcg@7": 0.4407,
+        "recall@30": 0.8571,
+        "ndcg@30": 0.6485,
+        "gate_fnr": 0.5,
+        "gate_rejected_relevant": 7,
+        "gate_relevant_total": 14
+      },
+      {
+        "query_id": "gq-ft-musholla-wfc-29",
+        "route": "free_text",
+        "ranked_count": 30,
+        "telemetry": {
+          "mode": "free_text_rrf",
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "activity_gate_mode": "off",
+          "bm25_query_expansion": [],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 0,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 8,
+          "dense_matched": 49,
+          "rrf_candidates": 49,
+          "kept_with_signal": 49
+        },
+        "recall@7": 0.14,
+        "ndcg@7": 0.9476,
+        "recall@30": 0.6,
+        "ndcg@30": 0.9946
+      },
+      {
+        "query_id": "gq-ft-parkir-30",
+        "route": "free_text",
+        "ranked_count": 30,
+        "telemetry": {
+          "mode": "free_text_rrf",
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "activity_gate_mode": "off",
+          "bm25_query_expansion": [],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 0,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 23,
+          "dense_matched": 49,
+          "rrf_candidates": 49,
+          "kept_with_signal": 49
+        },
+        "recall@7": 0.1429,
+        "ndcg@7": 0.9476,
+        "recall@30": 0.6122,
+        "ndcg@30": 0.9939
+      },
+      {
+        "query_id": "gq-ft-estetik-31",
+        "route": "free_text",
+        "ranked_count": 30,
+        "telemetry": {
+          "mode": "free_text_rrf",
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "activity_gate_mode": "off",
+          "bm25_query_expansion": [],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 0,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 8,
+          "dense_matched": 49,
+          "rrf_candidates": 49,
+          "kept_with_signal": 49
+        },
+        "recall@7": 0.14,
+        "ndcg@7": 0.9476,
+        "recall@30": 0.6,
+        "ndcg@30": 0.9946
+      },
+      {
+        "query_id": "gq-ft-meeting-32",
+        "route": "free_text",
+        "ranked_count": 30,
+        "telemetry": {
+          "mode": "free_text_rrf",
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "activity_gate_mode": "off",
+          "bm25_query_expansion": [],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 0,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 4,
+          "dense_matched": 49,
+          "rrf_candidates": 49,
+          "kept_with_signal": 49
+        },
+        "recall@7": 0.14,
+        "ndcg@7": 1.0,
+        "recall@30": 0.6,
+        "ndcg@30": 1.0
+      },
+      {
+        "query_id": "gq-ft-colokan-33",
+        "route": "free_text",
+        "ranked_count": 30,
+        "telemetry": {
+          "mode": "free_text_rrf",
+          "profiles": 50,
+          "top_k": 30,
+          "bm25_shops": 50,
+          "dense": {
+            "shops": 50,
+            "reviews_embedded": 197,
+            "max_reviews_per_shop": 20,
+            "pool": "max",
+            "documents": 197,
+            "encoded": 197,
+            "skipped": null,
+            "store": "pgvector"
+          },
+          "rrf_k": 60,
+          "rrf_pool_size": 50,
+          "activity_gate_mode": "off",
+          "bm25_query_expansion": [],
+          "bm25_unit": "review",
+          "bm25_backend": "memory_review",
+          "bm25_review": {
+            "unit": "review",
+            "review_docs": 197,
+            "aggregate": "sum_top",
+            "top_n": 3,
+            "query_expansion_terms": 0,
+            "doc_expansion_docs": 0
+          },
+          "bm25_matched": 4,
+          "dense_matched": 49,
+          "rrf_candidates": 49,
+          "kept_with_signal": 49
+        },
+        "recall@7": 0.14,
+        "ndcg@7": 1.0,
+        "recall@30": 0.6,
+        "ndcg@30": 1.0
+      }
+    ],
+    "dense_ce_rerank": [
+      {
+        "query_id": "gq-pill-kerja-wfc-01",
+        "route": "pill",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.3333,
+        "ndcg@7": 0.3246,
+        "recall@30": 0.75,
+        "ndcg@30": 0.4846
+      },
+      {
+        "query_id": "gq-pill-kerja-colokan-02",
+        "route": "pill",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.25,
+        "ndcg@7": 0.3494,
+        "recall@30": 0.75,
+        "ndcg@30": 0.4627
+      },
+      {
+        "query_id": "gq-pill-belajar-03",
+        "route": "pill",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.3529,
+        "ndcg@7": 0.5282,
+        "recall@30": 0.7647,
+        "ndcg@30": 0.6101
+      },
+      {
+        "query_id": "gq-pill-game-04",
+        "route": "pill",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.6667,
+        "ndcg@7": 0.4525,
+        "recall@30": 0.6667,
+        "ndcg@30": 0.4525
+      },
+      {
+        "query_id": "gq-pill-keluarga-05",
+        "route": "pill",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.2,
+        "ndcg@7": 0.5071,
+        "recall@30": 0.8571,
+        "ndcg@30": 0.7411
+      },
+      {
+        "query_id": "gq-pill-meeting-06",
+        "route": "pill",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.2059,
+        "ndcg@7": 0.2708,
+        "recall@30": 0.8824,
+        "ndcg@30": 0.4663
+      },
+      {
+        "query_id": "gq-pill-ig-07",
+        "route": "pill",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.1944,
+        "ndcg@7": 0.1429,
+        "recall@30": 0.8333,
+        "ndcg@30": 0.4937
+      },
+      {
+        "query_id": "gq-pill-parkir-08",
+        "route": "pill",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.15,
+        "ndcg@7": 0.3305,
+        "recall@30": 0.7,
+        "ndcg@30": 0.5604
+      },
+      {
+        "query_id": "gq-pill-musholla-09",
+        "route": "pill",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.25,
+        "ndcg@7": 0.2937,
+        "recall@30": 0.75,
+        "ndcg@30": 0.4321
+      },
+      {
+        "query_id": "gq-pill-24jam-10",
+        "route": "pill",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.1818,
+        "ndcg@7": 0.214,
+        "recall@30": 0.5455,
+        "ndcg@30": 0.3963
+      },
+      {
+        "query_id": "gq-pill-multi-11",
+        "route": "pill",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.375,
+        "ndcg@7": 0.3353,
+        "recall@30": 0.625,
+        "ndcg@30": 0.432
+      },
+      {
+        "query_id": "gq-ft-wfc-12",
+        "route": "free_text",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.1429,
+        "ndcg@7": 0.9476,
+        "recall@30": 0.6122,
+        "ndcg@30": 0.9345
+      },
+      {
+        "query_id": "gq-ft-murah-musholla-13",
+        "route": "free_text",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.1429,
+        "ndcg@7": 1.0,
+        "recall@30": 0.6122,
+        "ndcg@30": 0.9873
+      },
+      {
+        "query_id": "gq-ft-hidden-gem-14",
+        "route": "free_text",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.14,
+        "ndcg@7": 1.0,
+        "recall@30": 0.6,
+        "ndcg@30": 1.0
+      },
+      {
+        "query_id": "gq-ft-game-15",
+        "route": "free_text",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.14,
+        "ndcg@7": 1.0,
+        "recall@30": 0.6,
+        "ndcg@30": 1.0
+      },
+      {
+        "query_id": "gq-ft-tenang-16",
+        "route": "free_text",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.1429,
+        "ndcg@7": 0.9476,
+        "recall@30": 0.6122,
+        "ndcg@30": 0.9312
+      },
+      {
+        "query_id": "gq-ft-wifi-17",
+        "route": "free_text",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.14,
+        "ndcg@7": 0.9476,
+        "recall@30": 0.6,
+        "ndcg@30": 0.9823
+      },
+      {
+        "query_id": "gq-ft-umum-18",
+        "route": "free_text",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.1429,
+        "ndcg@7": 1.0,
+        "recall@30": 0.6122,
+        "ndcg@30": 0.9711
+      },
+      {
+        "query_id": "gq-pill-kerja-musholla-colokan-19",
+        "route": "pill",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.3333,
+        "ndcg@7": 0.2272,
+        "recall@30": 0.6667,
+        "ndcg@30": 0.2455
+      },
+      {
+        "query_id": "gq-pill-belajar-wifi-20",
+        "route": "pill",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.2,
+        "ndcg@7": 0.1558,
+        "recall@30": 0.8,
+        "ndcg@30": 0.2863
+      },
+      {
+        "query_id": "gq-pill-nongkrong-21",
+        "route": "pill",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.1591,
+        "ndcg@7": 0.6889,
+        "recall@30": 0.6818,
+        "ndcg@30": 0.5828
+      },
+      {
+        "query_id": "gq-pill-dessert-22",
+        "route": "pill",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.25,
+        "ndcg@7": 0.5702,
+        "recall@30": 0.5,
+        "ndcg@30": 0.5677
+      },
+      {
+        "query_id": "gq-pill-toilet-23",
+        "route": "pill",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.5,
+        "ndcg@7": 0.4089,
+        "recall@30": 0.8333,
+        "ndcg@30": 0.5663
+      },
+      {
+        "query_id": "gq-pill-smoking-24",
+        "route": "pill",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.3889,
+        "ndcg@7": 0.9215,
+        "recall@30": 0.7222,
+        "ndcg@30": 0.8074
+      },
+      {
+        "query_id": "gq-pill-outdoor-25",
+        "route": "pill",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.3158,
+        "ndcg@7": 0.5295,
+        "recall@30": 0.8421,
+        "ndcg@30": 0.6988
+      },
+      {
+        "query_id": "gq-pill-kerja-privat-26",
+        "route": "pill",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.2,
+        "ndcg@7": 0.2737,
+        "recall@30": 0.6667,
+        "ndcg@30": 0.468
+      },
+      {
+        "query_id": "gq-pill-menu-27",
+        "route": "pill",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.2059,
+        "ndcg@7": 0.5976,
+        "recall@30": 0.6765,
+        "ndcg@30": 0.71
+      },
+      {
+        "query_id": "gq-pill-tenang-28",
+        "route": "pill",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.1429,
+        "ndcg@7": 0.1677,
+        "recall@30": 0.8571,
+        "ndcg@30": 0.4041
+      },
+      {
+        "query_id": "gq-ft-musholla-wfc-29",
+        "route": "free_text",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.14,
+        "ndcg@7": 1.0,
+        "recall@30": 0.6,
+        "ndcg@30": 0.9598
+      },
+      {
+        "query_id": "gq-ft-parkir-30",
+        "route": "free_text",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.1429,
+        "ndcg@7": 1.0,
+        "recall@30": 0.6122,
+        "ndcg@30": 0.9917
+      },
+      {
+        "query_id": "gq-ft-estetik-31",
+        "route": "free_text",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.14,
+        "ndcg@7": 0.9476,
+        "recall@30": 0.6,
+        "ndcg@30": 0.9908
+      },
+      {
+        "query_id": "gq-ft-meeting-32",
+        "route": "free_text",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.14,
+        "ndcg@7": 1.0,
+        "recall@30": 0.6,
+        "ndcg@30": 1.0
+      },
+      {
+        "query_id": "gq-ft-colokan-33",
+        "route": "free_text",
+        "ranked_count": 30,
+        "rerank_backend": "cross_encoder",
+        "recall@7": 0.14,
+        "ndcg@7": 1.0,
+        "recall@30": 0.6,
+        "ndcg@30": 1.0
+      }
+    ]
+  },
+  "interpretation": "Recall@7: dense_only=0.2288, bm25_only=0.2948, hybrid_rrf=0.2834. Hybrid vs dense delta recall@7: 0.0546. Toko relevan (grade≥1) terlewat dense@7: 795 (dari 966 relevan per-query). Di antaranya 364 punya hit leksikal di ulasan; 131 masuk BM25 top-7. BM25/hybrid layak: miss dense sering disertai sinyal kata kunci di korpus."
+}

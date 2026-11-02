@@ -16,6 +16,7 @@ if str(ROOT) not in sys.path:
 os.environ.setdefault("COFIND_SEMANTIC_GATE", "false")
 os.environ["COFIND_RRF_K"] = "60"
 os.environ["COFIND_RRF_POOL_SIZE"] = "50"
+os.environ["COFIND_BM25_UNIT"] = "shop"
 
 from hybrid_retrieval import (  # noqa: E402
     _hybrid_retrieve_rrf_core,
@@ -164,7 +165,9 @@ class TestRrfNormAndQualityBlend(unittest.TestCase):
         self.assertIsNone(quality_s)
         self.assertAlmostEqual(total, rrf_norm)
         self.assertAlmostEqual(total, 0.5)
-        _, total_q, _ = blend_rrf_norm_with_quality(0.03, 0.06, 0.8)
+        _, total_q, _ = blend_rrf_norm_with_quality(
+            0.03, 0.06, 0.8, quality_weight=0.1,
+        )
         self.assertAlmostEqual(total_q, 0.9 * 0.5 + 0.1 * 0.8)
 
 
@@ -257,6 +260,52 @@ class TestHybridRetrieveRrfCoreMocked(unittest.TestCase):
         self.assertIn("shop-a", ids)
         self.assertNotIn("shop-b", ids)
         self.assertGreaterEqual(int(telemetry.get("activity_rejected") or 0), 1)
+
+    @patch("hybrid_retrieval.score_shops_dense")
+    @patch("hybrid_retrieval.score_shops_bm25")
+    @patch("hybrid_retrieval.build_bm25_index")
+    def test_rrf_list_keeps_shop_without_lexical_signal(
+        self, mock_bm25_index, mock_bm25_score, mock_dense
+    ):
+        mock_bm25_index.return_value = (["shop-a", "shop-b"], None, None)
+        mock_bm25_score.return_value = {"shop-a": 1.0, "shop-b": 3.0}
+        mock_dense.return_value = (
+            {"shop-a": 0.5, "shop-b": 0.2},
+            {"pool": "mock"},
+        )
+        profiles = [
+            make_profile("shop-a", "With signal", ["tempat favorit buat WFC dan laptop"]),
+            make_profile("shop-b", "No signal", ["kopi enak tapi mahal"]),
+        ]
+        telemetry: dict = {}
+        matcher = compile_activity_matcher(
+            ["kerja"],
+            pill_labels=MINI_PILL_LABELS,
+            pill_mapping=MINI_PILL_MAPPING,
+        )
+        act_tokens = list(matcher.get("bm25_tokens") or [])
+        result = _hybrid_retrieve_rrf_core(
+            profiles,
+            bm25_tokens=["kerja"],
+            dense_query_text="kerja laptop wifi",
+            top_k=5,
+            query_tokens_out=["kerja"],
+            query_text_out="kerja",
+            activity_tokens_out=act_tokens,
+            attribute_tokens_out=[],
+            activity_query_text_out="kerja laptop",
+            activity_matcher_out=matcher,
+            telemetry=telemetry,
+            apply_activity_gate=True,
+            activity_gate_mode_param="rrf_list",
+            activity_pills=["kerja"],
+            activity_tokens_for_gate=act_tokens,
+            activity_phrase_list=list(matcher.get("phrases") or []),
+            activity_matcher=matcher,
+        )
+        ids = {c["place_id"] for c in result["candidates"]}
+        self.assertIn("shop-b", ids)
+        self.assertEqual(int(telemetry.get("activity_rejected") or 0), 0)
 
     @patch("hybrid_retrieval.score_shops_dense")
     @patch("hybrid_retrieval.score_shops_bm25")

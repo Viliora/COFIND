@@ -75,9 +75,7 @@ def assert_pipeline_symbols(namespace: dict, *, extra: tuple[str, ...] = ()) -> 
         '_quote_is_caveat',
         '_merge_evidence_private_api',
         'RATING_VOTE_WEIGHTS',
-        'coverage_bonus',
-        'activity_coverage_share',
-        'coverage_semantic_min',
+        'build_evidence_keyword_detail',
         '_score_shop_by_user_reviews',
         *extra,
     )

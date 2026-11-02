@@ -2,6 +2,7 @@ import unittest
 
 from activity_lexicon import (
     ACTIVITY_PILL_KEYS,
+    activity_terms,
     apply_activity_lexicon_to_mapping,
     load_activity_lexicon,
     review_keywords_for_activity_pill,
@@ -15,14 +16,18 @@ class ActivityLexiconTests(unittest.TestCase):
         pills = data.get("pills") or {}
         for pill in ACTIVITY_PILL_KEYS:
             self.assertIn(pill, pills)
-            kws = pills[pill].get("review_keywords") or []
-            self.assertTrue(kws, f"{pill} review_keywords kosong")
+            terms = pills[pill].get("terms") or []
+            self.assertTrue(terms, f"{pill} terms kosong")
 
     def test_mapping_synced_from_lexicon(self):
         for pill in ACTIVITY_PILL_KEYS:
             expected = review_keywords_for_activity_pill(pill)
             actual = list((PILL_MAPPING.get(pill) or {}).get("review_keywords") or [])
             self.assertEqual(actual, expected, pill)
+
+    def test_terms_alias_matches_review_keywords_helper(self):
+        for pill in ACTIVITY_PILL_KEYS:
+            self.assertEqual(activity_terms(pill), review_keywords_for_activity_pill(pill))
 
     def test_apply_idempotent(self):
         snap = {

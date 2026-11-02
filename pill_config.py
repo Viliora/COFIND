@@ -18,7 +18,7 @@ Kebijakan `review_keywords` (ditegakkan tests/test_pill_keyword_curation.py):
     ("cepat", "luas", "bersih"), kata fungsi ("untuk", "bisa", "banyak"), dan kata umum
     yang bertabrakan di ulasan nyata ("manis", "teras", "luar", "laptop").
 - Jangan menulis varian ejaan yang sudah dilipat slang normalizer (mushola/musola).
-- Pill aktivitas: review_keywords + frasa gerbang dari data/lexicon/activity_lexicon.json.
+- Pill aktivitas: terms dari data/lexicon/activity_lexicon.json (disalin ke review_keywords saat import).
 - Maks 8 keyword (aktivitas) / 7 (atribut). Urutkan paling representatif lebih dulu:
     recommendation/helpers.py memakai 8 pertama sebagai frasa acuan semantic gate.
 - Tambahan baru hanya dari ulasan nyata (scripts/eval/mine_pill_keyword_candidates.py,

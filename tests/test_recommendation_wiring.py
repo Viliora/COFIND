@@ -46,8 +46,8 @@ class RecommendationWiringTests(unittest.TestCase):
         }
         pills = ['instagrammable', 'ruangan_ac', 'toilet_bersih']
         detail = _score_shop_by_user_reviews(profile, pills, search_keywords=['instagrammable'])
-        self.assertIn('total_score', detail)
         self.assertIn('per_pill_stats', detail)
+        self.assertTrue(detail['per_pill_stats'].get('instagrammable'))
 
 
 if __name__ == '__main__':

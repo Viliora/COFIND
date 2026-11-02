@@ -9,9 +9,7 @@ Kontradiksi ulasan dinilai lewat pill_aspect_sentiment (keyword + keluhan
 dekat aspek), bukan daftar frasa terpisah per insiden.
 
 Env:
-  COFIND_METADATA_GATE              default true
-  COFIND_METADATA_PRIOR_WEIGHT      default 0.08 (plafon penguat)
-  COFIND_METADATA_PENALTY_WEIGHT    default 0.18 (bisa melebihi prior)
+  COFIND_METADATA_GATE              default true (hanya evaluate_metadata_gate / tes badge)
 """
 
 from __future__ import annotations
@@ -32,34 +30,11 @@ _NEGATION_PREFIXES = frozenset({
     'tidak', 'bukan', 'jangan', 'belum', 'tanpa', 'ga', 'gak', 'nggak', 'enggak',
 })
 
-def _env_flag(name: str, default: bool) -> bool:
-    raw = (os.getenv(name) or '').strip().lower()
-    if not raw:
-        return default
-    return raw in ('1', 'true', 'yes', 'on')
-
-
-def _env_float(name: str, default: float, *, min_value: float, max_value: float) -> float:
-    raw = (os.getenv(name) or '').strip()
-    if not raw:
-        return default
-    try:
-        value = float(raw)
-    except ValueError:
-        return default
-    return max(min_value, min(max_value, value))
+from config_env import env_flag as _env_flag
 
 
 def metadata_gate_enabled() -> bool:
     return _env_flag('COFIND_METADATA_GATE', True)
-
-
-def metadata_prior_weight() -> float:
-    return _env_float('COFIND_METADATA_PRIOR_WEIGHT', 0.08, min_value=0.0, max_value=0.2)
-
-
-def metadata_penalty_weight() -> float:
-    return _env_float('COFIND_METADATA_PENALTY_WEIGHT', 0.18, min_value=0.0, max_value=0.5)
 
 
 def review_text(review: object) -> str:

@@ -1,5 +1,484 @@
 {
   "schema_version": 1,
-  "description": "Query evaluasi retrieval/rekomendasi dari calon pengguna (wawancara, think-aloud, log beta). Isi manual; jangan kurasi tim dev di folder tests/.",
-  "queries": []
+  "description": "Query evaluasi golden (disalin dari baseline.json). Isi verbatim dari calon pengguna bila tersedia.",
+  "queries": [
+    {
+      "id": "gq-pill-kerja-wfc-01",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "kerja",
+          "wifi_kencang"
+        ]
+      },
+      "tags": [
+        "wfc",
+        "fasilitas"
+      ]
+    },
+    {
+      "id": "gq-pill-kerja-colokan-02",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "kerja",
+          "banyak_colokan_terminal"
+        ]
+      },
+      "tags": [
+        "wfc",
+        "colokan"
+      ]
+    },
+    {
+      "id": "gq-pill-belajar-03",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "belajar"
+        ]
+      },
+      "tags": [
+        "belajar"
+      ]
+    },
+    {
+      "id": "gq-pill-game-04",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "bermain game"
+        ]
+      },
+      "tags": [
+        "game",
+        "mabar"
+      ]
+    },
+    {
+      "id": "gq-pill-keluarga-05",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "keluarga"
+        ]
+      },
+      "tags": [
+        "keluarga"
+      ]
+    },
+    {
+      "id": "gq-pill-meeting-06",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "meeting_sosialisasi"
+        ]
+      },
+      "tags": [
+        "meeting"
+      ]
+    },
+    {
+      "id": "gq-pill-ig-07",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "instagrammable"
+        ]
+      },
+      "tags": [
+        "aesthetic",
+        "feeds_hunter"
+      ]
+    },
+    {
+      "id": "gq-pill-parkir-08",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "parkir_luas"
+        ]
+      },
+      "tags": [
+        "fasilitas",
+        "parkir"
+      ]
+    },
+    {
+      "id": "gq-pill-musholla-09",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "musholla"
+        ]
+      },
+      "tags": [
+        "fasilitas",
+        "religi"
+      ]
+    },
+    {
+      "id": "gq-pill-24jam-10",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "buka_sampai_malam_24_hours"
+        ]
+      },
+      "tags": [
+        "jam",
+        "24jam"
+      ]
+    },
+    {
+      "id": "gq-pill-multi-11",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "kerja",
+          "parkir_luas",
+          "wifi_kencang"
+        ]
+      },
+      "tags": [
+        "wfc",
+        "multi",
+        "fasilitas"
+      ]
+    },
+    {
+      "id": "gq-ft-wfc-12",
+      "route": "free_text",
+      "input": {
+        "query_text": "cafe buat WFC",
+        "keywords_mock": [
+          "cafe",
+          "wfc"
+        ],
+        "dense_query_mock": "coffee shop work from cafe wifi laptop"
+      },
+      "tags": [
+        "wfc",
+        "free_text",
+        "typo"
+      ]
+    },
+    {
+      "id": "gq-ft-murah-musholla-13",
+      "route": "free_text",
+      "input": {
+        "query_text": "kopi murah ada musholla",
+        "keywords_mock": [
+          "kopi",
+          "murah",
+          "musholla"
+        ],
+        "dense_query_mock": "coffee shop murah dengan musholla"
+      },
+      "tags": [
+        "murah",
+        "musholla",
+        "free_text"
+      ]
+    },
+    {
+      "id": "gq-ft-hidden-gem-14",
+      "route": "free_text",
+      "input": {
+        "query_text": "tempat ngopi hidden gem",
+        "keywords_mock": [
+          "hidden",
+          "gem",
+          "ngopi"
+        ],
+        "dense_query_mock": "coffee shop hidden gem tempat ngopi"
+      },
+      "tags": [
+        "hidden_gem",
+        "free_text"
+      ]
+    },
+    {
+      "id": "gq-ft-game-15",
+      "route": "free_text",
+      "input": {
+        "query_text": "tempat mabar ML",
+        "keywords_mock": [
+          "mabar",
+          "ml"
+        ],
+        "dense_query_mock": "tempat mabar mobile legends game"
+      },
+      "tags": [
+        "game",
+        "free_text"
+      ]
+    },
+    {
+      "id": "gq-ft-tenang-16",
+      "route": "free_text",
+      "input": {
+        "query_text": "tenang buat ngoding",
+        "keywords_mock": [
+          "tenang",
+          "ngoding"
+        ],
+        "dense_query_mock": "coffee shop tenang untuk ngoding kerja laptop"
+      },
+      "tags": [
+        "kerja",
+        "free_text"
+      ]
+    },
+    {
+      "id": "gq-ft-wifi-17",
+      "route": "free_text",
+      "input": {
+        "query_text": "wifi kencang colokan",
+        "keywords_mock": [
+          "wifi",
+          "kencang",
+          "colokan"
+        ],
+        "dense_query_mock": "wifi kencang banyak colokan coffee shop"
+      },
+      "tags": [
+        "wifi",
+        "colokan",
+        "free_text"
+      ]
+    },
+    {
+      "id": "gq-ft-umum-18",
+      "route": "free_text",
+      "input": {
+        "query_text": "kopi enak",
+        "keywords_mock": [
+          "kopi",
+          "enak"
+        ],
+        "dense_query_mock": "coffee shop kopi enak"
+      },
+      "tags": [
+        "umum",
+        "free_text"
+      ]
+    },
+    {
+      "id": "gq-pill-kerja-musholla-colokan-19",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "kerja",
+          "musholla",
+          "banyak_colokan_terminal"
+        ]
+      },
+      "tags": [
+        "wfc",
+        "multi",
+        "religi"
+      ]
+    },
+    {
+      "id": "gq-pill-belajar-wifi-20",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "belajar",
+          "wifi_kencang"
+        ]
+      },
+      "tags": [
+        "belajar",
+        "wifi"
+      ]
+    },
+    {
+      "id": "gq-pill-nongkrong-21",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "nongkrong_hangout"
+        ]
+      },
+      "tags": [
+        "hangout"
+      ]
+    },
+    {
+      "id": "gq-pill-dessert-22",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "dessert"
+        ]
+      },
+      "tags": [
+        "dessert",
+        "menu"
+      ]
+    },
+    {
+      "id": "gq-pill-toilet-23",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "toilet_bersih"
+        ]
+      },
+      "tags": [
+        "fasilitas"
+      ]
+    },
+    {
+      "id": "gq-pill-smoking-24",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "smoking_area"
+        ]
+      },
+      "tags": [
+        "smoking"
+      ]
+    },
+    {
+      "id": "gq-pill-outdoor-25",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "area_outdoor"
+        ]
+      },
+      "tags": [
+        "outdoor"
+      ]
+    },
+    {
+      "id": "gq-pill-kerja-privat-26",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "kerja",
+          "ruang_privat"
+        ]
+      },
+      "tags": [
+        "wfc",
+        "meeting"
+      ]
+    },
+    {
+      "id": "gq-pill-menu-27",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "makanan_berat"
+        ]
+      },
+      "tags": [
+        "menu"
+      ]
+    },
+    {
+      "id": "gq-pill-tenang-28",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "belajar",
+          "suasana_tenang"
+        ]
+      },
+      "tags": [
+        "belajar",
+        "tenang"
+      ]
+    },
+    {
+      "id": "gq-ft-musholla-wfc-29",
+      "route": "free_text",
+      "input": {
+        "query_text": "coffee shop musholla terminal banyak wfc",
+        "keywords_mock": [
+          "musholla",
+          "terminal banyak",
+          "wfc"
+        ],
+        "dense_query_mock": "kafe ramah wfc dengan musholla dan banyak colokan listrik"
+      },
+      "tags": [
+        "wfc",
+        "free_text",
+        "religi"
+      ]
+    },
+    {
+      "id": "gq-ft-parkir-30",
+      "route": "free_text",
+      "input": {
+        "query_text": "parkir luas buat mobil",
+        "keywords_mock": [
+          "parkir",
+          "luas",
+          "mobil"
+        ],
+        "dense_query_mock": "coffee shop parkir luas nyaman mobil"
+      },
+      "tags": [
+        "parkir",
+        "free_text"
+      ]
+    },
+    {
+      "id": "gq-ft-estetik-31",
+      "route": "free_text",
+      "input": {
+        "query_text": "cafe estetik buat foto",
+        "keywords_mock": [
+          "estetik",
+          "foto"
+        ],
+        "dense_query_mock": "coffee shop estetik instagrammable buat foto"
+      },
+      "tags": [
+        "aesthetic",
+        "free_text"
+      ]
+    },
+    {
+      "id": "gq-ft-meeting-32",
+      "route": "free_text",
+      "input": {
+        "query_text": "tempat rapat tim kecil",
+        "keywords_mock": [
+          "rapat",
+          "tim"
+        ],
+        "dense_query_mock": "coffee shop cocok rapat tim kecil meeting"
+      },
+      "tags": [
+        "meeting",
+        "free_text"
+      ]
+    },
+    {
+      "id": "gq-ft-colokan-33",
+      "route": "free_text",
+      "input": {
+        "query_text": "colokan banyak ngecas laptop",
+        "keywords_mock": [
+          "colokan",
+          "ngecas",
+          "laptop"
+        ],
+        "dense_query_mock": "banyak colokan stop kontak ngecas laptop coffee shop"
+      },
+      "tags": [
+        "colokan",
+        "free_text"
+      ]
+    }
+  ]
 }

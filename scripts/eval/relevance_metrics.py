@@ -67,6 +67,17 @@ def ndcg_at_k(ranked_ids: Sequence[str], rel_map: Dict[str, float], k: int) -> f
     return _dcg(gains) / idcg
 
 
+def rank_place_ids_by_score(scores: Dict[str, float], top_k: int) -> List[str]:
+    """Urutkan place_id menurun skor (dense-only / bm25-only lane)."""
+    if top_k <= 0:
+        return []
+    ordered = sorted(
+        ((str(pid), float(val)) for pid, val in (scores or {}).items()),
+        key=lambda item: (-item[1], item[0]),
+    )
+    return [pid for pid, _ in ordered[:top_k]]
+
+
 def recall_at_k(ranked_ids: Sequence[str], rel_map: Dict[str, float], k: int) -> float:
     relevant = {pid for pid, g in rel_map.items() if g >= 1.0}
     if not relevant:

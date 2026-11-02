@@ -32,9 +32,10 @@ def test_overall_experience_score_none_when_disabled():
         assert _overall_experience_score_from_signals(signals) is None
 
 
-def test_quality_score_ignores_sliders_when_disabled():
+def test_quality_score_ignores_sliders_even_when_flag_on():
     profile = {
         'google_rating': 4.5,
+        'google_total_reviews': 100,
         'community_signals': {
             'vote': {
                 'slider_averages': {'pelayanan': 5.0, 'kebersihan': 5.0},
@@ -43,11 +44,10 @@ def test_quality_score_ignores_sliders_when_disabled():
     }
     with patch.dict(os.environ, {'COFIND_RECOMMEND_USE_OVERALL_EXPERIENCE': 'false'}):
         score = _quality_score_for_profile(profile)
-    assert score is not None
     with patch.dict(os.environ, {'COFIND_RECOMMEND_USE_OVERALL_EXPERIENCE': 'true'}):
         score_on = _quality_score_for_profile(profile)
-    assert score_on is not None
-    assert score_on != score or score == score  # rating-only vs blend; ON should differ if OE contributes
+    assert score is not None
+    assert score == score_on
 
 
 def test_community_prompt_skips_slider_lines_when_disabled():
