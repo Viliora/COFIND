@@ -32,6 +32,9 @@ ENV/
 .env.local
 .env.*.local
 
+# Local tool clones (nested git repos, tidak untuk commit)
+.tools/agent-browser/
+
 # IDE
 .vscode/
 .idea/
