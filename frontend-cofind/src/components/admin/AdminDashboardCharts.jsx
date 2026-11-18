@@ -2,13 +2,13 @@ import React, { useMemo } from 'react';
 
 function ChartCard({ title, description, children, empty = false, emptyMessage = 'Belum ada data.' }) {
   return (
-    <div className="rounded-2xl border border-stone-200/50 bg-[#FAF9F6]/95 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-5">
+    <div className="rounded-panel border border-cofind-rule bg-cofind-surface p-5 shadow-cofind-sm">
       <div className="mb-4">
-        <h4 className="text-base font-semibold text-stone-800">{title}</h4>
-        {description ? <p className="mt-1 text-xs text-stone-500">{description}</p> : null}
+        <h4 className="text-base font-semibold text-cofind-ink">{title}</h4>
+        {description ? <p className="mt-1 text-xs text-cofind-muted">{description}</p> : null}
       </div>
       {empty ? (
-        <p className="text-sm text-stone-500 py-8 text-center">{emptyMessage}</p>
+        <p className="py-8 text-center text-sm text-cofind-muted">{emptyMessage}</p>
       ) : (
         children
       )}
@@ -136,7 +136,7 @@ function TrendBars({ points }) {
           <div key={point.date} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
             <span className="text-[10px] text-stone-500 tabular-nums">{value || ''}</span>
             <div
-              className="w-full rounded-t-md bg-gradient-to-t from-amber-700 to-amber-500 min-h-[2px] transition-all"
+              className="min-h-[2px] w-full rounded-t-md bg-cofind-primary transition-[height] duration-200"
               style={{ height: `${heightPct}%` }}
               title={`${point.label}: ${value}`}
             />

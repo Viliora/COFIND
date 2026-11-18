@@ -80,14 +80,14 @@ const ReviewForm = ({
 
   if (!isAuthenticated) {
     return (
-      <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 p-6 rounded-xl border border-amber-200 dark:border-amber-800">
+      <div className="rounded-panel border border-cofind-rule bg-cofind-paper p-6">
         <div className="text-center">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Ingin memberikan review?</h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">Masuk atau daftar untuk menulis review tentang {shopName}</p>
+          <h3 className="mb-2 font-display text-lg font-semibold text-cofind-ink">Ingin memberikan review?</h3>
+          <p className="mb-4 text-cofind-muted">Masuk atau daftar untuk menulis review tentang {shopName}</p>
           <Link
             to="/login"
             state={{ from: { pathname: `/shop/${placeId}`, search: '?scrollToReview=true' }, placeId, shopName, scrollToReview: true }}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 rounded-control bg-cofind-primary px-6 py-3 font-semibold text-cofind-on-primary transition-colors hover:bg-cofind-primary-hover"
           >
             Masuk untuk Review
           </Link>

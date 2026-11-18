@@ -50,12 +50,12 @@ export default function LatestReviewsAside({ className = '' }) {
 
   return (
     <aside
-      className={`rounded-2xl border border-stone-200 bg-white dark:border-stone-700 dark:bg-stone-900 px-3 py-3 sm:px-4 sm:py-4 ${className}`}
+      className={`rounded-panel border border-cofind-rule bg-cofind-surface px-3 py-3 sm:px-4 sm:py-4 shadow-cofind-sm ${className}`}
     >
-      <h2 className="font-sans text-lg font-bold tracking-tight text-slate-800 dark:text-stone-100">
+      <h2 className="font-display text-lg font-bold tracking-tight text-cofind-ink">
         Latest Reviews
       </h2>
-      <div className="mt-1.5 h-px w-full bg-gradient-to-r from-slate-500 via-slate-200 to-transparent dark:from-stone-400 dark:via-stone-700" />
+      <div className="mt-1.5 h-px w-full bg-cofind-rule" />
 
       {loading ? (
         <p className="py-8 text-sm text-stone-400">Memuat ulasan...</p>
@@ -74,7 +74,7 @@ export default function LatestReviewsAside({ className = '' }) {
                   className="h-11 w-11 flex-shrink-0 rounded-full object-cover bg-stone-100 dark:bg-stone-800"
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-sm leading-snug text-[#0f766e] dark:text-teal-300">
+                  <p className="font-semibold text-sm leading-snug text-cofind-secondary">
                     {item.shop_name}
                   </p>
                   <p className="mt-0.5 text-xs leading-snug text-stone-500 dark:text-stone-400 line-clamp-2">

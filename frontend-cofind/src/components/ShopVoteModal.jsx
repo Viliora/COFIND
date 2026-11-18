@@ -6,7 +6,7 @@ import { BestForBar, VoteBarGroup } from './ShopVotesSummary';
 export const SLIDER_META = [
   { key: 'pelayanan', label: 'Pelayanan', emoji: '🛎️', color: 'accent-blue-500' },
   { key: 'kebersihan', label: 'Kebersihan', emoji: '✨', color: 'accent-emerald-500' },
-  { key: 'kenyamanan', label: 'Kenyamanan', emoji: '🛋️', color: 'accent-purple-500' },
+  { key: 'kenyamanan', label: 'Kenyamanan', emoji: '🛋️', color: 'accent-teal-600' },
   { key: 'harga', label: 'Harga', emoji: '💰', color: 'accent-amber-500' },
 ];
 

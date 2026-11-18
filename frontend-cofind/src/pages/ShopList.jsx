@@ -762,9 +762,9 @@ export default function ShopList() {
   if (isLoading && coffeeShops.length === 0) {
     return (
       <div className="text-center p-8 sm:p-12 md:p-16">
-        <h1 className="text-xl sm:text-2xl md:text-3xl text-indigo-600 font-semibold px-4">Loading Coffee Shops in Pontianak...</h1>
+        <h1 className="text-xl sm:text-2xl md:text-3xl text-cofind-primary font-semibold px-4">Loading Coffee Shops in Pontianak...</h1>
         <div className="mt-4 flex justify-center">
-          <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-indigo-600"></div>
+          <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-cofind-primary"></div>
         </div>
         {import.meta.env.DEV && (
           <p className="mt-4 text-sm text-gray-500">
@@ -802,27 +802,27 @@ export default function ShopList() {
         {/* Statistics Cards - sesuai data yang tampil di aplikasi (filteredShops) */}
         {!error && !isLoading && coffeeShops.length > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-            <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-4 sm:p-5 text-white shadow-lg hover:shadow-xl transition-shadow">
-              <div className="text-2xl sm:text-3xl font-bold mb-1">{stats.total}</div>
+            <div className="rounded-panel border border-cofind-primary/30 bg-cofind-primary p-4 sm:p-5 text-cofind-on-primary shadow-cofind-md">
+              <div className="text-2xl sm:text-3xl font-bold font-display mb-1">{stats.total}</div>
               <div className="text-xs sm:text-sm opacity-90">Coffee Shops</div>
               <div className="text-xs mt-1 opacity-75">di Pontianak</div>
             </div>
 
-            <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-4 sm:p-5 text-white shadow-lg hover:shadow-xl transition-shadow">
-              <div className="text-2xl sm:text-3xl font-bold mb-1 flex items-center">
+            <div className="rounded-panel border border-amber-900/30 bg-amber-900 p-4 sm:p-5 text-white shadow-cofind-md">
+              <div className="text-2xl sm:text-3xl font-bold font-display mb-1 flex items-center">
                 ⭐ {stats.avgRating}
               </div>
               <div className="text-xs sm:text-sm opacity-90">Rata-rata Rating</div>
               <div className="text-xs mt-1 opacity-75">Google · tersimpan di DB</div>
             </div>
 
-            <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-4 sm:p-5 text-white shadow-lg hover:shadow-xl transition-shadow">
-              <div className="text-2xl sm:text-3xl font-bold mb-1">{stats.topRated}</div>
+            <div className="rounded-panel border border-emerald-900/30 bg-emerald-900 p-4 sm:p-5 text-white shadow-cofind-md">
+              <div className="text-2xl sm:text-3xl font-bold font-display mb-1">{stats.topRated}</div>
               <div className="text-xs sm:text-sm opacity-90">Top Rated</div>
               <div className="text-xs mt-1 opacity-75">rating ≥ 4.5</div>
             </div>
 
-            <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl p-4 sm:p-5 text-white shadow-lg hover:shadow-xl transition-shadow">
+            <div className="rounded-panel border border-cofind-secondary/30 bg-cofind-secondary p-4 sm:p-5 text-cofind-on-secondary shadow-cofind-md">
               <div className="text-2xl sm:text-3xl font-bold mb-1">{stats.totalReviews.toLocaleString('id-ID')}</div>
               <div className="text-xs sm:text-sm opacity-90">Ulasan Cofind</div>
               <div className="text-xs mt-1 opacity-75">dari pengguna · database</div>
@@ -838,8 +838,8 @@ export default function ShopList() {
                 Sesuaikan preferensi anda:
               </h3>
               {showLastRecommendationBanner && (
-                <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-indigo-200/80 bg-gradient-to-r from-indigo-50 to-violet-50 px-4 py-3 dark:border-indigo-800/50 dark:from-indigo-950/40 dark:to-violet-950/30">
-                  <p className="text-xs sm:text-sm text-indigo-950 dark:text-indigo-100">
+                <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between rounded-panel border border-cofind-rule bg-cofind-surface px-4 py-3">
+                  <p className="text-xs sm:text-sm text-cofind-ink">
                     {hasPendingPillChanges ? (
                       <>
                         Konteks di bawah berbeda dari analisis terakhir — hasil{' '}
@@ -857,7 +857,7 @@ export default function ShopList() {
                     type="button"
                     onClick={openSavedRecommendationModal}
                     disabled={pillRecommendLoading}
-                    className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-indigo-600 px-4 py-2 text-xs sm:text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60 transition-colors"
+                    className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-cofind-primary px-4 py-2 text-xs sm:text-sm font-semibold text-white shadow-sm hover:bg-cofind-primary-hover disabled:cursor-not-allowed disabled:opacity-60 transition-colors"
                     title="Buka modal rekomendasi yang pernah Anda buat"
                   >
                     <span aria-hidden>✨</span>
@@ -935,7 +935,7 @@ export default function ShopList() {
                       ? 'Login untuk menggunakan pencarian kata kunci'
                       : undefined
                   }
-                  className={`w-full rounded-full border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 ${!user && !authLoading ? 'cursor-pointer' : ''}`}
+                  className={`w-full rounded-full border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-cofind-secondary disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 ${!user && !authLoading ? 'cursor-pointer' : ''}`}
                 />
                 <span className="shrink-0 text-xs text-gray-400 tabular-nums">
                   {searchKeyword.length}/{MAX_SEARCH_KEYWORD_CHARS}
@@ -956,7 +956,7 @@ export default function ShopList() {
                   type="button"
                   onClick={handleConfirmPills}
                   disabled={pillRecommendLoading || locationChoiceSubmitting}
-                  className="px-4 py-2 rounded-full text-sm font-medium bg-indigo-600 text-white shadow-md hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200"
+                  className="rounded-full px-4 py-2 text-sm font-medium bg-cofind-primary text-cofind-on-primary shadow-cofind-sm transition-colors duration-200 hover:bg-cofind-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
                   title="Konfirmasi konteks dan lihat rekomendasi"
                 >
                   {pillRecommendLoading ? 'Menganalisis...' : 'OK'}
@@ -1018,7 +1018,7 @@ export default function ShopList() {
                     key={shop.place_id}
                     className={`${SHOP_CAROUSEL_ITEM_CLASS} hover:shadow-2xl transition duration-300 group`}
                   >
-                    <div className="absolute top-2 left-2 z-20 bg-gradient-to-r from-yellow-400 to-orange-500 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shadow-lg">
+                    <div className="absolute left-2 top-2 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-cofind-primary text-lg font-bold text-cofind-on-primary shadow-cofind-md">
                       {index + 1}
                     </div>
                     <div className="relative w-full h-full">
@@ -1049,7 +1049,7 @@ export default function ShopList() {
             <div className="relative z-10 text-center px-4 sm:px-6 max-w-4xl mx-auto">
               {/* Main Heading */}
               <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-3 sm:mb-4 leading-tight">
-                <span className="block mb-1 sm:mb-2 bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 bg-clip-text text-transparent drop-shadow-lg">
+                <span className="block mb-1 sm:mb-2 font-display text-cofind-paper drop-shadow-lg">
                   Temukan Coffee Shop
                 </span>
                 <span className="block text-white drop-shadow-2xl">
@@ -1064,7 +1064,7 @@ export default function ShopList() {
             </div>
             
             {/* Bottom Gradient Fade */}
-            <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-gray-50 dark:from-zinc-900 to-transparent"></div>
+            <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-cofind-background to-transparent"></div>
           </div>
         )}
 
@@ -1234,7 +1234,7 @@ export default function ShopList() {
                       Math.min(prev + CATALOG_PAGE_SIZE, filteredShops.length),
                     );
                   }}
-                  className="px-6 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm shadow-md transition-colors"
+                  className="px-6 py-2.5 rounded-lg bg-cofind-primary hover:bg-cofind-primary-hover text-white font-medium text-sm shadow-md transition-colors"
                 >
                   See more
                 </button>
@@ -1301,7 +1301,7 @@ export default function ShopList() {
               <Link
                 to="/login"
                 onClick={() => setShowPillLoginModal(false)}
-                className="inline-flex rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
+                className="inline-flex rounded-full bg-cofind-primary px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-cofind-primary-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-cofind-secondary focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
               >
                 Masuk
               </Link>
@@ -1346,7 +1346,7 @@ export default function ShopList() {
                 type="button"
                 onClick={handleRecommendWithLocation}
                 disabled={locationChoiceSubmitting || locationLoading || pillRecommendLoading}
-                className="flex w-full items-center gap-3 rounded-xl border border-indigo-200 bg-indigo-600 px-4 py-3.5 text-left text-white shadow-md transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-indigo-500/40 dark:shadow-indigo-950/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
+                className="flex w-full items-center gap-3 rounded-panel border border-cofind-primary/40 bg-cofind-primary px-4 py-3.5 text-left text-cofind-on-primary shadow-cofind-md transition hover:bg-cofind-primary-hover disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-cofind-secondary focus-visible:ring-offset-2"
               >
                 <span
                   className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/15 text-lg"
@@ -1360,7 +1360,7 @@ export default function ShopList() {
                       ? 'Mendeteksi lokasi...'
                       : 'Gunakan lokasi saat ini'}
                   </span>
-                  <span className="mt-0.5 block text-xs font-normal text-indigo-100/90">
+                  <span className="mt-0.5 block text-xs font-normal text-cofind-on-primary/90">
                     Jarak ke coffee shop & peta di beranda lebih relevan
                   </span>
                 </span>

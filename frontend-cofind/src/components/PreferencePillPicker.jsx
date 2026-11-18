@@ -71,8 +71,8 @@ export default function PreferencePillPicker({
                 disabled:opacity-50 disabled:cursor-not-allowed
                 ${
                   selected
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-zinc-700'
+                    ? 'bg-cofind-primary text-cofind-on-primary shadow-cofind-sm'
+                    : 'text-cofind-muted hover:bg-cofind-paper'
                 }
               `}
             >
@@ -105,7 +105,7 @@ export default function PreferencePillPicker({
                   className={`
                     px-3 sm:px-4 py-2 rounded-full text-sm font-semibold
                     transition-shadow duration-200 ease-out
-                    focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400
+                    focus:outline-none focus-visible:ring-2 focus-visible:ring-cofind-secondary
                     disabled:opacity-50 disabled:cursor-not-allowed
                     ${isSelected ? theme.selected : theme.idle}
                   `}
@@ -162,8 +162,8 @@ export default function PreferencePillPicker({
                         ${disabled || blocked ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
                         ${
                           checked
-                            ? 'bg-indigo-50 font-medium text-indigo-800 dark:bg-indigo-500/20 dark:text-indigo-200'
-                            : 'text-gray-700 hover:bg-white dark:text-gray-300 dark:hover:bg-zinc-800'
+                            ? 'bg-cofind-paper font-medium text-cofind-ink border border-cofind-rule'
+                            : 'text-cofind-ink hover:bg-cofind-paper'
                         }
                       `}
                     >
@@ -172,7 +172,7 @@ export default function PreferencePillPicker({
                         checked={checked}
                         disabled={disabled || blocked}
                         onChange={() => toggleFacility(option.value)}
-                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-zinc-600 dark:bg-zinc-800"
+                        className="h-4 w-4 rounded border-cofind-rule text-cofind-primary focus:ring-cofind-secondary"
                       />
                       <span aria-hidden>{option.icon}</span>
                       <span>{option.label}</span>

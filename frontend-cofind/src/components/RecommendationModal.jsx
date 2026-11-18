@@ -575,7 +575,7 @@ function RecommendationFeedbackControls({
                         readOnly={feedbackLocked}
                         disabled={inputDisabled}
                         placeholder="Contoh: Suasananya terlalu ramai untuk belajar…"
-                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:ring-indigo-900/50 dark:disabled:bg-gray-900 dark:disabled:text-gray-400"
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-cofind-secondary focus:outline-none focus:ring-2 focus:ring-cofind-secondary/25 disabled:cursor-not-allowed disabled:bg-cofind-paper disabled:text-cofind-muted dark:border-cofind-rule dark:bg-cofind-surface dark:text-cofind-ink dark:disabled:bg-cofind-paper dark:disabled:text-cofind-muted"
                     />
                     {!feedbackLocked ? (
                         <div className="flex justify-end">
@@ -628,7 +628,7 @@ function RecommendationFeedbackControls({
                         <button
                             type="button"
                             onClick={() => setShowThanksPopup(false)}
-                            className="mt-4 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                            className="mt-4 rounded-full bg-cofind-primary px-4 py-2 text-sm font-medium text-white hover:bg-cofind-primary-hover"
                         >
                             Tutup
                         </button>
@@ -809,7 +809,7 @@ const RecommendationModal = ({
             />
 
             <div className="relative z-10 w-full max-w-5xl max-h-[90vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-                <div className="flex items-start justify-between gap-3 px-5 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-indigo-50 via-violet-50 to-indigo-50 dark:from-indigo-950/40 dark:via-violet-950/40 dark:to-indigo-950/40">
+                <div className="flex items-start justify-between gap-3 px-5 sm:px-6 py-4 border-b border-cofind-rule bg-cofind-paper">
                     <div className="min-w-0">
                         <h2
                             id="recommendation-modal-title"
@@ -831,7 +831,7 @@ const RecommendationModal = ({
                             </p>
                         ) : null}
                         {totalDurationSeconds != null ? (
-                            <p className="mt-1.5 text-xs text-indigo-700/90 dark:text-indigo-300/90 tabular-nums">
+                            <p className="mt-1.5 text-xs text-cofind-muted tabular-nums">
                                 Selesai dalam{' '}
                                 <span className="font-semibold">
                                     {formatTotalDurationLabel(totalDurationSeconds)}
@@ -921,7 +921,7 @@ const RecommendationModal = ({
                                                     <Link
                                                         to={`/shop/${placeId}`}
                                                         onClick={() => onClose?.()}
-                                                        className="inline-block text-sm font-semibold text-indigo-600 hover:text-indigo-700 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 rounded dark:text-indigo-300 dark:hover:text-indigo-200 dark:focus-visible:ring-offset-gray-900"
+                                                        className="inline-block text-sm font-semibold text-cofind-secondary hover:text-cofind-primary-hover hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-cofind-secondary focus-visible:ring-offset-2 rounded dark:text-cofind-secondary dark:hover:text-cofind-paper dark:focus-visible:ring-offset-gray-900"
                                                     >
                                                         {shopName}
                                                     </Link>
@@ -933,7 +933,7 @@ const RecommendationModal = ({
                                                 {distanceLabel ? (
                                                     <span
                                                         title="Jarak garis lurus dari lokasi Anda"
-                                                        className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-800 dark:border-indigo-800/70 dark:bg-indigo-950/40 dark:text-indigo-100"
+                                                        className="inline-flex items-center gap-1 rounded-full border border-cofind-rule bg-cofind-paper px-2 py-0.5 text-[11px] font-medium text-cofind-ink"
                                                     >
                                                         📍 ± {distanceLabel}
                                                     </span>
@@ -1059,7 +1059,7 @@ const RecommendationModal = ({
                                                 <button
                                                     type="button"
                                                     onClick={() => setShowOtherOptions(false)}
-                                                    className="text-xs font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-300"
+                                                    className="text-xs font-medium text-cofind-secondary hover:text-cofind-primary-hover dark:text-cofind-secondary"
                                                 >
                                                     Sembunyikan
                                                 </button>
@@ -1080,7 +1080,7 @@ const RecommendationModal = ({
                                                                 <Link
                                                                     to={`/shop/${encodeURIComponent(entry.placeId)}`}
                                                                     onClick={() => onClose?.()}
-                                                                    className="text-sm font-semibold text-gray-800 hover:text-indigo-600 hover:underline dark:text-gray-100 dark:hover:text-indigo-300"
+                                                                    className="text-sm font-semibold text-gray-800 hover:text-cofind-secondary hover:underline dark:text-gray-100 dark:hover:text-cofind-primary"
                                                                 >
                                                                     {entry.name}
                                                                 </Link>
@@ -1111,7 +1111,7 @@ const RecommendationModal = ({
                     <button
                         type="button"
                         onClick={onClose}
-                        className="px-4 py-2 rounded-full text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+                        className="px-4 py-2 rounded-full text-sm font-medium bg-cofind-primary text-white hover:bg-cofind-primary-hover transition-colors"
                     >
                         Tutup
                     </button>

@@ -44,7 +44,7 @@ export default function ShopOpeningHoursBlock({ shop }) {
 
       {showFullSchedule ? (
         <details className="group border-t border-amber-100/80 dark:border-amber-900/40">
-          <summary className="cursor-pointer list-none px-4 py-2.5 text-sm font-medium text-indigo-700 dark:text-indigo-300 hover:bg-amber-100/60 dark:hover:bg-amber-900/20 flex items-center justify-between gap-2 select-none [&::-webkit-details-marker]:hidden">
+          <summary className="cursor-pointer list-none px-4 py-2.5 text-sm font-medium text-cofind-secondary hover:bg-cofind-paper flex items-center justify-between gap-2 select-none [&::-webkit-details-marker]:hidden">
             <span>Lihat jadwal lengkap</span>
             <svg
               className="w-4 h-4 flex-shrink-0 transition-transform group-open:rotate-180"

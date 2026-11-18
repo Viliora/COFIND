@@ -2,16 +2,20 @@ import React from 'react';
 
 export default function AdminSidebar({ items, activeSection, onChangeSection }) {
   return (
-    <aside className="w-full lg:w-64 shrink-0 rounded-2xl border border-stone-200/50 bg-[#FAF9F6]/95 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
-      <div className="px-5 py-5 bg-gradient-to-br from-amber-700 to-orange-800">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-2xl">☕</span>
-          <h1 className="font-serif text-lg font-semibold text-stone-50 tracking-wide">Cofind Admin</h1>
+    <aside className="w-full shrink-0 overflow-hidden rounded-panel border border-cofind-rule bg-cofind-surface shadow-cofind-sm lg:w-64">
+      <div className="bg-cofind-primary px-5 py-5">
+        <div className="mb-1 flex items-center gap-2">
+          <span className="text-2xl" aria-hidden>
+            ☕
+          </span>
+          <h1 className="font-display text-lg font-semibold tracking-wide text-cofind-on-primary">
+            Cofind Admin
+          </h1>
         </div>
-        <p className="text-xs text-amber-100/90">Dashboard pengelolaan aplikasi</p>
+        <p className="text-xs text-cofind-on-primary/85">Dashboard pengelolaan aplikasi</p>
       </div>
 
-      <nav className="p-2 space-y-0.5">
+      <nav className="space-y-0.5 p-2">
         {items.map((item) => {
           const isActive = activeSection === item.id;
           return (
@@ -19,10 +23,10 @@ export default function AdminSidebar({ items, activeSection, onChangeSection }) 
               key={item.id}
               type="button"
               onClick={() => onChangeSection(item.id)}
-              className={`w-full rounded-xl px-4 py-2.5 text-left transition-all duration-300 ease-out cursor-pointer ${
+              className={`w-full cursor-pointer rounded-panel border px-4 py-2.5 text-left transition-colors duration-200 ${
                 isActive
-                  ? 'bg-amber-50 text-amber-800 font-semibold border border-amber-200/70 shadow-[0_8px_30px_rgb(0,0,0,0.03)]'
-                  : 'text-stone-600 hover:bg-stone-100/70 hover:text-stone-900 border border-transparent'
+                  ? 'border-cofind-rule bg-cofind-paper font-semibold text-cofind-primary shadow-cofind-sm'
+                  : 'border-transparent text-cofind-muted hover:bg-cofind-paper hover:text-cofind-ink'
               }`}
             >
               <div className="text-sm">{item.label}</div>

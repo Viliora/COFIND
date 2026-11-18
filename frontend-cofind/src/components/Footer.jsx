@@ -3,11 +3,10 @@ import React from 'react';
 
 const Footer = () => {
   return (
-    <footer className="bg-gray-100 dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800 mt-8 sm:mt-12 py-6 w-full transition-colors duration-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <footer className="border-t border-cofind-rule bg-cofind-paper mt-8 sm:mt-12 py-6 w-full">
+      <div className="max-w-cofind mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
-          {/* Copyright Text */}
-          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+          <div className="flex items-center gap-2 text-sm text-cofind-muted font-sans">
             <span className="font-medium">Copyright © COFIND 2025</span>
           </div>
         </div>

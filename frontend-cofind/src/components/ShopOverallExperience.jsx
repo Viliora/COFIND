@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 const SLIDER_META = [
   { key: 'pelayanan', label: 'Pelayanan', emoji: '🛎️', color: 'bg-blue-500', accent: 'accent-blue-500' },
   { key: 'kebersihan', label: 'Kebersihan', emoji: '✨', color: 'bg-emerald-500', accent: 'accent-emerald-500' },
-  { key: 'kenyamanan', label: 'Kenyamanan', emoji: '🛋️', color: 'bg-purple-500', accent: 'accent-purple-500' },
+  { key: 'kenyamanan', label: 'Kenyamanan', emoji: '🛋️', color: 'bg-teal-600', accent: 'accent-teal-600' },
   { key: 'harga', label: 'Harga', emoji: '💰', color: 'bg-amber-500', accent: 'accent-amber-500' },
 ];
 
@@ -58,7 +58,7 @@ export default function ShopOverallExperience({ summary, myVote, isAuthenticated
     <div className="mt-6 sm:mt-8">
       <div className="mb-4">
         <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 to-indigo-500 text-white shadow-md text-lg">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-cofind-primary text-cofind-on-primary shadow-cofind-sm text-lg">
             📊
           </span>
           Overall Experience
@@ -178,7 +178,7 @@ export default function ShopOverallExperience({ summary, myVote, isAuthenticated
                           <span className="w-6 text-right text-gray-500 dark:text-gray-400">{count}</span>
                           <div className="flex-1 h-2 rounded-full bg-gray-100 dark:bg-zinc-700 overflow-hidden">
                             <div
-                              className={`h-full rounded-full ${slider.color} transition-all duration-500`}
+                              className={`h-full rounded-full ${slider.color} transition-[width] duration-500`}
                               style={{ width: `${pct}%`, opacity: 0.3 + level * 0.14 }}
                             />
                           </div>

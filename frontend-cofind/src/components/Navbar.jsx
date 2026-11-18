@@ -208,7 +208,7 @@ const Navbar = () => {
   }, []);
 
   return (
-    <nav className="bg-white dark:bg-zinc-900 shadow-sm border-b border-gray-100 dark:border-zinc-800 fixed inset-x-0 top-0 z-50">
+    <nav className="bg-cofind-surface border-b border-cofind-rule shadow-cofind-sm fixed inset-x-0 top-0 z-50">
   <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
     <div className="flex justify-between items-center h-14 sm:h-16 gap-4">
 
@@ -225,7 +225,7 @@ const Navbar = () => {
                 alt="Cofind" 
                 className="h-8 sm:h-9 md:h-10 w-auto transition-transform group-hover:scale-105" 
               />
-              <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
+              <span className="font-display text-xl sm:text-2xl font-bold text-cofind-primary tracking-tight">
                 COFIND
               </span>
             </Link>
@@ -238,7 +238,7 @@ const Navbar = () => {
                 onChange={handleSearchChange}
                 onFocus={() => setShowSearchDropdown(searchQuery.trim().length > 0)}
                 placeholder="Coffee shop yang ingin dituju.."
-                className="w-48 md:w-64 lg:w-80 px-4 py-2 pl-10 text-sm bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-all"
+                className="w-48 md:w-64 lg:w-80 px-4 py-2 pl-10 text-sm bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-cofind-secondary focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-all"
               />
               <svg 
                 className="absolute left-3 w-4 h-4 text-gray-400 dark:text-gray-500 pointer-events-none"
@@ -286,7 +286,7 @@ const Navbar = () => {
 
           {/* Center: navigation buttons */}
           <div className="hidden md:flex flex-1 justify-center items-center">
-  <div className="flex items-center gap-0.5 bg-gray-50 dark:bg-zinc-800/50 rounded-lg p-1">
+  <div className="flex items-center gap-0.5 bg-cofind-paper rounded-control p-1 border border-cofind-rule">
     {/* nav buttons… */} 
 
               {/* Beranda */}
@@ -294,8 +294,8 @@ const Navbar = () => {
                 to="/"
                 className={`relative inline-flex items-center justify-center gap-1.5 rounded-md px-3 lg:px-4 py-1.5 lg:py-2 text-xs lg:text-sm font-medium transition-all duration-300 ease-in-out ${
                   isActive('/')
-                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md hover:from-blue-700 hover:to-purple-700 hover:shadow-lg'
-                    : 'bg-white dark:bg-zinc-700 text-gray-600 dark:text-gray-400 hover:text-indigo-800 dark:hover:text-indigo-100 hover:bg-indigo-50 dark:hover:bg-indigo-900/45 hover:shadow-sm'
+                    ? 'bg-cofind-primary text-cofind-on-primary shadow-cofind-sm hover:bg-cofind-primary-hover'
+                    : 'bg-white dark:bg-zinc-700 text-gray-600 dark:text-gray-400 hover:text-cofind-primary hover:bg-cofind-paper hover:shadow-sm'
                 }`}
               >
                 <svg
@@ -319,7 +319,7 @@ const Navbar = () => {
                   onClick={() => setCollectionDropdownOpen(!collectionDropdownOpen)}
                   className={`relative inline-flex items-center justify-center gap-1.5 rounded-md px-3 lg:px-4 py-1.5 lg:py-2 text-xs lg:text-sm font-medium transition-all duration-300 ease-in-out outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/70 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 ${
                     isActive('/favorite') || isActive('/want-to-visit')
-                      ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md hover:from-pink-600 hover:to-rose-600 hover:shadow-lg'
+                      ? 'bg-rose-600 text-white shadow-cofind-sm hover:bg-rose-700'
                       : collectionDropdownOpen
                         ? 'bg-rose-100 dark:bg-rose-900/50 text-rose-900 dark:text-rose-100 shadow-sm'
                         : 'bg-white dark:bg-zinc-700 text-gray-600 dark:text-gray-400 hover:text-rose-800 dark:hover:text-rose-100 hover:bg-rose-50 dark:hover:bg-rose-900/45 hover:shadow-sm'
@@ -382,7 +382,7 @@ const Navbar = () => {
                 to="/about"
                 className={`relative inline-flex items-center justify-center gap-1.5 rounded-md px-3 lg:px-4 py-1.5 lg:py-2 text-xs lg:text-sm font-medium transition-all duration-300 ease-in-out ${
                   isActive('/about')
-                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md hover:from-amber-600 hover:to-orange-600 hover:shadow-lg'
+                    ? 'bg-cofind-primary text-cofind-on-primary shadow-cofind-sm hover:bg-cofind-primary-hover'
                     : 'bg-white dark:bg-zinc-700 text-gray-600 dark:text-gray-400 hover:text-amber-900 dark:hover:text-amber-100 hover:bg-amber-50 dark:hover:bg-amber-900/40 hover:shadow-sm'
                 }`}
               >
@@ -438,7 +438,7 @@ const Navbar = () => {
                     onClick={() => setUserDropdownOpen(!userDropdownOpen)}
                     className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
                   >
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center text-white text-sm font-semibold">
+                    <div className="w-7 h-7 rounded-full bg-cofind-primary flex items-center justify-center text-cofind-on-primary text-sm font-semibold">
                       {profile?.username?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
                     </div>
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300 max-w-24 truncate">
@@ -470,7 +470,7 @@ const Navbar = () => {
                         <Link
                           to="/admin"
                           onClick={() => setUserDropdownOpen(false)}
-                          className="flex items-center gap-2 px-4 py-2 text-sm text-purple-600 dark:text-purple-400 hover:bg-gray-100 dark:hover:bg-zinc-700"
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-cofind-secondary hover:bg-gray-100 dark:hover:bg-zinc-700"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -560,7 +560,7 @@ const Navbar = () => {
               ) : (
                 <Link
                   to="/login"
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-medium hover:from-amber-600 hover:to-orange-600 transition-colors shadow-sm"
+                  className="flex items-center gap-2 rounded-control bg-cofind-primary px-4 py-2 text-sm font-medium text-cofind-on-primary shadow-cofind-sm transition-colors hover:bg-cofind-primary-hover"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
@@ -600,7 +600,7 @@ const Navbar = () => {
                 onChange={handleSearchChange}
                 onFocus={() => setShowSearchDropdown(searchQuery.trim().length > 0)}
                 placeholder="Coffee shop yang ingin dituju.."
-                className="w-full px-4 py-2 pl-10 text-sm bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+                className="w-full px-4 py-2 pl-10 text-sm bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-cofind-secondary focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
               />
               <svg 
                 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500 pointer-events-none"
@@ -650,7 +650,7 @@ const Navbar = () => {
                 onClick={() => setMobileMenuOpen(false)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ease-in-out ${
                   isActive('/')
-                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md'
+                    ? 'bg-cofind-primary text-cofind-on-primary shadow-cofind-sm'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white/80 dark:hover:bg-zinc-700/80 hover:shadow-sm hover:pl-5'
                 }`}
               >
@@ -669,7 +669,7 @@ const Navbar = () => {
                   onClick={() => setMobileMenuOpen(false)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ease-in-out ${
                     isActive('/favorite')
-                      ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md'
+                      ? 'bg-rose-600 text-white shadow-cofind-sm'
                       : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white/80 dark:hover:bg-zinc-700/80 hover:shadow-sm hover:pl-5'
                   }`}
                 >
@@ -683,7 +683,7 @@ const Navbar = () => {
                   onClick={() => setMobileMenuOpen(false)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ease-in-out ${
                     isActive('/want-to-visit')
-                      ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md'
+                      ? 'bg-cofind-secondary text-cofind-on-secondary shadow-cofind-sm'
                       : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white/80 dark:hover:bg-zinc-700/80 hover:shadow-sm hover:pl-5'
                   }`}
                 >
@@ -698,7 +698,7 @@ const Navbar = () => {
                 onClick={() => setMobileMenuOpen(false)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ease-in-out ${
                   isActive('/about')
-                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md'
+                    ? 'bg-cofind-primary text-cofind-on-primary shadow-cofind-sm'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white/80 dark:hover:bg-zinc-700/80 hover:shadow-sm hover:pl-5'
                 }`}
               >
@@ -717,7 +717,7 @@ const Navbar = () => {
                       onClick={() => setMobileMenuOpen(false)}
                       className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white/80 dark:hover:bg-zinc-700/80 transition-all duration-300"
                     >
-                      <div className="w-6 h-6 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center text-white text-xs font-semibold">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-cofind-primary text-xs font-semibold text-cofind-on-primary">
                         {profile?.username?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
                       </div>
                       Profil Saya
@@ -726,7 +726,7 @@ const Navbar = () => {
                       <Link
                         to="/admin"
                         onClick={() => setMobileMenuOpen(false)}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-300"
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-cofind-secondary hover:bg-cofind-paper transition-all duration-300"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -817,7 +817,7 @@ const Navbar = () => {
                   <Link
                     to="/login"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md"
+                    className="flex items-center gap-2 rounded-control bg-cofind-primary px-4 py-2 text-sm font-medium text-cofind-on-primary shadow-cofind-sm"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />

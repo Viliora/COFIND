@@ -18,7 +18,7 @@ L.Marker.prototype.options.icon = DefaultIcon;
 
 const userLocationIcon = L.divIcon({
   className: 'user-location-marker',
-  html: '<div style="width:24px;height:24px;background:#2563eb;border:3px solid white;border-radius:50%;box-shadow:0 2px 5px rgba(0,0,0,0.3);"></div>',
+  html: '<div style="width:24px;height:24px;background:#1f6b5c;border:3px solid white;border-radius:50%;box-shadow:0 2px 5px rgba(0,0,0,0.3);"></div>',
   iconSize: [24, 24],
   iconAnchor: [12, 12],
 });
@@ -90,9 +90,9 @@ export default function CoffeeShopMap({
 
   if (allWithCoords.length === 0) {
     return (
-      <div className="mb-6 sm:mb-8 w-full rounded-lg border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800">
+      <div className="mb-6 sm:mb-8 w-full rounded-panel border border-cofind-rule bg-cofind-paper">
         <div className="flex h-64 items-center justify-center p-4">
-          <p className="text-center text-gray-500 dark:text-gray-400">
+          <p className="text-center text-cofind-muted">
             Tidak ada data koordinat untuk ditampilkan di peta
           </p>
         </div>
@@ -101,15 +101,15 @@ export default function CoffeeShopMap({
   }
 
   return (
-    <div className="mb-6 sm:mb-8 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
-      <div className="border-b border-gray-200 p-4 sm:p-5 dark:border-gray-700">
-        <h2 className="mb-2 flex items-center gap-2 text-xl font-bold text-gray-800 dark:text-gray-200 sm:text-2xl">
+    <div className="mb-6 sm:mb-8 w-full overflow-hidden rounded-panel border border-cofind-rule bg-cofind-surface shadow-cofind-md">
+      <div className="border-b border-cofind-rule p-4 sm:p-5">
+        <h2 className="mb-2 flex items-center gap-2 font-display text-xl font-bold text-cofind-ink sm:text-2xl">
           <span className="text-2xl" aria-hidden>
             🗺️
           </span>
           Peta coffee shop
         </h2>
-        <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+        <p className="mb-4 text-sm text-cofind-muted">
           {userLocation
             ? `Menampilkan toko dalam radius ${formatRadius(radiusMeters)} dari lokasi Anda.`
             : 'Semua coffee shop di peta. Aktifkan lokasi untuk filter radius.'}
@@ -119,7 +119,7 @@ export default function CoffeeShopMap({
             type="button"
             onClick={getCurrentLocation}
             disabled={locationLoading || !getCurrentLocation}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 font-medium text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 rounded-control bg-cofind-primary px-4 py-2.5 font-medium text-cofind-on-primary transition-colors hover:bg-cofind-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
             {locationLoading ? (
               <>
@@ -148,9 +148,9 @@ export default function CoffeeShopMap({
           </button>
           {userLocation && typeof setRadiusMeters === 'function' ? (
             <div className="flex items-center gap-3">
-              <label className="whitespace-nowrap text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label className="whitespace-nowrap text-sm font-medium text-cofind-ink">
                 Radius:{' '}
-                <span className="font-semibold text-indigo-600 dark:text-indigo-400">
+                <span className="font-semibold text-cofind-secondary">
                   {formatRadius(radiusMeters)}
                 </span>
               </label>
@@ -161,7 +161,7 @@ export default function CoffeeShopMap({
                 step={10}
                 value={radiusMeters}
                 onChange={(e) => setRadiusMeters(Number(e.target.value))}
-                className="h-2 w-32 cursor-pointer appearance-none rounded-lg bg-gray-200 accent-indigo-600 sm:w-40 dark:bg-gray-600"
+                className="h-2 w-32 cursor-pointer appearance-none rounded-lg bg-cofind-rule accent-cofind-secondary sm:w-40"
                 aria-label="Radius pencarian"
               />
             </div>
@@ -191,8 +191,8 @@ export default function CoffeeShopMap({
                 center={[userLocation.lat, userLocation.lng]}
                 radius={radiusMeters}
                 pathOptions={{
-                  color: '#4f46e5',
-                  fillColor: '#6366f1',
+                  color: '#1f6b5c',
+                  fillColor: '#1f6b5c',
                   fillOpacity: 0.15,
                   weight: 2,
                 }}
@@ -209,9 +209,9 @@ export default function CoffeeShopMap({
             <Marker key={shop.place_id || shop.id} position={[shop.latitude, shop.longitude]}>
               <Popup>
                 <div className="p-2">
-                  <h3 className="mb-1 text-sm font-semibold text-gray-800">{shop.name}</h3>
+                  <h3 className="mb-1 text-sm font-semibold text-cofind-ink">{shop.name}</h3>
                   {shop._distanceKm != null ? (
-                    <p className="mb-1 text-xs font-medium text-indigo-600">
+                    <p className="mb-1 text-xs font-medium text-cofind-secondary">
                       {shop._distanceKm.toFixed(1)} km
                     </p>
                   ) : null}
@@ -233,7 +233,7 @@ export default function CoffeeShopMap({
         </MapContainer>
       </div>
       {userLocation && markers.length === 0 ? (
-        <p className="border-t border-gray-200 px-4 py-3 text-center text-sm text-gray-600 dark:border-gray-700 dark:text-gray-400">
+        <p className="border-t border-cofind-rule px-4 py-3 text-center text-sm text-cofind-muted">
           Tidak ada coffee shop dalam radius {formatRadius(radiusMeters)}. Coba perbesar radius.
         </p>
       ) : null}

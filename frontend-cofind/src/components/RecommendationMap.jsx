@@ -99,7 +99,7 @@ function RecommendationMapLeaflet({ userLocation, shops = [] }) {
               <div className="min-w-[140px] p-0.5 text-slate-900">
                 <p className="text-sm font-semibold">{shop.name}</p>
                 {distanceKm != null ? (
-                  <p className="text-xs font-medium text-indigo-600 mt-0.5">
+                  <p className="text-xs font-medium text-cofind-secondary mt-0.5">
                     ± {formatDistanceKm(distanceKm)} dari Anda
                   </p>
                 ) : null}

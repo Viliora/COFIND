@@ -472,7 +472,7 @@ function ShopDetail() {
 
   if (isLoading) return (
     <div className="text-center mt-8 sm:mt-10 px-4">
-      <p className="text-lg sm:text-xl text-indigo-600 dark:text-indigo-400">Memuat Detail Toko...</p>
+      <p className="text-lg sm:text-xl font-sans text-cofind-primary">Memuat Detail Toko...</p>
     </div>
   );
   if (error) return (
@@ -583,7 +583,7 @@ function ShopDetail() {
                 href={shop.website} 
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className="flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex-1"
+                className="flex items-center justify-center gap-2 px-6 py-4 bg-cofind-primary hover:bg-cofind-primary-hover text-cofind-on-primary font-medium rounded-control shadow-cofind-md transition-colors duration-200 flex-1"
               >
                 <svg className="w-5 h-5" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" stroke="currentColor" viewBox="0 0 24 24">
                   <path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path>
@@ -677,7 +677,7 @@ function ShopDetail() {
           onClick={toggleWantToVisit}
           className="relative transition-all duration-200 hover:scale-110 focus:outline-none bg-transparent border-0 p-0 group"
         >
-          <span className="pointer-events-none absolute right-full mr-3 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-lg opacity-0 -translate-x-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0">
+          <span className="pointer-events-none absolute right-full mr-3 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-cofind-secondary px-3 py-1.5 text-xs font-semibold text-cofind-on-secondary shadow-cofind-sm opacity-0 -translate-x-1 transition-[opacity,transform] duration-200 group-hover:translate-x-0 group-hover:opacity-100">
             {isWantToVisit ? 'Hapus simpan' : 'Simpan tempat ini'}
           </span>
           <svg
@@ -740,7 +740,7 @@ function ShopDetail() {
           onClick={toggleFavorite}
           className="relative transition-all duration-200 hover:scale-110 focus:outline-none bg-transparent border-0 p-0 group"
         >
-          <span className="pointer-events-none absolute right-full mr-3 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-pink-600 px-3 py-1.5 text-xs font-semibold text-white shadow-lg opacity-0 -translate-x-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0">
+          <span className="pointer-events-none absolute right-full mr-3 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-cofind-sm opacity-0 -translate-x-1 transition-[opacity,transform] duration-200 group-hover:translate-x-0 group-hover:opacity-100">
             {isFavorite ? 'Hapus favorit' : 'Tambah favorit'}
           </span>
           <svg

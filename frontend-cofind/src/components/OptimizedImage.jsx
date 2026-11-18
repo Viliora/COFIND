@@ -96,7 +96,7 @@ const OptimizedImage = ({
     <div className="relative w-full h-full overflow-hidden" ref={imgRef}>
       {/* Skeleton Loading State */}
       {imageState === 'loading' && (
-        <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 animate-pulse">
+        <div className="absolute inset-0 animate-pulse bg-cofind-paper">
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-4xl opacity-30">☕</div>
           </div>
@@ -135,8 +135,8 @@ const OptimizedImage = ({
 
       {/* Loading Spinner Overlay (opsional) */}
       {imageState === 'loading' && imageSrc && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <div className="absolute inset-0 flex items-center justify-center bg-cofind-paper">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-cofind-rule border-t-cofind-primary" />
         </div>
       )}
     </div>

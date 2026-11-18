@@ -25,7 +25,7 @@ function reviewTarget(placeId, item) {
 const MAX_PANEL_QUOTES = 3;
 
 const triggerClassName =
-  'inline-flex max-w-full items-center gap-1 rounded-full border border-slate-200/90 bg-slate-50/80 px-2 py-0.5 text-[11px] font-normal leading-none text-slate-600 align-middle transition-colors hover:border-slate-300 hover:bg-slate-100 hover:text-slate-800 dark:border-zinc-600/70 dark:bg-zinc-800/50 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-gray-900';
+  'inline-flex max-w-full items-center gap-1 rounded-full border border-slate-200/90 bg-slate-50/80 px-2 py-0.5 text-[11px] font-normal leading-none text-slate-600 align-middle transition-colors hover:border-slate-300 hover:bg-slate-100 hover:text-slate-800 dark:border-zinc-600/70 dark:bg-zinc-800/50 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-cofind-secondary/50 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-gray-900';
 
 function shopDetailPath(placeId) {
   if (!placeId) return null;
@@ -53,7 +53,7 @@ function EvidenceReviewRow({ item, placeId, onClosePanel, onNavigate }) {
         <p className="mt-1.5 text-[11px] text-gray-500 dark:text-zinc-400">{metaParts.join(' · ')}</p>
       ) : null}
       {target ? (
-        <p className="mt-1 text-[10px] font-medium text-indigo-600/90 dark:text-indigo-400/90">
+        <p className="mt-1 text-[10px] font-medium text-cofind-secondary">
           Buka ulasan di halaman toko →
         </p>
       ) : null}
@@ -78,7 +78,7 @@ function EvidenceReviewRow({ item, placeId, onClosePanel, onNavigate }) {
       to={target.pathname}
       state={target.reviewId ? { focusReviewId: target.reviewId } : undefined}
       onClick={handleClick}
-      className={`${rowClass} w-full cursor-pointer no-underline hover:border-indigo-200 hover:bg-indigo-50/50 dark:hover:border-indigo-800/50 dark:hover:bg-indigo-950/20`}
+      className={`${rowClass} w-full cursor-pointer no-underline hover:border-cofind-rule hover:bg-cofind-paper`}
     >
       {body}
     </Link>
@@ -223,7 +223,7 @@ export default function RecommendationReviewSourcePills({
                     closePanel();
                     onNavigate?.();
                   }}
-                  className="block text-center text-[11px] font-semibold text-indigo-600 no-underline hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
+                  className="block text-center text-[11px] font-semibold text-cofind-secondary no-underline hover:text-cofind-primary"
                 >
                   See more
                 </Link>

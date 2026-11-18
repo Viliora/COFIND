@@ -3,6 +3,8 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/authContext';
 import { authService } from '../services/authService';
 import coffeeshopBg from '../assets/sign_page.webp';
+import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -171,190 +173,147 @@ const Login = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-zinc-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600"></div>
+      <div className="flex min-h-screen w-full items-center justify-center bg-cofind-background">
+        <div className="h-12 w-12 animate-spin rounded-full border-2 border-cofind-rule border-t-cofind-primary" />
       </div>
     );
   }
 
+  const modeTitle =
+    mode === 'login' ? 'Sign in' : mode === 'register' ? 'Sign up' : 'Reset password';
+
+  const submitLabel =
+    mode === 'login' ? 'Sign in now' : mode === 'register' ? 'Sign up now' : 'Send Reset Link';
+
   return (
-    <div 
-      className="fixed inset-0 flex relative"
-      style={{
-        backgroundImage: `url(${coffeeshopBg})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        backgroundAttachment: 'fixed',
-        width: '100vw',
-        height: '100vh',
-        minHeight: '100vh'
-      }}
-    >
-      {/* Dark Overlay */}
-      <div 
-        className="absolute inset-0 bg-black/60" 
-        style={{ 
-          width: '100vw', 
-          height: '100vh',
-          minHeight: '100vh',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0
-        }}
-      ></div>
+    <div className="flex min-h-screen w-full flex-col bg-cofind-background lg:flex-row">
+      <div className="relative flex w-full flex-1 flex-col lg:w-1/2 lg:min-h-screen">
+        <div className="flex items-center justify-between px-4 py-4 sm:px-6 lg:px-10">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 text-sm font-medium text-cofind-secondary transition-colors hover:text-cofind-primary"
+          >
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Kembali ke Beranda
+          </Link>
+          <Link to="/" className="font-display text-xl font-bold text-cofind-ink lg:hidden">
+            CoFind
+          </Link>
+        </div>
 
-      {/* Back to Home Button - Top Right */}
-      <Link
-        to="/"
-        className="absolute top-6 right-6 z-20 flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md text-white rounded-lg border border-white/20 hover:bg-white/20 transition-all duration-200 shadow-lg"
-      >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        </svg>
-        <span className="font-medium">Kembali ke Beranda</span>
-      </Link>
+        <div className="flex flex-1 items-start justify-center px-4 pb-10 pt-2 sm:px-6 lg:px-10 lg:pb-12 lg:pt-6">
+          <div className="w-full max-w-md">
+            <div className="rounded-panel border border-cofind-rule bg-cofind-surface p-6 shadow-cofind-md sm:p-8 lg:p-10">
+              <h2 className="mb-8 font-display text-3xl font-bold text-cofind-ink">{modeTitle}</h2>
 
-      {/* Content Container */}
-      <div 
-        className="relative z-10 w-full flex"
-        style={{ 
-          height: '100vh',
-          minHeight: '100vh'
-        }}
-      >
-        {/* Left Section - Sign In Form */}
-        <div 
-          className="w-full lg:w-1/2 flex items-start justify-center p-8 lg:p-12"
-          style={{ height: '100vh', minHeight: '100vh' }}
-        >
-          <div className="w-full max-w-md pt-8 lg:pt-12">
-            {/* Mobile Logo */}
-            <div className="lg:hidden text-center mb-8">
-              <Link to="/" className="inline-block">
-                <h1 className="text-3xl font-bold text-white">CoFind</h1>
-              </Link>
-            </div>
-
-            {/* Form Card */}
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 lg:p-10 border border-white/20 shadow-2xl">
-              <h2 className="text-3xl font-bold text-white mb-8">
-                {mode === 'login' && 'Sign in'}
-                {mode === 'register' && 'Sign up'}
-                {mode === 'forgot' && 'Reset password'}
-              </h2>
-
-              {/* Error/Success Messages */}
-              {error && (
-                <div data-testid="login-error" className="mb-4 p-3 bg-red-500/20 border border-red-400/50 rounded-lg backdrop-blur-sm">
-                  <p className="text-sm text-red-100">{error}</p>
+              {error ? (
+                <div
+                  data-testid="login-error"
+                  className="mb-4 rounded-control border border-red-200 bg-red-50 p-3"
+                >
+                  <p className="text-sm text-red-800">{error}</p>
                 </div>
-              )}
-              {success && (
-                <div data-testid="login-success" className="mb-4 p-3 bg-green-500/20 border border-green-400/50 rounded-lg backdrop-blur-sm">
-                  <p className="text-sm text-green-100">{success}</p>
+              ) : null}
+              {success ? (
+                <div
+                  data-testid="login-success"
+                  className="mb-4 rounded-control border border-emerald-200 bg-emerald-50 p-3"
+                >
+                  <p className="text-sm text-emerald-900">{success}</p>
                 </div>
-              )}
+              ) : null}
 
               <form data-testid="login-form" onSubmit={handleSubmit} className="space-y-5">
-                {/* Username */}
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label htmlFor="login-username" className="mb-2 block text-sm font-medium text-cofind-ink">
                     Username
                   </label>
-                  <input
+                  <Input
+                    id="login-username"
                     data-testid="login-username"
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full px-4 py-3 bg-white/90 text-gray-900 rounded-lg border border-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                     placeholder={mode === 'login' ? 'Masukkan username Anda' : 'Pilih username (min 3 karakter)'}
                     required
                     minLength={mode === 'register' ? 3 : undefined}
                   />
                 </div>
 
-                {/* Full Name (only for register) */}
-                {mode === 'register' && (
+                {mode === 'register' ? (
                   <div>
-                    <label className="block text-sm font-medium text-white mb-2">
+                    <label htmlFor="register-fullname" className="mb-2 block text-sm font-medium text-cofind-ink">
                       Nama Lengkap (Opsional)
                     </label>
-                    <input
+                    <Input
+                      id="register-fullname"
                       data-testid="register-fullname"
                       type="text"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      className="w-full px-4 py-3 bg-white/90 text-gray-900 rounded-lg border border-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                       placeholder="Nama Lengkap Anda"
                     />
                   </div>
-                )}
+                ) : null}
 
-                {/* Password */}
-                {mode !== 'forgot' && (
+                {mode !== 'forgot' ? (
                   <div>
-                    <label className="block text-sm font-medium text-white mb-2">
+                    <label htmlFor="login-password" className="mb-2 block text-sm font-medium text-cofind-ink">
                       Password
                     </label>
-                    <input
+                    <Input
+                      id="login-password"
                       data-testid="login-password"
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full px-4 py-3 bg-white/90 text-gray-900 rounded-lg border border-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                       placeholder="Kata Sandi"
                       required
                       minLength={mode === 'register' ? 8 : undefined}
                     />
                   </div>
-                )}
+                ) : null}
 
-                {/* Confirm Password (only for register) */}
-                {mode === 'register' && (
+                {mode === 'register' ? (
                   <div>
-                    <label className="block text-sm font-medium text-white mb-2">
+                    <label htmlFor="register-confirm-password" className="mb-2 block text-sm font-medium text-cofind-ink">
                       Konfirmasi Password
                     </label>
-                    <input
+                    <Input
+                      id="register-confirm-password"
                       data-testid="register-confirm-password"
                       type="password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full px-4 py-3 bg-white/90 text-gray-900 rounded-lg border border-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                       placeholder="••••••••"
                       required
                       minLength={8}
                     />
                   </div>
-                )}
+                ) : null}
 
-                {/* Submit Button */}
-                <button
+                <Button
                   data-testid="login-submit"
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full py-3.5 px-4 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-400 text-white font-semibold rounded-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl disabled:opacity-50"
+                  className="w-full"
+                  size="lg"
                 >
                   {isSubmitting ? (
                     <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-cofind-on-primary/30 border-t-cofind-on-primary" />
                       <span>Memproses...</span>
                     </>
                   ) : (
-                    <>
-                      {mode === 'login' && 'Sign in now'}
-                      {mode === 'register' && 'Sign up now'}
-                      {mode === 'forgot' && 'Send Reset Link'}
-                    </>
+                    submitLabel
                   )}
-                </button>
+                </Button>
               </form>
 
-              {/* Mode Switcher */}
-              <div className="mt-6 text-center text-sm text-white/80">
-                {mode === 'login' && (
+              <div className="mt-6 text-center text-sm text-cofind-muted">
+                {mode === 'login' ? (
                   <>
                     Belum punya akun?{' '}
                     <button
@@ -365,70 +324,76 @@ const Login = () => {
                         setError('');
                         setSuccess('');
                       }}
-                      className="bg-transparent p-0 border-0 rounded-none text-orange-400 hover:text-orange-300 hover:bg-transparent font-semibold underline underline-offset-2 transition-colors cursor-pointer"
+                      className="font-semibold text-cofind-secondary underline underline-offset-2 transition-colors hover:text-cofind-primary"
                     >
                       Daftar sekarang
                     </button>
                   </>
-                )}
-                {mode === 'register' && (
+                ) : null}
+                {mode === 'register' ? (
                   <>
                     Sudah punya akun?{' '}
                     <button
+                      type="button"
                       onClick={() => {
                         setMode('login');
                         setError('');
                         setSuccess('');
                       }}
-                      className="bg-transparent p-0 border-0 rounded-none text-orange-400 hover:text-orange-300 hover:bg-transparent font-semibold underline underline-offset-2 transition-colors cursor-pointer"
+                      className="font-semibold text-cofind-secondary underline underline-offset-2 transition-colors hover:text-cofind-primary"
                     >
                       Masuk di sini
                     </button>
                   </>
-                )}
-                {mode === 'forgot' && (
+                ) : null}
+                {mode === 'forgot' ? (
                   <>
                     Ingat password?{' '}
                     <button
+                      type="button"
                       onClick={() => {
                         setMode('login');
                         setError('');
                         setSuccess('');
                       }}
-                      className="bg-transparent p-0 border-0 rounded-none text-orange-400 hover:text-orange-300 hover:bg-transparent font-semibold underline underline-offset-2 transition-colors cursor-pointer"
+                      className="font-semibold text-cofind-secondary underline underline-offset-2 transition-colors hover:text-cofind-primary"
                     >
                       Kembali ke login
                     </button>
                   </>
-                )}
+                ) : null}
               </div>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Right Section - Welcome Message */}
-        <div 
-          className="hidden lg:flex lg:w-1/2 items-start p-12 text-white"
-          style={{ height: '100vh', minHeight: '100vh' }}
-        >
-          {/* Wrapper div untuk alignment dengan card - menggunakan flexbox yang sama dengan left section */}
-          <div className="flex flex-col w-full h-full justify-between pt-8 lg:pt-12">
-            {/* Top section - sejajar dengan card */}
-            <div className="flex-shrink-0">
-              <h2 className="text-5xl font-bold mb-6 leading-tight">
-                Welcome,
-                <br />
-                Coffee Hunter!
-              </h2>
-              
-              <p className="text-lg text-white/80 leading-relaxed max-w-md">
-                Temukan coffee shop terbaik di sekitar Anda. Bergabunglah dengan komunitas pecinta kopi dan bagikan pengalaman Anda.
-              </p>
-            </div>
-            
-            {/* Bottom section - social icons */}
-            <div className="flex-shrink-0">
-              <div className="flex gap-4">
+      <div
+        className="relative hidden min-h-screen w-full bg-cofind-ink lg:block lg:w-1/2"
+        style={{
+          backgroundImage: `url(${coffeeshopBg})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        <div className="absolute inset-0 bg-cofind-ink/55" aria-hidden />
+        <div className="relative z-10 flex h-full min-h-screen flex-col justify-between p-10 text-cofind-paper xl:p-12">
+          <div>
+            <p className="font-display text-sm font-semibold uppercase tracking-wide text-cofind-paper/80">
+              Cofind
+            </p>
+            <h2 className="mt-4 font-display text-5xl font-bold leading-tight">
+              Welcome,
+              <br />
+              Coffee Hunter!
+            </h2>
+            <p className="mt-6 max-w-md text-lg leading-relaxed text-cofind-paper/85">
+              Temukan coffee shop terbaik di sekitar Anda. Bergabunglah dengan komunitas pecinta kopi
+              dan bagikan pengalaman Anda.
+            </p>
+          </div>
+          <div>
+            <div className="flex gap-4">
                 <a
                   href="https://www.tiktok.com/@vaegerys?_r=1&_t=ZS-93fKQupQptJ"
                   target="_blank"
@@ -475,7 +440,6 @@ const Login = () => {
                 </a>
               </div>
             </div>
-          </div>
         </div>
       </div>
     </div>

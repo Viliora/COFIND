@@ -99,7 +99,7 @@ const HeroSwiper = ({ coffeeShops }) => {
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   fallbackColor={(() => {
                     const seed = (shop.name || 'Coffee Shop').length % 10;
-                    const colors = ['#4F46E5', '#7C3AED', '#EC4899', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#F97316', '#06B6D4', '#6366F1'];
+                    const colors = ['#5c3d2e', '#4a3024', '#1f6b5c', '#78716c', '#92400e', '#57534e', '#854d0e', '#44403c', '#a16207', '#3f3f46'];
                     return colors[seed % colors.length];
                   })()}
                   shopName={shop.name}
@@ -108,25 +108,25 @@ const HeroSwiper = ({ coffeeShops }) => {
                 />
 
                 {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-cofind-ink/85 via-cofind-ink/35 to-transparent"></div>
 
                 {/* Content Overlay */}
                 <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8 md:p-12 text-white">
                   <div className="max-w-4xl">
                     {/* Badge */}
                     <div className="flex items-center gap-3 mb-4">
-                      <span className="inline-flex items-center px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm font-semibold">
+                      <span className="inline-flex items-center px-3 py-1 bg-cofind-surface/95 text-cofind-ink rounded-control text-sm font-semibold">
                         {shop.rating} ★
                       </span>
                       {shop.user_ratings_total > 0 && (
-                        <span className="inline-flex items-center px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm">
+                        <span className="inline-flex items-center px-3 py-1 bg-cofind-surface/90 text-cofind-ink rounded-control text-sm">
                           {shop.user_ratings_total} reviews
                         </span>
                       )}
                     </div>
 
                     {/* Title */}
-                    <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4 drop-shadow-lg">
+                    <h2 className="font-display text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4 drop-shadow-lg">
                       {shop.name}
                     </h2>
 
@@ -142,12 +142,12 @@ const HeroSwiper = ({ coffeeShops }) => {
                     )}
 
                     {/* CTA Button */}
-                    <button className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 group-hover:scale-105">
+                    <span className="inline-flex items-center gap-2 px-6 py-3 bg-cofind-primary text-cofind-on-primary font-semibold rounded-control shadow-cofind-md transition-colors duration-200 group-hover:bg-cofind-primary-hover">
                       <span>Lihat Detail</span>
                       <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" stroke="currentColor" viewBox="0 0 24 24">
                         <path d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
                       </svg>
-                    </button>
+                    </span>
                   </div>
                 </div>
 
@@ -234,7 +234,7 @@ const HeroSwiper = ({ coffeeShops }) => {
 
         .hero-swiper .swiper-pagination-bullet-active {
           opacity: 1;
-          background: #4F46E5;
+          background: #5c3d2e;
           width: 32px;
           border-radius: 6px;
         }

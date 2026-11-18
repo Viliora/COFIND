@@ -30,8 +30,8 @@ function PageLoadingFallback() {
   return (
     <div className="flex items-center justify-center min-h-screen">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-        <p className="text-gray-600">Loading...</p>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cofind-primary mx-auto mb-4"></div>
+        <p className="text-cofind-muted font-sans">Loading...</p>
       </div>
     </div>
   );
@@ -58,7 +58,7 @@ function AppContent() {
 
   return (
     <div 
-      className={`${isLoginPage ? 'fixed inset-0 overflow-hidden' : 'min-h-screen'} bg-gray-50 dark:bg-zinc-900 w-full`}
+      className={`${isLoginPage ? 'fixed inset-0 overflow-hidden' : 'min-h-screen'} bg-cofind-background w-full`}
       style={isLoginPage ? { width: '100vw', height: '100vh', minHeight: '100vh' } : {}}
     >
       {/* Navbar - disembunyikan di login & untuk admin */}

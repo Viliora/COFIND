@@ -65,14 +65,10 @@ const FacilitiesTab = ({ facilities, googleSnapshot }) => {
   }
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-amber-100/80 dark:border-amber-900/40 bg-gradient-to-br from-amber-50/90 via-white to-orange-50/50 dark:from-amber-950/30 dark:via-zinc-900 dark:to-orange-950/20 shadow-sm">
-      <div
-        className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-amber-200/30 dark:bg-amber-500/10 blur-2xl"
-        aria-hidden
-      />
-      <div className="relative p-4 sm:p-6">
+    <div className="overflow-hidden rounded-panel border border-cofind-rule bg-cofind-surface shadow-cofind-sm">
+      <div className="p-4 sm:p-6">
         {editorial && (
-          <p className="mb-4 text-sm text-gray-700 dark:text-gray-300 leading-relaxed border-l-4 border-amber-400 pl-3">
+          <p className="mb-4 border-l-4 border-cofind-secondary pl-3 text-sm leading-relaxed text-cofind-ink">
             {editorial}
           </p>
         )}
@@ -88,11 +84,11 @@ const FacilitiesTab = ({ facilities, googleSnapshot }) => {
                 onClick={() => !isDisabled && setSelectedTab(tab.key)}
                 disabled={isDisabled}
                 className={[
-                  'inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-xs sm:text-sm font-medium transition-all',
+                  'inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-xs font-medium transition-colors duration-200 sm:text-sm',
                   isActive
-                    ? 'bg-gray-900 text-white shadow dark:bg-white dark:text-zinc-900'
-                    : 'bg-white/80 text-gray-700 border border-gray-200 dark:bg-zinc-800 dark:text-gray-200 dark:border-zinc-700',
-                  isDisabled ? 'opacity-45 cursor-not-allowed' : 'hover:shadow-sm',
+                    ? 'bg-cofind-primary text-cofind-on-primary shadow-cofind-sm'
+                    : 'border border-cofind-rule bg-cofind-paper text-cofind-ink',
+                  isDisabled ? 'cursor-not-allowed opacity-45' : 'hover:bg-cofind-paper',
                 ].join(' ')}
               >
                 <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full ${tab.iconContainerClassName}`}>

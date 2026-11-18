@@ -125,63 +125,69 @@ const Profile = () => {
   if (urlUserId && !isMyProfile) {
     if (profileLoading) {
       return (
-        <div className="min-h-screen bg-gradient-to-b from-[#FAF9F6] via-stone-50 to-amber-50/30 dark:from-stone-950 dark:via-stone-900 dark:to-stone-800/20 py-8 px-4 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600"></div>
+        <div className="min-h-screen bg-cofind-background py-8 px-4 flex items-center justify-center">
+          <div className="h-12 w-12 animate-spin rounded-full border-2 border-cofind-rule border-t-cofind-primary" />
         </div>
       );
     }
     if (!viewProfile) {
       return (
-        <div className="min-h-screen bg-gradient-to-b from-[#FAF9F6] via-stone-50 to-amber-50/30 dark:from-stone-950 dark:via-stone-900 dark:to-stone-800/20 py-8 px-4">
+        <div className="min-h-screen bg-cofind-background py-8 px-4">
           <div className="max-w-2xl mx-auto text-center py-12">
-            <Link to="/" className="text-amber-700 dark:text-amber-400 hover:underline underline-offset-2 transition-colors">Kembali ke Beranda</Link>
-            <p className="mt-4 text-stone-600 dark:text-stone-400">Profil tidak ditemukan.</p>
+            <Link to="/" className="text-cofind-secondary underline-offset-2 transition-colors hover:text-cofind-primary hover:underline">
+              Kembali ke Beranda
+            </Link>
+            <p className="mt-4 text-cofind-muted">Profil tidak ditemukan.</p>
           </div>
         </div>
       );
     }
 
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#FAF9F6] via-stone-50 to-amber-50/30 dark:from-stone-950 dark:via-stone-900 dark:to-stone-800/20 py-8 px-4">
+      <div className="min-h-screen bg-cofind-background py-8 px-4">
         <div className="max-w-2xl mx-auto">
           <div className="mb-6">
-            <Link to="/" className="inline-flex items-center gap-2 text-stone-600 dark:text-stone-400 hover:text-amber-700 dark:hover:text-amber-400 text-sm transition-colors">
+            <Link to="/" className="inline-flex items-center gap-2 text-sm text-cofind-muted transition-colors hover:text-cofind-secondary">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
               Kembali ke Beranda
             </Link>
           </div>
-          <div className="bg-[#FAF9F6]/95 dark:bg-stone-900 rounded-2xl border border-stone-200/50 dark:border-stone-700/30 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.15)] overflow-hidden">
-            <div className="h-32 bg-gradient-to-r from-amber-200 to-orange-200 dark:from-stone-800 dark:to-stone-700"></div>
+          <div className="overflow-hidden rounded-panel border border-cofind-rule bg-cofind-surface shadow-cofind-md">
+            <div className="h-32 bg-cofind-primary" />
             <div className="px-6 pb-6">
               <div className="relative -mt-16 mb-4">
-                <div className="w-32 h-32 rounded-full border-4 border-[#FAF9F6] dark:border-stone-900 overflow-hidden bg-stone-200 dark:bg-stone-700 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+                <div className="h-32 w-32 overflow-hidden rounded-full border-4 border-cofind-surface bg-cofind-paper shadow-cofind-sm">
                   {viewProfile.avatar_url ? (
                     <img src={viewProfile.avatar_url} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-r from-amber-600 to-orange-700 text-stone-50 text-4xl font-bold">
+                    <div className="flex h-full w-full items-center justify-center bg-cofind-primary text-4xl font-bold text-cofind-on-primary">
                       {(viewProfile.full_name || viewProfile.username || 'U').toString().charAt(0).toUpperCase()}
                     </div>
                   )}
                 </div>
               </div>
-              <h1 className="font-serif text-2xl font-semibold text-stone-800 dark:text-stone-100">{viewProfile.full_name || viewProfile.username || 'User'}</h1>
-              <p className="text-stone-600 dark:text-stone-400">@{viewProfile.username || 'user'}</p>
-              {viewProfile.bio && <p className="text-sm text-stone-600 dark:text-stone-400 mt-2 font-sans leading-relaxed">{viewProfile.bio}</p>}
-              <div className="grid grid-cols-2 gap-4 mt-6 py-4 border-t border-b border-stone-200/60 dark:border-stone-700/40">
+              <h1 className="font-display text-2xl font-semibold text-cofind-ink">
+                {viewProfile.full_name || viewProfile.username || 'User'}
+              </h1>
+              <p className="text-cofind-muted">@{viewProfile.username || 'user'}</p>
+              {viewProfile.bio ? (
+                <p className="mt-2 font-sans text-sm leading-relaxed text-cofind-muted">{viewProfile.bio}</p>
+              ) : null}
+              <div className="mt-6 grid grid-cols-2 gap-4 border-y border-cofind-rule py-4">
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-stone-800 dark:text-stone-100">{viewProfile.review_count ?? stats.reviewCount}</p>
-                  <p className="text-sm text-stone-500 dark:text-stone-400">Total Review</p>
+                  <p className="text-2xl font-bold text-cofind-ink">{viewProfile.review_count ?? stats.reviewCount}</p>
+                  <p className="text-sm text-cofind-muted">Total Review</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-stone-800 dark:text-stone-100">{viewProfile.average_rating ?? stats.averageRating}</p>
-                  <p className="text-sm text-stone-500 dark:text-stone-400">Rating Rata-rata</p>
+                  <p className="text-2xl font-bold text-cofind-ink">{viewProfile.average_rating ?? stats.averageRating}</p>
+                  <p className="text-sm text-cofind-muted">Rating Rata-rata</p>
                 </div>
               </div>
               {/* Daftar review di dalam card */}
-              <div className="mt-6 pt-6 border-t border-stone-200/60 dark:border-stone-700/40">
-                <h2 className="font-serif text-lg font-semibold text-stone-800 dark:text-stone-100 mb-4">Semua Review</h2>
+              <div className="mt-6 border-t border-cofind-rule pt-6">
+                <h2 className="mb-4 font-display text-lg font-semibold text-cofind-ink">Semua Review</h2>
                 {viewReviews.length === 0 ? (
-                  <p className="text-stone-500 dark:text-stone-400">Belum ada review.</p>
+                  <p className="text-cofind-muted">Belum ada review.</p>
                 ) : (
                   <ul className="space-y-4">
                     {viewReviews.map((r) => (
@@ -201,24 +207,24 @@ const Profile = () => {
 
   // Profil saya (perlu login, sudah di-protect oleh route)
   return (
-    <div data-testid="profile-page" className="min-h-screen bg-gradient-to-b from-[#FAF9F6] via-stone-50 to-amber-50/30 dark:from-stone-950 dark:via-stone-900 dark:to-stone-800/20 py-8 px-4">
+    <div data-testid="profile-page" className="min-h-screen bg-cofind-background py-8 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="mb-6">
-          <Link to="/" className="inline-flex items-center gap-2 text-stone-600 dark:text-stone-400 hover:text-amber-700 dark:hover:text-amber-400 text-sm transition-colors">
+          <Link to="/" className="inline-flex items-center gap-2 text-sm text-cofind-muted transition-colors hover:text-cofind-secondary">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
             Kembali ke Beranda
           </Link>
         </div>
 
-        <div className="bg-[#FAF9F6]/95 dark:bg-stone-900 rounded-2xl border border-stone-200/50 dark:border-stone-700/30 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.15)] overflow-hidden">
-          <div className="h-32 bg-gradient-to-r from-amber-200 to-orange-200 dark:from-stone-800 dark:to-stone-700"></div>
+        <div className="overflow-hidden rounded-panel border border-cofind-rule bg-cofind-surface shadow-cofind-md">
+          <div className="h-32 bg-cofind-primary" />
           <div className="px-6 pb-6">
             <div className="relative -mt-16 mb-4">
-              <div className="w-32 h-32 rounded-full border-4 border-[#FAF9F6] dark:border-stone-900 overflow-hidden bg-stone-200 dark:bg-stone-700 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+              <div className="h-32 w-32 overflow-hidden rounded-full border-4 border-cofind-surface bg-cofind-paper shadow-cofind-sm">
                 {profile?.avatar_url ? (
                   <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-r from-amber-600 to-orange-700 text-stone-50 text-4xl font-bold">
+                  <div className="flex h-full w-full items-center justify-center bg-cofind-primary text-4xl font-bold text-cofind-on-primary">
                     {profile?.username?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
                   </div>
                 )}
@@ -226,16 +232,18 @@ const Profile = () => {
             </div>
 
             <div>
-              <h1 data-testid="profile-display-name" className="font-serif text-2xl font-semibold text-stone-800 dark:text-stone-100">{profile?.full_name || profile?.username || 'User'}</h1>
-              <p className="text-stone-600 dark:text-stone-400">@{profile?.username || 'user'}</p>
-              <div className="grid grid-cols-2 gap-3 mt-6 py-4 border-t border-b border-stone-200/60 dark:border-stone-700/40">
+              <h1 data-testid="profile-display-name" className="font-display text-2xl font-semibold text-cofind-ink">
+                {profile?.full_name || profile?.username || 'User'}
+              </h1>
+              <p className="text-cofind-muted">@{profile?.username || 'user'}</p>
+              <div className="mt-6 grid grid-cols-2 gap-3 border-y border-cofind-rule py-4">
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-stone-800 dark:text-stone-100">{stats.reviewCount}</p>
-                  <p className="text-sm text-stone-500 dark:text-stone-400">Review</p>
+                  <p className="text-2xl font-bold text-cofind-ink">{stats.reviewCount}</p>
+                  <p className="text-sm text-cofind-muted">Review</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-stone-800 dark:text-stone-100">{stats.averageRating}</p>
-                  <p className="text-sm text-stone-500 dark:text-stone-400">Rating</p>
+                  <p className="text-2xl font-bold text-cofind-ink">{stats.averageRating}</p>
+                  <p className="text-sm text-cofind-muted">Rating</p>
                 </div>
               </div>
               <div className="mt-6">
@@ -250,7 +258,7 @@ const Profile = () => {
                       navigate('/login');
                     }
                   }}
-                  className="w-full py-3 px-4 border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-300 ease-out cursor-pointer flex items-center justify-center gap-2"
+                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-panel border border-red-300 px-4 py-3 text-red-700 transition-colors duration-200 hover:bg-red-50"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                   Keluar
@@ -258,15 +266,15 @@ const Profile = () => {
               </div>
 
               {/* Daftar review saya di dalam card */}
-              <div className="mt-6 pt-6 border-t border-stone-200/60 dark:border-stone-700/40">
-                <h2 className="font-serif text-lg font-semibold text-stone-800 dark:text-stone-100 mb-4">Semua Review Saya</h2>
+              <div className="mt-6 border-t border-cofind-rule pt-6">
+                <h2 className="mb-4 font-display text-lg font-semibold text-cofind-ink">Semua Review Saya</h2>
                 {viewReviews.length === 0 ? (
-                  <p className="text-stone-500 dark:text-stone-400">Belum ada review.</p>
+                  <p className="text-cofind-muted">Belum ada review.</p>
                 ) : (
                   <ul className="space-y-4">
                     {viewReviews.map((r) => (
                       <li key={r.id}>
-                        <div className="rounded-xl transition-all hover:bg-stone-50 dark:hover:bg-stone-800/50 hover:shadow-[0_12px_40px_rgb(0,0,0,0.06)] hover:-translate-y-0.5">
+                        <div className="rounded-panel transition-colors hover:bg-cofind-paper">
                           <ReviewCard review={r} onDelete={() => setViewReviews((prev) => prev.filter((x) => x.id !== r.id))} onUpdate={() => {}} onLike={() => {}} />
                         </div>
                       </li>
@@ -278,7 +286,7 @@ const Profile = () => {
           </div>
         </div>
 
-        <div className="mt-6 text-center text-sm text-stone-500 dark:text-stone-400 font-sans">
+        <div className="mt-6 text-center font-sans text-sm text-cofind-muted">
           Bergabung sejak {profile?.created_at ? new Date(profile.created_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}
         </div>
       </div>

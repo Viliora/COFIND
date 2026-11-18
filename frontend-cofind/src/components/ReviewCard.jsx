@@ -473,7 +473,7 @@ const ReviewCard = ({ review, placeId, onDelete, onUpdate, onLike, highlightKeyw
               className="w-full h-full object-cover"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold text-sm">
+            <div className="flex h-full w-full items-center justify-center bg-cofind-primary text-sm font-semibold text-cofind-on-primary">
               {displayName.toString().charAt(0).toUpperCase()}
             </div>
           )}

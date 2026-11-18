@@ -66,8 +66,8 @@ function SectionHeader({ title, description, actions }) {
   return (
     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
       <div>
-        <h3 className="text-2xl font-bold text-stone-800">{title}</h3>
-        <p className="text-sm text-stone-500 mt-1">{description}</p>
+        <h3 className="font-display text-2xl font-bold text-cofind-ink">{title}</h3>
+        <p className="mt-1 text-sm text-cofind-muted">{description}</p>
       </div>
       {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
     </div>
@@ -76,13 +76,13 @@ function SectionHeader({ title, description, actions }) {
 
 function Toolbar({ search, onSearchChange, filters }) {
   return (
-    <div className="rounded-2xl border border-stone-200/50 bg-[#FAF9F6]/95 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-4 flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
+    <div className="flex flex-col gap-3 rounded-panel border border-cofind-rule bg-cofind-surface p-4 shadow-cofind-sm lg:flex-row lg:items-center lg:justify-between">
       <input
         type="text"
         value={search}
         onChange={(event) => onSearchChange(event.target.value)}
         placeholder="Cari data..."
-        className="w-full lg:max-w-md cursor-text rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 shadow-sm transition-all duration-200 ease-out hover:border-amber-300 hover:bg-white hover:shadow-md focus:outline-none focus:ring-2 focus:ring-amber-500/70 focus:border-amber-500"
+        className="w-full cursor-text rounded-control border border-cofind-rule bg-cofind-paper px-4 py-2.5 text-sm text-cofind-ink shadow-cofind-sm transition-colors duration-200 hover:border-cofind-secondary hover:bg-cofind-surface focus:border-cofind-secondary focus:outline-none focus:ring-2 focus:ring-cofind-secondary/25 lg:max-w-md"
       />
       {filters ? <div className="flex flex-wrap items-center gap-2">{filters}</div> : null}
     </div>
@@ -93,7 +93,7 @@ function FilterSelect({ value, onChange, children, label, ariaLabel }) {
   return (
     <label className="flex min-w-[220px] max-w-full flex-col gap-1 sm:min-w-[260px]">
       {label ? (
-        <span className="text-[11px] font-medium uppercase tracking-wide text-stone-500">
+        <span className="text-[11px] font-medium uppercase tracking-wide text-cofind-muted">
           {label}
         </span>
       ) : null}
@@ -102,7 +102,7 @@ function FilterSelect({ value, onChange, children, label, ariaLabel }) {
           value={value}
           onChange={onChange}
           aria-label={ariaLabel || label}
-          className="w-full cursor-pointer appearance-none rounded-xl border border-stone-300/80 bg-white px-3.5 py-2.5 pr-10 text-sm text-stone-800 shadow-sm transition-all duration-200 ease-out hover:border-amber-400 hover:bg-amber-50/50 hover:shadow-md focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/70"
+          className="w-full cursor-pointer appearance-none rounded-control border border-cofind-rule bg-cofind-surface px-3.5 py-2.5 pr-10 text-sm text-cofind-ink shadow-cofind-sm transition-colors duration-200 hover:border-cofind-secondary hover:bg-cofind-paper focus:border-cofind-secondary focus:outline-none focus:ring-2 focus:ring-cofind-secondary/25"
         >
           {children}
         </select>
@@ -691,14 +691,14 @@ export default function Admin() {
           <button
             type="button"
             onClick={() => openUserModal(row)}
-            className="rounded-lg bg-amber-700 px-3 py-2 text-xs font-medium text-stone-50 hover:bg-amber-800 transition-all duration-300 ease-out cursor-pointer"
+            className="cursor-pointer rounded-control bg-cofind-primary px-3 py-2 text-xs font-medium text-cofind-on-primary transition-colors duration-200 hover:bg-cofind-primary-hover"
           >
             Edit
           </button>
           <button
             type="button"
             onClick={() => handleDeleteUser(row.id, row.username)}
-            className="rounded-lg bg-red-600 px-3 py-2 text-xs font-medium text-stone-50 hover:bg-red-700 transition-all duration-300 ease-out cursor-pointer"
+            className="cursor-pointer rounded-control bg-red-600 px-3 py-2 text-xs font-medium text-white transition-colors duration-200 hover:bg-red-700"
           >
             Hapus
           </button>
@@ -802,7 +802,7 @@ export default function Admin() {
             type="button"
             disabled={prosConsRefreshingId === row.place_id}
             onClick={() => handleRefreshShopProsCons(row)}
-            className="rounded-lg bg-violet-700 px-3 py-2 text-xs font-medium text-stone-50 hover:bg-violet-800 transition-all duration-300 ease-out cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+            className="cursor-pointer rounded-control bg-cofind-secondary px-3 py-2 text-xs font-medium text-cofind-on-secondary transition-colors duration-200 hover:bg-cofind-secondary-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
             {prosConsRefreshingId === row.place_id
               ? 'Memproses…'
@@ -813,21 +813,21 @@ export default function Admin() {
           <button
             type="button"
             onClick={() => openFacilityEditor(row)}
-            className="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-medium text-stone-50 hover:bg-emerald-800 transition-all duration-300 ease-out cursor-pointer"
+            className="cursor-pointer rounded-control bg-emerald-700 px-3 py-2 text-xs font-medium text-white transition-colors duration-200 hover:bg-emerald-800"
           >
             Edit JSON
           </button>
           <button
             type="button"
             onClick={() => openShopEditModal(row)}
-            className="rounded-lg bg-amber-700 px-3 py-2 text-xs font-medium text-stone-50 hover:bg-amber-800 transition-all duration-300 ease-out cursor-pointer"
+            className="cursor-pointer rounded-control bg-cofind-primary px-3 py-2 text-xs font-medium text-cofind-on-primary transition-colors duration-200 hover:bg-cofind-primary-hover"
           >
             Edit
           </button>
           <button
             type="button"
             onClick={() => handleDeleteShop(row.place_id, row.name)}
-            className="rounded-lg bg-red-600 px-3 py-2 text-xs font-medium text-stone-50 hover:bg-red-700 transition-all duration-300 ease-out cursor-pointer"
+            className="cursor-pointer rounded-control bg-red-600 px-3 py-2 text-xs font-medium text-white transition-colors duration-200 hover:bg-red-700"
           >
             Hapus
           </button>
@@ -863,7 +863,7 @@ export default function Admin() {
         <button
           type="button"
           onClick={() => handleDeleteReview(row.id)}
-          className="rounded-lg bg-red-600 px-3 py-2 text-xs font-medium text-stone-50 hover:bg-red-700 transition-all duration-300 ease-out cursor-pointer"
+          className="cursor-pointer rounded-control bg-red-600 px-3 py-2 text-xs font-medium text-white transition-colors duration-200 hover:bg-red-700"
         >
           Hapus
         </button>
@@ -920,7 +920,7 @@ export default function Admin() {
           <button
             type="button"
             onClick={() => openReportModal(row)}
-            className="inline-flex h-8 min-w-[5.75rem] items-center justify-center rounded-lg bg-amber-700 px-3 text-xs font-medium text-stone-50 hover:bg-amber-800 transition-all duration-300 ease-out cursor-pointer"
+            className="inline-flex h-8 min-w-[5.75rem] cursor-pointer items-center justify-center rounded-control bg-cofind-primary px-3 text-xs font-medium text-cofind-on-primary transition-colors duration-200 hover:bg-cofind-primary-hover"
           >
             Moderasi
           </button>
@@ -928,7 +928,7 @@ export default function Admin() {
             type="button"
             disabled={!row.review_id}
             onClick={() => handleDeleteReview(row.review_id)}
-            className="inline-flex h-8 min-w-[5.75rem] items-center justify-center rounded-lg bg-red-600 px-3 text-xs font-medium text-stone-50 hover:bg-red-700 transition-all duration-300 ease-out cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-8 min-w-[5.75rem] cursor-pointer items-center justify-center rounded-control bg-red-600 px-3 text-xs font-medium text-white transition-colors duration-200 hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Hapus
           </button>
@@ -939,8 +939,8 @@ export default function Admin() {
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#FAF9F6] via-stone-50 to-amber-50/30 flex items-center justify-center px-4">
-        <div className="max-w-md w-full bg-[#FAF9F6]/95 border border-stone-200/50 rounded-2xl shadow-[0_12px_40px_rgb(0,0,0,0.08)] p-8 text-center">
+      <div className="flex min-h-screen items-center justify-center bg-cofind-background px-4">
+        <div className="w-full max-w-md rounded-panel border border-cofind-rule bg-cofind-surface p-8 text-center shadow-cofind-md">
           <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -952,7 +952,7 @@ export default function Admin() {
           </p>
           <Link
             to="/"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-amber-700 text-stone-50 rounded-lg hover:bg-amber-800 transition-all duration-300 ease-out cursor-pointer"
+            className="inline-flex cursor-pointer items-center gap-2 rounded-control bg-cofind-primary px-4 py-2 text-cofind-on-primary transition-colors duration-200 hover:bg-cofind-primary-hover"
           >
             Kembali ke Beranda
           </Link>
@@ -962,7 +962,7 @@ export default function Admin() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#FAF9F6] via-stone-50 to-amber-50/30 px-3 py-6 sm:px-4 md:px-6 lg:px-8">
+    <div className="min-h-screen bg-cofind-background px-3 py-6 sm:px-4 md:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-6">
         <AdminTopbar profile={profile} onLogout={handleLogout} />
 
@@ -989,7 +989,7 @@ export default function Admin() {
                     <button
                       type="button"
                       onClick={loadDashboard}
-                      className="rounded-xl bg-amber-700 px-4 py-2 text-sm font-medium text-stone-50 hover:bg-amber-800 transition-all duration-300 ease-out cursor-pointer"
+                      className="cursor-pointer rounded-panel bg-cofind-primary px-4 py-2 text-sm font-medium text-cofind-on-primary transition-colors duration-200 hover:bg-cofind-primary-hover"
                     >
                       Refresh
                     </button>
@@ -1067,14 +1067,14 @@ export default function Admin() {
                 </div>
 
                 {dashboardLoading ? (
-                  <div className="rounded-2xl border border-stone-200/50 bg-[#FAF9F6]/95 p-8 text-sm text-stone-500 text-center">
+                  <div className="rounded-panel border border-cofind-rule bg-cofind-surface p-8 text-center text-sm text-cofind-muted">
                     Memuat grafik dashboard...
                   </div>
                 ) : (
                   <AdminDashboardCharts charts={dashboard.charts} />
                 )}
 
-                <div className="rounded-2xl border border-stone-200/50 bg-[#FAF9F6]/95 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-5">
+                <div className="rounded-panel border border-cofind-rule bg-cofind-surface p-5 shadow-cofind-sm">
                   <h4 className="text-lg font-semibold text-stone-800 mb-1">Aktivitas terbaru</h4>
                   <p className="text-xs text-stone-500 mb-4">Review baru dan laporan yang perlu perhatian.</p>
                   <div className="space-y-3">
@@ -1107,7 +1107,7 @@ export default function Admin() {
                     <button
                       type="button"
                       onClick={openUserCreateModal}
-                      className="rounded-xl bg-amber-700 px-4 py-2 text-sm font-medium text-stone-50 hover:bg-amber-800 transition-all duration-300 ease-out cursor-pointer"
+                      className="cursor-pointer rounded-panel bg-cofind-primary px-4 py-2 text-sm font-medium text-cofind-on-primary transition-colors duration-200 hover:bg-cofind-primary-hover"
                     >
                       Tambah user
                     </button>
@@ -1121,7 +1121,7 @@ export default function Admin() {
                       <select
                         value={userRoleFilter}
                         onChange={(event) => setUserRoleFilter(event.target.value)}
-                        className="rounded-xl border border-stone-300/70 bg-stone-50 px-3 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        className="rounded-control border border-cofind-rule bg-cofind-paper px-3 py-2.5 text-sm text-cofind-ink focus:border-cofind-secondary focus:outline-none focus:ring-2 focus:ring-cofind-secondary/25"
                       >
                         <option value="">Semua role</option>
                         <option value="admin">Admin</option>
@@ -1130,7 +1130,7 @@ export default function Admin() {
                       <select
                         value={userStatusFilter}
                         onChange={(event) => setUserStatusFilter(event.target.value)}
-                        className="rounded-xl border border-stone-300/70 bg-stone-50 px-3 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        className="rounded-control border border-cofind-rule bg-cofind-paper px-3 py-2.5 text-sm text-cofind-ink focus:border-cofind-secondary focus:outline-none focus:ring-2 focus:ring-cofind-secondary/25"
                       >
                         <option value="">Semua status</option>
                         <option value="active">Aktif</option>
@@ -1160,7 +1160,7 @@ export default function Admin() {
                     <button
                       type="button"
                       onClick={openShopCreateModal}
-                      className="rounded-xl bg-amber-700 px-4 py-2 text-sm font-medium text-stone-50 hover:bg-amber-800 transition-all duration-300 ease-out cursor-pointer"
+                      className="cursor-pointer rounded-panel bg-cofind-primary px-4 py-2 text-sm font-medium text-cofind-on-primary transition-colors duration-200 hover:bg-cofind-primary-hover"
                     >
                       Tambah coffee shop
                     </button>
@@ -1175,7 +1175,7 @@ export default function Admin() {
                         type="checkbox"
                         checked={shopsProsConsMissingOnly}
                         onChange={(event) => setShopsProsConsMissingOnly(event.target.checked)}
-                        className="rounded border-stone-300 text-amber-700 focus:ring-amber-500"
+                        className="rounded border-cofind-rule text-cofind-primary focus:ring-cofind-secondary"
                       />
                       Hanya belum punya pros/cons
                     </label>
@@ -1262,7 +1262,7 @@ export default function Admin() {
               <>
                 <SectionHeader title="Settings" description="Ringkasan konfigurasi admin dan LLM." />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="rounded-2xl border border-stone-200/50 bg-[#FAF9F6]/95 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-5">
+                  <div className="rounded-panel border border-cofind-rule bg-cofind-surface p-5 shadow-cofind-sm">
                     <h4 className="font-semibold text-stone-800 mb-3">Konfigurasi sistem</h4>
                     {settingsLoading ? (
                       <p className="text-sm text-stone-500">Memuat settings...</p>
@@ -1321,7 +1321,7 @@ export default function Admin() {
                 required={userModalMode === 'create'}
                 value={userForm.username}
                 onChange={(event) => setUserForm((prev) => ({ ...prev, username: event.target.value }))}
-                className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full rounded-control border border-cofind-rule bg-cofind-paper px-4 py-2.5 text-sm text-cofind-ink focus:border-cofind-secondary focus:outline-none focus:ring-2 focus:ring-cofind-secondary/25"
               />
             </div>
             <div>
@@ -1330,7 +1330,7 @@ export default function Admin() {
                 type="text"
                 value={userForm.full_name}
                 onChange={(event) => setUserForm((prev) => ({ ...prev, full_name: event.target.value }))}
-                className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full rounded-control border border-cofind-rule bg-cofind-paper px-4 py-2.5 text-sm text-cofind-ink focus:border-cofind-secondary focus:outline-none focus:ring-2 focus:ring-cofind-secondary/25"
               />
             </div>
           </div>
@@ -1347,7 +1347,7 @@ export default function Admin() {
                 value={userForm.password}
                 onChange={(event) => setUserForm((prev) => ({ ...prev, password: event.target.value }))}
                 placeholder="Min. 6 karakter"
-                className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full rounded-control border border-cofind-rule bg-cofind-paper px-4 py-2.5 text-sm text-cofind-ink focus:border-cofind-secondary focus:outline-none focus:ring-2 focus:ring-cofind-secondary/25"
               />
             </div>
           ) : (
@@ -1362,7 +1362,7 @@ export default function Admin() {
                     value={userForm.password}
                     onChange={(event) => setUserForm((prev) => ({ ...prev, password: event.target.value }))}
                     placeholder="Kosongkan jika tidak diubah"
-                    className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    className="w-full rounded-control border border-cofind-rule bg-cofind-paper px-4 py-2.5 text-sm text-cofind-ink focus:border-cofind-secondary focus:outline-none focus:ring-2 focus:ring-cofind-secondary/25"
                   />
                 </div>
                 <div>
@@ -1374,7 +1374,7 @@ export default function Admin() {
                     value={userForm.password_confirm}
                     onChange={(event) => setUserForm((prev) => ({ ...prev, password_confirm: event.target.value }))}
                     placeholder="Ulangi password baru"
-                    className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    className="w-full rounded-control border border-cofind-rule bg-cofind-paper px-4 py-2.5 text-sm text-cofind-ink focus:border-cofind-secondary focus:outline-none focus:ring-2 focus:ring-cofind-secondary/25"
                   />
                 </div>
               </div>
@@ -1387,7 +1387,7 @@ export default function Admin() {
             <select
               value={userForm.is_admin ? 'admin' : 'user'}
               onChange={(event) => setUserForm((prev) => ({ ...prev, is_admin: event.target.value === 'admin' }))}
-              className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full rounded-control border border-cofind-rule bg-cofind-paper px-4 py-2.5 text-sm text-cofind-ink focus:border-cofind-secondary focus:outline-none focus:ring-2 focus:ring-cofind-secondary/25"
             >
               <option value="user">User</option>
               <option value="admin">Admin</option>
@@ -1398,10 +1398,10 @@ export default function Admin() {
           </div>
 
           <div className="flex justify-end gap-3">
-            <button type="button" onClick={closeUserModal} className="rounded-xl border border-stone-300/70 px-4 py-2 text-sm text-stone-700 hover:bg-stone-100 transition-all duration-300 ease-out cursor-pointer">
+            <button type="button" onClick={closeUserModal} className="cursor-pointer rounded-panel border border-cofind-rule px-4 py-2 text-sm text-cofind-ink transition-colors duration-200 hover:bg-cofind-paper">
               Batal
             </button>
-            <button type="submit" disabled={userSubmitting} className="rounded-xl bg-amber-700 px-4 py-2 text-sm font-medium text-stone-50 hover:bg-amber-800 disabled:opacity-60 transition-all duration-300 ease-out cursor-pointer">
+            <button type="submit" disabled={userSubmitting} className="cursor-pointer rounded-panel bg-cofind-primary px-4 py-2 text-sm font-medium text-cofind-on-primary transition-colors duration-200 hover:bg-cofind-primary-hover disabled:opacity-60">
               {userSubmitting ? 'Menyimpan...' : userModalMode === 'create' ? 'Buat Akun' : 'Simpan perubahan'}
             </button>
           </div>
@@ -1427,7 +1427,7 @@ export default function Admin() {
                   type="text"
                   value={shopForm.place_id}
                   disabled
-                  className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-60"
+                  className="w-full rounded-control border border-cofind-rule bg-cofind-paper px-4 py-2.5 text-sm text-cofind-ink focus:border-cofind-secondary focus:outline-none focus:ring-2 focus:ring-cofind-secondary/25 disabled:opacity-60"
                 />
               )}
             </div>
@@ -1438,7 +1438,7 @@ export default function Admin() {
                 value={shopForm.name}
                 onChange={(event) => setShopForm((prev) => ({ ...prev, name: event.target.value }))}
                 required
-                className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full rounded-control border border-cofind-rule bg-cofind-paper px-4 py-2.5 text-sm text-cofind-ink focus:border-cofind-secondary focus:outline-none focus:ring-2 focus:ring-cofind-secondary/25"
               />
             </div>
           </div>
@@ -1450,7 +1450,7 @@ export default function Admin() {
               value={shopForm.address}
               onChange={(event) => setShopForm((prev) => ({ ...prev, address: event.target.value }))}
               required
-              className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full rounded-control border border-cofind-rule bg-cofind-paper px-4 py-2.5 text-sm text-cofind-ink focus:border-cofind-secondary focus:outline-none focus:ring-2 focus:ring-cofind-secondary/25"
             />
           </div>
 
@@ -1464,7 +1464,7 @@ export default function Admin() {
                 step="0.1"
                 value={shopForm.rating}
                 onChange={(event) => setShopForm((prev) => ({ ...prev, rating: event.target.value }))}
-                className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full rounded-control border border-cofind-rule bg-cofind-paper px-4 py-2.5 text-sm text-cofind-ink focus:border-cofind-secondary focus:outline-none focus:ring-2 focus:ring-cofind-secondary/25"
               />
             </div>
             <div>
@@ -1474,7 +1474,7 @@ export default function Admin() {
                 min="0"
                 value={shopForm.total_reviews}
                 onChange={(event) => setShopForm((prev) => ({ ...prev, total_reviews: event.target.value }))}
-                className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full rounded-control border border-cofind-rule bg-cofind-paper px-4 py-2.5 text-sm text-cofind-ink focus:border-cofind-secondary focus:outline-none focus:ring-2 focus:ring-cofind-secondary/25"
               />
             </div>
             <div>
@@ -1484,7 +1484,7 @@ export default function Admin() {
                 step="0.000001"
                 value={shopForm.latitude}
                 onChange={(event) => setShopForm((prev) => ({ ...prev, latitude: event.target.value }))}
-                className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full rounded-control border border-cofind-rule bg-cofind-paper px-4 py-2.5 text-sm text-cofind-ink focus:border-cofind-secondary focus:outline-none focus:ring-2 focus:ring-cofind-secondary/25"
               />
             </div>
             <div>
@@ -1494,7 +1494,7 @@ export default function Admin() {
                 step="0.000001"
                 value={shopForm.longitude}
                 onChange={(event) => setShopForm((prev) => ({ ...prev, longitude: event.target.value }))}
-                className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full rounded-control border border-cofind-rule bg-cofind-paper px-4 py-2.5 text-sm text-cofind-ink focus:border-cofind-secondary focus:outline-none focus:ring-2 focus:ring-cofind-secondary/25"
               />
             </div>
           </div>
@@ -1518,7 +1518,7 @@ export default function Admin() {
                 type="text"
                 value={shopForm.phone}
                 onChange={(event) => setShopForm((prev) => ({ ...prev, phone: event.target.value }))}
-                className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full rounded-control border border-cofind-rule bg-cofind-paper px-4 py-2.5 text-sm text-cofind-ink focus:border-cofind-secondary focus:outline-none focus:ring-2 focus:ring-cofind-secondary/25"
               />
             </div>
             <div>
@@ -1527,7 +1527,7 @@ export default function Admin() {
                 type="url"
                 value={shopForm.website}
                 onChange={(event) => setShopForm((prev) => ({ ...prev, website: event.target.value }))}
-                className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full rounded-control border border-cofind-rule bg-cofind-paper px-4 py-2.5 text-sm text-cofind-ink focus:border-cofind-secondary focus:outline-none focus:ring-2 focus:ring-cofind-secondary/25"
               />
             </div>
             <div className="md:col-span-2">
@@ -1536,7 +1536,7 @@ export default function Admin() {
                 type="url"
                 value={shopForm.google_maps_url}
                 onChange={(event) => setShopForm((prev) => ({ ...prev, google_maps_url: event.target.value }))}
-                className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full rounded-control border border-cofind-rule bg-cofind-paper px-4 py-2.5 text-sm text-cofind-ink focus:border-cofind-secondary focus:outline-none focus:ring-2 focus:ring-cofind-secondary/25"
               />
             </div>
             <div>
@@ -1544,7 +1544,7 @@ export default function Admin() {
               <select
                 value={shopForm.price_level}
                 onChange={(event) => setShopForm((prev) => ({ ...prev, price_level: event.target.value }))}
-                className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full rounded-control border border-cofind-rule bg-cofind-paper px-4 py-2.5 text-sm text-cofind-ink focus:border-cofind-secondary focus:outline-none focus:ring-2 focus:ring-cofind-secondary/25"
               >
                 {PRICE_LEVEL_OPTIONS.map((opt) => (
                   <option key={opt.value || 'empty'} value={opt.value}>{opt.label}</option>
@@ -1556,7 +1556,7 @@ export default function Admin() {
               <select
                 value={shopForm.business_status}
                 onChange={(event) => setShopForm((prev) => ({ ...prev, business_status: event.target.value }))}
-                className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full rounded-control border border-cofind-rule bg-cofind-paper px-4 py-2.5 text-sm text-cofind-ink focus:border-cofind-secondary focus:outline-none focus:ring-2 focus:ring-cofind-secondary/25"
               >
                 {BUSINESS_STATUS_OPTIONS.map((opt) => (
                   <option key={opt.value || 'empty'} value={opt.value}>{opt.label}</option>
@@ -1569,7 +1569,7 @@ export default function Admin() {
                 type="text"
                 value={shopForm.map_embed_url}
                 onChange={(event) => setShopForm((prev) => ({ ...prev, map_embed_url: event.target.value }))}
-                className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full rounded-control border border-cofind-rule bg-cofind-paper px-4 py-2.5 text-sm text-cofind-ink focus:border-cofind-secondary focus:outline-none focus:ring-2 focus:ring-cofind-secondary/25"
               />
             </div>
             <div>
@@ -1583,9 +1583,9 @@ export default function Admin() {
                       opening_hours_24h: !prev.opening_hours_24h,
                     }))}
                     aria-pressed={shopForm.opening_hours_24h}
-                    className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all duration-200 cursor-pointer ${
+                    className={`cursor-pointer rounded-control border px-3 py-1.5 text-xs font-semibold transition-colors duration-200 ${
                       shopForm.opening_hours_24h
-                        ? 'border-amber-600 bg-amber-700 text-white shadow-sm'
+                        ? 'border-cofind-primary bg-cofind-primary text-cofind-on-primary shadow-cofind-sm'
                         : 'border-stone-300/80 bg-white text-stone-700 hover:border-amber-400 hover:bg-amber-50/60'
                     }`}
                   >
@@ -1661,10 +1661,10 @@ export default function Admin() {
           </div>
 
           <div className="flex justify-end gap-3">
-            <button type="button" onClick={closeShopModal} className="rounded-xl border border-stone-300/70 px-4 py-2 text-sm text-stone-700 hover:bg-stone-100 transition-all duration-300 ease-out cursor-pointer">
+            <button type="button" onClick={closeShopModal} className="cursor-pointer rounded-panel border border-cofind-rule px-4 py-2 text-sm text-cofind-ink transition-colors duration-200 hover:bg-cofind-paper">
               Batal
             </button>
-            <button type="submit" disabled={shopSubmitting} className="rounded-xl bg-amber-700 px-4 py-2 text-sm font-medium text-stone-50 hover:bg-amber-800 disabled:opacity-60 transition-all duration-300 ease-out cursor-pointer">
+            <button type="submit" disabled={shopSubmitting} className="cursor-pointer rounded-panel bg-cofind-primary px-4 py-2 text-sm font-medium text-cofind-on-primary transition-colors duration-200 hover:bg-cofind-primary-hover disabled:opacity-60">
               {shopSubmitting ? 'Menyimpan...' : shopModalMode === 'create' ? 'Tambah coffee shop' : 'Simpan perubahan'}
             </button>
           </div>
@@ -1691,13 +1691,13 @@ export default function Admin() {
               onChange={(event) => setFacilityJsonText(event.target.value)}
               rows={24}
               spellCheck={false}
-              className="w-full rounded-xl border border-stone-300/70 bg-stone-50 text-stone-800 font-mono text-xs px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full rounded-control border border-cofind-rule bg-cofind-paper px-4 py-3 font-mono text-xs text-cofind-ink focus:border-cofind-secondary focus:outline-none focus:ring-2 focus:ring-cofind-secondary/25"
             />
             <div className="flex justify-end gap-3">
-              <button type="button" onClick={closeFacilityEditor} className="rounded-xl border border-stone-300/70 px-4 py-2 text-sm text-stone-700 hover:bg-stone-100 transition-all duration-300 ease-out cursor-pointer">
+              <button type="button" onClick={closeFacilityEditor} className="cursor-pointer rounded-panel border border-cofind-rule px-4 py-2 text-sm text-cofind-ink transition-colors duration-200 hover:bg-cofind-paper">
                 Batal
               </button>
-              <button type="submit" disabled={facilityEditorSubmitting} className="rounded-xl bg-emerald-700 px-4 py-2 text-sm font-medium text-stone-50 hover:bg-emerald-800 disabled:opacity-60 transition-all duration-300 ease-out cursor-pointer">
+              <button type="submit" disabled={facilityEditorSubmitting} className="cursor-pointer rounded-panel bg-emerald-700 px-4 py-2 text-sm font-medium text-white transition-colors duration-200 hover:bg-emerald-800 disabled:opacity-60">
                 {facilityEditorSubmitting ? 'Menyimpan...' : 'Simpan JSON'}
               </button>
             </div>
@@ -1744,7 +1744,7 @@ export default function Admin() {
             <select
               value={reportForm.status}
               onChange={(event) => setReportForm((prev) => ({ ...prev, status: event.target.value }))}
-              className="w-full rounded-xl border border-stone-300/70 bg-stone-50 px-4 py-2.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full rounded-control border border-cofind-rule bg-cofind-paper px-4 py-2.5 text-sm text-cofind-ink focus:border-cofind-secondary focus:outline-none focus:ring-2 focus:ring-cofind-secondary/25"
             >
               <option value="pending">pending</option>
               <option value="reviewed">reviewed</option>
@@ -1754,10 +1754,10 @@ export default function Admin() {
           </div>
 
           <div className="flex justify-end gap-3">
-            <button type="button" onClick={closeReportModal} className="rounded-xl border border-stone-300/70 px-4 py-2 text-sm text-stone-700 hover:bg-stone-100 transition-all duration-300 ease-out cursor-pointer">
+            <button type="button" onClick={closeReportModal} className="cursor-pointer rounded-panel border border-cofind-rule px-4 py-2 text-sm text-cofind-ink transition-colors duration-200 hover:bg-cofind-paper">
               Batal
             </button>
-            <button type="submit" disabled={reportSubmitting} className="rounded-xl bg-amber-700 px-4 py-2 text-sm font-medium text-stone-50 hover:bg-amber-800 disabled:opacity-60 transition-all duration-300 ease-out cursor-pointer">
+            <button type="submit" disabled={reportSubmitting} className="cursor-pointer rounded-panel bg-cofind-primary px-4 py-2 text-sm font-medium text-cofind-on-primary transition-colors duration-200 hover:bg-cofind-primary-hover disabled:opacity-60">
               {reportSubmitting ? 'Menyimpan...' : 'Simpan moderasi'}
             </button>
           </div>

@@ -10,7 +10,7 @@ export const FACILITY_TAB_SPECS = [
     emoji: '♿',
     pillClassName:
       'border border-slate-200/90 bg-white text-slate-900 dark:border-slate-700/60 dark:bg-zinc-800 dark:text-slate-100',
-    iconContainerClassName: 'bg-gradient-to-br from-slate-500 to-slate-700 text-white',
+    iconContainerClassName: 'bg-stone-600 text-white',
     emptyText: 'Belum ada data aksesibilitas.',
   },
   {
@@ -29,7 +29,7 @@ export const FACILITY_TAB_SPECS = [
     keyOrder: ['dine_in', 'takeaway', 'delivery', 'outdoor_seating', 'curbside_pickup', 'reservable'],
     pillClassName:
       'border border-sky-200/90 bg-white text-sky-900 dark:border-sky-800/60 dark:bg-zinc-800 dark:text-sky-100',
-    iconContainerClassName: 'bg-gradient-to-br from-sky-500 to-cyan-500 text-white',
+    iconContainerClassName: 'bg-cofind-secondary text-cofind-on-secondary',
     emptyText: 'Belum ada opsi layanan.',
   },
   {
@@ -60,8 +60,8 @@ export const FACILITY_TAB_SPECS = [
       'serves_alcohol',
     ],
     pillClassName:
-      'border border-indigo-200/90 bg-white text-indigo-900 dark:border-indigo-800/60 dark:bg-zinc-800 dark:text-indigo-100',
-    iconContainerClassName: 'bg-gradient-to-br from-indigo-500 to-violet-500 text-white',
+      'border border-cofind-rule bg-cofind-surface text-cofind-ink dark:border-cofind-rule dark:bg-cofind-surface dark:text-cofind-ink',
+    iconContainerClassName: 'bg-cofind-primary text-cofind-on-primary',
     emptyText: 'Belum ada keunggulan.',
   },
   {
@@ -91,7 +91,7 @@ export const FACILITY_TAB_SPECS = [
     ],
     pillClassName:
       'border border-amber-200/90 bg-white text-amber-900 dark:border-amber-800/60 dark:bg-zinc-800 dark:text-amber-100',
-    iconContainerClassName: 'bg-gradient-to-br from-amber-400 to-orange-500 text-white',
+    iconContainerClassName: 'bg-amber-800 text-white',
     emptyText: 'Belum ada info populer.',
   },
   {
@@ -108,7 +108,7 @@ export const FACILITY_TAB_SPECS = [
     keyOrder: ['coffee', 'restaurant', 'late_night_food', 'private_dining_room'],
     pillClassName:
       'border border-rose-200/90 bg-white text-rose-900 dark:border-rose-800/60 dark:bg-zinc-800 dark:text-rose-100',
-    iconContainerClassName: 'bg-gradient-to-br from-rose-400 to-pink-500 text-white',
+    iconContainerClassName: 'bg-rose-800 text-white',
     emptyText: 'Belum ada penawaran.',
   },
   {
@@ -126,7 +126,7 @@ export const FACILITY_TAB_SPECS = [
     keyOrder: ['breakfast', 'brunch', 'lunch', 'dinner', 'dessert'],
     pillClassName:
       'border border-orange-200/90 bg-white text-orange-900 dark:border-orange-800/60 dark:bg-zinc-800 dark:text-orange-100',
-    iconContainerClassName: 'bg-gradient-to-br from-orange-400 to-amber-500 text-white',
+    iconContainerClassName: 'bg-orange-800 text-white',
     emptyText: 'Belum ada pilihan makanan.',
   },
   {
@@ -154,7 +154,7 @@ export const FACILITY_TAB_SPECS = [
     ],
     pillClassName:
       'border border-emerald-200/90 bg-white text-emerald-900 dark:border-emerald-800/60 dark:bg-zinc-800 dark:text-emerald-100',
-    iconContainerClassName: 'bg-gradient-to-br from-emerald-500 to-teal-500 text-white',
+    iconContainerClassName: 'bg-emerald-800 text-white',
     emptyText: 'Belum ada fasilitas.',
   },
   {
@@ -173,7 +173,7 @@ export const FACILITY_TAB_SPECS = [
     },
     pillClassName:
       'border border-cyan-200/90 bg-white text-cyan-900 dark:border-cyan-800/60 dark:bg-zinc-800 dark:text-cyan-100',
-    iconContainerClassName: 'bg-gradient-to-br from-cyan-500 to-blue-500 text-white',
+    iconContainerClassName: 'bg-cofind-secondary text-cofind-on-secondary',
     emptyText: 'Belum ada info tipe pengunjung.',
   },
   {
@@ -187,8 +187,8 @@ export const FACILITY_TAB_SPECS = [
     },
     keyOrder: ['accepts_reservations', 'requires_reservations'],
     pillClassName:
-      'border border-violet-200/90 bg-white text-violet-900 dark:border-violet-800/60 dark:bg-zinc-800 dark:text-violet-100',
-    iconContainerClassName: 'bg-gradient-to-br from-violet-500 to-purple-600 text-white',
+      'border border-cofind-rule bg-cofind-paper text-cofind-ink',
+    iconContainerClassName: 'bg-stone-700 text-white',
     emptyText: 'Belum ada info perencanaan.',
   },
   {
@@ -205,7 +205,7 @@ export const FACILITY_TAB_SPECS = [
     keyOrder: ['credit_cards', 'debit_cards', 'nfc', 'cash_only'],
     pillClassName:
       'border border-lime-200/90 bg-white text-lime-900 dark:border-lime-800/60 dark:bg-zinc-800 dark:text-lime-100',
-    iconContainerClassName: 'bg-gradient-to-br from-lime-500 to-green-600 text-white',
+    iconContainerClassName: 'bg-lime-800 text-white',
     emptyText: 'Belum ada info pembayaran.',
   },
   {
@@ -229,7 +229,7 @@ export const FACILITY_TAB_SPECS = [
     ],
     pillClassName:
       'border border-blue-200/90 bg-white text-blue-900 dark:border-blue-800/60 dark:bg-zinc-800 dark:text-blue-100',
-    iconContainerClassName: 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white',
+    iconContainerClassName: 'bg-cofind-primary text-cofind-on-primary',
     emptyText: 'Belum ada info parkir.',
   },
 ];

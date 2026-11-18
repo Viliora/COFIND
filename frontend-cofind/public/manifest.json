@@ -4,8 +4,8 @@
   "description": "Temukan Coffee Shop Terbaik di Pontianak",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#4F46E5",
+  "background_color": "#faf6f0",
+  "theme_color": "#5c3d2e",
   "orientation": "portrait-primary",
   "icons": [
     {

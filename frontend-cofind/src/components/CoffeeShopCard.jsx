@@ -43,16 +43,16 @@ const CoffeeShopCard = ({ shop, variant = 'default' }) => {
     const getPlaceholderColor = (shopName) => {
         const seed = shopName ? shopName.length % 10 : 0;
         const colors = [
-            '#4F46E5', // indigo
-            '#7C3AED', // purple
-            '#EC4899', // pink
-            '#F59E0B', // amber
-            '#10B981', // green
-            '#3B82F6', // blue
-            '#8B5CF6', // violet
-            '#F97316', // orange
-            '#06B6D4', // cyan
-            '#6366F1'  // indigo
+            '#5c3d2e',
+            '#4a3024',
+            '#1f6b5c',
+            '#78716c',
+            '#92400e',
+            '#a16207',
+            '#44403c',
+            '#57534e',
+            '#854d0e',
+            '#3f3f46',
         ];
         return colors[seed % colors.length];
     };
@@ -102,7 +102,7 @@ const CoffeeShopCard = ({ shop, variant = 'default' }) => {
                     }
                 }}
             >
-            <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden h-full flex flex-col shadow-lg hover:shadow-2xl transition duration-300 ${
+            <div className={`bg-cofind-surface border border-cofind-rule rounded-panel overflow-hidden h-full flex flex-col shadow-cofind-sm hover:shadow-cofind-md transition-shadow duration-200 ${
                 isMini ? 'min-h-[14.5rem]' : 'min-h-[21.5rem]'
             }`}>
                 <div className={`aspect-w-16 aspect-h-9 relative overflow-hidden rounded-t-xl ${
@@ -117,7 +117,7 @@ const CoffeeShopCard = ({ shop, variant = 'default' }) => {
                 </div>
             
             <div className={`relative flex-1 ${isMini ? 'p-3' : 'p-4'}`}>
-                    <h2 className={`${isMini ? 'text-base mb-1.5' : 'text-lg mb-2'} font-bold text-gray-800 dark:text-gray-200 line-clamp-2 group-hover:text-indigo-600 transition-colors`}>
+                    <h2 className={`${isMini ? 'text-base mb-1.5' : 'text-lg mb-2'} font-display font-bold text-cofind-ink line-clamp-2 group-hover:text-cofind-primary transition-colors`}>
                         {shop.name}
                     </h2>
 
@@ -185,7 +185,7 @@ const CoffeeShopCard = ({ shop, variant = 'default' }) => {
                         </div>
                     </div>
                     
-                    <div className="text-indigo-500 group-hover:translate-x-1 transition-transform inline-flex items-center">
+                    <div className="text-cofind-secondary group-hover:translate-x-1 transition-transform inline-flex items-center text-sm font-medium">
                         View Details
                         <svg className="w-4 h-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
