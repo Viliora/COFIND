@@ -14,7 +14,7 @@ from recommendation.request_prefs import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-FACILITY_PICKER = ROOT / "frontend-cofind" / "src" / "components" / "FacilityAttributePicker.jsx"
+PREF_PICKER = ROOT / "frontend-cofind" / "src" / "components" / "PreferencePillPicker.jsx"
 
 
 class PrefPillLimitTests(unittest.TestCase):
@@ -23,9 +23,9 @@ class PrefPillLimitTests(unittest.TestCase):
         self.assertEqual(_MAX_ACTIVITY_PILLS, 1)
 
     def test_frontend_max_facility_attributes_matches_backend(self):
-        text = FACILITY_PICKER.read_text(encoding="utf-8")
+        text = PREF_PICKER.read_text(encoding="utf-8")
         m = re.search(r"MAX_FACILITY_ATTRIBUTES\s*=\s*(\d+)", text)
-        self.assertIsNotNone(m, "MAX_FACILITY_ATTRIBUTES tidak ditemukan di FacilityAttributePicker.jsx")
+        self.assertIsNotNone(m, "MAX_FACILITY_ATTRIBUTES tidak ditemukan di PreferencePillPicker.jsx")
         self.assertEqual(int(m.group(1)), _MAX_ATTRIBUTE_PILLS)
 
     def test_read_prefs_truncates_activity_and_attributes(self):
@@ -42,6 +42,19 @@ class PrefPillLimitTests(unittest.TestCase):
         activities = [p for p in pills if p in ("kerja", "belajar")]
         self.assertLessEqual(len(activities), _MAX_ACTIVITY_PILLS)
         self.assertLessEqual(len(pills), _MAX_ACTIVITY_PILLS + _MAX_ATTRIBUTE_PILLS)
+
+    def test_read_prefs_attributes_only(self):
+        from flask import Flask
+
+        app = Flask(__name__)
+        payload = {
+            "preferences": [],
+            "attributes": ["musholla", "area_outdoor"],
+        }
+        with app.test_request_context(json=payload):
+            pills, query = read_recommendation_preferences()
+        self.assertEqual(query, "")
+        self.assertEqual(pills, ["musholla", "area_outdoor"])
 
 
 if __name__ == "__main__":

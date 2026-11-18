@@ -1,9 +1,16 @@
 {
-  "schema_version": 1,
-  "description": "Sumber tunggal leksikon aktivitas: review_keywords, frasa gerbang, whole_words, stop tokens. Atribut fasilitas tetap di pill_config.py.",
+  "schema_version": 2,
+  "description": "Leksikon aktivitas: terms (sparse + activity matcher + skor), stop_tokens. Atribut di pill_config.py.",
   "global": {
     "generic_activity_stop": [
-      "cari", "cocok", "coffee", "shop", "kafe", "cafe", "tempat", "enak"
+      "cari",
+      "cocok",
+      "coffee",
+      "shop",
+      "kafe",
+      "cafe",
+      "tempat",
+      "enak"
     ],
     "rejection_phrases": [
       "tidak cocok",
@@ -23,110 +30,171 @@
       "jangan untuk",
       "kurang untuk",
       "tidak untuk"
-    ],
-    "acronym_context_tokens": [
-      "main", "mabar", "game", "gaming", "gamer", "legends", "mobile", "rank",
-      "push", "bareng", "temen", "teman", "squad", "slot", "ngerank"
     ]
   },
   "pills": {
     "belajar": {
-      "review_keywords": [
-        "belajar", "nugas", "ngerjain tugas", "skripsi", "mahasiswa", "tugas kuliah"
+      "terms": [
+        "belajar",
+        "nugas",
+        "ngerjain tugas",
+        "skripsi",
+        "mahasiswa",
+        "tugas kuliah",
+        "fokus belajar",
+        "ruang belajar",
+        "mengerjakan tugas",
+        "baca buku",
+        "kuliah",
+        "ujian"
       ],
-      "extra_phrases": [
-        "belajar", "nugas", "ngerjain tugas", "skripsi", "baca buku",
-        "fokus belajar", "ruang belajar", "mengerjakan tugas"
-      ],
-      "whole_words": ["belajar", "nugas", "skripsi", "kuliah", "ujian"],
-      "short_acronyms": [],
-      "stop_tokens": ["nongkrong"]
+      "stop_tokens": [
+        "nongkrong"
+      ]
     },
     "kerja": {
-      "review_keywords": [
-        "kerja", "wfc", "laptopan", "wfh", "ngantor", "kerja remote"
+      "terms": [
+        "kerja",
+        "wfc",
+        "laptopan",
+        "wfh",
+        "ngantor",
+        "kerja remote",
+        "kerja dari kafe",
+        "remote working",
+        "kerjaan kantor"
       ],
-      "extra_phrases": [
-        "work from cafe", "wfc", "kerja remote", "ngantor", "laptopan",
-        "kerjaan kantor", "kerja dari kafe", "remote working"
-      ],
-      "whole_words": ["wfc", "wfh", "laptopan", "ngantor"],
-      "short_acronyms": [],
-      "stop_tokens": ["nongkrong", "ngopi"]
+      "stop_tokens": [
+        "nongkrong",
+        "ngopi"
+      ]
     },
     "bermain game": {
-      "review_keywords": [
-        "mabar", "main game", "mlbb", "mobile legends", "pubg", "valorant"
+      "terms": [
+        "mabar",
+        "main game",
+        "mlbb",
+        "mobile legends",
+        "pubg",
+        "valorant",
+        "bermain game",
+        "nge game",
+        "ngegame",
+        "main bareng game",
+        "mobile legend",
+        "free fire",
+        "push rank",
+        "nge rank",
+        "ngerank",
+        "ngemabar",
+        "gas game",
+        "turnamen",
+        "esport",
+        "e sport",
+        "playstation",
+        "ps5",
+        "ps4",
+        "nintendo",
+        "main ml",
+        "main ff",
+        "main pubg",
+        "main valorant",
+        "main hok",
+        "gamer",
+        "gaming",
+        "gamers",
+        "game",
+        "games",
+        "esports"
       ],
-      "extra_phrases": [
-        "nge game", "ngegame", "main game", "bermain game", "main bareng game",
-        "mobile legends", "mobile legend", "mlbb", "valorant", "pubg",
-        "free fire", "push rank", "nge rank", "ngerank",
-        "mabar", "ngemabar", "gas game", "turnamen", "esport", "e sport",
-        "playstation", "ps5", "ps4", "nintendo",
-        "main ml", "main ff", "main pubg", "main valorant", "main hok",
-        "gamer", "gaming", "gamers"
-      ],
-      "whole_words": [
-        "game", "games", "gaming", "gamer", "gamers", "ngegame", "ngemabar",
-        "mabar", "mlbb", "valorant", "pubg", "esport", "esports",
-        "playstation", "turnamen", "nintendo"
-      ],
-      "short_acronyms": ["ml", "ff", "hok", "lol"],
       "stop_tokens": [
-        "nongkrong", "main", "bareng", "gas", "push", "rank", "bermain", "mobile", "nge"
+        "nongkrong",
+        "main",
+        "bareng",
+        "gas",
+        "push",
+        "rank",
+        "bermain",
+        "mobile",
+        "nge"
       ]
     },
     "meeting_sosialisasi": {
-      "review_keywords": [
-        "meeting", "pertemuan", "rapat", "diskusi", "berdiskusi", "arisan"
+      "terms": [
+        "meeting",
+        "pertemuan",
+        "rapat",
+        "diskusi",
+        "berdiskusi",
+        "arisan",
+        "kumpul tim",
+        "kumpul kerja",
+        "networking",
+        "pertemuan bisnis",
+        "meeting kantor"
       ],
-      "extra_phrases": [
-        "meeting", "rapat", "pertemuan bisnis",
-        "kumpul tim", "kumpul kerja", "meeting kantor"
-      ],
-      "whole_words": ["meeting", "rapat", "arisan", "networking"],
-      "short_acronyms": [],
-      "stop_tokens": ["nongkrong", "nongki"]
+      "stop_tokens": [
+        "nongkrong",
+        "nongki"
+      ]
     },
     "keluarga": {
-      "review_keywords": [
-        "keluarga", "family", "ramah anak", "playground", "kursi bayi", "babychair"
+      "terms": [
+        "keluarga",
+        "family",
+        "ramah anak",
+        "playground",
+        "kursi bayi",
+        "babychair",
+        "ramah keluarga",
+        "bawa anak",
+        "family friendly",
+        "kumpul keluarga",
+        "cocok keluarga",
+        "bawa anak kecil"
       ],
-      "extra_phrases": [
-        "ramah keluarga", "ramah anak", "bawa anak", "family friendly",
-        "kumpul keluarga", "cocok keluarga", "bawa anak kecil"
-      ],
-      "whole_words": ["keluarga", "family", "playground"],
-      "short_acronyms": [],
       "stop_tokens": []
     },
     "instagrammable": {
-      "review_keywords": [
-        "instagrammable", "instagramable", "spot foto", "estetik", "aesthetic", "fotogenik",
-        "selfie"
-      ],
-      "extra_phrases": [
-        "instagrammable", "spot foto", "photo spot", "estetik", "fotogenik",
+      "terms": [
+        "instagrammable",
+        "instagramable",
+        "spot foto",
+        "estetik",
+        "aesthetic",
+        "fotogenik",
+        "selfie",
+        "photo spot",
         "banyak spot foto"
       ],
-      "whole_words": ["instagrammable", "instagramable", "fotogenik", "estetik"],
-      "short_acronyms": [],
       "stop_tokens": []
     },
     "nongkrong_hangout": {
-      "review_keywords": [
-        "nongkrong", "hangout", "ngobrol", "ngumpul", "bareng teman", "nongkrong lama"
+      "terms": [
+        "nongkrong",
+        "hangout",
+        "ngobrol",
+        "ngumpul",
+        "bareng teman",
+        "nongkrong lama",
+        "nongki",
+        "ngobrol santai",
+        "ngobrol bareng",
+        "kumpul santai",
+        "tempat nongkrong",
+        "nongkrong asik",
+        "nongkrong bareng teman",
+        "tempat nongki"
       ],
-      "extra_phrases": [
-        "nongkrong", "nongki", "nongkrong lama", "hangout", "ngobrol santai",
-        "ngobrol bareng", "kumpul santai", "tempat nongkrong", "nongkrong asik",
-        "nongkrong bareng teman", "tempat nongki"
-      ],
-      "whole_words": ["nongkrong", "nongki", "hangout", "ngobrol", "ngumpul"],
-      "short_acronyms": [],
       "stop_tokens": [
-        "rapat", "meeting", "laptop", "skripsi", "nugas", "belajar", "anak", "keluarga"
+        "rapat",
+        "meeting",
+        "laptop",
+        "skripsi",
+        "nugas",
+        "belajar",
+        "anak",
+        "keluarga"
       ]
     }
   }

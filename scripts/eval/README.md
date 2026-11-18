@@ -64,6 +64,20 @@ Filter baris yang `export_error` / `response` kosong sebelum interpretasi peneli
 | `response` / `answer` | ya | Output user-facing (toko + alasan + bukti) |
 | `ground_truth` / `reference` | context P/R | Referensi naratif anotator |
 
+## Dense vs hybrid (retrieval lane)
+
+Uji apakah **BM25+RRF** perlu dibanding **dense saja** (+ opsional CE rerank) pada ~33 golden query.
+
+```powershell
+python scripts/eval/build_eval_relevance_judgments.py
+python scripts/eval/dense_vs_hybrid_ablation.py --k 7 30
+python scripts/eval/dense_vs_hybrid_ablation.py --with-rerank --k 7
+```
+
+Keluaran: [`data/eval/dense_vs_hybrid_ablation.json`](../../data/eval/dense_vs_hybrid_ablation.json) — macro recall/nDCG per lane, plus analisis toko relevan yang terlewat dense@7 tetapi punya hit leksikal / masuk BM25 top-k.
+
+Set query: [`data/eval/eval_queries.json`](../../data/eval/eval_queries.json) (disinkron dari `baseline.json`).
+
 ## vs grounding deterministik Cofind
 
 Tahap D di [`llm_recommender.py`](../../llm_recommender.py) (`text_is_grounded`, `ungrounded_quotes`) auditable dan dipakai produksi. Skor RAGAS Faithfulness adalah **LLM-as-judge** — bandingkan korelasi, jangan anggap definisi identik.

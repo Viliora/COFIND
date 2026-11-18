@@ -55,23 +55,227 @@ Ulasan berbahasa Indonesia informal memuat variasi ejaan, singkatan, dan istilah
 
 ### 4.2.3 Pembentukan Profil Toko (Fase 1)
 
-Fase pertama memuat seluruh toko beserta ulasannya secara *batch* dan menerapkan penyaringan keras (*hard filter*) berupa syarat minimum satu ulasan. Setiap toko direpresentasikan sebagai satu profil yang memuat identitas, kumpulan ulasan, agregat rating, dan sinyal komunitas. Skor kualitas toko dihitung sebagai rerata tertimbang antara skor pengalaman keseluruhan (*overall experience*) dan skor rating, masing-masing berbobot 0,5, dan dinormalisasi ke rentang [0, 1]. Skor ini dipakai sebagai faktor penyeimbang pada pemeringkatan Fase 2 dan tidak menyaring toko.
+Fase pertama memuat seluruh toko beserta ulasannya secara *batch* (`_build_profiles_for_recommendation`) dan menerapkan penyaringan keras (*hard filter*) berupa syarat minimum satu ulasan (`REVIEW_BASED_MIN_REVIEWS = 1`). Setiap toko yang lolos direpresentasikan sebagai objek **profil** yang memuat identitas, ulasan lean, agregat rating bintang, tab fasilitas, dan sinyal komunitas (reaksi vote). Fase 2 retrieval memakai **RRF murni** (BM25 + dense) secara default (`COFIND_RETRIEVAL_QUALITY_WEIGHT=0`). Fungsi `_quality_score_for_profile` tetap tersedia untuk ablation opsional, tetapi **tidak** dihitung di pipeline produksi. Slider *overall experience* tidak memengaruhi skor; *top pros* tidak dimuat di pipeline rekomendasi.
 
-**Tabel 4.4 Masukan dan keluaran pembentukan profil toko**
+**Tabel 4.4 Sumber data mentah (masukan) pembentukan profil**
 
-| Aspek | Bentuk data awal (masukan) *(ilustrasi)* | Bentuk keluaran |
-|-------|------------------------------------------|-----------------|
-| Baris `coffee_shops` | `place_id`, `name`, `rating = 4.7`, fasilitas | Profil toko (`profile`) |
-| Baris `reviews` | 24 ulasan bersih terkait `place_id` yang sama | `profile.reviews[]`, `review_count = 24` |
-| Sinyal komunitas | Agregat suara *love/like/ok/dislike/hate* | `community_signals` |
-| Skor kualitas | `overall_experience = 0.80`, `rating_score = 0.85` | `quality = 0.825` |
-| Toko tanpa ulasan | `review_count = 0` | Dikeluarkan (`shops_without_reviews`) |
+| No | Sumber | Kolom / isi mentah *(contoh)* | Keterangan |
+|----|--------|----------------------------------|------------|
+| 1 | Daftar `place_id` katalog | `["ChIJ…", "ChIJ…", …]` | Semua toko aktif; opsional `excluded_place_ids` (pipeline rekomendasi biasanya kosong) |
+| 2 | Tabel `coffee_shops` | `place_id`, `name`, `rating`, `total_reviews`, `opening_hours_display` | Satu query `IN (place_id…)` |
+| 3 | Tabel `reviews` | `id`, `place_id`, `rating`, `review_text`, `review_source`, `author_display_name`, … | Batch lean via `get_reviews_for_recommendation_batch`; hanya sumber pipeline (Cofind + Google Places); tanpa foto/like |
+| 4 | Tabel `shop_votes` | `presence`, `rating` (love/like/…), `pelayanan`, `kebersihan`, `kenyamanan`, `harga`, `best_for` | Agregasi batch `get_vote_summaries_batch`; **bintang ulasan tidak** digabung ke `rating_counts` rekomendasi |
+| 5 | Indeks `facilities.json` | `facilities.popular_for`, `highlights`, `atmosphere`, … per `place_id` | `load_facilities_index()`; konteks profil, bukan bobot retrieval utama |
+
+**Tabel 4.5 Keluaran objek profil per toko (`profile`)**
+
+| Field keluaran | Bentuk nilai *(ilustrasi)* | Asal / transformasi |
+|----------------|----------------------------|---------------------|
+| `place_id`, `name` | `"ChIJ…"`, `"Kopi Kenangan …"` | Langsung dari `coffee_shops` |
+| `reviews[]` | `[{ "id", "text", "rating", "username", … }, …]` | Baris `reviews` → `_review_row_to_api_dict` |
+| `review_count` | `24` | `len(reviews)` |
+| `avg_user_rating` | `4.6` | Rata-rata `rating` bintang 1–5 pada ulasan profil |
+| `google_rating`, `google_total_reviews` | `4.7`, `312` | Kolom `rating`, `total_reviews` toko |
+| `opening_hours_display` | `"Sen–Min 08:00–22:00"` | Kolom jam buka |
+| `facilities_tab`, `facilities_tab_text`, `facilities_raw` | Label populer/keunggulan/suasana + teks ringkas | `_format_facilities_tab_signals` dari indeks fasilitas |
+| `community_signals.vote.total_votes` | `15` | Jumlah baris `shop_votes` |
+| `community_signals.vote.rating_counts` | `{ "love": 8, "like": 4, "ok": 2, … }` | Agregat reaksi; **tidak** memengaruhi ranking (konteks prompt/UI) |
+| `community_signals.vote.slider_averages` | `{ "pelayanan": 4.2, … }` | Rata-rata slider 1–5 (hanya konteks prompt jika env diaktifkan) |
+
+**Tabel 4.6 Keluaran fungsi build profile (tingkat pipeline)**
+
+| Keluaran | Bentuk | Arti |
+|----------|--------|------|
+| `profiles` | `List[profile]` | Kandidat Fase 2+ yang memiliki ≥ 1 ulasan |
+| `shops_without_reviews` | `List[place_id]` | Toko ada di DB tetapi `review_count < 1` |
+| Fase 2 retrieval | Hybrid BM25 + dense → RRF | Default tanpa blend `quality_by_place`; bobot quality opsional via env |
+
+**Tabel 4.7 Penyaringan pada build profile**
+
+| Kondisi masukan | Keluaran |
+|-----------------|----------|
+| `review_count ≥ 1` | Profil masuk `profiles` |
+| `review_count = 0` | `place_id` masuk `shops_without_reviews`; tidak ikut retrieval |
+| Toko tidak ada di `coffee_shops` | Dilewati (tidak ada profil) |
+
+#### Studi kasus satu `place_id` (data basis Cofind)
+
+Contoh berikut memakai toko **Haruna Cafe**, `place_id = ChIJhx6zl0BZHS4RGNla_oPoIJ0`. Tabel 4.8–4.11 menampilkan cuplikan **masukan mentah** dari database. **Keluaran riil** Fase 1 disajikan pada Tabel 4.12–4.17 (format laporan).
+
+**Tabel 4.8 Masukan mentah — baris `coffee_shops`**
+
+| Kolom | Nilai pada database |
+|-------|---------------------|
+| `place_id` | `ChIJhx6zl0BZHS4RGNla_oPoIJ0` |
+| `name` | Haruna Cafe |
+| `rating` | 4.7 |
+| `total_reviews` | 652 |
+| `opening_hours_display` | Senin–Minggu: 07.00–23.30 (satu baris per hari) |
+
+**Tabel 4.9 Masukan mentah — cuplikan baris `reviews` *(5 dari 10 baris pipeline)*
+
+| `id` | `review_source` | `rating` | `author_display_name` | Cuplikan `review_text` |
+|------|-----------------|----------|------------------------|-------------------------|
+| 125 | cofind | 4.0 | — | Pengalaman pertama yang cukup menyenangkan. Lokasi dipinggir jalan besar. Tersedia parkir motor dan mobil… |
+| 126 | cofind | 5.0 | — | Salah satu coffeshop aesthetic di Pontianak, tempatnya bersih nyaman buat nongki atau ngerjain tugas kuliah… |
+| 127 | cofind | 5.0 | — | Cocok untuk WFH dan menyendiri; tersedia ruangan ber-AC dan outdoor… |
+| 346 | google_places | 4.0 | Windi Arum Mukti | Areanya enak, lebih sepi, nyaman untuk WFC… |
+| 349 | google_places | 5.0 | Minisché Chio | Suasana enak buat WFC; interior, minuman, AC, Wi‑Fi, colokan oke… |
+
+| Ringkasan batch | Nilai |
+|-----------------|-------|
+| Total baris `reviews` untuk `place_id` ini | 10 |
+| Sumber | 5 Cofind + 5 Google Places |
+| Rata-rata bintang ulasan *(dihitung di profil)* | 4.8 |
+
+**Tabel 4.10 Masukan mentah — baris `shop_votes` dan agregat**
+
+| `presence` | `rating` (reaksi) | Slider `pelayanan` … `harga` |
+|------------|-------------------|--------------------------------|
+| been | love | *(null pada kelima baris)* |
+| been | like | *(null)* |
+| been | love | *(null)* |
+| been | love | *(null)* |
+| been | love | *(null)* |
+
+| Agregat *(setelah `get_vote_summaries_batch`)* | Nilai |
+|------------------------------------------------|-------|
+| `total_votes` | 5 |
+| `rating_counts.love` | 4 |
+| `rating_counts.like` | 1 |
+| `rating_counts.ok` / `dislike` / `hate` | 0 |
+
+**Tabel 4.11 Masukan mentah — entri `facilities.json` *(ringkas)*
+
+| Kunci | Nilai mentah |
+|-------|----------------|
+| `popular_for` | lunch, brunch, dinner, breakfast, solo_dining, good_for_working_on_laptop |
+| `highlights` | good_coffee, good_desserts, good_tea_selection |
+| `atmosphere` | nyaman, santai, trendi |
+
+Keluaran riil Fase 1 untuk `place_id` yang sama disajikan pada **Tabel 4.12–4.17**. Nilai diambil langsung dari tuple `_build_profiles_for_recommendation` (Oktober 2026). Inspeksi terminal: `python scripts/inspect_build_profile_tuple.py`.
+
+**Tabel 4.12 Keluaran fungsi `_build_profiles_for_recommendation` — ringkasan**
+
+| Keluaran | Nilai |
+|----------|-------|
+| Jumlah elemen `profiles` | 1 |
+| `shops_without_reviews` | [] (kosong) |
+| Fase 2 retrieval *(setelah profil)* | RRF murni (`COFIND_RETRIEVAL_QUALITY_WEIGHT=0`) |
+
+**Tabel 4.13 Keluaran profil — identitas dan agregat rating**
+
+| Field | Nilai keluaran |
+|-------|----------------|
+| `place_id` | ChIJhx6zl0BZHS4RGNla_oPoIJ0 |
+| `name` | Haruna Cafe |
+| `review_count` | 10 |
+| `avg_user_rating` | 4.8 |
+| `google_rating` | 4.7 |
+| `google_total_reviews` | 652 |
+| `opening_hours_display` | Senin–Minggu 07.00–23.30 (detail per hari disimpan di objek profil) |
+
+**Tabel 4.14 Keluaran profil — `facilities_tab` dan teks ringkas**
+
+| Komponen | Nilai keluaran |
+|----------|----------------|
+| `popular_for[]` | sarapan, brunch, makan siang, makan malam, makan sendiri, wfc / kerja laptop |
+| `highlights[]` | kopi enak, dessert enak, pilihan teh beragam |
+| `atmosphere[]` | nyaman, santai, trendi |
+| `facilities_tab_text` | Populer untuk: sarapan, brunch, makan siang, makan malam, makan sendiri, wfc / kerja laptop. Keunggulan: kopi enak, dessert enak, pilihan teh beragam. Suasana: nyaman, santai, trendi. |
+
+**Tabel 4.15 Keluaran profil — `community_signals.vote`**
+
+| Field | Nilai keluaran |
+|-------|----------------|
+| `total_votes` | 5 |
+| `rating_counts.love` | 4 |
+| `rating_counts.like` | 1 |
+| `rating_counts.ok` | 0 |
+| `rating_counts.dislike` | 0 |
+| `rating_counts.hate` | 0 |
+| `slider_averages.pelayanan` | — |
+| `slider_averages.kebersihan` | — |
+| `slider_averages.kenyamanan` | — |
+| `slider_averages.harga` | — |
+
+**Tabel 4.16 Keluaran profil — elemen `reviews[]` *(10 baris)*
+
+| No | `id` | Sumber | Bintang | Penulis | Cuplikan `text` |
+|----|------|--------|---------|---------|-------------------|
+| 1 | 125 | cofind | 4.0 | fulvi | Pengalaman pertama yang cukup menyenangkan. Lokasi dipinggir jalan besar. Tersedia parkir motor dan mobil yg memadai. Dekorasi ruangan yang estetik. Ada pilihan outdoor dan indoor. Ada booth buat foto sama teman-teman… |
+| 2 | 126 | cofind | 5.0 | vaegerys | salah satu coffeshop aesthetic di Pontianak tempatnya bersih nyaman banget buat sekedar nongki sama temen atau ngerjain tugas kuliah. ada indoor dan outdoor yang instagramable buat foto-foto. salah satu pelayannya bes… |
+| 3 | 129 | cofind | 5.0 | qwerty | Tempatnya bagus banget buat nongki sama temen ataupun sambil buat tugas kuliah lama2.. makanannya enak dan coffenya juga enak.. ada makanan yang kids friendly juga kok.. tadi makanannya lupa ke foto |
+| 4 | 127 | cofind | 5.0 | vseeker | Rate 9.5/10 Salah satu tempat nyantai pontianak yang cocok untuk WFH dan menyendiri dan ada photoboxnya juga. Tersedia ruangan ber ac dan outdoor yang estetik. best seller menurut aku disini adalah cromboloni nya enak… |
+| 5 | 128 | cofind | 5.0 | aegon | Suasana cafenya bagus namun sedikit minimalis tidak terlalu luas. Untuk makanan dan minuman enak sesuai dengan harganya walaupun ada sedikit kekurangan tapi tidak terlalu bermasalah. Pelayanan cukup gesit dan ramah. T… |
+| 6 | 346 | google_places | 4.0 | Windi Arum Mukti | Areanya enak sih, lebih sepi dibanding Haruna cabang lainnya, tapi jadi nyaman untuk WFC atau kalau mau tenang.. Untuk makanannya bervariatif dan bisa buat anak anak. Dessertnya juga ada buat nyemil nyemil setelah makan. |
+| 7 | 348 | google_places | 5.0 | Nia Kajolania1808 | Tempat nya nyaman bangeet, pas tuk pertemuan, ketemu temen,  kumpul keluarga , tempat ngerjain tugas ketik,  pelayanan ramah, perfect sih ini |
+| 8 | 347 | google_places | 5.0 | UulUul Aulia | Suasana yang sudahh baruuuu dan luasss. Emg jadi andalan klo lagi malam minggu dekat sm rumah , makaanan dan minumannyaaa enak2. Emang andalan kopi harunaa sihhh THE BEST 💙💙💙💙💙 klo kesana jgn kupa carbonara creamy dan… |
+| 9 | 350 | google_places | 5.0 | Dia Rom | Pelayanan nya bagus banget sangat ramah dan helpfull dibantuin buka pintu karna lagi pegang byk barang, hargany juga terjangkau tempatnya bagus, bikin bahagia datang kesini. Ada banyak buku juga utk dibaca. Outdoor ny… |
+| 10 | 349 | google_places | 5.0 | Minisché Chio | Tempatnya cantik bangeeet, suasananya enak buat wfc, interior, minuman, makanan, ac, wifi colokan smua oke. Paling bbrp seat g ada colokan. Mau indoor outdoor smua cantik2. Rsanya ga banyak yg tau, tryta hidden gem. J… |
+
+**Tabel 4.17 Keluaran profil — cuplikan `facilities_raw` *(boolean aktif)*
+
+| Grup | Atribut aktif (`true`) |
+|------|-------------------------|
+| `popular_for` | lunch, brunch, dinner, breakfast, solo_dining, good_for_working_on_laptop |
+| `highlights` | good_coffee, good_desserts, good_tea_selection |
+| `service_options` | dine_in, delivery, takeaway, reservable, outdoor_seating, contactless_delivery |
+| `dining_options` | lunch, brunch, dinner, dessert, seating, breakfast, table_service |
+| `payments` | debit_card, credit_card, nfc_mobile_payments |
+| `parking` | paid_parking_lot, parking_available, paid_street_parking |
+| `amenities` | toilet |
+| `planning` | accepts_reservations |
+| `children` | good_for_kids |
+| `offerings` | coffee, quick_bite |
+| `meta` | {"source": "google_places_api_legacy", "last_updated": "2026-10-20"} |
+
+**Gambar 4.1 Alur transformasi data pembentukan profil (Fase 1)**
+
+Diagram berikut merangkum Tabel 4.4–4.7: sumber mentah di kiri, penggabungan profil dan agregat vote di tengah, serta cabang penyaringan ulasan dan keluaran pipeline.
+
+```mermaid
+flowchart LR
+  subgraph IN["Masukan"]
+    PID["place_id[]"]
+    CS["coffee_shops"]
+    RV["reviews\n(batch lean)"]
+    FJ["facilities.json"]
+    SV["shop_votes"]
+  end
+
+  subgraph PROC["Proses _build_profiles_for_recommendation"]
+    MERGE["Profil dasar\nshop + ulasan + fasilitas"]
+    GATE{"review_count\n≥ 1?"}
+    VOTE["Agregat vote\nrating_counts"]
+  end
+
+  subgraph OUT["Keluaran"]
+    PROF["profiles[]"]
+    NORV["shops_without_reviews"]
+    RRF["RRF murni\n(Fase 2)"]
+  end
+
+  PID --> CS
+  PID --> RV
+  CS --> MERGE
+  RV --> MERGE
+  FJ --> MERGE
+  MERGE --> GATE
+  GATE -->|tidak| NORV
+  GATE -->|ya| VOTE
+  VOTE --> PROF
+  PROF --> RRF
+  SV --> VOTE
+```
+
+*Catatan laporan:* salin diagram ke editor yang mendukung Mermaid (mis. draw.io, Mermaid Live Editor, atau ekspor PNG dari VS Code) untuk disisipkan sebagai gambar di naskah. Visualisasi interaktif yang sama tersedia di repositori sebagai referensi desain (tab *Peta data* / *Contoh profil*).
 
 ### 4.2.4 Representasi Vektor Ulasan
 
 Pencocokan semantik membutuhkan representasi numerik yang mampu menangkap parafrase dan sinonim yang tidak terjangkau pencocokan kata. Setiap ulasan dikodekan menggunakan model `intfloat/multilingual-e5-small` menjadi vektor 384 dimensi ternormalisasi L2, sehingga kemiripan kosinus setara dengan hasil kali titik. Vektor disimpan pada tabel `review_embeddings` (pgvector) dengan indeks HNSW, dan sebuah *hash* sumber teks serta identitas model disimpan untuk mendeteksi vektor kedaluwarsa. Pengodean ulasan dilakukan saat ulasan ditulis atau melalui proses *backfill*, sedangkan pengodean kueri dilakukan pada saat permintaan.
 
-**Tabel 4.5 Masukan dan keluaran representasi vektor**
+**Tabel 4.14 Masukan dan keluaran representasi vektor**
 
 | Aspek | Bentuk data awal (masukan) *(ilustrasi)* | Bentuk keluaran |
 |-------|------------------------------------------|-----------------|
@@ -87,7 +291,7 @@ Pencocokan semantik membutuhkan representasi numerik yang mampu menangkap parafr
 
 Antarmuka pengguna menyediakan dua jalur masukan yang saling meniadakan: pilihan *pill* dan kotak teks bebas. Pembatasan ini ditegakkan pada antarmuka dan diverifikasi ulang pada sisi peladen sehingga satu permintaan tidak pernah memuat keduanya. Teks bebas dinormalisasi dengan membuang karakter selain alfanumerik, spasi, dan koma, lalu dipotong hingga 100 karakter. Pill dikelompokkan menjadi pill aktivitas (misalnya Kerja/WFC, Belajar) dan pill atribut fasilitas (misalnya Wifi kencang, Musholla).
 
-**Tabel 4.6 Masukan dan keluaran validasi masukan**
+**Tabel 4.15 Masukan dan keluaran validasi masukan**
 
 | Aspek | Bentuk data awal (masukan) *(ilustrasi)* | Bentuk keluaran |
 |-------|------------------------------------------|-----------------|
@@ -99,7 +303,7 @@ Antarmuka pengguna menyediakan dua jalur masukan yang saling meniadakan: pilihan
 
 Setiap pill pada `PILL_MAPPING` memiliki peran field yang berbeda. Kolom `review_keywords` hanya memuat jangkar leksikal yang lemah ditangkap model semantik, seperti slang dan singkatan, sedangkan kolom `dense_query` memuat satu konsep dalam gaya bahasa ulasan tanpa negasi. Label antarmuka tidak dipakai sebagai token pencarian karena menghasilkan token umum yang bertabrakan dengan banyak ulasan. Kolom `negative_scope` tidak pernah dimasukkan ke teks dense. Kueri sparse dibentuk dengan meratakan seluruh `review_keywords` menjadi unigram setelah normalisasi slang, sedangkan kueri dense dibentuk dengan menyambung `dense_query` setiap pill. Apabila terdapat pill aktivitas, daftar BM25 dan teks dense untuk pemeringkatan toko dibatasi pada pill aktivitas, sementara pill atribut dipakai pada tahap pembentukan bukti.
 
-**Tabel 4.7 Masukan dan keluaran pemetaan pill**
+**Tabel 4.16 Masukan dan keluaran pemetaan pill**
 
 | Aspek | Bentuk data awal (masukan) | Bentuk keluaran |
 |-------|----------------------------|-----------------|
@@ -112,7 +316,7 @@ Setiap pill pada `PILL_MAPPING` memiliki peran field yang berbeda. Kolom `review
 
 Pada jalur teks bebas, sebuah model bahasa besar (LLM) mengekstrak niat pencarian menjadi dua keluaran yang masing-masing dipakai oleh cabang sparse dan dense. Daftar `keywords` (1–8 token bersih tanpa kata pengisi) diteruskan ke BM25, sedangkan `dense_query` berupa satu kalimat parafrase diteruskan ke pencarian semantik. Model juga mengklasifikasikan kueri menjadi `standard`, `negative_sentiment`, `false_presupposition`, atau `off_domain`. Kueri di luar domain atau bernada superlatif negatif dihentikan lebih awal (*abstention*) disertai saran reformulasi, sedangkan presuposisi yang tidak realistis dilonggarkan dengan kata kunci alternatif. Apabila LLM tidak tersedia atau gagal, sistem beralih ke tokenisasi deterministik dan klasifikasi heuristik sehingga alur tetap berjalan.
 
-**Tabel 4.8 Masukan dan keluaran ekstraksi intent**
+**Tabel 4.17 Masukan dan keluaran ekstraksi intent**
 
 | Aspek | Bentuk data awal (masukan) *(ilustrasi)* | Bentuk keluaran |
 |-------|------------------------------------------|-----------------|
@@ -129,7 +333,7 @@ Pada jalur teks bebas, sebuah model bahasa besar (LLM) mengekstrak niat pencaria
 
 Cabang sparse menilai kecocokan leksikal antara token kueri dan seluruh ulasan suatu toko. Setiap toko diperlakukan sebagai satu dokumen yang dibentuk dari penggabungan seluruh teks ulasannya yang telah dinormalisasi, kemudian dihitung skor BM25 Okapi terhadap token kueri. Sebagai alternatif, penilaian dapat dialihkan ke *full-text search* PostgreSQL (`ts_rank_cd`) melalui konfigurasi `COFIND_BM25_BACKEND`. Skor mentah tidak dinormalisasi karena yang diteruskan ke tahap fusi hanyalah urutan peringkat dengan lebar kolam 50 toko.
 
-**Tabel 4.9 Masukan dan keluaran pencarian sparse**
+**Tabel 4.18 Masukan dan keluaran pencarian sparse**
 
 | Aspek | Bentuk data awal (masukan) *(ilustrasi)* | Bentuk keluaran |
 |-------|------------------------------------------|-----------------|
@@ -141,7 +345,7 @@ Cabang sparse menilai kecocokan leksikal antara token kueri dan seluruh ulasan s
 
 Cabang dense menilai kedekatan makna antara teks kueri dan ulasan. Kueri dikodekan satu kali menggunakan model E5 dengan awalan `query:` otomatis, lalu pencarian *Approximate Nearest Neighbor* (ANN) pada pgvector mengambil 300 ulasan terdekat yang dibatasi pada himpunan `place_id` dari Fase 1. Skor sebuah toko ditetapkan sebagai kemiripan tertinggi di antara ulasannya (*max-pooling*). Apabila ANN gagal atau tidak mengembalikan baris, sistem beralih ke jalur cadangan yang mengodekan paling banyak 20 ulasan per toko, dengan prioritas pada ulasan yang memuat bukti aktivitas dan tumpang tindih token.
 
-**Tabel 4.10 Masukan dan keluaran pencarian dense**
+**Tabel 4.19 Masukan dan keluaran pencarian dense**
 
 | Aspek | Bentuk data awal (masukan) *(ilustrasi)* | Bentuk keluaran |
 |-------|------------------------------------------|-----------------|
@@ -153,7 +357,7 @@ Cabang dense menilai kedekatan makna antara teks kueri dan ulasan. Kueri dikodek
 
 Dua daftar peringkat digabung menggunakan *Reciprocal Rank Fusion* (RRF) dengan konstanta *k* = 60, yaitu \( \mathrm{RRF}(d)=\sum_{r}\frac{1}{k+\mathrm{rank}_r(d)} \). Pada jalur pill beraktivitas, terdapat daftar peringkat ketiga yang dibentuk dari skor aktivitas leksikal tertinggi per toko tanpa embedding. Skor RRF dinormalisasi terhadap nilai maksimum, kemudian dipadukan dengan skor kualitas toko dengan bobot 0,9 untuk relevansi dan 0,1 untuk kualitas: \( s = 0{,}9\,\mathrm{RRF}_{norm}+0{,}1\,q \). Penormalisasian diperlukan karena nilai RRF mentah berada pada kisaran 0,016–0,033 sehingga tanpa normalisasi komponen kualitas akan mendominasi.
 
-**Tabel 4.11 Masukan dan keluaran fusi peringkat**
+**Tabel 4.20 Masukan dan keluaran fusi peringkat**
 
 | Toko | Peringkat BM25 | Peringkat dense | Peringkat leksikal aktivitas | RRF mentah | RRF norm | Kualitas *q* | Skor akhir *s* |
 |------|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
@@ -167,7 +371,7 @@ Keluaran tahap ini berupa daftar terurut menurut skor akhir: B, A, C. Perhatikan
 
 Pada jalur pill yang memuat pill aktivitas, setiap kandidat diverifikasi memiliki bukti leksikal aktivitas pada setidaknya satu ulasan melalui pencocokan frasa khas, kata utuh, dan akronim berkonteks. Klausa yang berisi penolakan, misalnya "kurang cocok" atau "tidak disarankan", tidak dihitung sebagai bukti sehingga penolakan untuk satu aktivitas tidak menenggelamkan bukti aktivitas lain. Kemiripan semantik di atas ambang 0,55 hanya dicatat sebagai telemetri dan tidak mengizinkan toko lolos. Kandidat yang lolos diurutkan dan dipotong menjadi tujuh teratas untuk diteruskan ke tahap berikutnya.
 
-**Tabel 4.12 Masukan dan keluaran gerbang aktivitas**
+**Tabel 4.21 Masukan dan keluaran gerbang aktivitas**
 
 | Aspek | Bentuk data awal (masukan) *(ilustrasi)* | Bentuk keluaran |
 |-------|------------------------------------------|-----------------|
@@ -183,7 +387,7 @@ Pada jalur pill yang memuat pill aktivitas, setiap kandidat diverifikasi memilik
 
 Setelah kandidat toko ditetapkan, sistem memilih ulasan yang paling relevan sebagai bukti. Pada tahap ini hingga 60 ulasan per toko dinilai dengan skor gabungan yang menimbang kemiripan dense terhadap teks aktivitas, kecocokan leksikal aktivitas, kemiripan dense terhadap kueri penuh, dan kecocokan leksikal atribut, dengan bobot masing-masing 0,45, 0,30, 0,15, dan 0,10. Ulasan yang secara eksplisit memuat bukti aktivitas memperoleh bonus tambahan 0,45 dan dijamin berada di depan, sehingga kutipan yang membahas aktivitas tidak tergeser oleh kutipan fasilitas umum. Delapan ulasan teratas dipertahankan.
 
-**Tabel 4.13 Masukan dan keluaran pemeringkatan ulasan**
+**Tabel 4.22 Masukan dan keluaran pemeringkatan ulasan**
 
 | Aspek | Bentuk data awal (masukan) *(ilustrasi)* | Bentuk keluaran |
 |-------|------------------------------------------|-----------------|
@@ -195,7 +399,7 @@ Setelah kandidat toko ditetapkan, sistem memilih ulasan yang paling relevan seba
 
 Kutipan yang diperoleh perlu dibedakan antara yang mendukung preferensi (*supporting*) dan yang memuat keberatan (*caveat*). Sistem menerapkan model `damasukma/indobert-absa` untuk menilai pasangan aspek dan klausa, kemudian skor keyakinan dikelompokkan oleh triase berambang ganda (τ_low = 0,35 dan τ_high = 0,72) menjadi *accept*, *reject*, atau *needs_llm*. Pasangan pada pita ambigu diserahkan ke LLM bila tersedia. Keluaran tahap ini hanya memberi label pada kutipan dan tidak mengubah urutan toko hasil Fase 2.
 
-**Tabel 4.14 Masukan dan keluaran analisis sentimen klausa**
+**Tabel 4.23 Masukan dan keluaran analisis sentimen klausa**
 
 | Aspek | Bentuk data awal (masukan) *(ilustrasi)* | Bentuk keluaran |
 |-------|------------------------------------------|-----------------|
@@ -209,7 +413,7 @@ Kutipan yang diperoleh perlu dibedakan antara yang mendukung preferensi (*suppor
 
 Pemeringkatan ulang menggunakan model `jinaai/jina-reranker-v2-base-multilingual` yang memproses pasangan kueri dan kutipan secara bersama (*joint encoding*) sehingga mampu menangkap interaksi antartoken yang tidak tertangkap oleh model *bi-encoder*. Kueri dibentuk dari teks dense aktivitas, label pill aktivitas, dan baris kata kunci. Setiap kandidat diwakili paling banyak enam kutipan terbaik, lalu skor mentah dinormalisasi *min–max* menjadi skor kecocokan (*fit*) 0–10 dari kutipan terbaik. Kutipan terbaik wajib memuat bukti aktivitas; bila tidak, sistem memilih kutipan peringkat berikutnya yang memenuhi syarat. Skor akhir dihitung sebagai \( s_{final}=w\cdot\frac{fit}{10}+(1-w)\cdot s_{hybrid} \) dengan \( w=0{,}6 \), sehingga kandidat dapat berpindah peringkat terhadap urutan hibrida.
 
-**Tabel 4.15 Masukan dan keluaran *rerank***
+**Tabel 4.24 Masukan dan keluaran *rerank***
 
 | Toko | Skor hibrida | Kutipan terbaik (masukan) *(ilustrasi)* | *Fit* (0–10) | Skor akhir | Peringkat hibrida → akhir |
 |------|:--:|--------------------------------|:--:|:--:|:--:|
@@ -225,7 +429,7 @@ Keluaran tahap ini adalah urutan akhir dan paling banyak tiga toko yang memenuhi
 
 Pada tahap akhir, LLM menghasilkan ringkasan alasan rekomendasi untuk setiap toko terpilih. Model hanya diberi kutipan ulasan yang telah diverifikasi dan diwajibkan hanya mengutip kalimat yang benar-benar ada pada ulasan. Pemeriksaan *grounding* membandingkan setiap kutipan keluaran terhadap korpus ulasan toko; kutipan yang tidak ditemukan dibuang dan dihitung pada telemetri. Bila LLM tidak tersedia, ringkasan deterministik berbasis templat digunakan sebagai cadangan sehingga sistem tidak gagal total.
 
-**Tabel 4.16 Masukan dan keluaran pembangkitan ringkasan**
+**Tabel 4.25 Masukan dan keluaran pembangkitan ringkasan**
 
 | Aspek | Bentuk data awal (masukan) *(ilustrasi)* | Bentuk keluaran |
 |-------|------------------------------------------|-----------------|
@@ -238,7 +442,7 @@ Pada tahap akhir, LLM menghasilkan ringkasan alasan rekomendasi untuk setiap tok
 
 Hasil pipeline disajikan melalui *endpoint* `/api/recommend-by-preferences` dan varian *streaming* yang mengirim kemajuan tiap tahap (*intent*, profil, penilaian, *rerank*) sehingga antarmuka dapat menampilkan indikator proses. Respons mengikuti amplop seragam yang memuat status, pesan, daftar rekomendasi, dan telemetri. Pengguna dapat memberi umpan balik *helpful* atau *not_helpful* yang disimpan untuk analisis dan tidak memengaruhi penyaringan kandidat.
 
-**Tabel 4.17 Masukan dan keluaran antarmuka**
+**Tabel 4.26 Masukan dan keluaran antarmuka**
 
 | Aspek | Bentuk data awal (masukan) *(ilustrasi)* | Bentuk keluaran |
 |-------|------------------------------------------|-----------------|
@@ -252,7 +456,7 @@ Hasil pipeline disajikan melalui *endpoint* `/api/recommend-by-preferences` dan 
 
 Evaluasi dilakukan untuk mengukur kualitas peringkat secara kuantitatif. Kueri uji diambil dari kutipan calon pengguna (jalur pill dan teks bebas) dan setiap pasangan kueri–toko dinilai relevansinya secara manual pada skala 0–3. Kualitas peringkat diukur dengan nDCG@k, Recall@k, dan MRR@k, sedangkan stabilitas hasil Fase 2 dipantau melalui *golden snapshot* tanpa *cross-encoder* dan ABSA. Hasil kuantitatif pada tabel berikut mesti diisi dari keluaran skrip evaluasi.
 
-**Tabel 4.18 Masukan dan keluaran evaluasi**
+**Tabel 4.27 Masukan dan keluaran evaluasi**
 
 | Aspek | Bentuk data awal (masukan) | Bentuk keluaran |
 |-------|----------------------------|-----------------|
@@ -260,7 +464,7 @@ Evaluasi dilakukan untuk mengukur kualitas peringkat secara kuantitatif. Kueri u
 | Penilaian | `relevance_judgments.json`: nilai relevansi 0–3 per (kueri, toko) | Matriks relevansi acuan |
 | Eksekusi | `python scripts/eval/relevance_metrics.py --judgments data/eval/relevance_judgments.json --run-retrieval` | Tabel metrik per jalur |
 
-**Tabel 4.19 Hasil metrik peringkat** *(isi dari hasil eksekusi)*
+**Tabel 4.28 Hasil metrik peringkat** *(isi dari hasil eksekusi)*
 
 | Konfigurasi | Jalur | nDCG@3 | nDCG@7 | Recall@7 | MRR@7 |
 |-------------|-------|:--:|:--:|:--:|:--:|

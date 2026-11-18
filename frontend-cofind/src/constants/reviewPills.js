@@ -38,8 +38,8 @@ export const CONTEXT_PILL_OPTIONS = [
 ];
 
 /**
- * Preferensi lapis 2: atribut fasilitas yang dipilih setelah konteks aktivitas.
- * Nilai `value` dipakai sebagai kunci preferensi tambahan (bukan teks bebas).
+ * Atribut fasilitas (tab Fasilitas). Bisa dipilih sendiri atau bersama aktivitas.
+ * Nilai `value` = kunci preferensi di API (sama pentingnya dengan pill aktivitas).
  */
 export const FACILITY_ATTRIBUTE_GROUPS = [
   {

@@ -57,7 +57,6 @@ from slang_normalize import normalize_text_with_slang, tokenize_normalized
 from hybrid_retrieval import (
     retrieve_top_k,
     retrieve_top_k_by_text,
-    retrieve_top_k_by_negative_sentiment,
     retrieval_top_k,
     rank_reviews_for_query,
     build_sparse_query_tokens,
@@ -77,7 +76,6 @@ from free_text_intent import (
 )
 from free_text_query_handling import (
     QUERY_CLASS_FALSE_PRESUP,
-    QUERY_CLASS_NEGATIVE,
     apply_false_presupposition_retrieval,
     merge_query_classification,
 )
@@ -116,7 +114,6 @@ from llm_clause_sentiment import (
     quote_key as clause_quote_key,
     sentiment_config as clause_sentiment_config,
 )
-from pros_cons_utils import get_top_voted_pros_batch
 from db_backend import dict_from_row, get_connection
 from api import register_blueprints
 from auth_guards import require_authenticated_user

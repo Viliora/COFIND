@@ -10,7 +10,7 @@
     "COFIND_CE_RERANK_WEIGHT": null,
     "COFIND_BM25_BACKEND": null
   },
-  "golden_query_count": 18,
+  "golden_query_count": 33,
   "queries": [
     {
       "id": "gq-pill-kerja-wfc-01",
@@ -290,6 +290,236 @@
       "expect_activity_gate": "n/a",
       "tags": [
         "umum",
+        "free_text"
+      ]
+    },
+    {
+      "id": "gq-pill-kerja-musholla-colokan-19",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "kerja",
+          "musholla",
+          "banyak_colokan_terminal"
+        ]
+      },
+      "expect_activity_gate": true,
+      "tags": [
+        "wfc",
+        "multi",
+        "religi"
+      ]
+    },
+    {
+      "id": "gq-pill-belajar-wifi-20",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "belajar",
+          "wifi_kencang"
+        ]
+      },
+      "expect_activity_gate": true,
+      "tags": [
+        "belajar",
+        "wifi"
+      ]
+    },
+    {
+      "id": "gq-pill-nongkrong-21",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "nongkrong_hangout"
+        ]
+      },
+      "expect_activity_gate": true,
+      "tags": [
+        "hangout"
+      ]
+    },
+    {
+      "id": "gq-pill-dessert-22",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "dessert"
+        ]
+      },
+      "expect_activity_gate": false,
+      "tags": [
+        "dessert",
+        "menu"
+      ]
+    },
+    {
+      "id": "gq-pill-toilet-23",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "toilet_bersih"
+        ]
+      },
+      "expect_activity_gate": false,
+      "tags": [
+        "fasilitas"
+      ]
+    },
+    {
+      "id": "gq-pill-smoking-24",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "smoking_area"
+        ]
+      },
+      "expect_activity_gate": false,
+      "tags": [
+        "smoking"
+      ]
+    },
+    {
+      "id": "gq-pill-outdoor-25",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "area_outdoor"
+        ]
+      },
+      "expect_activity_gate": false,
+      "tags": [
+        "outdoor"
+      ]
+    },
+    {
+      "id": "gq-pill-kerja-privat-26",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "kerja",
+          "ruang_privat"
+        ]
+      },
+      "expect_activity_gate": true,
+      "tags": [
+        "wfc",
+        "meeting"
+      ]
+    },
+    {
+      "id": "gq-pill-menu-27",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "makanan_berat"
+        ]
+      },
+      "expect_activity_gate": false,
+      "tags": [
+        "menu"
+      ]
+    },
+    {
+      "id": "gq-pill-tenang-28",
+      "route": "pill",
+      "input": {
+        "pills": [
+          "belajar",
+          "suasana_tenang"
+        ]
+      },
+      "expect_activity_gate": true,
+      "tags": [
+        "belajar",
+        "tenang"
+      ]
+    },
+    {
+      "id": "gq-ft-musholla-wfc-29",
+      "route": "free_text",
+      "input": {
+        "query_text": "coffee shop musholla terminal banyak wfc",
+        "keywords_mock": [
+          "musholla",
+          "terminal banyak",
+          "wfc"
+        ],
+        "dense_query_mock": "kafe ramah wfc dengan musholla dan banyak colokan listrik"
+      },
+      "expect_activity_gate": "n/a",
+      "tags": [
+        "wfc",
+        "free_text",
+        "religi"
+      ]
+    },
+    {
+      "id": "gq-ft-parkir-30",
+      "route": "free_text",
+      "input": {
+        "query_text": "parkir luas buat mobil",
+        "keywords_mock": [
+          "parkir",
+          "luas",
+          "mobil"
+        ],
+        "dense_query_mock": "coffee shop parkir luas nyaman mobil"
+      },
+      "expect_activity_gate": "n/a",
+      "tags": [
+        "parkir",
+        "free_text"
+      ]
+    },
+    {
+      "id": "gq-ft-estetik-31",
+      "route": "free_text",
+      "input": {
+        "query_text": "cafe estetik buat foto",
+        "keywords_mock": [
+          "estetik",
+          "foto"
+        ],
+        "dense_query_mock": "coffee shop estetik instagrammable buat foto"
+      },
+      "expect_activity_gate": "n/a",
+      "tags": [
+        "aesthetic",
+        "free_text"
+      ]
+    },
+    {
+      "id": "gq-ft-meeting-32",
+      "route": "free_text",
+      "input": {
+        "query_text": "tempat rapat tim kecil",
+        "keywords_mock": [
+          "rapat",
+          "tim"
+        ],
+        "dense_query_mock": "coffee shop cocok rapat tim kecil meeting"
+      },
+      "expect_activity_gate": "n/a",
+      "tags": [
+        "meeting",
+        "free_text"
+      ]
+    },
+    {
+      "id": "gq-ft-colokan-33",
+      "route": "free_text",
+      "input": {
+        "query_text": "colokan banyak ngecas laptop",
+        "keywords_mock": [
+          "colokan",
+          "ngecas",
+          "laptop"
+        ],
+        "dense_query_mock": "banyak colokan stop kontak ngecas laptop coffee shop"
+      },
+      "expect_activity_gate": "n/a",
+      "tags": [
+        "colokan",
         "free_text"
       ]
     }

@@ -32,7 +32,6 @@ class RecommendationEvidenceTests(unittest.TestCase):
             ],
             'review_count': 2,
             'avg_user_rating': 5.0,
-            'avg_category_ratings': {},
             'facilities_tab': {},
         }
         ev = _build_retrieval_evidence(

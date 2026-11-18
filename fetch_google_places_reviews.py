@@ -52,6 +52,7 @@ load_dotenv()
 def fetch_coffee_shops_from_db(
     place_id: str | None = None,
     limit: int | None = None,
+    shop_ids: list[int] | None = None,
 ) -> list[dict[str, Any]]:
     from db_backend import dict_from_row, get_connection
 
@@ -61,14 +62,23 @@ def fetch_coffee_shops_from_db(
         ORDER BY name ASC
     """
     params: list[Any] = []
-    if place_id:
+    if shop_ids:
+        placeholders = ",".join("?" * len(shop_ids))
+        sql = f"""
+            SELECT place_id, name, address, rating, total_reviews
+            FROM coffee_shops
+            WHERE id IN ({placeholders})
+            ORDER BY id ASC
+        """
+        params.extend(int(i) for i in shop_ids)
+    elif place_id:
         sql = """
             SELECT place_id, name, address, rating, total_reviews
             FROM coffee_shops
             WHERE place_id = ?
         """
         params.append(place_id)
-    if limit is not None and not place_id:
+    if limit is not None and not place_id and not shop_ids:
         sql += " LIMIT ?"
         params.append(int(limit))
     elif limit is not None and place_id:
@@ -181,6 +191,10 @@ def main() -> int:
         description="Fetch Google Places reviews for coffee shops in DB (by name search)."
     )
     parser.add_argument("--place-id", help="Hanya satu coffee_shops.place_id")
+    parser.add_argument(
+        "--shop-ids",
+        help="Daftar coffee_shops.id dipisah koma (mis. 1,2,3)",
+    )
     parser.add_argument("--limit", type=int, help="Batas jumlah toko (urut nama)")
     parser.add_argument(
         "-o",
@@ -207,10 +221,22 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    parsed_shop_ids: list[int] | None = None
+    if args.shop_ids:
+        parsed_shop_ids = [
+            int(part.strip())
+            for part in str(args.shop_ids).split(",")
+            if part.strip()
+        ]
+        if not parsed_shop_ids:
+            print("--shop-ids kosong atau tidak valid", file=sys.stderr)
+            return 1
+
     try:
         shops = fetch_coffee_shops_from_db(
             place_id=args.place_id,
             limit=args.limit,
+            shop_ids=parsed_shop_ids,
         )
     except Exception as exc:
         print(f"Gagal baca database: {exc}", file=sys.stderr)

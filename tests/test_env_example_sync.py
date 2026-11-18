@@ -10,8 +10,6 @@ ENV_EXAMPLE = ROOT / ".env.example"
 
 # Env dokumentasi saja / legacy coverage — tidak wajib ada pembaca *.py
 ALLOW_UNREFERENCED = frozenset({
-    "COFIND_COVERAGE_BONUS",
-    "COFIND_ACTIVITY_COVERAGE_SHARE",
     "COFIND_COVERAGE_SEMANTIC_MIN",
 })
 

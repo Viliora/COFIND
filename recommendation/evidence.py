@@ -704,3 +704,21 @@ def _quote_texts_for_coverage(shop):
         if isinstance(review, dict):
             _add(review.get('text') or review.get('review_text') or review.get('body'))
     return texts
+
+
+def collect_supporting_quotes(
+    evidence: dict,
+    pills,
+    *,
+    search_keywords=None,
+    limit: int = 3,
+):
+    """
+    Satu entry point kutipan pendukung modal/UI (gabungan keyword + semantic filter).
+    """
+    return _collect_modal_display_quotes(
+        evidence or {},
+        pills,
+        search_keywords=search_keywords,
+        limit=limit,
+    )

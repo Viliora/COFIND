@@ -84,6 +84,7 @@ def _empty_result(raw: str, *, backend: str, error: Optional[str] = None) -> Dic
         'matched_pill': None,
         'matched_attribute_pills': [],
         'keywords': _fallback_keywords(raw),
+        'keyword_expansions': [],
         'dense_query': raw,
         'telemetry': telemetry,
     }
@@ -96,7 +97,7 @@ def extract_search_intent(
     pill_mapping: Dict[str, dict],
     chat_fn: Callable[..., str],
     parse_json_fn: Optional[Callable] = None,
-    max_tokens: int = 220,
+    max_tokens: int = 300,
     temperature: float = 0.0,
 ) -> Dict[str, object]:
     """
@@ -105,6 +106,7 @@ def extract_search_intent(
         'matched_pill': str|None,            # hint opsional (telemetri), tidak mengubah routing
         'matched_attribute_pills': [str],    # hint opsional fasilitas
         'keywords': [str],                   # untuk BM25 (RRF list sparse)
+        'keyword_expansions': [str],         # sinonim/slang, BM25 bobot rendah (query_expansion.py)
         'dense_query': str,                  # untuk embedding/ANN (RRF list dense)
         'telemetry': {...},
       }
@@ -136,13 +138,17 @@ def extract_search_intent(
         f'{pill_catalog}\n\n'
         'Balas HANYA JSON (tanpa markdown) dengan struktur:\n'
         '{"matched_pill": null, "matched_attribute_pills": [], '
-        '"keywords": ["..."], "dense_query": "...", '
+        '"keywords": ["..."], "keyword_expansions": ["..."], "dense_query": "...", '
         '"query_class": "standard", "impossible_detail": null, '
         '"alternative_keywords": []}\n\n'
         'Aturan ketat:\n'
         '- keywords (WAJIB): 1-8 token/frasa pencarian bersih dari niat user; buang kata filler '
         '("cari", "coffee shop", "tempat", "untuk"). Pertahankan istilah fasilitas/aktivitas user '
         '(mis. wfc, musholla, colokan, wifi).\n'
+        '- keyword_expansions: 0-8 sinonim, slang, singkatan, atau ejaan informal yang biasa '
+        'ditulis di ulasan Google untuk keywords yang SAMA maknanya (mis. colokan -> stopkontak, '
+        'charger; wfc -> wfa, kerja remote). Jangan ulangi keywords, jangan kata umum '
+        '(tempat, kafe, enak, bagus), jangan memperluas ke konsep lain.\n'
         '- dense_query (WAJIB): satu kalimat pendek Bahasa Indonesia untuk semantic search '
         '(parafrase niat user, bukan salin mentah jika terlalu panjang).\n'
         '- matched_pill / matched_attribute_pills: opsional; isi null/[] kecuali user jelas '
@@ -195,6 +201,11 @@ def extract_search_intent(
         if not keywords:
             keywords = _fallback_keywords(raw)
 
+        keyword_expansions = [
+            str(k).strip() for k in (parsed.get('keyword_expansions') or [])
+            if str(k or '').strip()
+        ]
+
         dense_query = str(parsed.get('dense_query') or '').strip() or raw
         query_class = str(parsed.get('query_class') or 'standard').strip().lower() or 'standard'
         impossible_detail = parsed.get('impossible_detail')
@@ -208,6 +219,7 @@ def extract_search_intent(
             'matched_pill': matched_pill,
             'matched_attribute_pills': matched_attrs,
             'keywords': keywords,
+            'keyword_expansions': keyword_expansions,
             'dense_query': dense_query,
             'query_class': query_class,
             'impossible_detail': impossible_detail,

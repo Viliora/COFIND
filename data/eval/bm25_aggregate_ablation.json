@@ -1,0 +1,24 @@
+{
+  "variants": {
+    "max": {
+      "queries": 18,
+      "macro_recall@7": 0.312,
+      "macro_ndcg@7": 0.8176,
+      "macro_recall@30": 0.7788,
+      "macro_ndcg@30": 0.8843,
+      "gate_fnr_relevant": 0.0318,
+      "gate_rejected_relevant": 5,
+      "gate_relevant_total": 157
+    },
+    "sum_top": {
+      "queries": 18,
+      "macro_recall@7": 0.3444,
+      "macro_ndcg@7": 0.8688,
+      "macro_recall@30": 0.7904,
+      "macro_ndcg@30": 0.9086,
+      "gate_fnr_relevant": 0.0318,
+      "gate_rejected_relevant": 5,
+      "gate_relevant_total": 157
+    }
+  }
+}

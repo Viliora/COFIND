@@ -1,0 +1,262 @@
+{
+  "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+  "tuple_summary": {
+    "type": "(profiles: list[dict], shops_without_reviews: list[str])",
+    "profiles_len": 1,
+    "shops_without_reviews": []
+  },
+  "return_build_profiles_for_recommendation": {
+    "profiles": [
+      {
+        "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+        "name": "Haruna Cafe",
+        "reviews": [
+          {
+            "id": 579,
+            "user_id": null,
+            "shop_id": 4,
+            "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+            "rating": 5.0,
+            "text": "First time kesini sama temen, makanannya enak, tempatnya bersih, enak untuk kerja dan pelananannya oke\nAbang yang tatoan murah senyum menjelaskan dengan detail menunya",
+            "created_at": "2026-09-03 07:44:09+00:00",
+            "updated_at": "2026-09-03 07:44:09+00:00",
+            "review_source": "google_places",
+            "author_display_name": "Bee",
+            "relative_time": "sebulan yang lalu",
+            "username": "Bee",
+            "full_name": "Bee",
+            "profiles": {
+              "full_name": "Bee",
+              "username": "Bee",
+              "avatar_url": null
+            },
+            "rating_vote_key": "love",
+            "user_total_reviews": 0,
+            "like_count": 0,
+            "user_has_liked": false
+          },
+          {
+            "id": 577,
+            "user_id": null,
+            "shop_id": 4,
+            "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+            "rating": 4.0,
+            "text": "Areanya enak sih, lebih sepi dibanding Haruna cabang lainnya, tapi jadi nyaman untuk WFC atau kalau mau tenang..\nUntuk makanannya bervariatif dan bisa buat anak anak.\nDessertnya juga ada buat nyemil nyemil setelah makan.",
+            "created_at": "2026-07-09 13:22:55+00:00",
+            "updated_at": "2026-07-09 13:22:55+00:00",
+            "review_source": "google_places",
+            "author_display_name": "Windi Arum Mukti",
+            "relative_time": "3 bulan lalu",
+            "username": "Windi Arum Mukti",
+            "full_name": "Windi Arum Mukti",
+            "profiles": {
+              "full_name": "Windi Arum Mukti",
+              "username": "Windi Arum Mukti",
+              "avatar_url": null
+            },
+            "rating_vote_key": "like",
+            "user_total_reviews": 0,
+            "like_count": 0,
+            "user_has_liked": false
+          },
+          {
+            "id": 578,
+            "user_id": null,
+            "shop_id": 4,
+            "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+            "rating": 5.0,
+            "text": "Ini sempat saya bicarakan dengan Karina teman baik saya beberapa waktu lalu ketika ke Haruna. Tentang bagaimana coffee shop favourite saya ini banyak sekali berbenah ke arah yang lebih baik dan menyenangkan.\n--\nIni di luar dari bagaimana barista dan staf mereka bersikap terhadap pelanggan. Baik yang baru pertama kali datang maupun yang memang sering alias seperti tidak ada coffee shop lainnya saja di Pontianak tercinta ini. Tapi ada satu hal yang saya notice dan membuat saya bahagia di sini; bagaimana mereka memperlakukan driver ojol yang datang untuk memesan makanan dari pelanggan mereka yang ada di rumah. Mereka menyambut para driver dengan hangat dan ramah.\n--\nKembali ke pembahasan perbincangan saya dengan Karina, itu adalah tentang bagaimana Haruna berupaya sekali mengurangi limbah sekali pakai mereka. Jika ada yang sering memesan Tahu Cabe Garam, akan melihat perubahan itu. Mereka mengganti toothpick sekali pakai mereka dengan garpu sekarang. Atau bagi yang suka memesan Mie Nyemek, mereka juga mengganti alat makan dengan mangkuk kaca sekarang. Atau yang pernah memesan Chicken Karage Bowl atau french fries yang memerlukan saos sebagai pelengkap, Haruna sudah menggunakan wadah aluminium untuk saosnya, tak lagi plastik.\n--\nSaya tidak mau sok-sok peduli lingkungan, masih membiasakan diri juga, tapi rasanya kita mesti ikut bertanggung jawab dengan apa-apa yang kita gunakan hari ini yang efeknya bisa jadi baru akan dirasakan nanti.\n--\nKalau kata Karina, dia harus menghitung berapa plastik yang ia gunakan. Bahkan anak ini, membawa botol plastik dari air mineral yang ia beli dari Haruna. Ia akan mengolah limbahnya sendiri di rumah.\n--\nSementara saya, masih setia dengan tumbler yang kebetulan dari Haruna juga. Selain lebih praktis juga lebih hemat, minimal saya hemat satu botol mineral yang kalau dikonversi bisa untuk beli 2-3 botol mineral 1.500 ML di toko langganan. Meskipun pada akhirnya, karena agak lama di Haruna nya, saya tetap akan membeli mineral juga di sana. Tapi yaa minimal tetap saja saya menghemat penggunaan satu botol mineral kan yaa. Demikianlah kira-kira. Sehat selamat bahagia selalu untuk kita semua. 🍀✨",
+            "created_at": "2026-05-05 07:32:40+00:00",
+            "updated_at": "2026-05-05 07:32:40+00:00",
+            "review_source": "google_places",
+            "author_display_name": "Hera Yulita",
+            "relative_time": "5 bulan lalu",
+            "username": "Hera Yulita",
+            "full_name": "Hera Yulita",
+            "profiles": {
+              "full_name": "Hera Yulita",
+              "username": "Hera Yulita",
+              "avatar_url": null
+            },
+            "rating_vote_key": "love",
+            "user_total_reviews": 0,
+            "like_count": 0,
+            "user_has_liked": false
+          },
+          {
+            "id": 580,
+            "user_id": null,
+            "shop_id": 4,
+            "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+            "rating": 5.0,
+            "text": "Suasana yang sudahh baruuuu dan luasss. Emg jadi andalan klo lagi malam minggu dekat sm rumah , makaanan dan minumannyaaa enak2. Emang andalan kopi harunaa sihhh THE BEST 💙💙💙💙💙 klo kesana jgn kupa carbonara creamy dan nasgor kampungnyaaaa dicoba gaess 🤏🏻🤏🏻🤏🏻🤏🏻",
+            "created_at": "2026-01-28 04:56:53+00:00",
+            "updated_at": "2026-01-28 04:56:53+00:00",
+            "review_source": "google_places",
+            "author_display_name": "UulUul Aulia",
+            "relative_time": "9 bulan lalu",
+            "username": "UulUul Aulia",
+            "full_name": "UulUul Aulia",
+            "profiles": {
+              "full_name": "UulUul Aulia",
+              "username": "UulUul Aulia",
+              "avatar_url": null
+            },
+            "rating_vote_key": "love",
+            "user_total_reviews": 0,
+            "like_count": 0,
+            "user_has_liked": false
+          },
+          {
+            "id": 581,
+            "user_id": null,
+            "shop_id": 4,
+            "place_id": "ChIJhx6zl0BZHS4RGNla_oPoIJ0",
+            "rating": 5.0,
+            "text": "Tempatnya cantik bangeeet, suasananya enak buat wfc, interior, minuman, makanan, ac, wifi colokan smua oke. Paling bbrp seat g ada colokan. Mau indoor outdoor smua cantik2. Rsanya ga banyak yg tau, tryta hidden gem. Jd ini deh rinciannyaa\n\n(+)\n+ makanan minuman smua harga wajar, affordable, porsi dan rasa pas pula\n+ paket chill hour ny murah affordable parah, 26k uda bs dpt seporsi makanan dan mnuman, pedes ny nagih banget lg, cm lychee teany lmyn manis, sayang lupa request less sugar\n+ pas siang ga trlalu rame, dan enak krja krn ga ribut, musik ny enak buat krja juga.\n+ suasanya ny ccok buat krja n nongki smua oke, ak ud dtg dua kalic, satu buat wfc, satu lg nongki skligus krj sm tmen\n+ ada banyak spot foto/ desain tpt ddukny indoor outdoor ad khasnya sendiri gtu\n+ ada photobox dong gaisssss 🥹😍. Buat couple enak buat ngedate nih wkwkwk\n+ friesnya pake truffle dong bumbunya, harga affordable tp rasanya berkelas banget 🥹🫶🏻\n+ nambah lagi, pas ak dtg ntah ke tiga kalinya, nasi goreng kampungny enakk, kyk manis gurih asin pas dan worth it banget satu piring banyak lauk n mkanan, enak dan puass.\n\n(-)\n- staff ny kdg ribut\n- uda dua kali dtg kunci pintu wc cwe msh blom d benerin. Kan org jd numpang bilik wc cwo gmn dong, lbh bersih yg wc cwe tp kunci ny rusak :')\n- parkir motor msh bisa, mobil terbatas banget jd kdg parkir d sblhny/ sedekatny n sebisanya\n- lumayan jauh dr tengah kota. Buat ak yg tinggal daerah pontianak selatan, ini ke sini ud kyk ujung ke ujung, aplg yg tinggal dr cabang ayani kyk purnama serdam dkk\n- wc ny d luar/ beda gedung jd kl hujan/ gerimis antisipasi bw/ ponjam payung\n-yg outdoor siap2 kucing jalanan suka lewat :v\n\nDuh pengen balik lagi n ajak tmen dtg saking cantik tpt nya n enak krjaaa ya Allah ngapa ga buka sblh rmh ku aja siii 😭🤣",
+            "created_at": "2025-03-27 18:50:17+00:00",
+            "updated_at": "2025-03-27 18:50:17+00:00",
+            "review_source": "google_places",
+            "author_display_name": "Minisché Chio",
+            "relative_time": "setahun yang lalu",
+            "username": "Minisché Chio",
+            "full_name": "Minisché Chio",
+            "profiles": {
+              "full_name": "Minisché Chio",
+              "username": "Minisché Chio",
+              "avatar_url": null
+            },
+            "rating_vote_key": "love",
+            "user_total_reviews": 0,
+            "like_count": 0,
+            "user_has_liked": false
+          }
+        ],
+        "review_count": 5,
+        "avg_user_rating": 4.8,
+        "facilities_tab": {
+          "popular_for": [
+            "sarapan",
+            "brunch",
+            "makan siang",
+            "makan malam",
+            "makan sendiri",
+            "wfc / kerja laptop"
+          ],
+          "highlights": [
+            "kopi enak",
+            "dessert enak",
+            "pilihan teh beragam"
+          ],
+          "atmosphere": [
+            "nyaman",
+            "santai",
+            "trendi"
+          ],
+          "text": "Populer untuk: sarapan, brunch, makan siang, makan malam, makan sendiri, wfc / kerja laptop. Keunggulan: kopi enak, dessert enak, pilihan teh beragam. Suasana: nyaman, santai, trendi."
+        },
+        "facilities_tab_text": "Populer untuk: sarapan, brunch, makan siang, makan malam, makan sendiri, wfc / kerja laptop. Keunggulan: kopi enak, dessert enak, pilihan teh beragam. Suasana: nyaman, santai, trendi.",
+        "facilities_raw": {
+          "meta": {
+            "source": "google_places_api_legacy",
+            "last_updated": "2026-10-20"
+          },
+          "crowd": [
+            "berkelompok",
+            "mahasiswa",
+            "turis"
+          ],
+          "parking": {
+            "paid_parking_lot": true,
+            "parking_available": true,
+            "paid_street_parking": true
+          },
+          "children": {
+            "good_for_kids": true
+          },
+          "payments": {
+            "debit_card": true,
+            "credit_card": true,
+            "nfc_mobile_payments": true
+          },
+          "planning": {
+            "accepts_reservations": true
+          },
+          "amenities": {
+            "toilet": true
+          },
+          "offerings": {
+            "coffee": true,
+            "quick_bite": true
+          },
+          "atmosphere": [
+            "nyaman",
+            "santai",
+            "trendi"
+          ],
+          "highlights": {
+            "good_coffee": true,
+            "good_desserts": true,
+            "good_tea_selection": true
+          },
+          "popular_for": {
+            "lunch": true,
+            "brunch": true,
+            "dinner": true,
+            "breakfast": true,
+            "solo_dining": true,
+            "good_for_working_on_laptop": true
+          },
+          "accessibility": {
+            "wheelchair_accessible_parking": false,
+            "wheelchair_accessible_seating": false,
+            "wheelchair_accessible_entrance": false
+          },
+          "dining_options": {
+            "lunch": true,
+            "brunch": true,
+            "dinner": true,
+            "dessert": true,
+            "seating": true,
+            "breakfast": true,
+            "table_service": true
+          },
+          "service_options": {
+            "dine_in": true,
+            "delivery": true,
+            "takeaway": true,
+            "reservable": true,
+            "outdoor_seating": true,
+            "contactless_delivery": true
+          }
+        },
+        "google_rating": 4.7,
+        "google_total_reviews": 652,
+        "opening_hours_display": "Senin: 07.00–23.30\nSelasa: 07.00–23.30\nRabu: 07.00–23.30\nKamis: 07.00–23.30\nJumat: 07.00–23.30\nSabtu: 07.00–23.30\nMinggu: 07.00–23.30",
+        "community_signals": {
+          "vote": {
+            "total_votes": 5,
+            "rating_counts": {
+              "love": 4,
+              "like": 1,
+              "ok": 0,
+              "dislike": 0,
+              "hate": 0
+            },
+            "slider_averages": {
+              "pelayanan": null,
+              "kebersihan": null,
+              "kenyamanan": null,
+              "harga": null
+            }
+          }
+        }
+      }
+    ],
+    "shops_without_reviews": []
+  },
+  "retrieval_fase2_note": {
+    "default": "RRF murni (COFIND_RETRIEVAL_QUALITY_WEIGHT=0)",
+    "quality_blend_weight_env": 0.0
+  }
+}
