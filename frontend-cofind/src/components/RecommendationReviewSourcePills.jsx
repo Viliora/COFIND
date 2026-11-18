@@ -1,12 +1,7 @@
 import React, { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-
-function truncateText(value, max = 140) {
-  const text = String(value ?? '').trim();
-  if (text.length <= max) return text;
-  return `${text.slice(0, max - 1)}…`;
-}
+import { MODAL_QUOTE_MAX_CHARS, formatModalQuote } from '../constants/evidenceQuotes';
 
 function pillKey(item, index) {
   const id = item?.review_id ?? item?.reviewId;
@@ -48,8 +43,11 @@ function EvidenceReviewRow({ item, placeId, onClosePanel, onNavigate }) {
 
   const body = (
     <>
-      <p className="text-sm italic leading-snug text-gray-800 dark:text-gray-100">
-        &ldquo;{truncateText(item.quote, 220)}&rdquo;
+      <p
+        className="text-sm italic leading-snug text-gray-800 dark:text-gray-100"
+        title={String(item.quote ?? '').trim() || undefined}
+      >
+        &ldquo;{formatModalQuote(item.quote, MODAL_QUOTE_MAX_CHARS)}&rdquo;
       </p>
       {metaParts.length > 0 ? (
         <p className="mt-1.5 text-[11px] text-gray-500 dark:text-zinc-400">{metaParts.join(' · ')}</p>

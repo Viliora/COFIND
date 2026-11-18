@@ -112,6 +112,12 @@ from facilities_store import load_facilities_index
 from logging_config import get_logger
 from cache_paths import CACHE_DIR, RERANK_CACHE_EXPIRY_DAYS
 from pill_config import FACILITY_ATTRIBUTE_PILLS, PILL_LABELS, PILL_MAPPING
+from recommendation.quote_snippet import (
+    MODAL_QUOTE_CHAR_LIMIT,
+    apply_snippet_to_quote_row,
+    normalize_evidence_quotes_for_modal,
+    snippet_for_modal_quote,
+)
 
 LOG_RECOMMEND = get_logger("recommend")
 LOG_METRIC = get_logger("metric")
@@ -1110,7 +1116,7 @@ def _pick_sentiment_review_quotes(reviews, pills=None, search_keywords=None, *, 
         rating = _review_rating_value(review)
         matched_terms = [kw for kw in preference_keywords if _matches_keyword_phrase(text, kw)][:6]
         quote = {
-            'quote': _truncate_evidence_text(text, _PROMPT_EVIDENCE_CHAR_LIMIT),
+            'quote': snippet_for_modal_quote(text, preference_keywords=preference_keywords),
             'rating': review.get('rating'),
             'username': review.get('username') or review.get('full_name'),
             'matched_terms': matched_terms,
@@ -1162,7 +1168,7 @@ def _pick_keyword_matched_reviews(reviews, search_keywords, limit=3):
         except (TypeError, ValueError):
             rating_value = 0.0
         row = {
-            'quote': _truncate_evidence_text(text, _PROMPT_EVIDENCE_CHAR_LIMIT),
+            'quote': snippet_for_modal_quote(text, preference_keywords=keywords),
             'rating': (review or {}).get('rating') if isinstance(review, dict) else None,
             'username': (review or {}).get('username') or (review or {}).get('full_name') if isinstance(review, dict) else None,
             'matched_terms': matched_terms[:6],
@@ -1967,11 +1973,16 @@ def _build_summary_output_entry(shop, summary, pills, search_keywords):
     summary = _strip_structured_summary_labels(summary or '')
     if summary and summary[-1] not in '.!?':
         summary += '.'
+    detail = shop.get('score_detail') if isinstance(shop.get('score_detail'), dict) else {}
+    activity_matcher = detail.get('activity_matcher')
+    activity_tokens = detail.get('activity_tokens') or []
     evidence_out = _attach_modal_evidence_to_supporting(
         shop.get('evidence') or _build_empty_supporting_evidence(),
         shop.get('name') or '',
         pills,
         search_keywords=search_keywords,
+        activity_matcher=activity_matcher,
+        activity_tokens=activity_tokens,
     )
     # Shop tanpa kutipan relevan tidak boleh masuk respons.
     if not (evidence_out.get('modal_display_quotes') or []):
@@ -3268,7 +3279,7 @@ def _attribute_quotes_from_reviews(
     attribute_pills,
     *,
     limit_per_pill=2,
-    quote_chars=400,
+    quote_chars=MODAL_QUOTE_CHAR_LIMIT,
 ):
     """Kutipan fasilitas dari seluruh korpus (di luar top-N ranking aktivitas)."""
     attribute_pills = [p for p in (attribute_pills or []) if p in FACILITY_ATTRIBUTE_PILLS]
@@ -3288,7 +3299,7 @@ def _attribute_quotes_from_reviews(
             terms = _matched_terms_for_pill(text, pill)
             if not terms:
                 continue
-            quote = _truncate_evidence_text(text, quote_chars)
+            quote = snippet_for_modal_quote(text, preference_keywords=terms)
             marker = clause_quote_key(quote)
             dedupe = (marker, pill)
             if not marker or dedupe in seen:
@@ -3399,6 +3410,10 @@ def _build_retrieval_evidence(
         attribute_tokens=attribute_tokens or [],
         activity_matcher=activity_matcher,
     )
+    excerpt_pref_kw = []
+    for pill_id in pills or []:
+        excerpt_pref_kw.extend(_expand_pill_to_keywords(pill_id))
+    excerpt_pref_kw = list(dict.fromkeys(excerpt_pref_kw))
     ranked_excerpts = []
     for review in ranked:
         if not isinstance(review, dict):
@@ -3412,10 +3427,16 @@ def _build_retrieval_evidence(
             activity_pills=activity_pills,
             activity_matcher=activity_matcher,
         )
+        pill_terms = _matched_terms_for_pill(text, pill) if pill else []
         ranked_excerpts.append({
             'pill': pill,
             'pill_label': PILL_LABELS.get(pill, pill) if pill else 'Ulasan pengunjung',
-            'quote': _truncate_evidence_text(text, 400),
+            'quote': snippet_for_modal_quote(
+                text,
+                activity_matcher=activity_matcher,
+                activity_tokens=activity_tokens,
+                preference_keywords=excerpt_pref_kw or pill_terms,
+            ),
             'reason': reason,
             'rating': review.get('rating'),
             'username': review.get('username') or review.get('full_name'),

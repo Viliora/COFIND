@@ -602,9 +602,24 @@ Kutipan ulasan paling relevan dengan konteks:
         LOG_RECOMMEND.warning(
             f"Modal quote summary LLM fallback triggered ({name}): {err}")
         return fallback_summary
-def _attach_modal_evidence_to_supporting(evidence, shop_name, pills, search_keywords=None):
+def _attach_modal_evidence_to_supporting(
+    evidence,
+    shop_name,
+    pills,
+    search_keywords=None,
+    activity_matcher=None,
+    activity_tokens=None,
+):
     """Salin evidence dan tambah modal_display_quotes, modal_caveat_quotes, modal_quote_summary."""
-    ev = dict(evidence or {})
+    from recommendation.quote_snippet import normalize_evidence_quotes_for_modal
+
+    ev = normalize_evidence_quotes_for_modal(
+        evidence,
+        pills=pills,
+        search_keywords=search_keywords,
+        activity_matcher=activity_matcher,
+        activity_tokens=activity_tokens,
+    )
     if ev.get('llm_extracted') and (ev.get('modal_display_quotes') or []):
         if COFIND_MODAL_QUOTE_LLM and not ev.get('modal_quote_summary'):
             pill_labels = [PILL_LABELS.get(p, p) for p in (pills or [])]
@@ -642,7 +657,13 @@ def _attach_modal_evidence_to_supporting(evidence, shop_name, pills, search_keyw
         )
     else:
         ev['modal_quote_summary'] = ''
-    return ev
+    return normalize_evidence_quotes_for_modal(
+        ev,
+        pills=pills,
+        search_keywords=search_keywords,
+        activity_matcher=activity_matcher,
+        activity_tokens=activity_tokens,
+    )
 def _quote_has_activity_or_semantic_link(row, pills, search_keywords=None):
     """True jika kutipan terhubung ke aktivitas, rerank, atau gerbang makna."""
     if not isinstance(row, dict):

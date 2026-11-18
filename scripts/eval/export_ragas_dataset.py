@@ -18,7 +18,8 @@ ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_OUT = ROOT / "data" / "eval" / "ragas_cases.jsonl"
 
 MAX_CONTEXT_CHUNKS = 12
-MAX_CHUNK_CHARS = 400
+# Selaras modal: recommendation/quote_snippet.py + frontend constants/evidenceQuotes.js
+MAX_CHUNK_CHARS = 280
 
 
 def _configure_gemini_only_env() -> None:
